@@ -1,0 +1,48 @@
+<div class="text-center py-0 mt-5 mb-0" id="logotop">
+  <img
+    src="assets/img/LogoClinicar.png"
+    alt="CliniCar Logo"
+    class="img-fluid logo-img object-fit-md-scale"
+  />
+</div>
+<div class="container mt-2 py-0 mt-0 mb-0 w-100" style="color: #35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+      </div>
+      <div class="row text" id="card">
+        <!-- Login -->
+        <div class="col-md-6 border-end pe-md-4 border-md-end-0" id="comcadastro">
+          <h4>Já tenho cadastro</h4>
+          <form (ngSubmit)="login()">
+            <div class="mb-3">
+              <label for="loginEmail" class="form-label">Email</label>
+              <input type="email" class="form-control" id="loginEmail" placeholder="Digite seu email"[(ngModel)]="email" name="email" (click)="erroLogin = false">
+            </div>
+            <div class="mb-3">
+              <label for="loginSenha" class="form-label">Senha</label>
+              <input type="password" class="form-control" id="loginSenha" placeholder="Digite sua senha"[(ngModel)]="senha" name="senha">
+            </div>
+              <div class="col-md-6 mb-3 justify-content-between">
+                <button type="submit" class="btn btn-primary">Entrar</button>
+              </div>
+          </form>
+          <div class="col-md-6 mb-2 justify-content-between">
+            <button class="btn btn-secondary" (click)="recuperarSenha()">Recuperar senha</button>
+          </div>
+
+          <div *ngIf="erroLogin"  class="alert alert-danger mt-3">
+            E-mail ou senha inválidos.
+          </div>
+        </div>
+
+          <!-- Cadastro -->
+        <div class="col-md-6 pe-md-10" id="semcadastro">
+          <h4>Ainda não tenho cadastro</h4>
+          <p>Clique abaixo para se cadastrar:</p>
+          <a routerLink="/cadastro" class="btn btn-success ">Clique aqui</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

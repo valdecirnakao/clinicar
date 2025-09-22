@@ -1,0 +1,136 @@
+<!-- NAVBAR (pills centralizadas com dropdowns) -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top m-0 p-0" style="border-bottom:1px solid #dbe7f5;">
+  <div class="container">
+    <!-- Marca/Logo à esquerda -->
+    <a class="navbar-brand d-flex align-items-center" routerLink="/">
+      <img src="assets/img/LogoClinicar.png" alt="CliniCar" height="100" class="m-0 p-0">
+    </a>
+
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNav"
+      aria-controls="topNav" aria-expanded="false" aria-label="Alternar navegação">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-center" id="topNav">
+      <ul class="navbar-nav nav nav-pills gap-2 align-items-lg-center">
+
+        <!-- 1: Colaborador -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Colaborador
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <!-- Se o Colaborador tem children, use relativo: -->
+            <!-- <li><a class="dropdown-item" routerLink="exibe-colaborador" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Exibir</a></li> -->
+            <!-- <li><a class="dropdown-item" routerLink="cadastra-colaborador" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">Novo</a></li> -->
+          </ul>
+        </li>
+
+        <!-- 2: Cliente -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Cliente
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <!-- Se forem filhos do MenuAdministrador, troque para routerLink="relatorio/cliente" etc. -->
+            <li><a class="dropdown-item" routerLink="exibe-cliente">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastra-cliente">Novo</a></li>
+          </ul>
+        </li>
+
+        <!-- 3: Fornecedor -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Fornecedor
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li><a class="dropdown-item" routerLink="exibe-fornecedor">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastra-fornecedor">Novo</a></li>
+          </ul>
+        </li>
+
+        <!-- 4: Peça -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Peça
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li><a class="dropdown-item" routerLink="exibe-peca">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastra-peca">Nova</a></li>
+          </ul>
+        </li>
+
+        <!-- 5: Serviço -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Serviço
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li><a class="dropdown-item" routerLink="exibe-servico">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastra-servico">Novo</a></li>
+          </ul>
+        </li>
+
+        <!-- 6: Estoque -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Estoque
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li><a class="dropdown-item" routerLink="exibe-estoque">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastra-estoque">Novo</a></li>
+          </ul>
+        </li>
+
+        <!-- 7: Atendimentos -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Atendimento
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li><a class="dropdown-item" routerLink="exibe-atendimento">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastra-atendimento">Novo</a></li>
+          </ul>
+        </li>
+
+        <!-- 7: Encerrar -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Encerrar
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li><a class="dropdown-item" routerLink="/">Sessão</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger">Fechar</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- CONTEÚDO DAS ROTAS RENDERIZA AQUI, ABAIXO DA NAVBAR -->
+<main class="container py-3">
+  <!-- <router-outlet></router-outlet> -->
+</main>
+
+<style>
+  .btn-link.nav-link { text-decoration: none; }
+  .dropdown-menu { z-index: 2000; }
+</style>

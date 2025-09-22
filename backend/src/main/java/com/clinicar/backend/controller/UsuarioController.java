@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/usuarios")
+@RequestMapping("/api/usuario")
 @CrossOrigin(origins = "http://localhost:4200") // Libera requisições do Angular
 public class UsuarioController {
 

@@ -1,6 +1,6 @@
-C:\TG-FATEC-IPIRANGA\backend\src\main\java\com\clinicar\backend\BackendApplication.java
-C:\TG-FATEC-IPIRANGA\backend\src\main\java\com\clinicar\backend\config\CorsConfig.java
-C:\TG-FATEC-IPIRANGA\backend\src\main\java\com\clinicar\backend\controller\UsuarioController.java
-C:\TG-FATEC-IPIRANGA\backend\src\main\java\com\clinicar\backend\dto\LoginDTO.java
-C:\TG-FATEC-IPIRANGA\backend\src\main\java\com\clinicar\backend\model\Usuario.java
-C:\TG-FATEC-IPIRANGA\backend\src\main\java\com\clinicar\backend\repository\UsuarioRepository.java
+C:\TG\backend\src\main\java\com\clinicar\backend\BackendApplication.java
+C:\TG\backend\src\main\java\com\clinicar\backend\config\CorsConfig.java
+C:\TG\backend\src\main\java\com\clinicar\backend\controller\UsuarioController.java
+C:\TG\backend\src\main\java\com\clinicar\backend\dto\LoginDTO.java
+C:\TG\backend\src\main\java\com\clinicar\backend\model\Usuario.java
+C:\TG\backend\src\main\java\com\clinicar\backend\repository\UsuarioRepository.java
