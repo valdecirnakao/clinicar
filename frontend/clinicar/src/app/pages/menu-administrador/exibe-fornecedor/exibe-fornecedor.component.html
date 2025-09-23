@@ -46,7 +46,7 @@
               <th>CEP</th>
               <th>Logradouro</th>
               <th>Número</th>
-              <th>Compl.</th>
+              <th>Complemento</th>
               <th>Bairro</th>
               <th>Cidade</th>
               <th>UF</th>
@@ -62,14 +62,14 @@
               <!-- CNPJ -->
               <td>
                 <ng-container *ngIf="editId !== f.id; else edit_cnpj">
-                  {{ f.cnpj }}
+                {{ formatarCNPJ(f.cnpj) }} <!-- << formatado -->
                 </ng-container>
-                <ng-template #edit_cnpj>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.cnpj"
-                         [attr.name]="'cnpj_' + (f.id ?? f.cnpj)"
-                         autocomplete="off">
-                </ng-template>
+                  <ng-template #edit_cnpj>
+                    <input class="form-control form-control-sm"
+                      [(ngModel)]="edit.cnpj"
+                      [attr.name]="'cnpj_' + (f.id ?? f.cnpj)"
+                      autocomplete="off">
+                  </ng-template>
               </td>
 
               <!-- Razão Social -->

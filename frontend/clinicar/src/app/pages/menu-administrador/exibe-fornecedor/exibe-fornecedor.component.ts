@@ -1,26 +1,25 @@
-// exibe-fornecedor.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { FornecedorService } from '../exibe-fornecedor/exibe-fornecedor.service'; // ajuste o caminho se necessário
+import { FornecedorService } from '../exibe-fornecedor/exibe-fornecedor.service';
 
 export interface Fornecedor {
-  id?: number;                 // usado para editar/excluir, não exibido
+  id?: number;
   cnpj: string;
   razaoSocial: string;
   nomeFantasia: string;
   itemFornecido: string;
   telefone: string;
   email: string;
-  fundacao: string | Date;     // 'yyyy-MM-dd' ou Date
+  fundacao: string | Date;
   cep: string;
   logradouro: string;
   numeroEndereco: string;
   complementoEndereco?: string;
   bairro: string;
   cidade: string;
-  estado: string;              // UF
+  estado: string;
 }
 
 @Component({
@@ -31,10 +30,10 @@ export interface Fornecedor {
   styleUrls: ['./exibe-fornecedor.component.css']
 })
 export class ExibeFornecedorComponent implements OnInit {
-  fornecedores: Fornecedor[] = [];   // lista exibida (filtrada)
-  private todos: Fornecedor[] = [];  // cópia completa (sem filtro)
+  fornecedores: Fornecedor[] = [];
+  private todos: Fornecedor[] = [];
 
-  editId: number | null = null;      // edição inline
+  editId: number | null = null;
   edit: Partial<Fornecedor> = {};
 
   loading = false;
@@ -45,11 +44,8 @@ export class ExibeFornecedorComponent implements OnInit {
     private http: HttpClient
   ) {}
 
-  ngOnInit(): void {
-    this.recarregar();
-  }
+  ngOnInit(): void { this.recarregar(); }
 
-  // ========== LISTAGEM / BUSCA ==========
   recarregar(): void {
     this.loading = true;
     this.errorMsg = '';
@@ -57,7 +53,7 @@ export class ExibeFornecedorComponent implements OnInit {
       next: (lista) => {
         this.todos = (lista || []).map(f => ({
           ...f,
-          fundacao: this.asInputDateString(f.fundacao)
+          fundacao: this.asInputDateString(f.fundacao),
         }));
         this.fornecedores = [...this.todos];
         this.loading = false;
@@ -74,16 +70,19 @@ export class ExibeFornecedorComponent implements OnInit {
   filtrar(term: string): void {
     const t = (term || '').trim().toLowerCase();
     if (!t) { this.fornecedores = [...this.todos]; return; }
-    this.fornecedores = this.todos.filter(f =>
-      (f.cnpj || '').toLowerCase().includes(t) ||
-      (f.razaoSocial || '').toLowerCase().includes(t) ||
-      (f.nomeFantasia || '').toLowerCase().includes(t)
-    );
+
+    this.fornecedores = this.todos.filter(f => {
+      const cnpjRaw = (f.cnpj || '').toLowerCase();
+      const cnpjFmt = this.formatarCNPJ(f.cnpj).toLowerCase();
+      return cnpjRaw.includes(t)
+          || cnpjFmt.includes(t)
+          || (f.razaoSocial || '').toLowerCase().includes(t)
+          || (f.nomeFantasia || '').toLowerCase().includes(t);
+    });
   }
 
   trackByFornecedor = (_: number, f: Fornecedor) => f.id ?? f.cnpj;
 
-  // ========== EDIÇÃO ==========
   iniciarEdicao(f: Fornecedor): void {
     this.editId = f.id ?? null;
     this.edit = { ...f, fundacao: this.asInputDateString(f.fundacao) };
@@ -99,10 +98,9 @@ export class ExibeFornecedorComponent implements OnInit {
 
     const payload: Partial<Fornecedor> = {
       ...this.edit,
-      cnpj: this.onlyDigits(this.edit.cnpj),
-      cep: this.onlyDigits(this.edit.cep),
+      cnpj: this.onlyDigits(this.edit.cnpj),   // << envia 14 dígitos
+      cep:  this.onlyDigits(this.edit.cep),
       estado: (this.edit.estado || '').toString().toUpperCase(),
-      // fundacao já em 'yyyy-MM-dd'
     };
 
     this.fornecedorService.atualizarFornecedor(id, payload).subscribe({
@@ -112,7 +110,7 @@ export class ExibeFornecedorComponent implements OnInit {
           this.todos[idxTodos] = {
             ...this.todos[idxTodos],
             ...atualizado,
-            fundacao: this.asInputDateString(atualizado.fundacao)
+            fundacao: this.asInputDateString(atualizado.fundacao),
           };
         }
         const idxView = this.fornecedores.findIndex(x => x.id === id);
@@ -120,7 +118,7 @@ export class ExibeFornecedorComponent implements OnInit {
           this.fornecedores[idxView] = {
             ...this.fornecedores[idxView],
             ...atualizado,
-            fundacao: this.asInputDateString(atualizado.fundacao)
+            fundacao: this.asInputDateString(atualizado.fundacao),
           };
         }
         this.cancelarEdicao();
@@ -149,7 +147,14 @@ export class ExibeFornecedorComponent implements OnInit {
     });
   }
 
-  // ========== VIA CEP (na linha em edição) ==========
+  // ====== FORMATAÇÕES ======
+  formatarCNPJ(cnpj: string | null | undefined): string {
+    const d = this.onlyDigits(cnpj);
+    if (d.length !== 14) return cnpj ?? '';
+    return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12,14)}`;
+  }
+
+  // ====== VIA CEP (na linha em edição) ======
   onCepBlurRow(model: Partial<Fornecedor>): void {
     const cepNums = this.onlyDigits(model.cep);
     if (!cepNums || cepNums.length !== 8) return;
@@ -172,7 +177,7 @@ export class ExibeFornecedorComponent implements OnInit {
     });
   }
 
-  // ========== Helpers ==========
+  // ====== Helpers ======
   private onlyDigits(v: any): string {
     return (v ?? '').toString().replace(/\D/g, '');
   }
@@ -180,16 +185,16 @@ export class ExibeFornecedorComponent implements OnInit {
   private asInputDateString(v: any): string {
     if (!v) return '';
     if (typeof v === 'string') {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v; // já está OK
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
       const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (m) return `${m[3]}-${m[2]}-${m[1]}`;
       const d = new Date(v);
-      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
     }
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    if (v instanceof Date) return v.toISOString().slice(0,10);
     try {
       const d = new Date(v);
-      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
     } catch { return ''; }
   }
 }
