@@ -37,8 +37,8 @@
           </button>
           <ul class="dropdown-menu shadow-sm">
             <!-- Se forem filhos do MenuAdministrador, troque para routerLink="relatorio/cliente" etc. -->
-            <li><a class="dropdown-item" routerLink="exibe-cliente">Exibir</a></li>
-            <li><a class="dropdown-item" routerLink="cadastra-cliente">Novo</a></li>
+            <li><a class="dropdown-item" routerLink="exibeCliente">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastraCliente">Novo</a></li>
           </ul>
         </li>
 
@@ -127,7 +127,7 @@
 
 <!-- CONTEÚDO DAS ROTAS RENDERIZA AQUI, ABAIXO DA NAVBAR -->
 <main class="container py-3">
-  <!-- <router-outlet></router-outlet> -->
+  <router-outlet></router-outlet>
 </main>
 
 <style>

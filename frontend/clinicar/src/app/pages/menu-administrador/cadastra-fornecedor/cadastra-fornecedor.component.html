@@ -1,0 +1,151 @@
+<div class="container mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 sm-mt-0">
+      <!-- Título -->
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">Cadastro de Fornecedores</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário -->
+      <form #form="ngForm" (ngSubmit)="cadastrar(form)">
+        <div class="row">
+          <!-- CNPJ -->
+          <div class="col-md-3 mb-2">
+            <label for="cnpj" class="form-label">CNPJ</label>
+            <input
+              list="cnpjsCadastrados"
+              id="cnpj"
+              name="cnpj"
+              class="form-control"
+              [(ngModel)]="fornecedor.cnpj"
+              (change)="onCnpjSelecionado(fornecedor.cnpj)"
+              (blur)="formatarCNPJ()"
+              required
+              autocomplete="off"
+              style="color:#35689b;">
+            <datalist id="cnpjsCadastrados">
+              <option *ngFor="let c of cnpjsCadastrados" [value]="c"></option>
+            </datalist>
+          </div>
+
+          <!-- Razão Social -->
+          <div class="col-md-5 mb-2">
+            <label for="razaoSocial" class="form-label">Razão Social</label>
+            <input type="text" id="razaoSocial" name="razaoSocial" class="form-control"
+                   required [(ngModel)]="fornecedor.razaoSocial"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Nome Fantasia -->
+          <div class="col-md-4 mb-2">
+            <label for="nomeFantasia" class="form-label">Nome Fantasia</label>
+            <input type="text" id="nomeFantasia" name="nomeFantasia" class="form-control"
+                   required [(ngModel)]="fornecedor.nomeFantasia"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Telefone -->
+          <div class="col-md-3 mb-2">
+            <label for="telefone" class="form-label">Telefone / WhatsApp</label>
+            <input type="text" id="telefone" name="telefone" class="form-control"
+                   required [(ngModel)]="fornecedor.telefone" (blur)="formatarTelefone()"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Email -->
+          <div class="col-md-5 mb-2">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" name="email" class="form-control"
+                   required [(ngModel)]="fornecedor.email"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Fundação -->
+          <div class="col-md-2 mb-2">
+            <label for="Fundacao" class="form-label">Fundação</label>
+            <input type="date" id="Fundacao" name="Fundacao" class="form-control"
+                   required [(ngModel)]="fornecedor.fundacao"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Item Fornecido -->
+          <div class="col-md-2 mb-2">
+            <label for="itemFornecido" class="form-label">Item Fornecido</label>
+            <input type="text" id="itemFornecido" name="itemFornecido" class="form-control"
+                   required [(ngModel)]="fornecedor.itemFornecido"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- CEP -->
+          <div class="col-md-2 mb-2">
+            <label for="cep" class="form-label">CEP</label>
+            <input type="text" id="cep" name="cep" class="form-control"
+                   required [(ngModel)]="fornecedor.cep" (blur)="onCepBlur()"
+                   placeholder=""
+                   style="color:#35689b;">
+            <div class="form-text" *ngIf="cepStatus.loading">Consultando CEP…</div>
+            <div class="text-danger small" *ngIf="cepStatus.errorMsg">{{ cepStatus.errorMsg }}</div>
+          </div>
+
+          <!-- Logradouro -->
+          <div class="col-md-5 mb-2">
+            <label for="logradouro" class="form-label">Logradouro</label>
+            <input type="text" id="logradouro" name="logradouro" class="form-control"
+                   required [(ngModel)]="fornecedor.logradouro"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Número -->
+          <div class="col-md-2 mb-2">
+            <label for="numero" class="form-label">Número</label>
+            <input #numeroInput type="text" id="numero" name="numero" class="form-control"
+                   required [(ngModel)]="fornecedor.numeroEndereco"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Complemento -->
+          <div class="col-md-3 mb-2">
+            <label for="complemento" class="form-label">Complemento</label>
+            <input type="text" id="complemento" name="complemento" class="form-control"
+                   [(ngModel)]="fornecedor.complementoEndereco"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Bairro -->
+          <div class="col-md-4 mb-2">
+            <label for="bairro" class="form-label">Bairro</label>
+            <input type="text" id="bairro" name="bairro" class="form-control"
+                   required [(ngModel)]="fornecedor.bairro"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Cidade -->
+          <div class="col-md-4 mb-2">
+            <label for="cidade" class="form-label">Cidade</label>
+            <input type="text" id="cidade" name="cidade" class="form-control"
+                   required [(ngModel)]="fornecedor.cidade"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Estado -->
+          <div class="col-md-4 mb-4">
+            <label for="estado" class="form-label">Estado</label>
+            <input type="text" id="estado" name="estado" class="form-control"
+                   required [(ngModel)]="fornecedor.estado"
+                   style="color:#35689b;">
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-success">Cadastrar</button>
+          <button type="button" class="btn btn-secondary" (click)="form.resetForm()">Limpar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
