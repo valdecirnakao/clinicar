@@ -154,6 +154,12 @@ export class ExibeFornecedorComponent implements OnInit {
     return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12,14)}`;
   }
 
+  formatarCEP(cep: string | null | undefined): string {
+    const d = this.onlyDigits(cep);
+    if (d.length !== 8) return cep ?? '';
+    return `${d.slice(0,5)}-${d.slice(5,8)}`;
+  }
+
   // ====== VIA CEP (na linha em edição) ======
   onCepBlurRow(model: Partial<Fornecedor>): void {
     const cepNums = this.onlyDigits(model.cep);

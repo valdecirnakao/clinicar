@@ -147,13 +147,14 @@
               <!-- CEP -->
               <td>
                 <ng-container *ngIf="editId !== f.id; else edit_cep">
-                  {{ f.cep }}
+                  {{ formatarCEP(f.cep) }} <!-- << formatado -->
                 </ng-container>
                 <ng-template #edit_cep>
                   <input class="form-control form-control-sm"
                          [(ngModel)]="edit.cep"
                          [attr.name]="'cep_' + (f.id ?? f.cnpj)"
-                         (blur)="onCepBlurRow(edit)">
+                         (blur)="onCepBlurRow(edit)"
+                         >
                 </ng-template>
               </td>
 
