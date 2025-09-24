@@ -57,18 +57,21 @@ public ResponseEntity<Usuario> atualizarUsuario(@PathVariable Long id, @RequestB
         Usuario usuario = usuarioOptional.get();
         // Atualize todos os campos necessários
         usuario.setNome(usuarioAtualizado.getNome());
+        usuario.setNome_social(usuarioAtualizado.getNome_social());
         usuario.setEmail(usuarioAtualizado.getEmail());
         usuario.setSenha(usuarioAtualizado.getSenha());
+        usuario.setNascimento(usuarioAtualizado.getNascimento());
         usuario.setCpf(usuarioAtualizado.getCpf());
-        usuario.setWhatsapp(usuarioAtualizado.getWhatsapp());
+        usuario.setTelefone(usuarioAtualizado.getTelefone());
         usuario.setWhatsappapikey(usuarioAtualizado.getWhatsappapikey());
         usuario.setCep(usuarioAtualizado.getCep());
         usuario.setLogradouro(usuarioAtualizado.getLogradouro());
         usuario.setBairro(usuarioAtualizado.getBairro());
         usuario.setCidade(usuarioAtualizado.getCidade());
         usuario.setEstado(usuarioAtualizado.getEstado());
-        usuario.setComplementoEndereco(usuarioAtualizado.getComplementoEndereco());
-        usuario.setNumeroEndereco(usuarioAtualizado.getNumeroEndereco());
+        usuario.setComplemento_endereco(usuarioAtualizado.getComplemento_endereco());
+        usuario.setNumero_endereco(usuarioAtualizado.getNumero_endereco());
+        usuario.setTipo_do_acesso(usuarioAtualizado.getTipo_do_acesso());
         usuarioRepository.save(usuario);
         return ResponseEntity.ok(usuario);
     } else {

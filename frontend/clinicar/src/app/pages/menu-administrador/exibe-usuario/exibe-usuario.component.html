@@ -6,7 +6,7 @@
       <div class="row mt-0">
         <div class="col text-center mb-2">
           <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff; color:#35689b;">
-            <div class="card-body fw-semibold">Fornecedores</div>
+            <div class="card-body fw-semibold">Usuários</div>
           </div>
         </div>
       </div>
@@ -16,7 +16,7 @@
         <div class="input-group" style="max-width:420px; color:#35689b;">
           <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">Buscar</span>
           <input #q type="search" class="form-control" style="color:#35689b;"
-                 placeholder="CNPJ, Razão Social ou Nome Fantasia"
+                 placeholder="CPF, CNPJ, Nome, Nome Social ou E-mail"
                  (input)="filtrar(q.value)" style="color:#35689b;"/>
         </div>
         <div class="d-flex gap-2">
@@ -28,7 +28,7 @@
       </div>
 
       <!-- Estados globais -->
-      <div *ngIf="loading" class="alert alert-info py-2">Carregando fornecedores…</div>
+      <div *ngIf="loading" class="alert alert-info py-2">Carregando usuarios…</div>
       <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
 
       <!-- Tabela -->
@@ -36,13 +36,14 @@
         <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
           <thead style="background:#eef6ff;color:#35689b;">
             <tr>
-              <th>CNPJ</th>
-              <th>Razão Social</th>
-              <th>Nome Fantasia</th>
-              <th>Item Fornecido</th>
-              <th>Telefone</th>
-              <th>Email</th>
-              <th>Fundação</th>
+              <th>CPF/CNPJ</th>
+              <th>Nome</th>
+              <th>Nome Social</th>
+              <th>E-mail</th>
+              <th>Telefone/WhatsApp</th>
+              <th>WhatsApp API Key</th>
+              <th>Senha</th>
+              <th>Nascimento</th>
               <th>CEP</th>
               <th>Logradouro</th>
               <th>Número</th>
@@ -50,109 +51,122 @@
               <th>Bairro</th>
               <th>Cidade</th>
               <th>UF</th>
+              <th>Tipo do Acesso</th>
               <th class="text-center">Ações</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr *ngFor="let f of fornecedores; trackBy: trackByFornecedor"
-                [class.table-active]="editId === f.id"
-                [class.editing]="editId === f.id"><!-- <- habilita quebra apenas na linha em edição -->
+            <tr *ngFor="let u of usuarios; trackBy: trackByUsuario"
+                [class.table-active]="editId === u.id"
+                [class.editing]="editId === u.id"><!-- <- habilita quebra apenas na linha em edição -->
 
-              <!-- CNPJ -->
+              <!-- CNPJ/CPF -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_cnpj">
-                {{ formatarCNPJ(f.cnpj) }} <!-- << formatado -->
+                <ng-container *ngIf="editId !== u.id; else edit_cpf">
+                {{ formatarCPF(u.cpf) }} <!-- << formatado -->
                 </ng-container>
-                  <ng-template #edit_cnpj>
+                  <ng-template #edit_cpf>
                     <input class="form-control form-control-sm"
-                      [(ngModel)]="edit.cnpj"
-                      [attr.name]="'cnpj_' + (f.id ?? f.cnpj)"
+                      [(ngModel)]="edit.cpf"
+                      [attr.name]="'cpf_' + (u.id ?? u.cpf)"
                       autocomplete="off">
                   </ng-template>
               </td>
 
-              <!-- Razão Social -->
+              <!-- Nome -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_razao">
-                  {{ f.razaoSocial }}
+                <ng-container *ngIf="editId !== u.id; else edit_nome">
+                  {{ u.nome }}
                 </ng-container>
-                <ng-template #edit_razao>
+                <ng-template #edit_nome>
                   <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.razaoSocial"
-                         [attr.name]="'razao_' + (f.id ?? f.cnpj)">
+                         [(ngModel)]="edit.nome"
+                         [attr.name]="'nome_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
-              <!-- Nome Fantasia -->
+              <!-- Nome Social -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_nomefant">
-                  {{ f.nomeFantasia }}
+                <ng-container *ngIf="editId !== u.id; else edit_nome_social">
+                  {{ u.nome_social }}
                 </ng-container>
-                <ng-template #edit_nomefant>
+                <ng-template #edit_nome_social>
                   <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.nomeFantasia"
-                         [attr.name]="'nomeFantasia_' + (f.id ?? f.cnpj)">
+                         [(ngModel)]="edit.nome_social"
+                         [attr.name]="'nome_social_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
-              <!-- Item Fornecido -->
+              <!-- E-mail -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_item">
-                  {{ f.itemFornecido }}
+                <ng-container *ngIf="editId !== u.id; else edit_email">
+                  {{ u.email }}
                 </ng-container>
-                <ng-template #edit_item>
+                <ng-template #edit_email>
                   <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.itemFornecido"
-                         [attr.name]="'item_' + (f.id ?? f.cnpj)">
+                         [(ngModel)]="edit.email"
+                         [attr.name]="'email_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
-              <!-- Telefone -->
+              <!-- Telefone/WhatsApp -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_tel">
-                  {{ f.telefone }}
+                <ng-container *ngIf="editId !== u.id; else edit_tel">
+                  {{ u.telefone }}
                 </ng-container>
                 <ng-template #edit_tel>
                   <input class="form-control form-control-sm"
                          [(ngModel)]="edit.telefone"
-                         [attr.name]="'tel_' + (f.id ?? f.cnpj)">
+                         [attr.name]="'tel_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
-              <!-- Email -->
+              <!-- WhatsApp API Key -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_email">
-                  {{ f.email }}
+                <ng-container *ngIf="editId !== u.id; else edit_whatsappapikey">
+                  {{ u.whatsappapikey }}
                 </ng-container>
-                <ng-template #edit_email>
-                  <input type="email" class="form-control form-control-sm"
-                         [(ngModel)]="edit.email"
-                         [attr.name]="'email_' + (f.id ?? f.cnpj)">
+                <ng-template #edit_whatsappapikey>
+                  <input class="form-control form-control-sm"
+                         [(ngModel)]="edit.whatsappapikey"
+                         [attr.name]="'whatsappapikey_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
-              <!-- Fundação -->
+              <!-- Senha -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_funda">
-                  {{ f.fundacao | date:'dd/MM/yyyy' }}
+                <ng-container *ngIf="editId !== u.id; else edit_senha">
+                  {{ u.senha }}
                 </ng-container>
-                <ng-template #edit_funda>
+                <ng-template #edit_senha>
+                  <input type="password" class="form-control form-control-sm"
+                         [(ngModel)]="edit.senha"
+                         [attr.name]="'senha_' + (u.id ?? u.cpf)">
+                </ng-template>
+              </td>
+
+              <!-- Nascimento -->
+              <td>
+                <ng-container *ngIf="editId !== u.id; else edit_nasc">
+                  {{ u.nascimento | date:'dd/MM/yyyy' }}
+                </ng-container>
+                <ng-template #edit_nasc>
                   <input type="date" class="form-control form-control-sm"
-                         [(ngModel)]="edit.fundacao"
-                         [attr.name]="'fundacao_' + (f.id ?? f.cnpj)">
+                         [(ngModel)]="edit.nascimento"
+                         [attr.name]="'nascimento_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
               <!-- CEP -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_cep">
-                  {{ formatarCEP(f.cep) }} <!-- << formatado -->
+                <ng-container *ngIf="editId !== u.id; else edit_cep">
+                  {{ formatarCEP(u.cep) }} <!-- << formatado -->
                 </ng-container>
                 <ng-template #edit_cep>
                   <input class="form-control form-control-sm"
                          [(ngModel)]="edit.cep"
-                         [attr.name]="'cep_' + (f.id ?? f.cnpj)"
+                         [attr.name]="'cep_' + (u.id ?? u.cpf)"
                          (blur)="onCepBlurRow(edit)"
                          >
                 </ng-template>
@@ -160,94 +174,107 @@
 
               <!-- Logradouro -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_logr">
-                  {{ f.logradouro }}
+                <ng-container *ngIf="editId !== u.id; else edit_logr">
+                  {{ u.logradouro }}
                 </ng-container>
                 <ng-template #edit_logr>
                   <input class="form-control form-control-sm"
                          [(ngModel)]="edit.logradouro"
-                         [attr.name]="'logradouro_' + (f.id ?? f.cnpj)">
+                         [attr.name]="'logradouro_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
               <!-- Número -->
               <td style="min-width: 90px;">
-                <ng-container *ngIf="editId !== f.id; else edit_num">
-                  {{ f.numeroEndereco }}
+                <ng-container *ngIf="editId !== u.id; else edit_num">
+                  {{ u.numero_endereco }}
                 </ng-container>
                 <ng-template #edit_num>
                   <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.numeroEndereco"
-                         [attr.name]="'numero_' + (f.id ?? f.cnpj)">
+                         [(ngModel)]="edit.numero_endereco"
+                         [attr.name]="'numero_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
               <!-- Complemento -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_comp">
-                  {{ f.complementoEndereco }}
+                <ng-container *ngIf="editId !== u.id; else edit_comp">
+                  {{ u.complemento_endereco }}
                 </ng-container>
                 <ng-template #edit_comp>
                   <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.complementoEndereco"
-                         [attr.name]="'compl_' + (f.id ?? f.cnpj)">
+                         [(ngModel)]="edit.complemento_endereco"
+                         [attr.name]="'compl_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
               <!-- Bairro -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_bairro">
-                  {{ f.bairro }}
+                <ng-container *ngIf="editId !== u.id; else edit_bairro">
+                  {{ u.bairro }}
                 </ng-container>
                 <ng-template #edit_bairro>
                   <input class="form-control form-control-sm"
                          [(ngModel)]="edit.bairro"
-                         [attr.name]="'bairro_' + (f.id ?? f.cnpj)">
+                         [attr.name]="'bairro_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
               <!-- Cidade -->
               <td>
-                <ng-container *ngIf="editId !== f.id; else edit_cidade">
-                  {{ f.cidade }}
+                <ng-container *ngIf="editId !== u.id; else edit_cidade">
+                  {{ u.cidade }}
                 </ng-container>
                 <ng-template #edit_cidade>
                   <input class="form-control form-control-sm"
                          [(ngModel)]="edit.cidade"
-                         [attr.name]="'cidade_' + (f.id ?? f.cnpj)">
+                         [attr.name]="'cidade_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
               <!-- UF -->
               <td style="min-width: 64px;">
-                <ng-container *ngIf="editId !== f.id; else edit_uf">
-                  {{ f.estado }}
+                <ng-container *ngIf="editId !== u.id; else edit_uf">
+                  {{ u.estado }}
                 </ng-container>
                 <ng-template #edit_uf>
                   <input class="form-control form-control-sm text-uppercase"
                          maxlength="2"
                          [(ngModel)]="edit.estado"
-                         [attr.name]="'estado_' + (f.id ?? f.cnpj)">
+                         [attr.name]="'estado_' + (u.id ?? u.cpf)">
+                </ng-template>
+              </td>
+
+              <!-- Tipo do Acesso -->
+              <td style="min-width: 64px;">
+                <ng-container *ngIf="editId !== u.id; else edit_tipo_acesso">
+                  {{ u.tipo_do_acesso }}
+                </ng-container>
+                <ng-template #edit_tipo_acesso>
+                  <input class="form-control form-control-sm text-lowercase"
+                         maxlength="255"
+                         [(ngModel)]="edit.tipo_do_acesso"
+                         [attr.name]="'tipo_acesso_' + (u.id ?? u.cpf)">
                 </ng-template>
               </td>
 
               <!-- Ações -->
               <td class="text-center" style="min-width: 160px;">
-                <ng-container *ngIf="editId !== f.id; else edit_acoes">
+                <ng-container *ngIf="editId !== u.id; else edit_acoes">
                   <button class="btn btn-sm btn-outline-primary me-1"
-                          (click)="iniciarEdicao(f)"
+                          (click)="iniciarEdicao(u)"
                           style="border-color:#8fb4da;color:#35689b;">
                     Editar
                   </button>
                   <button class="btn btn-sm btn-outline-danger"
-                          (click)="excluir(f.id)"
+                          (click)="excluir(u.id)"
                           style="border-color:#f3c7c7;color:#b03030;">
                     Excluir
                   </button>
                 </ng-container>
                 <ng-template #edit_acoes>
                   <button class="btn btn-sm btn-success me-1"
-                          (click)="salvarEdicao(f.id!)">
+                          (click)="salvarEdicao(u.id!)">
                     Salvar
                   </button>
                   <button class="btn btn-sm btn-secondary"
@@ -260,9 +287,9 @@
             </tr>
 
             <!-- Sem dados -->
-            <tr *ngIf="!fornecedores || fornecedores.length === 0">
+            <tr *ngIf="!usuarios || usuarios.length === 0">
               <td colspan="15" class="text-center text-muted py-4">
-                Nenhum fornecedor encontrado.
+                Nenhum usuário encontrado.
               </td>
             </tr>
           </tbody>

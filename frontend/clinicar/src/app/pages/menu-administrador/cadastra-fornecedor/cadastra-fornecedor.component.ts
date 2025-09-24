@@ -3,7 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { CadastraFornecedorService } from '../cadastra-fornecedor.service'; // ajuste o caminho se necessário
+import { CadastraFornecedorService } from '../cadastra-fornecedor/cadastra-fornecedor.service';
 
 interface ViaCepResponse {
   cep?: string;

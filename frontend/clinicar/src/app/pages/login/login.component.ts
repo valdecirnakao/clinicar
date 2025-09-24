@@ -20,7 +20,6 @@ export class LoginComponent {
   email: string = '';
   senha: string = '';
   erroLogin: boolean = false;
-  isAdmin: boolean = false;
 
   constructor(
     private router: Router,
@@ -49,15 +48,6 @@ export class LoginComponent {
     });
   }
 
-  irParaMenu() {
-    const usuario = sessionStorage.getItem('usuarioLogado');
-    if (!usuario) {
-      alert('Por favor, faça login para visualizar os detalhes do produto.');
-      return;
-    }
-    this.router.navigate(['/vitrine']);
-  }
-
   recuperarSenha() {
     if (!this.email || this.email.trim() === '') {
       alert('Por favor, insira um e-mail válido para recuperar a senha.');
@@ -66,7 +56,7 @@ export class LoginComponent {
 
     this.loginService.recuperarSenha(this.email.trim()).subscribe({
       next: (usuario) => {
-        if (!usuario || !usuario.nome || !usuario.senha || !usuario.whatsapp || !usuario.whatsappapikey) {
+        if (!usuario || !usuario.nome || !usuario.senha || !usuario.telefone || !usuario.whatsappapikey) {
           alert('Usuário encontrado, mas dados incompletos para envio de mensagem.');
           return;
         }
@@ -86,7 +76,7 @@ export class LoginComponent {
           `${usuario.senha}\n` +
           `Atenciosamente,\nCliniCar`;
 
-        const whatsappLimpo = usuario.whatsapp.replace(/\D/g, '');
+        const whatsappLimpo = usuario.telefone.replace(/\D/g, '');
         const whatsappFinal = `+${whatsappLimpo}`;
 
         const api =
