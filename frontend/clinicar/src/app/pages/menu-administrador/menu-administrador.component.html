@@ -14,7 +14,7 @@
     <div class="collapse navbar-collapse justify-content-center" id="topNav">
       <ul class="navbar-nav nav nav-pills gap-2 align-items-lg-center">
 
-        <!-- 2: Usuario -->
+        <!-- 1: Usuario -->
         <li class="nav-item dropdown" data-bs-display="static">
           <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
@@ -22,9 +22,21 @@
             Usuario
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <!-- Se forem filhos do MenuAdministrador, troque para routerLink="relatorio/usuario" etc. -->
             <li><a class="dropdown-item" routerLink="exibe-usuario">Exibir</a></li>
             <li><a class="dropdown-item" routerLink="cadastra-usuario">Novo</a></li>
+          </ul>
+        </li>
+
+        <!-- 1: Veículo -->
+        <li class="nav-item dropdown" data-bs-display="static">
+          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+            Veículo
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li><a class="dropdown-item" routerLink="exibe-veiculo">Exibir</a></li>
+            <li><a class="dropdown-item" routerLink="cadastra-veiculo">Novo</a></li>
           </ul>
         </li>
 

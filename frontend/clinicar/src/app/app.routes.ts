@@ -5,10 +5,12 @@ import { CadastraUsuarioComponent } from './pages/menu-administrador/cadastra-us
 import { CadastroFornecedorComponent } from './pages/menu-administrador/cadastra-fornecedor/cadastra-fornecedor.component';
 import { ExibeFornecedorComponent } from './pages/menu-administrador/exibe-fornecedor/exibe-fornecedor.component';
 import { ExibeUsuarioComponent } from './pages/menu-administrador/exibe-usuario/exibe-usuario.component';
+import { CadastraClienteComponent } from './pages/login/cadastra-cliente/cadastra-cliente.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
+  { path: 'cadastra-cliente', component: CadastraClienteComponent },
   { path: 'menuAdministrador', component: MenuAdministradorComponent,  // precisa ter <router-outlet> no template
     children: [
       { path: 'cadastra-fornecedor', component: CadastroFornecedorComponent }, // filho (NÃO repete o pai)

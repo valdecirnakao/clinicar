@@ -1,0 +1,176 @@
+<div class="text-center py-0 m-5" id="logotop">
+  <img
+    src="assets/img/LogoClinicar.png"
+    alt="CliniCar Logo"
+    class="img-fluid logo-img object-fit-md-scale m-2"
+  />
+</div>
+<div class="container mt-4 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 sm-mt-0">
+      <!-- Título -->
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">Cadastro de Clientes</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário -->
+      <form #form="ngForm" (ngSubmit)="cadastrar(form)">
+        <div class="row">
+          <!-- CPF -->
+          <div class="col-md-3 mb-2">
+            <label for="cpf" class="form-label">CPF</label>
+            <input
+              list="cpfsCadastrados"
+              id="cpf"
+              name="cpf"
+              class="form-control"
+              [(ngModel)]="usuario.cpf"
+              (change)="onCpfSelecionado(usuario.cpf)"
+              (blur)="formatarCPF()"
+              required
+              autocomplete="off"
+              style="color:#35689b;">
+            <datalist id="cpfsCadastrados">
+              <option *ngFor="let c of cpfsCadastrados" [value]="c"></option>
+            </datalist>
+          </div>
+
+          <!-- Nome -->
+          <div class="col-md-6 mb-2">
+            <label for="nome" class="form-label">Nome</label>
+            <input type="text" id="nome" name="nome" class="form-control"
+              required [(ngModel)]="usuario.nome"
+              style="color:#35689b;">
+          </div>
+
+          <!-- Nome Social -->
+          <div class="col-md-3 mb-2">
+            <label for="nomeSocial" class="form-label">Nome Social</label>
+            <input type="text" id="nomeSocial" name="nomeSocial" class="form-control"
+                   [(ngModel)]="usuario.nome_social"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Telefone -->
+          <div class="col-md-3 mb-2">
+            <label for="telefone" class="form-label">Telefone / WhatsApp</label>
+            <input type="text" id="telefone" name="telefone" class="form-control"
+                   required [(ngModel)]="usuario.telefone" (blur)="formatarTelefone()"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- WhatsAppApiKey -->
+          <div class="col-md-3 mb-2">
+            <label for="WhatsAppApiKey" class="form-label">WhatsApp API Key</label>
+            <input type="text" id="WhatsAppApiKey" name="WhatsAppApiKey" class="form-control"
+                   [(ngModel)]="usuario.whatsappapikey"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Senha -->
+          <div class="col-md-2 mb-2">
+            <label for="senha" class="form-label">Senha</label>
+            <input type="password" id="senha" name="senha" class="form-control"
+                   required [(ngModel)]="usuario.senha"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Confirmar Senha -->
+          <div class="col-md-2 mb-2">
+            <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
+            <input type="password" id="confirmarSenha" name="confirmarSenha" class="form-control"
+                   required [(ngModel)]="usuario.confirmarSenha"
+                   style="color:#35689b;">
+          </div>
+
+
+          <!-- Nascimento -->
+          <div class="col-md-2 mb-2">
+            <label for="nascimento" class="form-label">Nascimento</label>
+            <input type="date" id="nascimento" name="nascimento" class="form-control"
+                   required [(ngModel)]="usuario.nascimento"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Email -->
+          <div class="col-md-4 mb-2">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" name="email" class="form-control"
+                   required [(ngModel)]="usuario.email"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- CEP -->
+          <div class="col-md-2 mb-2">
+            <label for="cep" class="form-label">CEP</label>
+            <input type="text" id="cep" name="cep" class="form-control"
+                   required [(ngModel)]="usuario.cep" (blur)="onCepBlur()"
+                   placeholder=""
+                   style="color:#35689b;">
+            <div class="form-text" *ngIf="cepStatus.loading">Consultando CEP…</div>
+            <div class="text-danger small" *ngIf="cepStatus.errorMsg">{{ cepStatus.errorMsg }}</div>
+          </div>
+
+          <!-- Logradouro -->
+          <div class="col-md-4 mb-2">
+            <label for="logradouro" class="form-label">Logradouro</label>
+            <input type="text" id="logradouro" name="logradouro" class="form-control"
+                   required [(ngModel)]="usuario.logradouro"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Número -->
+          <div class="col-md-2 mb-2">
+            <label for="numero" class="form-label">Número</label>
+            <input #numeroInput type="text" id="numero" name="numero" class="form-control"
+                   required [(ngModel)]="usuario.numero_endereco"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Complemento -->
+          <div class="col-md-3 mb-2">
+            <label for="complemento" class="form-label">Complemento</label>
+            <input type="text" id="complemento" name="complemento" class="form-control"
+                   [(ngModel)]="usuario.complemento_endereco"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Bairro -->
+          <div class="col-md-3 mb-2">
+            <label for="bairro" class="form-label">Bairro</label>
+            <input type="text" id="bairro" name="bairro" class="form-control"
+                   required [(ngModel)]="usuario.bairro"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Cidade -->
+          <div class="col-md-4 mb-2">
+            <label for="cidade" class="form-label">Cidade</label>
+            <input type="text" id="cidade" name="cidade" class="form-control"
+                   required [(ngModel)]="usuario.cidade"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Estado -->
+          <div class="col-md-2 mb-4">
+            <label for="estado" class="form-label">UF</label>
+            <input type="text" id="estado" name="estado" class="form-control"
+                   required [(ngModel)]="usuario.estado"
+                   style="color:#35689b;">
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-success">Cadastrar</button>
+          <button type="button" class="btn btn-secondary" (click)="form.resetForm()">Limpar</button>
+          <button type="button" class="btn btn-danger" routerLink="/">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
