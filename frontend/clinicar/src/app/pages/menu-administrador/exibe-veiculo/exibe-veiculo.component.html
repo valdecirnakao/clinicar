@@ -1,0 +1,202 @@
+<div class="container mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 mt-sm-0">
+
+      <!-- Título / Cabeçalho -->
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">Veículos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+        <div class="input-group" style="max-width:420px; color:#35689b;">
+          <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">Buscar</span>
+          <input #q type="search" class="form-control" style="color:#35689b;"
+                 placeholder="Placa, Montadora, Modelo, Cor"
+                 (input)="filtrar(q.value)" style="color:#35689b;"/>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary" type="button" (click)="recarregar()"
+                  style="border-color:#d0e2f2;color:#35689b;">
+            Atualizar
+          </button>
+        </div>
+      </div>
+
+      <!-- Estados globais -->
+      <div *ngIf="loading" class="alert alert-info py-2">Carregando veículos…</div>
+      <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
+
+      <!-- Tabela -->
+      <div class="table-responsive">
+        <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+          <thead style="background:#eef6ff;color:#35689b;">
+            <tr>
+              <th>Placa</th>
+              <th>Montadora</th>
+              <th>Modelo</th>
+              <th>Cor</th>
+              <th>Ano/Modelo/Combustível</th>
+              <th>Cpf Proprietário</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let v of veiculos; trackBy: trackByVeiculo"
+                [class.table-active]="editId === v.id"
+                [class.editing]="editId === v.id"><!-- <- habilita quebra apenas na linha em edição -->
+
+              <!-- Placa -->
+              <td>
+                <ng-container *ngIf="editId !== v.id; else edit_placa">
+                {{ formatarPlaca(v.placa) }} <!-- << formatado -->
+                </ng-container>
+                  <ng-template #edit_placa>
+                    <input class="form-control form-control-sm"
+                      [(ngModel)]="edit.placa"
+                      [attr.name]="'placa_' + (v.id ?? v.placa)"
+                      autocomplete="off">
+                  </ng-template>
+              </td>
+
+              <!-- Fabricante -->
+              <td>
+                <ng-container *ngIf="editId !== v.id; else edit_fabricante">
+                  {{ v.fabricante }}
+                </ng-container>
+                <ng-template #edit_fabricante>
+                  <input class="form-control form-control-sm"
+                         [(ngModel)]="edit.fabricante"
+                         [attr.name]="'fabricante_' + (v.id ?? v.fabricante)">
+                </ng-template>
+              </td>
+
+              <!-- Modelo -->
+              <td>
+                <ng-container *ngIf="editId !== v.id; else edit_modelo">
+                  {{ v.modelo }}
+                </ng-container>
+                <ng-template #edit_modelo>
+                  <input class="form-control form-control-sm"
+                         [(ngModel)]="edit.modelo"
+                         [attr.name]="'modelo_' + (v.id ?? v.modelo)">
+                </ng-template>
+              </td>
+
+              <!-- Cor -->
+              <td>
+                <ng-container *ngIf="editId !== v.id; else edit_cor">
+                  {{ v.cor }}
+                </ng-container>
+                <ng-template #edit_cor>
+                  <input class="form-control form-control-sm"
+                         [(ngModel)]="edit.cor"
+                         [attr.name]="'cor_' + (v.id ?? v.cor)">
+                </ng-template>
+              </td>
+
+              <!-- Ano Modelo Combustivel -->
+              <td>
+                <ng-container *ngIf="editId !== v.id; else edit_anoModeloCombustivel">
+                  {{ v.anoModeloCombustivel }}
+                </ng-container>
+                <ng-template #edit_anoModeloCombustivel>
+                  <input class="form-control form-control-sm"
+                         [(ngModel)]="edit.anoModeloCombustivel"
+                         [attr.name]="'anoModeloCombustivel_' + (v.id ?? v.anoModeloCombustivel)">
+                </ng-template>
+              </td>
+
+              <!-- Cpf Proprietário -->
+              <td>
+                <ng-container *ngIf="editId !== v.id; else edit_cpf">
+                  {{ v.idProprietario }}
+                </ng-container>
+                <ng-template #edit_cpf>
+                  <input class="form-control form-control-sm"
+                         [(ngModel)]="edit.idProprietario"
+                         [attr.name]="'idProprietario' + (v.id ?? v.idProprietario)">
+                </ng-template>
+              </td>
+
+              <!-- Ações -->
+              <td class="text-center" style="min-width: 160px;">
+                <ng-container *ngIf="editId !== v.id; else edit_acoes">
+                  <button class="btn btn-sm btn-outline-primary me-1"
+                          (click)="iniciarEdicao(v)"
+                          style="border-color:#8fb4da;color:#35689b;">
+                    Editar
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger"
+                          (click)="excluir(v.id)"
+                          style="border-color:#f3c7c7;color:#b03030;">
+                    Excluir
+                  </button>
+                </ng-container>
+                <ng-template #edit_acoes>
+                  <button class="btn btn-sm btn-success me-1"
+                          (click)="salvarEdicao(v.id!)">
+                    Salvar
+                  </button>
+                  <button class="btn btn-sm btn-secondary"
+                          (click)="cancelarEdicao()">
+                    Cancelar
+                  </button>
+                </ng-template>
+              </td>
+
+            </tr>
+
+            <!-- Sem dados -->
+            <tr *ngIf="!veiculos || veiculos.length === 0">
+              <td colspan="15" class="text-center text-muted py-4">
+                Nenhum veículo encontrado.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Bordas/cores padrão */
+  .table thead th { border-color: #d0e2f2 !important; }
+  .table td, .table th { vertical-align: middle; color: #35689b; }
+  .table-hover tbody tr:hover { background-color: #f7fbff; }
+  .table-active { --bs-table-bg: #f1f7ff; }
+
+  /* Sem quebras e com elipse por padrão (uma linha por registro) */
+  .table.text-nowrap th,
+  .table.text-nowrap td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Linha em edição: mostrar todo o conteúdo (pode quebrar) */
+  .table.text-nowrap tr.editing > th,
+  .table.text-nowrap tr.editing > td {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word; /* ajuda com textos longos sem espaços */
+  }
+
+  /* Inputs na linha em edição com largura mínima confortável */
+  .table.text-nowrap tr.editing .form-control {
+    min-width: 220px;
+  }
+
+  .form-control:focus, .btn:focus {
+    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
+    border-color: #8fb4da;
+  }
+</style>

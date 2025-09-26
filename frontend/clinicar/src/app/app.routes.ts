@@ -6,17 +6,22 @@ import { CadastroFornecedorComponent } from './pages/menu-administrador/cadastra
 import { ExibeFornecedorComponent } from './pages/menu-administrador/exibe-fornecedor/exibe-fornecedor.component';
 import { ExibeUsuarioComponent } from './pages/menu-administrador/exibe-usuario/exibe-usuario.component';
 import { CadastraClienteComponent } from './pages/login/cadastra-cliente/cadastra-cliente.component';
+import { CadastroVeiculoComponent } from './pages/menu-administrador/cadastra-veiculo/cadastra-veiculo.component';
+import { ExibeVeiculoComponent } from './pages/menu-administrador/exibe-veiculo/exibe-veiculo.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
-  { path: 'cadastra-cliente', component: CadastraClienteComponent },
+  { path: 'cadastraCliente', component: CadastraClienteComponent },
   { path: 'menuAdministrador', component: MenuAdministradorComponent,  // precisa ter <router-outlet> no template
     children: [
-      { path: 'cadastra-fornecedor', component: CadastroFornecedorComponent }, // filho (NÃO repete o pai)
-      { path: 'exibe-fornecedor', component: ExibeFornecedorComponent }, // filho (NÃO repete o pai)
-      { path: 'cadastra-usuario', component: CadastraUsuarioComponent }, // filho (NÃO repete o pai)
-      { path: 'exibe-usuario', component: ExibeUsuarioComponent } // filho (NÃO repete o pai)
+      { path: 'cadastraFornecedor', component: CadastroFornecedorComponent }, // filho (NÃO repete o pai)
+      { path: 'exibeFornecedor', component: ExibeFornecedorComponent }, // filho (NÃO repete o pai)
+      { path: 'cadastraUsuario', component: CadastraUsuarioComponent }, // filho (NÃO repete o pai)
+      { path: 'exibeUsuario', component: ExibeUsuarioComponent }, // filho (NÃO repete o pai)
+      { path: 'exibeUsuario', component: ExibeUsuarioComponent }, // filho (NÃO repete o pai)
+      { path: 'cadastraVeiculo', component: CadastroVeiculoComponent }, // filho (NÃO repete o pai)
+      { path: 'exibeVeiculo', component: ExibeVeiculoComponent } // filho (NÃO repete o pai)
 
     ]
   },

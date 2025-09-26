@@ -1,0 +1,179 @@
+<div class="container mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 sm-mt-0">
+      <!-- Título -->
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">Cadastro de Veículos</div>
+          </div>
+        </div>
+      </div>
+
+      <form #form="ngForm" (ngSubmit)="cadastrar(form)">
+        <div class="row">
+          <!-- Placa -->
+          <div class="col-md-3 mb-2">
+            <label for="placa" class="form-label">Placa</label>
+            <input id="placa" name="placa" class="form-control"
+                   required [(ngModel)]="veiculo.placa"
+                   (blur)="formatarPlaca()" autocomplete="off"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Montadora -->
+          <div class="col-md-5 mb-2">
+            <label for="fabricante" class="form-label">Montadora</label>
+            <input id="fabricante" name="fabricante" class="form-control"
+                   required [(ngModel)]="veiculo.fabricante"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- Cor -->
+          <div class="col-md-2 mb-2">
+            <label for="cor" class="form-label">Cor</label>
+            <input id="cor" name="cor" class="form-control"
+                   [(ngModel)]="veiculo.cor" style="color:#35689b;">
+          </div>
+
+          <!-- Modelo -->
+          <div class="col-md-2 mb-2">
+            <label for="modelo" class="form-label">Modelo</label>
+            <input id="modelo" name="modelo" class="form-control"
+                   [(ngModel)]="veiculo.modelo" style="color:#35689b;">
+          </div>
+
+          <!-- Ano / Modelo / Combustível -->
+          <div class="col-md-4 mb-2">
+            <label for="amc" class="form-label">Ano / Modelo / Combustível</label>
+            <input id="amc" name="amc" class="form-control"
+                   required [(ngModel)]="veiculo.anoModeloCombustivel"
+                   style="color:#35689b;">
+          </div>
+
+          <!-- CPF do Proprietário (dropdown com busca) -->
+          <div class="col-md-4 mb-2">
+            <label for="cpfProprietario" class="form-label">CPF do Proprietário</label>
+
+            <!-- INPUT de exibição/ativação -->
+            <div class="position-relative cpf-picker">
+              <input
+                id="cpfProprietario"
+                class="form-control"
+                [value]="cpfDisplay || ''"
+                (click)="toggleDropdown(true)"
+                placeholder="Selecione um CPF"
+                readonly
+                style="color:#35689b; background:#fff; cursor:pointer;"
+              />
+
+              <!-- Dropdown -->
+              <div class="cpf-dropdown shadow-sm" *ngIf="dropdownOpen">
+                <!-- Barra de pesquisa -->
+                <div class="p-2 border-bottom" style="background:#f8fbff;">
+                  <input type="search" class="form-control form-control-sm"
+                         placeholder="Buscar por CPF, nome ou e-mail"
+                         [(ngModel)]="cpfFiltro" name="cpfFiltro"
+                         (input)="aplicarFiltro()">
+                </div>
+
+                <!-- Lista rolável -->
+                <div class="cpf-list">
+                  <button type="button"
+                          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                          *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuario"
+                          (click)="selecionarProprietario(u)">
+                    <span class="fw-semibold">{{ formatarCPF(u.cpf) }}</span>
+                    <small class="text-muted text-truncate ms-2">{{ u.nome }}</small>
+                  </button>
+
+                  <div class="px-3 py-2 text-muted small" *ngIf="usuariosFiltrados.length === 0">
+                    Nenhum usuário encontrado.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback seleção -->
+            <div class="form-text" *ngIf="veiculo.idProprietario">
+              Selecionado: {{ nomeProprietarioSelecionado }}
+            </div>
+            <div class="text-danger small" *ngIf="cpfErro">{{ cpfErro }}</div>
+          </div>
+
+          <!-- Ações -->
+          <div class="col-12 d-flex gap-2 justify-content-center mt-2">
+            <button type="submit" class="btn btn-success" [disabled]="!veiculo.idProprietario">
+              Cadastrar Veículo
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="form.resetForm(); resetarModelo();">
+              Limpar
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Tabela de apoio (opcional) -->
+      <div class="mt-4">
+        <div class="table-responsive">
+          <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+            <thead style="background:#eef6ff;color:#35689b;">
+              <tr>
+                <th>CPF</th>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Telefone</th>
+                <th class="text-center">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuario">
+                <td>{{ formatarCPF(u.cpf) }}</td>
+                <td class="text-truncate" style="max-width:260px;">{{ u.nome }}</td>
+                <td class="text-truncate" style="max-width:260px;">{{ u.email }}</td>
+                <td class="text-truncate" style="max-width:180px;">{{ u.telefone }}</td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-primary"
+                          (click)="selecionarProprietario(u)"
+                          style="border-color:#8fb4da;color:#35689b;">
+                    Usar este CPF
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!usuariosFiltrados || usuariosFiltrados.length === 0">
+                <td colspan="5" class="text-center text-muted py-3">
+                  Nenhum usuário encontrado.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .cpf-picker { position: relative; }
+  .cpf-dropdown {
+    position: absolute;
+    inset: auto 0 0 0; /* 100% width do input */
+    transform: translateY(2px);
+    background: #fff;
+    border: 1px solid #d0e2f2;
+    border-radius: .25rem;
+    z-index: 2000;
+  }
+  .cpf-list {
+    max-height: 280px;
+    overflow: auto;
+  }
+  .list-group-item {
+    border: none;
+  }
+  .form-control:focus, .btn:focus {
+    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
+    border-color: #8fb4da;
+  }
+</style>
