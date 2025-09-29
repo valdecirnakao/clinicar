@@ -51,7 +51,7 @@ public class UsuarioController {
   }
 
   @PutMapping("/{id}")
-public ResponseEntity<Usuario> atualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioAtualizado) {
+  public ResponseEntity<Usuario> atualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioAtualizado) {
     Optional<Usuario> usuarioOptional = usuarioRepository.findById(id);
     if (usuarioOptional.isPresent()) {
         Usuario usuario = usuarioOptional.get();

@@ -11,12 +11,15 @@ public class CorsConfig {
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
-            public void addCorsMappings(@SuppressWarnings("null") CorsRegistry registry) {
-                registry.addMapping("/**") // aplica a todos os endpoints
-                        .allowedOrigins("http://localhost:8080") // origem do Angular
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        // ORIGEM DO FRONT (Angular)
+                        .allowedOrigins("http://localhost:4200")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
-                        .allowCredentials(true);
+                        .exposedHeaders("Location")
+                        .allowCredentials(true)
+                        .maxAge(3600);
             }
         };
     }

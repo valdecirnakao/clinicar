@@ -37,4 +37,23 @@ public class VeiculoController {
     List<Veiculo> veiculos = veiculoRepository.findAll();
     return ResponseEntity.ok(veiculos);
   }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<Veiculo> atualizarVeiculo(@PathVariable Long id, @RequestBody Veiculo veiculoAtualizado) {
+    Optional<Veiculo> veiculoOptional = veiculoRepository.findById(id);
+    if (veiculoOptional.isPresent()) {
+      Veiculo veiculo = veiculoOptional.get();
+      // Atualize todos os campos necessários
+      veiculo.setPlaca(veiculoAtualizado.getPlaca());
+      veiculo.setFabricante(veiculoAtualizado.getFabricante());
+      veiculo.setCor(veiculoAtualizado.getCor());
+      veiculo.setModelo(veiculoAtualizado.getModelo());
+      veiculo.setAnoModeloCombustivel(veiculoAtualizado.getAnoModeloCombustivel());
+      veiculo.setIdProprietario(veiculoAtualizado.getIdProprietario());
+      veiculoRepository.save(veiculo);
+      return ResponseEntity.ok(veiculo);
+    } else {
+      return ResponseEntity.notFound().build();
+    }
+  }
 }
