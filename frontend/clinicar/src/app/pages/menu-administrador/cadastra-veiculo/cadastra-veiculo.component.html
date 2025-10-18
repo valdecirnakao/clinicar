@@ -13,7 +13,7 @@
       <form #form="ngForm" (ngSubmit)="cadastrar(form)">
         <div class="row">
           <!-- Placa -->
-          <div class="col-md-3 mb-2">
+          <div class="col-md-2 mb-2">
             <label for="placa" class="form-label">Placa</label>
             <input id="placa" name="placa" class="form-control"
                    required [(ngModel)]="veiculo.placa"
@@ -21,40 +21,89 @@
                    style="color:#35689b;">
           </div>
 
-          <!-- Montadora -->
-          <div class="col-md-5 mb-2">
-            <label for="fabricante" class="form-label">Montadora</label>
-            <input id="fabricante" name="fabricante" class="form-control"
-                   required [(ngModel)]="veiculo.fabricante"
-                   style="color:#35689b;">
+          <!-- Montadora (FIPE) -->
+          <div class="col-md-3 mb-2">
+            <label for="montadora" class="form-label">Montadora</label>
+            <!-- Montadora -->
+            <select id="montadora" class="form-select"
+              name="montadora"
+              [(ngModel)]="marcaSelCode"
+              [disabled]="fipeCarregando.marcas"
+              (ngModelChange)="onChangeMarca($event)">
+              <option value="">Selecione...</option>
+              <option *ngFor="let m of marcas; trackBy: trackByBrand" [value]="m.code">
+                {{ m.name }}
+              </option>
+            </select>
+            <!-- feedback de validação do form -->
+            <small class="text-danger" *ngIf="form?.submitted && !marcaSelCode">
+              Selecione a Montadora
+            </small>
+
+            <!-- feedback de erro de carga -->
+            <small class="text-danger" *ngIf="!fipeCarregando.marcas && fipeErro && (marcas?.length || 0) === 0">
+              {{ fipeErro }}
+            </small>
           </div>
 
-          <!-- Cor -->
+          <!-- Modelo (FIPE) -->
+          <div class="col-md-4 mb-2">
+            <label for="modeloFipe" class="form-label">Modelo</label>
+            <select id="modeloFipe" class="form-select"
+              name="modeloFipe"
+              [(ngModel)]="modeloSelCode"
+              [disabled]="!marcaSelCode || fipeCarregando.modelos"
+              (ngModelChange)="onChangeModelo($event)">
+              <option value="">Selecione...</option>
+              <option *ngFor="let mo of modelos; trackBy: trackByModel" [value]="mo.code">
+                {{ mo.name }}
+              </option>
+            </select>
+
+            <small class="text-danger" *ngIf="form?.submitted && !modeloSelCode">
+              Selecione um Modelo
+            </small>
+          </div>
+
+
+          <!-- Ano / Modelo / Combustível (FIPE) -->
+          <div class="col-md-3 mb-2">
+            <label for="anoFipe" class="form-label">Ano / Modelo / Combustível</label>
+
+            <select id="anoFipe" class="form-select"
+              name="anoFipe"
+              [(ngModel)]="anoSelCode"
+              [disabled]="!modeloSelCode || fipeCarregando.anos"
+              (ngModelChange)="onChangeAno($event)">
+              <option value="">Selecione...</option>
+              <option *ngFor="let a of anos; trackBy: trackByYear" [value]="a.code">
+                {{ a.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- feedback de validação -->
+          <small class="text-danger" *ngIf="form.submitted && !anoSelCode">
+            Selecione o Ano/Modelo/Combustível
+          </small>
+
+          <!-- resumo do que ficou escolhido -->
+          <div class="form-text" *ngIf="veiculo.anoModeloCombustivel">
+            Selecionado: {{ veiculo.fabricante }} / {{ veiculo.modelo }} — {{ veiculo.anoModeloCombustivel }}
+          </div>
+
+                      <!-- Cor -->
           <div class="col-md-2 mb-2">
             <label for="cor" class="form-label">Cor</label>
             <input id="cor" name="cor" class="form-control"
                    [(ngModel)]="veiculo.cor" style="color:#35689b;">
           </div>
 
-          <!-- Modelo -->
-          <div class="col-md-2 mb-2">
-            <label for="modelo" class="form-label">Modelo</label>
-            <input id="modelo" name="modelo" class="form-control"
-                   [(ngModel)]="veiculo.modelo" style="color:#35689b;">
-          </div>
 
-          <!-- Ano / Modelo / Combustível -->
-          <div class="col-md-4 mb-2">
-            <label for="amc" class="form-label">Ano / Modelo / Combustível</label>
-            <input id="amc" name="amc" class="form-control"
-                   required [(ngModel)]="veiculo.anoModeloCombustivel"
-                   style="color:#35689b;">
-          </div>
 
           <!-- CPF do Proprietário (dropdown com busca) -->
           <div class="col-md-4 mb-2">
             <label for="cpfProprietario" class="form-label">CPF do Proprietário</label>
-
             <!-- INPUT de exibição/ativação -->
             <div class="position-relative cpf-picker">
               <input
@@ -64,9 +113,7 @@
                 (click)="toggleDropdown(true)"
                 placeholder="Selecione um CPF"
                 readonly
-                style="color:#35689b; background:#fff; cursor:pointer;"
-              />
-
+                style="color:#35689b; background:#fff; cursor:pointer;"/>
               <!-- Dropdown -->
               <div class="cpf-dropdown shadow-sm" *ngIf="dropdownOpen">
                 <!-- Barra de pesquisa -->
@@ -101,6 +148,18 @@
             <div class="text-danger small" *ngIf="cpfErro">{{ cpfErro }}</div>
           </div>
 
+        </div>
+
+
+        <!-- feedback de validação -->
+  <small class="text-danger" *ngIf="form.submitted && !anoSelCode">
+    Selecione o Ano/Modelo/Combustível
+  </small>
+
+    <!-- resumo do que ficou escolhido -->
+  <div class="form-text" *ngIf="veiculo.anoModeloCombustivel">
+    Selecionado: {{ veiculo.fabricante }} / {{ veiculo.modelo }} — {{ veiculo.anoModeloCombustivel }}
+  </div>
           <!-- Ações -->
           <div class="col-12 d-flex gap-2 justify-content-center mt-2">
             <button type="submit" class="btn btn-success" [disabled]="!veiculo.idProprietario">
@@ -110,9 +169,7 @@
               Limpar
             </button>
           </div>
-        </div>
       </form>
-
       <!-- Tabela de apoio (opcional) -->
       <div class="mt-4">
         <div class="table-responsive">

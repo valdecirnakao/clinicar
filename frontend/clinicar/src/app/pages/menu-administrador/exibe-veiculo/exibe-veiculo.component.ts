@@ -51,7 +51,6 @@ export class ExibeVeiculoComponent implements OnInit {
     this.carregarUsuarios();
     this.recarregar();
   }
-
   // ---------- Usuários / CPF ----------
 
   private carregarUsuarios(): void {

@@ -56,4 +56,13 @@ public class VeiculoController {
       return ResponseEntity.notFound().build();
     }
   }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> removerVeiculo(@PathVariable Long id) {
+    if (!veiculoRepository.existsById(id)) {
+        return ResponseEntity.notFound().build();
+    }
+    veiculoRepository.deleteById(id);
+    return ResponseEntity.noContent().build();
+  }
 }

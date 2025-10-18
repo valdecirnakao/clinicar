@@ -1,9 +1,22 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { CadastraClienteService } from './cadastra-cliente.service';
+import { switchMap, catchError, of, finalize } from 'rxjs';
+import {  RouterModule } from '@angular/router';
+
+/** ================== CONFIG ================== */
+// Ajuste conforme o backend espera:
+type OwnerApiKey = 'idProprietario' | 'id_proprietario';
+const OWNER_KEY: OwnerApiKey = 'idProprietario';
+
+type AmcApiKey = 'anoModeloCombustivel' | 'ano_modelo_combustivel';
+const AMC_KEY: AmcApiKey = 'anoModeloCombustivel';
+
+// Base do backend (troque para environment se preferir)
+const API_BASE = 'http://localhost:8080';
+
+/** ================ MODELOS =================== */
 
 interface ViaCepResponse {
   cep?: string;
@@ -19,80 +32,105 @@ interface ViaCepResponse {
   erro?: boolean;
 }
 
-type Usuario = {
-  cpf: string;
+export interface Usuario {
+  id?: number;
   nome: string;
-  nome_social: string;
-  tipo_do_acesso: string;
-  telefone: string;
-  whatsappapikey: string;
-  senha: string;
-  confirmarSenha: string;
   email: string;
+  cpf: string;
+  nome_social?: string;
   nascimento: string;  // ideal: 'yyyy-MM-dd'
-  cep: string;
-  logradouro: string;
-  bairro: string;
-  cidade: string;
-  estado: string;      // UF
-  complemento_endereco: string;
-  numero_endereco: string;
+  tipo_do_acesso: 'cliente';
+  telefone?: string;
+  whatsappapikey?: string;
+  cep?: string;
+  senha: string;
+  confirmarSenha?: string;
+  logradouro?: string;
+  numero_endereco?: string;
+  complemento_endereco?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+}
+
+type VeiculoPayload = {
+  placa: string;
+  fabricante: string;
+  cor: string;
+  modelo: string;
+  // vai para AMC_KEY no corpo da API:
+  anoModeloCombustivel: string;
+  // vai para OWNER_KEY no corpo da API:
+  idProprietario?: number | null;
 };
+
+/** ===== Tipos FIPE (somente front) ===== */
+type VehicleType = 'cars' | 'motorcycles' | 'trucks';
+interface FipeBrand { code: string; name: string; }
+interface FipeModel { code: string; name: string; }
+interface FipeYear  { code: string; name: string; }
+const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
 
 @Component({
   selector: 'app-cadastra-cliente',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HttpClientModule],
-  templateUrl: './cadastra-cliente.component.html',
-  styleUrls: ['./cadastra-cliente.component.css']
+  imports: [CommonModule, FormsModule, HttpClientModule, RouterModule],
+  templateUrl: './cadastra-cliente.component.html'
 })
-export class CadastraClienteComponent implements OnInit {
-  usuario: Usuario = {
-    cpf: '',
-    nome: '',
-    nome_social: '',
-    tipo_do_acesso: 'cliente',
-    telefone: '',
-    whatsappapikey: '',
-    senha: '',
-    confirmarSenha: '',
-    email: '',
-    nascimento: '',
-    cep: '',
-    logradouro: '',
-    bairro: '',
-    cidade: '',
-    estado: '',
-    complemento_endereco: '',
-    numero_endereco: ''
+export class CadastraClienteComponent {
+  /** ================== FORM STATE ================== */
+  // Cliente
+  cliente: Usuario = {
+    nome: '', email: '', cpf: '', whatsappapikey: '', senha: '', confirmarSenha: '',
+    telefone: '', cep: '', logradouro: '', numero_endereco: '', tipo_do_acesso: 'cliente',
+    bairro: '', cidade: '', estado: '', nascimento: '', complemento_endereco: '', nome_social: ''
   };
 
-  usuariosCadastrados: Usuario[] = [];
-  cpfsCadastrados: string[] = []; // armazena só dígitos para comparar
+  // Veículo
+  veiculo: VeiculoPayload = {
+    placa: '',
+    fabricante: '',
+    cor: '',
+    modelo: '',
+    anoModeloCombustivel: '',
+    idProprietario: null
+  };
 
+  /** UX */
+  loading = false;
+  errorMsg = '';
+  successMsg = '';
   cepStatus = { loading: false, errorMsg: '' };
+
+  /** =============== FIPE =============== */
+  tipo: VehicleType = 'cars';
+  fipeCarregando = { marcas: false, modelos: false, anos: false, detalhes: false };
+  fipeErro = '';
+  marcas: FipeBrand[] = [];
+  modelos: FipeModel[] = [];
+  anos: FipeYear[] = [];
+  marcaSelCode: string | null = null;
+  modeloSelCode: string | null = null;
+  anoSelCode: string | null = null;
+  routerLink: any;
 
   @ViewChild('numeroInput') numeroInput?: ElementRef<HTMLInputElement>;
 
-  constructor(
-    private readonly cadastraClienteService: CadastraClienteService,
-    private readonly http: HttpClient,
-    private readonly router: Router
-  ) {}
+  constructor(private http: HttpClient, private host: ElementRef) {}
 
-  // ========= Helpers =========
-  private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+  /** ================== INIT ================== */
+  ngOnInit(): void {
+    this.fipeCarregarMarcas();
   }
 
   // ========= FORMATAÇÕES =========
   formatarCPF(): void {
-    if (!this.usuario.cpf) return;
-    const d = this.onlyDigits(this.usuario.cpf).slice(0, 11);
+    if (!this.cliente.cpf) return;
+    const d = this.onlyDigits(this.cliente.cpf).slice(0, 11);
     if (d.length === 11) {
-      this.usuario.cpf = d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      this.cliente.cpf = d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     } else {
-      this.usuario.cpf = d.replace(
+      this.cliente.cpf = d.replace(
         /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
         '$1.$2.$3/$4-$5'
       );
@@ -100,39 +138,40 @@ export class CadastraClienteComponent implements OnInit {
   }
 
   formatarTelefone(): void {
-    if (!this.usuario.telefone) return;
-    const n = this.onlyDigits(this.usuario.telefone);
+    if (!this.cliente.telefone) return;
+    const n = this.onlyDigits(this.cliente.telefone);
     const codigoPais = '55';
     if (n.length >= 11) {
       const ddd = n.slice(-11, -9);
       const parte1 = n.slice(-9, -4);
       const parte2 = n.slice(-4);
-      this.usuario.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
+      this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else if (n.length >= 10) {
       const ddd = n.slice(0, 2);
       const parte1 = n.slice(2, 6);
       const parte2 = n.slice(6, 10);
-      this.usuario.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
+      this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else if (n.length >= 8) {
       const ddd = '11';
       const parte1 = n.slice(0, n.length - 4);
       const parte2 = n.slice(-4);
-      this.usuario.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
+      this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else {
-      this.usuario.telefone = n;
+      this.cliente.telefone = n;
     }
   }
 
-  private formatarCEP(): void {
-    if (!this.usuario.cep) return;
-    const d = this.onlyDigits(this.usuario.cep).slice(0, 8);
-    this.usuario.cep = d.length === 8 ? d.replace(/(\d{5})(\d{3})/, '$1-$2') : d;
+  formatarCEP(): void {
+    if (!this.cliente.cep) return;
+    const d = this.onlyDigits(this.cliente.cep).slice(0, 8);
+    this.cliente.cep = d.length === 8 ? d.replace(/(\d{5})(\d{3})/, '$1-$2') : d;
   }
 
-  // ========= VIA CEP =========
+
+  /** ================== VIA CEP ================== */
   onCepBlur(): void {
     this.formatarCEP();
-    const cepNums = this.onlyDigits(this.usuario.cep);
+    const cepNums = this.onlyDigits(this.cliente.cep);
     if (cepNums.length !== 8) {
       this.cepStatus.errorMsg = 'CEP deve ter 8 dígitos.';
       return;
@@ -150,12 +189,13 @@ export class CadastraClienteComponent implements OnInit {
             this.cepStatus = { loading: false, errorMsg: 'CEP não encontrado.' };
             return;
           }
-          this.usuario.logradouro = resp.logradouro || '';
-          this.usuario.bairro     = resp.bairro     || '';
-          this.usuario.cidade     = resp.localidade || '';
-          this.usuario.estado     = (resp.uf || '').toUpperCase();
-          if (!this.usuario.complemento_endereco && resp.complemento) {
-            this.usuario.complemento_endereco = resp.complemento;
+          this.cliente.logradouro = resp.logradouro || '';
+          this.cliente.bairro     = resp.bairro     || '';
+          this.cliente.cidade     = resp.localidade || '';
+          this.cliente.tipo_do_acesso = 'cliente';
+          this.cliente.estado     = (resp.uf || '').toUpperCase();
+          if (!this.cliente.complemento_endereco && resp.complemento) {
+            this.cliente.complemento_endereco = resp.complemento;
           }
           this.cepStatus = { loading: false, errorMsg: '' };
           setTimeout(() => this.numeroInput?.nativeElement.focus(), 0);
@@ -166,107 +206,153 @@ export class CadastraClienteComponent implements OnInit {
       });
   }
 
-  // ========= CRUD =========
+
+  /** ================== FIPE ================== */
+  private fipeCarregarMarcas(): void {
+    this.fipeErro = ''; this.fipeCarregando.marcas = true;
+    this.http.get<FipeBrand[]>(`${FIPE_BASE}/${this.tipo}/brands`)
+      .pipe(finalize(() => this.fipeCarregando.marcas = false))
+      .subscribe({
+        next: (lista) => { this.marcas = lista ?? []; },
+        error: () => { this.fipeErro = 'Falha ao carregar montadoras (FIPE).'; }
+      });
+  }
+
+  onChangeMarca(code: string): void {
+    this.marcaSelCode = code || null;
+    this.modeloSelCode = null; this.anoSelCode = null;
+    this.modelos = []; this.anos = [];
+    this.veiculo.fabricante = ''; this.veiculo.modelo = ''; this.veiculo.anoModeloCombustivel = '';
+
+    if (!this.marcaSelCode) return;
+
+    // set fabricante pelo label selecionado
+    this.veiculo.fabricante = this.marcas.find(m => m.code === this.marcaSelCode)?.name ?? '';
+
+    this.fipeErro = ''; this.fipeCarregando.modelos = true;
+    this.http.get<any>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models`)
+      .pipe(finalize(() => this.fipeCarregando.modelos = false))
+      .subscribe({
+        next: (resp) => {
+          const arr = Array.isArray(resp) ? resp : (resp?.models ?? []);
+          this.modelos = (arr ?? []) as FipeModel[];
+        },
+        error: () => { this.fipeErro = 'Falha ao carregar modelos (FIPE).'; }
+      });
+  }
+
+  onChangeModelo(code: string): void {
+    this.modeloSelCode = code || null;
+    this.anoSelCode = null; this.anos = [];
+    this.veiculo.modelo = ''; this.veiculo.anoModeloCombustivel = '';
+
+    if (!this.marcaSelCode || !this.modeloSelCode) return;
+
+    this.veiculo.modelo = this.modelos.find(m => m.code === this.modeloSelCode)?.name ?? '';
+
+    this.fipeErro = ''; this.fipeCarregando.anos = true;
+    this.http.get<FipeYear[]>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models/${this.modeloSelCode}/years`)
+      .pipe(finalize(() => this.fipeCarregando.anos = false))
+      .subscribe({
+        next: (lista) => { this.anos = lista ?? []; },
+        error: () => { this.fipeErro = 'Falha ao carregar anos (FIPE).'; }
+      });
+  }
+
+  onChangeAno(code: string): void {
+    this.anoSelCode = code || null;
+    this.veiculo.anoModeloCombustivel = '';
+
+    if (!this.marcaSelCode || !this.modeloSelCode || !this.anoSelCode) return;
+
+    this.fipeErro = ''; this.fipeCarregando.detalhes = true;
+    this.http.get<any>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models/${this.modeloSelCode}/years/${this.anoSelCode}`)
+      .pipe(finalize(() => this.fipeCarregando.detalhes = false))
+      .subscribe({
+        next: (det) => {
+          // Gera "ANO / COMBUSTÍVEL"
+          const amc = det ? `${det.modelYear ?? ''} / ${det.fuel ?? ''}`.trim()
+                          : (this.anos.find(a => a.code === this.anoSelCode)?.name ?? '');
+          this.veiculo.anoModeloCombustivel = amc;
+          // Garanta fabricante e modelo caso a FIPE retorne labels
+          this.veiculo.fabricante = det?.brand ?? this.veiculo.fabricante;
+          this.veiculo.modelo = det?.model ?? this.veiculo.modelo;
+        },
+        error: () => { this.fipeErro = 'Falha ao buscar detalhes (FIPE).'; }
+      });
+  }
+
+  /** ================== SUBMIT ================== */
   cadastrar(form: NgForm): void {
-    // validações básicas
+        // validações básicas
     const camposObrig = [
       'cpf','nome','telefone','email','nascimento',
       'cep','numero_endereco','logradouro','bairro','cidade','estado'
     ] as const;
 
-    if (this.usuario.senha !== this.usuario.confirmarSenha) {
+    if (this.cliente.senha !== this.cliente.confirmarSenha) {
       alert('As senhas não coincidem.');
       return;
     }
-
-    const faltando = camposObrig.filter(c => !String(this.usuario[c]).trim());
-    if (faltando.length) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+    this.errorMsg = ''; this.successMsg = '';
+    if (!form.valid) { this.errorMsg = 'Preencha os campos obrigatórios.'; return; }
+    if (!this.veiculo.anoModeloCombustivel || !this.veiculo.fabricante || !this.veiculo.modelo) {
+      this.errorMsg = 'Selecione Montadora, Modelo e Ano/Combustível (FIPE).';
       return;
     }
 
-    // prepara payload limpo para o backend
-    const payload = {
-      ...this.usuario,
-      cpf: this.onlyDigits(this.usuario.cpf),
-      telefone: this.onlyDigits(this.usuario.telefone),
-      cep: this.onlyDigits(this.usuario.cep),
-      estado: (this.usuario.estado || '').toUpperCase()
-    };
-    // opcional: não enviar confirmarSenha
-    delete (payload as any).confirmarSenha;
+    this.loading = true;
 
-    console.log('Payload para cadastro:', payload);
+    // 1) Cria cliente
+    this.http.post<Usuario>(`${API_BASE}/api/usuario`, this.cliente).pipe(
+      // 2) Cria veículo com o id do cliente recém-criado
+      switchMap((user) => {
+        const body: any = {
+          placa: (this.veiculo.placa || '').toUpperCase().replace(/\s+/g, ''),
+          fabricante: this.veiculo.fabricante,
+          cor: (this.veiculo.cor || '').trim(),
+          modelo: this.veiculo.modelo
+        };
+        body[AMC_KEY] = this.veiculo.anoModeloCombustivel;
+        body[OWNER_KEY] = Number(user.id); // vínculo aqui
 
-    this.cadastraClienteService.cadastrar(payload).subscribe({
-      next: () => {
-        alert('Cadastro realizado com sucesso!');
-        form.resetForm();
-        Object.keys(this.usuario).forEach(k => (this.usuario[k as keyof Usuario] = '' as any));
-        this.router.navigate(['/usuario']); // ajuste a rota se necessário
-      },
-      error: (err) => {
-        console.error(err);
-        alert('Erro ao cadastrar usuário.');
-      }
+        return this.http.post(`${API_BASE}/api/veiculo`, body);
+      }),
+      catchError(err => {
+        this.errorMsg = 'Falha ao salvar. Verifique os dados.';
+        console.error('Erro no cadastro cliente+veículo', err);
+        return of(null);
+      }),
+      finalize(() => this.loading = false)
+    ).subscribe((ok) => {
+      if (!ok) return;
+      this.successMsg = 'Cliente e veículo cadastrados com sucesso!';
+      form.resetForm();
+      this.resetFiPe();
     });
   }
 
-  ngOnInit(): void {
-    this.cadastraClienteService.buscarClientes().subscribe({
-      next: (usuarios) => {
-        const arr = usuarios || [];
-        // guarda lista e índices por CPF (apenas dígitos)
-        this.usuariosCadastrados = arr as Usuario[];
-        this.cpfsCadastrados = (arr as Usuario[]).map(u => this.onlyDigits(u.cpf));
-      }
-    });
+  /** =============== HELPERS =============== */
+  private resetFiPe() {
+    this.marcas = []; this.modelos = []; this.anos = [];
+    this.marcaSelCode = this.modeloSelCode = this.anoSelCode = null;
+    this.fipeErro = '';
+    this.fipeCarregarMarcas();
+    this.veiculo = { placa: '', fabricante: '', cor: '', modelo: '', anoModeloCombustivel: '', idProprietario: null };
   }
 
-  onCpfSelecionado(cpfDigitado: string): void {
-    const alvo = this.onlyDigits(cpfDigitado);
-    // se não existir, prepara para novo cadastro
-    if (!this.cpfsCadastrados.includes(alvo)) {
-      this.usuario = {
-        cpf: cpfDigitado, // mantém o que o usuário digitou (pode estar mascarado)
-        nome: '',
-        nome_social: '',
-        tipo_do_acesso: 'cliente',
-        telefone: '',
-        whatsappapikey: '',
-        senha: '',
-        confirmarSenha: '',
-        email: '',
-        nascimento: '',
-        cep: '',
-        logradouro: '',
-        bairro: '',
-        cidade: '',
-        estado: '',
-        complemento_endereco: '',
-        numero_endereco: ''
-      };
-      return;
-    }
+  formatarPlaca(): void {
+    this.veiculo.placa = (this.veiculo.placa || '').toUpperCase().replace(/\s+/g, '');
+  }
 
-    // existe: procura na lista carregada
-    const existente = this.usuariosCadastrados.find(u => this.onlyDigits(u.cpf) === alvo);
-    if (existente) {
-      this.usuario.cpf                 = existente.cpf || cpfDigitado;
-      this.usuario.nome                = existente.nome || '';
-      this.usuario.nome_social          = existente.nome_social || '';
-      this.usuario.telefone            = existente.telefone || '';
-      this.usuario.whatsappapikey      = existente.whatsappapikey || '';
-      this.usuario.senha               = existente.senha || '';
-      this.usuario.email               = existente.email || '';
-      this.usuario.nascimento          = existente.nascimento || '';
-      this.usuario.cep                 = existente.cep || '';
-      this.usuario.logradouro          = existente.logradouro || '';
-      this.usuario.bairro              = existente.bairro || '';
-      this.usuario.cidade              = existente.cidade || '';
-      this.usuario.estado              = existente.estado || '';
-      this.usuario.complemento_endereco = existente.complemento_endereco || '';
-      this.usuario.numero_endereco      = existente.numero_endereco || '';
+  private onlyDigits(v: any): string {
+    return (v ?? '').toString().replace(/\D/g, '');
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: MouseEvent) {
+    if (!this.host.nativeElement.contains(e.target)) {
+      // manter caso depois inclua dropdowns locais
     }
   }
 }
