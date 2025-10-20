@@ -28,7 +28,7 @@ public class FornecedorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
-    // READ - listar todos
+    
     @GetMapping
     public ResponseEntity<List<Fornecedor>> listarTodos() {
         return ResponseEntity.ok(fornecedorRepository.findAll());

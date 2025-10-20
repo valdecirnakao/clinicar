@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/usuario")
 @CrossOrigin(origins = "http://localhost:4200") // Libera requisições do Angular
 public class UsuarioController {
-
   @Autowired
   private UsuarioRepository usuarioRepository;
 

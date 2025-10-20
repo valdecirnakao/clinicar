@@ -8,6 +8,8 @@ import { ExibeUsuarioComponent } from './pages/menu-administrador/exibe-usuario/
 import { CadastraClienteComponent } from './pages/login/cadastra-cliente/cadastra-cliente.component';
 import { CadastroVeiculoComponent } from './pages/menu-administrador/cadastra-veiculo/cadastra-veiculo.component';
 import { ExibeVeiculoComponent } from './pages/menu-administrador/exibe-veiculo/exibe-veiculo.component';
+import { CadastraPecaComponent } from './pages/menu-administrador/cadastra-peca/cadastra-peca.component';
+import { ExibePecaComponent } from './pages/menu-administrador/exibe-peca/exibe-peca.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -21,10 +23,9 @@ export const routes: Routes = [
       { path: 'exibeUsuario', component: ExibeUsuarioComponent }, // filho (NÃO repete o pai)
       { path: 'exibeUsuario', component: ExibeUsuarioComponent }, // filho (NÃO repete o pai)
       { path: 'cadastraVeiculo', component: CadastroVeiculoComponent }, // filho (NÃO repete o pai)
-      { path: 'exibeVeiculo', component: ExibeVeiculoComponent } // filho (NÃO repete o pai)
-
+      { path: 'exibeVeiculo', component: ExibeVeiculoComponent }, // filho (NÃO repete o pai)
+      { path: 'cadastraPeca', component: CadastraPecaComponent }, // filho (NÃO repete o pai)
+      { path: 'exibePeca', component: ExibePecaComponent } // filho (NÃO repete o pai)
     ]
   },
-
-
 ];

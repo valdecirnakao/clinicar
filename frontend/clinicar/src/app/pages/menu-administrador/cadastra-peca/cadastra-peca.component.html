@@ -1,0 +1,73 @@
+<div class="container mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 sm-mt-0">
+      <!-- Título -->
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">Cadastro de Peças</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário -->
+      <form #form="ngForm" (ngSubmit)="cadastrar(form)">
+        <div class="row">
+          <!-- Nome -->
+          <div class="col-md-6 mb-2">
+            <label for="nome" class="form-label">Nome</label>
+            <input type="text" id="nome" name="nome" class="form-control" required [(ngModel)]="peca.nome"
+              style="color:#35689b;" (blur)="CapitalizarNome()">
+          </div>
+
+          <!-- Tipo -->
+          <div class="col-md-3 mb-2">
+            <label for="tipo" class="form-label">Tipo</label>
+            <input type="text" id="tipo" name="tipo" class="form-control" [(ngModel)]="peca.tipo"
+              style="color:#35689b;" (blur)="CapitalizarTipo()">
+          </div>
+
+          <!-- Especificação -->
+          <div class="col-md-3 mb-2">
+            <label for="especificacao" class="form-label">Especificação</label>
+            <input type="text" id="especificacao" name="especificacao" class="form-control"
+              [(ngModel)]="peca.especificacao" style="color:#35689b;" (blur)="formatarEspecificacao()">
+          </div>
+
+          <!-- Fabricante -->
+          <div class="col-md-4 mb-2">
+            <label for="fabricante" class="form-label">Fabricante</label>
+            <input type="text" id="fabricante" name="fabricante" class="form-control" required
+              [(ngModel)]="peca.fabricante" style="color:#35689b;" (blur)="CapitalizarFabricante()">
+          </div>
+
+          <!-- Modelo -->
+          <div class="col-md-3 mb-2">
+            <label for="modelo" class="form-label">Modelo</label>
+            <input type="text" id="modelo" name="modelo" class="form-control" [(ngModel)]="peca.modelo"
+              style="color:#35689b;" (blur)="formatarModelo()">
+          </div>
+
+          <!-- Norma -->
+          <div class="col-md-3 mb-2">
+            <label for="norma" class="form-label">Norma</label>
+            <input type="text" id="norma" name="norma" class="form-control" [(ngModel)]="peca.norma"
+              style="color:#35689b;" (blur)="formatarNorma()">
+          </div>
+          <!-- Unidade -->
+          <div class="col-md-2 mb-2">
+            <label for="unidade" class="form-label">Unidade</label>
+            <input type="text" id="unidade" name="unidade" class="form-control" required [(ngModel)]="peca.unidade"
+              style="color:#35689b;"  (blur)="CapitalizarUnidade()">
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-success">Cadastrar</button>
+          <button type="button" class="btn btn-secondary" (click)="form.resetForm()">Limpar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
