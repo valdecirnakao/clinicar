@@ -1,7 +1,7 @@
 import { Component, ElementRef, HostListener, OnInit, TrackByFunction } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { UsuarioService, Usuario } from '../exibe-usuario/exibe-usuario.service';
 import { VeiculoService } from '../cadastra-veiculo/cadastra-veiculo.service';
 
@@ -40,7 +40,7 @@ const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
 @Component({
   selector: 'app-cadastra-veiculo',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './cadastra-veiculo.component.html',
   styleUrls: ['./cadastra-veiculo.component.css']
 })
@@ -255,7 +255,7 @@ export class CadastroVeiculoComponent implements OnInit {
 
     const payload: VeiculoPayload = {
       ...this.veiculo,
-      placa: (this.veiculo.placa || '').toUpperCase().replace(/\s+/g, '')
+      placa: (this.veiculo.placa || '').toUpperCase().replaceAll(/\s+/g, '')
     };
 
     // Se o service usa "cadastrar", deixe assim; ajuste se for "criar"
@@ -301,7 +301,7 @@ export class CadastroVeiculoComponent implements OnInit {
 
   formatarPlaca(): void {
     if (!this.veiculo.placa) return;
-    this.veiculo.placa = this.veiculo.placa.toUpperCase().replace(/\s+/g, '');
+    this.veiculo.placa = this.veiculo.placa.toUpperCase().replaceAll(/\s+/g, '');
   }
 
   formatarCPF(cpf: string | null | undefined): string {
@@ -311,7 +311,7 @@ export class CadastroVeiculoComponent implements OnInit {
   }
 
   private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+    return (v ?? '').toString().replaceAll(/\D/g, '');
   }
 
   // Fecha o dropdown do CPF ao clicar fora

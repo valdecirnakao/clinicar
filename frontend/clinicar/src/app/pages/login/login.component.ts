@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { LoginService } from '../login/login.service';
-import { ViewEncapsulation } from '@angular/core';
+
 
 
 @Component({
@@ -22,9 +22,9 @@ export class LoginComponent {
   erroLogin: boolean = false;
 
   constructor(
-    private router: Router,
-    private loginService: LoginService,
-    private http: HttpClient
+    private readonly router: Router,
+    private readonly loginService: LoginService,
+    private readonly http: HttpClient
   ) {}
 
   login() {
@@ -56,7 +56,7 @@ export class LoginComponent {
 
     this.loginService.recuperarSenha(this.email.trim()).subscribe({
       next: (usuario) => {
-        if (!usuario || !usuario.nome || !usuario.senha || !usuario.telefone || !usuario.whatsappapikey) {
+        if (!usuario?.nome || !usuario.senha || !usuario.telefone || !usuario.whatsappapikey) {
           alert('Usuário encontrado, mas dados incompletos para envio de mensagem.');
           return;
         }
@@ -76,7 +76,7 @@ export class LoginComponent {
           `${usuario.senha}\n` +
           `Atenciosamente,\nCliniCar`;
 
-        const whatsappLimpo = usuario.telefone.replace(/\D/g, '');
+        const whatsappLimpo = usuario.telefone.replaceAll(/\D/g, '');
         const whatsappFinal = `+${whatsappLimpo}`;
 
         const api =

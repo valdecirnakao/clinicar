@@ -69,7 +69,7 @@ export class ExibeVeiculoComponent implements OnInit {
 
   /** Visualização: mostra CPF formatado a partir do idProprietario */
   proprietarioCpf(v: Veiculo): string {
-    const u = v.idProprietario != null ? this.usuariosById.get(v.idProprietario) : undefined;
+    const u = v.idProprietario == null ? undefined : this.usuariosById.get(v.idProprietario);
     return this.formatarCPF(u?.cpf) || '—';
   }
 
@@ -79,7 +79,7 @@ export class ExibeVeiculoComponent implements OnInit {
       this.editId === v.id && this.edit.idProprietario != null
         ? this.edit.idProprietario
         : v.idProprietario;
-    const u = chosenId != null ? this.usuariosById.get(chosenId) : undefined;
+    const u = chosenId == null ? undefined : this.usuariosById.get(chosenId);
     return this.formatarCPF(u?.cpf) || '';
   }
 
@@ -189,8 +189,8 @@ export class ExibeVeiculoComponent implements OnInit {
     // payload no formato da UI; o service faz o mapeamento para a API
     const payload: Partial<Veiculo> = {
       ...this.edit,
-      placa: ((this.edit.placa ?? '') as string).toUpperCase().replace(/\s+/g, ''),
-      cor: ((this.edit.cor ?? '') as string).trim()
+      placa: ((this.edit.placa ?? '')).toUpperCase().replaceAll(/\s+/g, ''),
+      cor: ((this.edit.cor ?? '')).trim()
     };
 
     if (payload.idProprietario != null) {
@@ -233,14 +233,14 @@ export class ExibeVeiculoComponent implements OnInit {
 
   formatarPlaca(v: any): string {
     if (!v) return '';
-    const s = (v || '').toString().toUpperCase().replace(/\s+/g, '');
+    const s = (v || '').toString().toUpperCase().replaceAll(/\s+/g, '');
     if (s.length <= 3) return s;
     if (s.length <= 6) return `${s.slice(0, 3)}-${s.slice(3)}`;
     return `${s.slice(0, 3)}-${s.slice(3, 6)}${s.slice(6)}`;
   }
 
   private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+    return (v ?? '').toString().replaceAll(/\D/g, '');
   }
 
   public formatarCPF(cpf?: string): string {

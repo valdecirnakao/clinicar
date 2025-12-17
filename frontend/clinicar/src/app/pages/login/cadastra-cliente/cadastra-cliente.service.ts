@@ -7,12 +7,12 @@ import { Observable } from 'rxjs';
 })
 
 export class CadastraClienteService {
-  private base = '/api/usuario'; // relativo
+  private readonly base = '/api/usuario'; // relativo
 
 
-  private apiUrl = 'http://localhost:8080/api/usuario'; // URL do backend
+  private readonly apiUrl = 'http://localhost:8080/api/usuario'; // URL do backend
 
-  constructor(private http: HttpClient) { }
+  constructor(private readonly http: HttpClient) { }
 
   cadastrar(usuario: any) {
     return this.http.post('http://localhost:8080/api/usuario', usuario);

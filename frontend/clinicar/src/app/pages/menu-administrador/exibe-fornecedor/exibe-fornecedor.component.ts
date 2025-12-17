@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { FornecedorService } from '../exibe-fornecedor/exibe-fornecedor.service';
 
 export interface Fornecedor {
@@ -25,7 +25,7 @@ export interface Fornecedor {
 @Component({
   selector: 'app-exibe-fornecedor',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './exibe-fornecedor.component.html',
   styleUrls: ['./exibe-fornecedor.component.css']
 })
@@ -40,8 +40,8 @@ export class ExibeFornecedorComponent implements OnInit {
   errorMsg = '';
 
   constructor(
-    private fornecedorService: FornecedorService,
-    private http: HttpClient
+    private readonly fornecedorService: FornecedorService,
+    private readonly http: HttpClient
   ) {}
 
   ngOnInit(): void { this.recarregar(); }
@@ -163,7 +163,7 @@ export class ExibeFornecedorComponent implements OnInit {
   // ====== VIA CEP (na linha em edição) ======
   onCepBlurRow(model: Partial<Fornecedor>): void {
     const cepNums = this.onlyDigits(model.cep);
-    if (!cepNums || cepNums.length !== 8) return;
+    if (cepNums?.length !== 8) return;
 
     this.http.get<any>(`https://viacep.com.br/ws/${cepNums}/json/`).subscribe({
       next: (resp) => {
@@ -185,22 +185,22 @@ export class ExibeFornecedorComponent implements OnInit {
 
   // ====== Helpers ======
   private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+    return (v ?? '').toString().replaceAll(/\D/g, '');
   }
 
   private asInputDateString(v: any): string {
     if (!v) return '';
     if (typeof v === 'string') {
       if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-      const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v);
       if (m) return `${m[3]}-${m[2]}-${m[1]}`;
       const d = new Date(v);
-      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
     }
     if (v instanceof Date) return v.toISOString().slice(0,10);
     try {
       const d = new Date(v);
-      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
     } catch { return ''; }
   }
 }

@@ -24,39 +24,39 @@
 
             <div class="row g-2">
               <div class="col-md-5">
-                <label class="form-label">Nome</label>
-                <input class="form-control" name="nome" required [(ngModel)]="cliente.nome" style="color:#35689b;">
+                <label for="nome" class="form-label">Nome</label>
+                <input id="nome" class="form-control" name="nome" required [(ngModel)]="cliente.nome" style="color:#35689b;">
               </div>
               <div class="col-md-3">
-                <label class="form-label">Nome Social</label>
-                <input class="form-control" name="nome_social" required [(ngModel)]="cliente.nome_social" style="color:#35689b;">
+                <label for="nome_social" class="form-label">Nome Social</label>
+                <input id="nome_social" class="form-control" name="nome_social" required [(ngModel)]="cliente.nome_social" style="color:#35689b;">
               </div>
               <div class="col-md-4">
-                <label class="form-label">E-mail</label>
-                <input class="form-control" type="email" name="email" required [(ngModel)]="cliente.email" style="color:#35689b;">
+                <label for="email" class="form-label">E-mail</label>
+                <input id="email" class="form-control" type="email" name="email" required [(ngModel)]="cliente.email" style="color:#35689b;">
               </div>
               <div class="col-md-2">
-                <label class="form-label">Telefone</label>
-                <input class="form-control" name="telefone" [(ngModel)]="cliente.telefone" (blur)="formatarTelefone()" style="color:#35689b;">
+                <label for="telefone" class="form-label">Telefone</label>
+                <input id="telefone" class="form-control" name="telefone" [(ngModel)]="cliente.telefone" (blur)="formatarTelefone()" style="color:#35689b;">
               </div>
               <div class="col-md-2">
-                <label class="form-label">CPF</label>
-                <input class="form-control" name="cpf" required [(ngModel)]="cliente.cpf" (blur)="formatarCPF()" style="color:#35689b;">
+                <label for="cpf" class="form-label">CPF</label>
+                <input id="cpf" class="form-control" name="cpf" required [(ngModel)]="cliente.cpf" (blur)="formatarCPF()" style="color:#35689b;">
               </div>
               <div class="col-md-2">
-                <label class="form-label">Nascimento</label>
-                <input type="date" class="form-control" name="nascimento" required [(ngModel)]="cliente.nascimento" style="color:#35689b;">
+                <label for="nascimento" class="form-label">Nascimento</label>
+                <input id="nascimento" type="date" class="form-control" name="nascimento" required [(ngModel)]="cliente.nascimento" style="color:#35689b;">
               </div>
               <div class="col-md-2">
-                <label class="form-label">Senha</label>
-                <input class="form-control" name="senha" [(ngModel)]="cliente.senha" style="color:#35689b;">
+                <label for="senha" class="form-label">Senha</label>
+                <input id="senha" class="form-control" name="senha" [(ngModel)]="cliente.senha" style="color:#35689b;">
               </div>
               <div class="col-md-2">
-                <label class="form-label">Confirmar Senha</label>
-                <input class="form-control" name="confirmarSenha" [(ngModel)]="cliente.confirmarSenha" style="color:#35689b;">
+                <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
+                <input id="confirmarSenha" class="form-control" name="confirmarSenha" [(ngModel)]="cliente.confirmarSenha" style="color:#35689b;">
               </div>
               <div class="col-md-2">
-                <label class="form-label">CEP</label>
+                <label for="cep" class="form-label">CEP</label>
                 <input type="text" id="cep" name="cep" class="form-control"
                    required [(ngModel)]="cliente.cep" (blur)="onCepBlur()"
                    placeholder=""
@@ -65,28 +65,28 @@
                 <div class="text-danger small" *ngIf="cepStatus.errorMsg">{{ cepStatus.errorMsg }}</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Logradouro</label>
-                <input class="form-control" name="logradouro" [(ngModel)]="cliente.logradouro" style="color:#35689b;">
+                <label for="logradouro" class="form-label">Logradouro</label>
+                <input id="logradouro" class="form-control" name="logradouro" [(ngModel)]="cliente.logradouro" style="color:#35689b;">
               </div>
               <div class="col-md-3">
-                <label class="form-label">Número</label>
-                <input class="form-control" name="numero" [(ngModel)]="cliente.numero_endereco" style="color:#35689b;">
+                <label for="numero" class="form-label">Número</label>
+                <input id="numero" class="form-control" name="numero" [(ngModel)]="cliente.numero_endereco" style="color:#35689b;">
               </div>
               <div class="col-md-3">
-                <label class="form-label">Complemento</label>
-                <input class="form-control" name="complemento_endereco" [(ngModel)]="cliente.complemento_endereco" style="color:#35689b;">
+                <label for="complemento_endereco" class="form-label">Complemento</label>
+                <input id="complemento_endereco" class="form-control" name="complemento_endereco" [(ngModel)]="cliente.complemento_endereco" style="color:#35689b;">
               </div>
               <div class="col-md-5">
-                <label class="form-label">Bairro</label>
-                <input class="form-control" name="bairro" [(ngModel)]="cliente.bairro" style="color:#35689b;">
+                <label for="bairro" class="form-label">Bairro</label>
+                <input id="bairro" class="form-control" name="bairro" [(ngModel)]="cliente.bairro" style="color:#35689b;">
               </div>
               <div class="col-md-6">
-                <label class="form-label">Cidade</label>
-                <input class="form-control" name="cidade" [(ngModel)]="cliente.cidade" style="color:#35689b;">
+                <label for="cidade" class="form-label">Cidade</label>
+                <input id="cidade" class="form-control" name="cidade" [(ngModel)]="cliente.cidade" style="color:#35689b;">
               </div>
               <div class="col-md-1">
-                <label class="form-label">UF</label>
-                <input class="form-control" name="uf" [(ngModel)]="cliente.estado" style="color:#35689b;">
+                <label for="uf" class="form-label">UF</label>
+                <input id="uf" class="form-control" name="uf" [(ngModel)]="cliente.estado" style="color:#35689b;">
               </div>
             </div>
           </fieldset>
@@ -97,19 +97,19 @@
 
             <div class="row g-2">
               <div class="col-md-3">
-                <label class="form-label">Placa</label>
-                <input class="form-control" name="placa" required [(ngModel)]="veiculo.placa" (blur)="formatarPlaca()" style="color:#35689b;">
+                <label for="placa" class="form-label">Placa</label>
+                <input id="placa" class="form-control" name="placa" required [(ngModel)]="veiculo.placa" (blur)="formatarPlaca()" style="color:#35689b;">
               </div>
 
               <div class="col-md-3">
-                <label class="form-label">Cor</label>
-                <input class="form-control" name="cor" required [(ngModel)]="veiculo.cor" style="color:#35689b;">
+                <label for="cor" class="form-label">Cor</label>
+                <input id="cor" class="form-control" name="cor" required [(ngModel)]="veiculo.cor" style="color:#35689b;">
               </div>
 
               <!-- MONTADORA -->
               <div class="col-md-6">
-                <label class="form-label">Montadora</label>
-                <select class="form-select" name="montadora" [(ngModel)]="marcaSelCode" style="color:#35689b;"
+                <label for="montadora" class="form-label">Montadora</label>
+                <select id="montadora" class="form-select" name="montadora" [(ngModel)]="marcaSelCode" style="color:#35689b;"
                   [disabled]="fipeCarregando.marcas" (ngModelChange)="onChangeMarca($event)">
                   <option value="" style="color:#35689b;">Selecione...</option>
                   <option *ngFor="let m of marcas" [value]="m.code">{{ m.name }}</option>
@@ -119,8 +119,8 @@
 
               <!-- MODELO -->
               <div class="col-md-6">
-                <label class="form-label">Modelo</label>
-                <select class="form-select" name="modeloFipe" [(ngModel)]="modeloSelCode" style="color:#35689b;"
+                <label for="modeloFipe" class="form-label">Modelo</label>
+                <select id="modeloFipe" class="form-select" name="modeloFipe" [(ngModel)]="modeloSelCode" style="color:#35689b;"
                   [disabled]="!marcaSelCode || fipeCarregando.modelos" (ngModelChange)="onChangeModelo($event)">
                   <option value="">Selecione...</option>
                   <option *ngFor="let mo of modelos" [value]="mo.code">{{ mo.name }}</option>
@@ -129,8 +129,8 @@
 
               <!-- ANO / COMBUSTÍVEL -->
               <div class="col-md-6">
-                <label class="form-label">Ano / Modelo / Combustível (FIPE)*</label>
-                <select class="form-select" name="anoFipe" [(ngModel)]="anoSelCode" style="color:#35689b;"
+                <label for="anoFipe" class="form-label">Ano / Modelo / Combustível (FIPE)*</label>
+                <select id="anoFipe" class="form-select" name="anoFipe" [(ngModel)]="anoSelCode" style="color:#35689b;"
                   [disabled]="!modeloSelCode || fipeCarregando.anos" (ngModelChange)="onChangeAno($event)">
                   <option value="" style="color:#35689b;">Selecione...</option>
                   <option *ngFor="let a of anos" [value]="a.code">{{ a.name }}</option>

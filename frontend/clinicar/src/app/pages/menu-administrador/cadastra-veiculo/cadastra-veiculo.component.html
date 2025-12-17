@@ -41,7 +41,7 @@
             </small>
 
             <!-- feedback de erro de carga -->
-            <small class="text-danger" *ngIf="!fipeCarregando.marcas && fipeErro && (marcas?.length || 0) === 0">
+            <small class="text-danger" *ngIf="!fipeCarregando.marcas && fipeErro && (marcas.length || 0) === 0">
               {{ fipeErro }}
             </small>
           </div>

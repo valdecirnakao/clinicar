@@ -29,7 +29,7 @@ export interface Fornecedor {
 @Injectable({ providedIn: 'root' })
 export class FornecedorService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${API_BASE}/api/fornecedores`;
+  private readonly baseUrl = `${API_BASE}/api/fornecedor`;
 
   private get jsonHeaders(): HttpHeaders {
     return new HttpHeaders({ 'Content-Type': 'application/json' });

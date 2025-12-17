@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { PecaService } from '../exibe-peca/exibe-peca.service';
 
 export interface Peca {
@@ -18,7 +17,7 @@ export interface Peca {
 @Component({
   selector: 'app-exibe-peca',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './exibe-peca.component.html',
   styleUrls: ['./exibe-peca.component.css']
 })
@@ -33,9 +32,7 @@ export class ExibePecaComponent implements OnInit {
   errorMsg = '';
 
   constructor(
-    private pecaService: PecaService,
-    private http: HttpClient
-  ) {}
+    private readonly pecaService: PecaService  ) {}
 
   ngOnInit(): void { this.recarregar(); }
 

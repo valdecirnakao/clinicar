@@ -47,7 +47,7 @@ export class VeiculoService {
   criar(body: VeiculoCreateDTO): Observable<VeiculoResponseSnake> {
     const payload: VeiculoCreateDTO = {
       ...body,
-      placa: (body.placa || '').toUpperCase().replace(/\s+/g, ''),
+      placa: (body.placa || '').toUpperCase().replaceAll(/\s+/g, ''),
       fabricante: body.fabricante || '',
       cor: body.cor || '',
       modelo: body.modelo || '',
@@ -73,8 +73,8 @@ export class VeiculoService {
   atualizar(id: number, body: Partial<VeiculoCreateDTO>): Observable<VeiculoResponseSnake> {
     const payload = {
       ...body,
-      ...(body.placa ? { placa: body.placa.toUpperCase().replace(/\s+/g, '') } : {}),
-      ...(body.idProprietario != null ? { idProprietario: Number(body.idProprietario) } : {})
+      ...(body.placa ? { placa: body.placa.toUpperCase().replaceAll(/\s+/g, '') } : {}),
+      ...(body.idProprietario == null ? {} : { idProprietario: Number(body.idProprietario) })
     };
     return this.http.put<VeiculoResponseSnake>(`${this.baseUrl}/${id}`, payload);
   }

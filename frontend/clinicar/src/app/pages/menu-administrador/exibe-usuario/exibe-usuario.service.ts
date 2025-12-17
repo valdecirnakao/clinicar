@@ -36,7 +36,7 @@ export class UsuarioService {
   }
 
   private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+    return (v ?? '').toString().replaceAll(/\D/g, '');
   }
 
   /** GET /api/usuario */

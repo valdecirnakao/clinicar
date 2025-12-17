@@ -56,7 +56,7 @@ export class VeiculoService {
   private toApi(d: Partial<VeiculoUI>): Record<string, unknown> {
     const out: Record<string, unknown> = {};
 
-    if (d['placa'] != null)        out['placa'] = d['placa'].toUpperCase().replace(/\s+/g, '');
+    if (d['placa'] != null)        out['placa'] = d['placa'].toUpperCase().replaceAll(/\s+/g, '');
     if (d['fabricante'] != null)   out['fabricante'] = d['fabricante'];
     if (d.cor != null)          out['cor'] = (d.cor ?? '').toString().trim();
     if (d.modelo != null)       out['modelo'] = d['modelo'];
@@ -65,7 +65,9 @@ export class VeiculoService {
     if (d.idProprietario != null)       out[OWNER_KEY] = Number(d.idProprietario);
 
     // limpa undefined
-    Object.keys(out).forEach(k => out[k] === undefined && delete out[k]);
+    for (const k of Object.keys(out)) {
+      if (out[k] === undefined) delete out[k];
+    }
     return out;
   }
 
@@ -105,10 +107,4 @@ export class VeiculoService {
   removerVeiculo(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
-
-  // (Opcional) Exemplo de busca por proprietário, se existir no backend:
-  // buscarPorProprietario(idProprietario: number): Observable<VeiculoUI[]> {
-  //   return this.http.get<any[]>(`${this.baseUrl}/proprietario/${idProprietario}`)
-  //     .pipe(map(arr => (arr ?? []).map(v => this.fromApi(v))));
-  // }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { UsuarioService } from '../exibe-usuario/exibe-usuario.service';
 
 export interface Usuario {
@@ -27,7 +27,7 @@ export interface Usuario {
 @Component({
   selector: 'app-exibe-usuario',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './exibe-usuario.component.html',
   styleUrls: ['./exibe-usuario.component.css']
 })
@@ -42,8 +42,8 @@ export class ExibeUsuarioComponent implements OnInit {
   errorMsg = '';
 
   constructor(
-    private usuarioService: UsuarioService,
-    private http: HttpClient
+    private readonly usuarioService: UsuarioService,
+    private readonly http: HttpClient
   ) {}
 
   ngOnInit(): void { this.recarregar(); }
@@ -168,7 +168,7 @@ export class ExibeUsuarioComponent implements OnInit {
   // ====== VIA CEP (na linha em edição) ======
   onCepBlurRow(model: Partial<Usuario>): void {
     const cepNums = this.onlyDigits(model.cep);
-    if (!cepNums || cepNums.length !== 8) return;
+    if (cepNums?.length !== 8) return;
 
     this.http.get<any>(`https://viacep.com.br/ws/${cepNums}/json/`).subscribe({
       next: (resp) => {
@@ -190,22 +190,23 @@ export class ExibeUsuarioComponent implements OnInit {
 
   // ====== Helpers ======
   private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+    return (v ?? '').toString().replaceAll(/\D/g, '');
   }
 
   private asInputDateString(v: any): string {
     if (!v) return '';
     if (typeof v === 'string') {
       if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-      const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      const re = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      const m = re.exec(v);
       if (m) return `${m[3]}-${m[2]}-${m[1]}`;
       const d = new Date(v);
-      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
     }
     if (v instanceof Date) return v.toISOString().slice(0,10);
     try {
       const d = new Date(v);
-      return isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
     } catch { return ''; }
   }
 }

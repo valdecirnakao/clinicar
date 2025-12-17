@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { CadastraFornecedorComponent } from './cadastra-fornecedor.component';
+import { CadastroFornecedorComponent } from './cadastra-fornecedor.component';
 
 describe('CadastraFornecedorComponent', () => {
-  let component: CadastraFornecedorComponent;
-  let fixture: ComponentFixture<CadastraFornecedorComponent>;
+  let component: CadastroFornecedorComponent;
+  let fixture: ComponentFixture<CadastroFornecedorComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CadastraFornecedorComponent]
+      imports: [CadastroFornecedorComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(CadastraFornecedorComponent);
+    fixture = TestBed.createComponent(CadastroFornecedorComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { CadastraFornecedorService } from '../cadastra-fornecedor/cadastra-fornecedor.service';
 
 interface ViaCepResponse {
@@ -32,14 +32,14 @@ type Fornecedor = {
   bairro: string;
   cidade: string;
   estado: string;
-  complementoEndereco: string;
+  complementoEndereco?: string;
   numeroEndereco: string;
 };
 
 @Component({
   selector: 'app-cadastro-fornecedor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './cadastra-fornecedor.component.html',
   styleUrls: ['./cadastra-fornecedor.component.css']
 })
@@ -72,15 +72,15 @@ export class CadastroFornecedorComponent implements OnInit {
   @ViewChild('numeroInput') numeroInput?: ElementRef<HTMLInputElement>;
 
   constructor(
-    private router: Router,
-    private http: HttpClient,
-    private CadastraFornecedorService: CadastraFornecedorService
+    private readonly router: Router,
+    private readonly http: HttpClient,
+    private readonly CadastraFornecedorService: CadastraFornecedorService
   ) {}
 
   // ======== FORMATAÇÕES ========
   formatarCNPJ() {
     if (!this.fornecedor.cnpj) return;
-    const nums = this.fornecedor.cnpj.replace(/\D/g, '');
+    const nums = this.fornecedor.cnpj.replaceAll(/\D/g, '');
     if (nums.length === 14) {
       this.fornecedor.cnpj = nums.replace(
         /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
@@ -91,7 +91,7 @@ export class CadastroFornecedorComponent implements OnInit {
 
   formatarTelefone() {
     if (!this.fornecedor.telefone) return;
-    const numero = this.fornecedor.telefone.replace(/\D/g, '');
+    const numero = this.fornecedor.telefone.replaceAll(/\D/g, '');
     const codigoPais = '55';
     if (numero.length >= 11) {
       const ddd = numero.slice(-11, -9);
@@ -105,7 +105,7 @@ export class CadastroFornecedorComponent implements OnInit {
       this.fornecedor.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else if (numero.length >= 8) {
       const ddd = '11';
-      const parte1 = numero.slice(0, numero.length - 4);
+      const parte1 = numero.slice(0, -4);
       const parte2 = numero.slice(-4);
       this.fornecedor.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     }
@@ -113,7 +113,7 @@ export class CadastroFornecedorComponent implements OnInit {
 
   private formatarCEP() {
     if (!this.fornecedor.cep) return;
-    const nums = this.fornecedor.cep.replace(/\D/g, '').slice(0, 8);
+    const nums = this.fornecedor.cep.replaceAll(/\D/g, '').slice(0, 8);
     if (nums.length === 8) {
       this.fornecedor.cep = nums.replace(/(\d{5})(\d{3})/, '$1-$2');
     } else {
@@ -124,7 +124,7 @@ export class CadastroFornecedorComponent implements OnInit {
   // ======== VIA CEP ========
   onCepBlur() {
     this.formatarCEP();
-    const cepNums = this.fornecedor.cep.replace(/\D/g, '');
+    const cepNums = this.fornecedor.cep.replaceAll(/\D/g, '');
     if (cepNums.length !== 8) {
       this.cepStatus.errorMsg = 'CEP deve ter 8 dígitos.';
       return;
@@ -147,9 +147,6 @@ export class CadastroFornecedorComponent implements OnInit {
           this.fornecedor.bairro     = resp.bairro     || '';
           this.fornecedor.cidade     = resp.localidade || '';
           this.fornecedor.estado     = resp.uf         || '';
-          if (!this.fornecedor.complementoEndereco && resp.complemento) {
-            this.fornecedor.complementoEndereco = resp.complemento;
-          }
           this.cepStatus = { loading: false, errorMsg: '' };
 
           // Foca no número (qualidade de UX)
@@ -164,12 +161,12 @@ export class CadastroFornecedorComponent implements OnInit {
   // ======== CRUD ========
   cadastrar(form: NgForm) {
     // Validação simples
-    const camposObrig = [
+    const camposObrigatorios = [
       'cnpj','razaoSocial','nomeFantasia','itemFornecido','telefone','email',
       'fundacao','cep','numeroEndereco','logradouro','bairro','cidade','estado'
     ] as const;
 
-    const faltando = camposObrig.filter(c => !String(this.fornecedor[c]).trim());
+    const faltando = camposObrigatorios.filter(c => !String(this.fornecedor[c]).trim());
     if (faltando.length) {
       alert('Por favor, preencha todos os campos obrigatórios.');
       return;
@@ -180,9 +177,9 @@ export class CadastroFornecedorComponent implements OnInit {
         alert('Cadastro realizado com sucesso!');
         form.resetForm();
         // limpa o modelo
-        Object.keys(this.fornecedor).forEach(
-          k => (this.fornecedor[k as keyof Fornecedor] = '' as any)
-        );
+        for (const k of Object.keys(this.fornecedor)) {
+          this.fornecedor[k as keyof Fornecedor] = '' as any;
+        }
         this.router.navigate(['/fornecedor']); // ajuste se necessário
       },
       error: (err) => {

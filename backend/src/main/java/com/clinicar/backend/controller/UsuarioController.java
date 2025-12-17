@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import com.clinicar.backend.model.Usuario;
 import com.clinicar.backend.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/usuario")
 @CrossOrigin(origins = "http://localhost:4200") // Libera requisições do Angular
 public class UsuarioController {
-  @Autowired
+  
   private UsuarioRepository usuarioRepository;
 
   @PostMapping
@@ -25,7 +24,7 @@ public class UsuarioController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
+  public ResponseEntity<Object> login(@RequestBody Map<String, String> loginData) {
     String email = loginData.get("email");
     String senha = loginData.get("senha");
 

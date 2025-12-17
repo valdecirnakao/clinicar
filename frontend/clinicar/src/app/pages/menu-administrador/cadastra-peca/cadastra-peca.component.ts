@@ -1,8 +1,8 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { CadastraPecaService } from './cadastra-peca.service';
 
 type Peca = {
@@ -19,7 +19,7 @@ type Peca = {
 @Component({
   selector: 'app-cadastra-peca',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './cadastra-peca.component.html',
   styleUrls: ['./cadastra-peca.component.css']
 })

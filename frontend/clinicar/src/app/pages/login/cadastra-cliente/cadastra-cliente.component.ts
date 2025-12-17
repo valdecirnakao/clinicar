@@ -1,7 +1,7 @@
-import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { switchMap, catchError, of, finalize } from 'rxjs';
 import {  RouterModule } from '@angular/router';
 
@@ -74,10 +74,10 @@ const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
 @Component({
   selector: 'app-cadastra-cliente',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './cadastra-cliente.component.html'
 })
-export class CadastraClienteComponent {
+export class CadastraClienteComponent implements OnInit {
   /** ================== FORM STATE ================== */
   // Cliente
   cliente: Usuario = {
@@ -116,7 +116,7 @@ export class CadastraClienteComponent {
 
   @ViewChild('numeroInput') numeroInput?: ElementRef<HTMLInputElement>;
 
-  constructor(private http: HttpClient, private host: ElementRef) {}
+  constructor(private readonly http: HttpClient, private readonly host: ElementRef) {}
 
   /** ================== INIT ================== */
   ngOnInit(): void {
@@ -153,7 +153,7 @@ export class CadastraClienteComponent {
       this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else if (n.length >= 8) {
       const ddd = '11';
-      const parte1 = n.slice(0, n.length - 4);
+      const parte1 = n.slice(0, -4);
       const parte2 = n.slice(-4);
       this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else {
@@ -285,10 +285,6 @@ export class CadastraClienteComponent {
   /** ================== SUBMIT ================== */
   cadastrar(form: NgForm): void {
         // validações básicas
-    const camposObrig = [
-      'cpf','nome','telefone','email','nascimento',
-      'cep','numero_endereco','logradouro','bairro','cidade','estado'
-    ] as const;
 
     if (this.cliente.senha !== this.cliente.confirmarSenha) {
       alert('As senhas não coincidem.');
@@ -308,7 +304,7 @@ export class CadastraClienteComponent {
       // 2) Cria veículo com o id do cliente recém-criado
       switchMap((user) => {
         const body: any = {
-          placa: (this.veiculo.placa || '').toUpperCase().replace(/\s+/g, ''),
+          placa: (this.veiculo.placa || '').toUpperCase().replaceAll(/\s+/g, ''),
           fabricante: this.veiculo.fabricante,
           cor: (this.veiculo.cor || '').trim(),
           modelo: this.veiculo.modelo
@@ -342,11 +338,11 @@ export class CadastraClienteComponent {
   }
 
   formatarPlaca(): void {
-    this.veiculo.placa = (this.veiculo.placa || '').toUpperCase().replace(/\s+/g, '');
+    this.veiculo.placa = (this.veiculo.placa || '').toUpperCase().replaceAll(/\s+/g, '');
   }
 
   private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+    return (v ?? '').toString().replaceAll(/\D/g, '');
   }
 
   @HostListener('document:click', ['$event'])

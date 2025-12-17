@@ -10,9 +10,9 @@ export class CadastraFornecedorService {
   private readonly base = '/api/fornecedor'; // relativo
 
 
-  private apiUrl = 'http://localhost:8080/api/fornecedor'; // URL do backend
+  private readonly apiUrl = 'http://localhost:8080/api/fornecedor'; // URL do backend
 
-  constructor(private http: HttpClient) { }
+  constructor(private readonly http: HttpClient) { }
 
   login(email: string, senha: string) {
     return this.http.post(`${this.apiUrl}/login`, { email, senha });

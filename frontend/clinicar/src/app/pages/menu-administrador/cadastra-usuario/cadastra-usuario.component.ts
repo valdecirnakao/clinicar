@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { CadastraUsuarioService } from './cadastra-usuario.service';
 
 interface ViaCepResponse {
@@ -42,7 +42,7 @@ type Usuario = {
 @Component({
   selector: 'app-cadastra-usuario',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './cadastra-usuario.component.html',
   styleUrls: ['./cadastra-usuario.component.css']
 })
@@ -82,7 +82,7 @@ export class CadastraUsuarioComponent implements OnInit {
 
   // ========= Helpers =========
   private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
+    return (v ?? '').toString().replaceAll(/\D/g, '');
   }
 
   // ========= FORMATAÇÕES =========
@@ -115,7 +115,7 @@ export class CadastraUsuarioComponent implements OnInit {
       this.usuario.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else if (n.length >= 8) {
       const ddd = '11';
-      const parte1 = n.slice(0, n.length - 4);
+      const parte1 = n.slice(0, -4);
       const parte2 = n.slice(-4);
       this.usuario.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else {
@@ -202,7 +202,9 @@ export class CadastraUsuarioComponent implements OnInit {
       next: () => {
         alert('Cadastro realizado com sucesso!');
         form.resetForm();
-        Object.keys(this.usuario).forEach(k => (this.usuario[k as keyof Usuario] = '' as any));
+        for (const k of Object.keys(this.usuario)) {
+          this.usuario[k as keyof Usuario] = '' as any;
+        }
         this.router.navigate(['/usuario']); // ajuste a rota se necessário
       },
       error: (err) => {

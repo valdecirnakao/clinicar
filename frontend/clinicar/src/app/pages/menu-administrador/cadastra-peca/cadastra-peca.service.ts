@@ -7,12 +7,9 @@ import { Observable } from 'rxjs';
 })
 
 export class CadastraPecaService {
-  private base = '/api/peca'; // relativo
+  private readonly apiUrl = 'http://localhost:8080/api/peca'; // URL do backend
 
-
-  private apiUrl = 'http://localhost:8080/api/peca'; // URL do backend
-
-  constructor(private http: HttpClient) { }
+  constructor(private readonly http: HttpClient) { }
 
   cadastrar(peca: any) {
     return this.http.post('http://localhost:8080/api/peca', peca);
