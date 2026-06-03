@@ -75,9 +75,13 @@
           <!-- Item Fornecido -->
           <div class="col-md-2 mb-2">
             <label for="itemFornecido" class="form-label">Item Fornecido</label>
-            <input type="text" id="itemFornecido" name="itemFornecido" class="form-control"
+            <select id="itemFornecido" name="itemFornecido" class="form-control"
                    required [(ngModel)]="fornecedor.itemFornecido"
                    style="color:#35689b;">
+              <option value="Peças">Peças</option>
+              <option value="Serviços">Serviços</option>
+              <option value="Peças e Serviços">Peças e Serviços</option>
+            </select>
           </div>
 
           <!-- CEP -->

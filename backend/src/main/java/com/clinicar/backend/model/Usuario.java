@@ -19,9 +19,7 @@ public class Usuario {
     private String email;
     private String senha;
     private String cpf;
-
-    private LocalDate nascimento;    
-    
+    private LocalDate nascimento;       
     private String telefone;
     private String whatsappapikey;
     private String cep;

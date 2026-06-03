@@ -104,13 +104,18 @@
         "deixe",
         "dependentes",
         "depois",
+        "descricao",
+        "Descrição",
         "detalhes",
         "detecta",
         "deve",
+        "devolva",
         "Digitado",
         "Digite",
         "dígitos",
         "digitou",
+        "duracao",
+        "Duração",
         "edição",
         "Editar",
         "elemento",
@@ -134,6 +139,7 @@
         "espelhos",
         "espera",
         "esperada",
+        "Esperado",
         "esquerda",
         "esta",
         "Estado",
@@ -273,6 +279,7 @@
         "preencher",
         "preferir",
         "prepara",
+        "prestador",
         "primeiro",
         "procura",
         "Proprietario",
@@ -359,5 +366,6 @@
         "Visualização",
         "você",
         "whatsappapikey"
-    ]
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

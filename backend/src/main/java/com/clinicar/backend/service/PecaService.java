@@ -22,7 +22,6 @@ public class PecaService {
         p.setModelo(req.getModelo());
         p.setNorma(req.getNorma());
         p.setUnidade(req.getUnidade());
-
         return repo.save(p);
     }
 }

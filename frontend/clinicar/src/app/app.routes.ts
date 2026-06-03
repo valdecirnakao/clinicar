@@ -10,6 +10,9 @@ import { CadastroVeiculoComponent } from './pages/menu-administrador/cadastra-ve
 import { ExibeVeiculoComponent } from './pages/menu-administrador/exibe-veiculo/exibe-veiculo.component';
 import { CadastraPecaComponent } from './pages/menu-administrador/cadastra-peca/cadastra-peca.component';
 import { ExibePecaComponent } from './pages/menu-administrador/exibe-peca/exibe-peca.component';
+import { CadastroServicoComponent } from './pages/menu-administrador/cadastra-servico/cadastra-servico.component';
+import { CadastraFornecimentoPecasComponent } from './pages/menu-administrador/cadastra-fornecimento-pecas/cadastra-fornecimento-pecas.component';
+import { ExibeFornecimentoPecaComponent } from './pages/menu-administrador/exibe-fornecimento-pecas/exibe-fornecimento-pecas.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -25,7 +28,10 @@ export const routes: Routes = [
       { path: 'cadastraVeiculo', component: CadastroVeiculoComponent }, // filho (NÃO repete o pai)
       { path: 'exibeVeiculo', component: ExibeVeiculoComponent }, // filho (NÃO repete o pai)
       { path: 'cadastraPeca', component: CadastraPecaComponent }, // filho (NÃO repete o pai)
-      { path: 'exibePeca', component: ExibePecaComponent } // filho (NÃO repete o pai)
+      { path: 'exibePeca', component: ExibePecaComponent }, // filho (NÃO repete o pai)
+      { path: 'cadastraServico', component: CadastroServicoComponent }, // filho (NÃO repete o pai)
+      { path: 'cadastraFornecimentoPecas', component: CadastraFornecimentoPecasComponent }, // filho (NÃO repete o pai)
+      { path: 'exibeFornecimentoPecas', component: ExibeFornecimentoPecaComponent } // filho (NÃO repete o pai)
     ]
   },
 ];

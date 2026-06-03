@@ -1,0 +1,219 @@
+<div class="container mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 sm-mt-0">
+      <!-- Título -->
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">Novo Fornecimento de Peças</div>
+          </div>
+        </div>
+      </div>
+      <form #form="ngForm" (ngSubmit)="cadastrar(form)">
+        <!-- ID do Fornecedor (dropdown com busca) -->
+        <div class="row">
+          <div class="col-md-4 mb-2">
+            <label for="cnpjFornecedor" class="form-label">Fornecedor</label>
+            <!-- INPUT de exibição/ativação -->
+            <div class="position-relative cnpj-picker">
+              <div class="input-group">
+                <input
+                  id="cnpjFornecedor"
+                  class="form-control"
+                  style = "color:#35689b;"
+                  [value]="cnpjRazaoSocialDisplay || ''"
+                  readonly>
+                  <button type="button" class="btn btn-outline-secondary" (click)="abrirModalFornecedor()">
+                    <i class="bi bi-search" style = "color:#35689b;"></i>
+                  </button>
+              </div>
+            </div>
+            <div class="text-danger small" *ngIf="cnpjErro">{{ cnpjErro }}</div>
+          </div>
+          <!-- ID da Peça (dropdown com busca) -->
+          <!-- Nome da Peça (dropdown com busca) -->
+          <div class="col-md-5 mb-2">
+            <label for="idPeca" class="form-label">Peça</label>
+            <!-- INPUT de exibição/ativação -->
+            <div class="position-relative cnpj-picker">
+              <div class="input-group">
+                <input
+                  id="idPeca"
+                  class="form-control"
+                  style = "color:#35689b;"
+                  [value]="nomePecaSelecionada || ''"
+                  readonly>
+                <button type="button" class="btn btn-outline-secondary" (click)="abrirModalPeca()">
+                  <i class="bi bi-search" style = "color:#35689b;"></i>
+                </button>
+              </div>
+            </div>
+            <div class="text-danger small" *ngIf="idErro">{{ idErro }}</div>
+          </div>
+          <!-- Valor Custo -->
+          <div class="col-md-3 mb-2">
+            <label for="valorCusto" class="form-label">Custo Unitário</label>
+            <input
+              type="text"
+              id="valorCusto"
+              name="valorCusto"
+              class="form-control"
+              [(ngModel)]="fornecimentoPeca.valorCusto"
+              style="color:#35689b;"
+              (blur)="formatarValorCusto()">
+          </div>
+          <!-- Prazo de Entrega (dias) -->
+          <div class="col-md-3 mb-2">
+            <label for="prazoEntregaDias" class="form-label">Prazo de Entrega (dias)</label>
+            <input
+              type="number"
+              id="prazoEntregaDias"
+              name="prazoEntregaDias"
+              class="form-control"
+              [(ngModel)]="fornecimentoPeca.prazoEntregaDias"
+              style="color:#35689b;">
+          </div>
+          <!-- Quantidade Mínima -->
+          <div class="col-md-3 mb-2">
+            <label for="quantidadeMinima" class="form-label">Quantidade Mínima</label>
+            <input
+              type="number"
+              id="quantidadeMinima"
+              name="quantidadeMinima"
+              class="form-control"
+              [(ngModel)]="fornecimentoPeca.quantidadeMinima"
+              style="color:#35689b;">
+          </div>
+          <!-- Fornecedor ativo? -->
+          <div class="col-md-3 mb-2">
+            <label for="ativo" class="form-label">Fornecedor Ativo?</label>
+            <select id="ativo" name="ativo" class="form-control" [(ngModel)]="fornecimentoPeca.ativo" style="color:#35689b;">
+              <option value = 1>Sim</option>
+              <option value = 0>Não</option>
+            </select>
+          </div>
+          <!-- Data de Cadastro -->
+          <div class="col-md-3 mb-2" style="color:#35689b;">
+            <label for="dataCadastro" class="form-label" style="color:#35689b;">Data de Cadastro</label>
+            <input
+              type="text"
+              id="dataCadastro"
+              name="dataCadastro"
+              class="form-control"
+              required maxlength="10"
+              placeholder="dd/mm/aaaa"
+              style = "color:#35689b;"
+              [(ngModel)]="fornecimentoPeca.dataCadastro"
+              (input)="formatarDataCadastro()"
+              style="color:#35689b;">
+          </div>
+        </div>
+        <!-- Ações -->
+        <div class="col-12 d-flex gap-2 justify-content-center mt-2">
+          <button type="submit" class="btn btn-success" [disabled]="!fornecimentoPeca.idFornecedor">
+            Cadastrar Fornecimento
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="form.resetForm(); resetarModelo();">
+            Limpar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalFornecedorCadastro" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#eef6ff;color:#35689b;">
+        <h5 class="modal-title">
+          Selecionar Fornecedor
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input
+          type="search"
+          class="form-control mb-3"
+          placeholder="Buscar fornecedor..."
+          [(ngModel)]="cnpjFiltro"
+          (input)="aplicarFiltroFornecedor()">
+        <div class="list-group">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action"
+            style = "color:#35689b;"
+            *ngFor="let f of fornecedoresFiltrados"
+            (click)="selecionarFornecedorModal(f)">
+            <strong>
+              {{ f.razaoSocial }}
+            </strong>
+            <br>
+            <small>
+              {{ formatarCNPJ(f.cnpj) }}
+            </small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalPecaCadastro" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#eef6ff;color:#35689b;">
+        <h5 class="modal-title">
+          Selecionar Peça
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input
+          type="search"
+          class="form-control mb-3"
+          placeholder="Buscar peça..."
+          [(ngModel)]="idFiltro"
+          (input)="aplicarFiltroPeca()">
+        <div class="list-group">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action"
+            style = "color:#35689b;"
+            *ngFor="let p of pecasFiltradas"
+            (click)="selecionarPecaModal(p)">
+            <strong>
+              {{ capitalizar(p.nome) }}
+            </strong>
+            <br>
+            <small>
+              {{ capitalizar(p.fabricante) }} - {{ capitalizar(p.modelo) }}
+            </small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .cnpj-picker { position: relative; }
+  .cnpj-dropdown {
+    position: absolute;
+    inset: auto 0 0 0; /* 100% width do input */
+    transform: translateY(2px);
+    background: #fff;
+    border: 1px solid #d0e2f2;
+    border-radius: .25rem;
+    z-index: 2000;
+  }
+  .cnpj-list {
+    max-height: 280px;
+    overflow: auto;
+  }
+  .list-group-item {
+    border: none;
+  }
+  .form-control:focus, .btn:focus {
+    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
+    border-color: #8fb4da;
+  }
+</style>

@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 const API_BASE = 'http://localhost:8080'; // <— ajuste para o seu backend
 
 export interface Fornecedor {
-  id?: number;                // não exibido na UI, mas usado p/ update/delete
+  id: number;                // não exibido na UI, mas usado p/ update/delete
   cnpj: string;
   razaoSocial: string;
   nomeFantasia: string;
@@ -36,7 +36,7 @@ export class FornecedorService {
   }
 
   /** GET /api/fornecedores */
-  listarTodos(): Observable<Fornecedor[]> {
+  listarTodosFornecedores(): Observable<Fornecedor[]> {
     return this.http.get<Fornecedor[]>(this.baseUrl);
   }
 
@@ -56,5 +56,10 @@ export class FornecedorService {
   /** DELETE /api/fornecedores/{id} */
   removerFornecedor(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+    /** GET /api/fornecedores/id/{id} */
+  buscarPorId(id: number): Observable<Fornecedor> {
+    return this.http.get<Fornecedor>(`${this.baseUrl}/${id}`);
   }
 }

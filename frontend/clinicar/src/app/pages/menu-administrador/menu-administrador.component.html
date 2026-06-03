@@ -1,124 +1,129 @@
 <!-- NAVBAR (pills centralizadas com dropdowns) -->
-<nav class="navbar navbar-expand-xxl navbar-light bg-white sticky-top m-0 p-0" style="border-bottom:1px solid #dbe7f5;">
+<nav class="navbar navbar-expand-md bg-white sticky-top m-0 p-0" style="border-bottom:1px solid #dbe7f5;">
   <div class="container-fluid">
     <!-- Marca/Logo à esquerda -->
     <a class="navbar-brand d-flex align-items-center" routerLink="/">
-      <img src="assets/img/LogoClinicar.png" alt="CliniCar" height="100" class="m-0 p-0">
+      <img src="assets/img/LogoClinicar.png" alt="CliniCar" class="m-0 p-0 logo-clinicar">
     </a>
 
+    <!-- Toggle só aparece no < md por causa do navbar-expand-md -->
     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNav"
       aria-controls="topNav" aria-expanded="false" aria-label="Alternar navegação">
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="collapse navbar-collapse justify-content-center" id="topNav">
-      <ul class="navbar-nav nav nav-pills gap-2 align-items-lg-center">
+    <!-- em md+ centralizado; em sm fica normal (e colapsado) -->
+    <div class="collapse navbar-collapse justify-content-md-center" id="topNav">
+      <ul class="navbar-nav nav nav-pills gap-2 align-items-md-center flex-column flex-md-row w-auto w-md-auto">
 
         <!-- 1: Usuario -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
-            Usuario
+            Usuários
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibeUsuario">Exibir</a></li>
-            <li><a class="dropdown-item" routerLink="cadastraUsuario">Novo</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeUsuario">Exibir</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="cadastraUsuario">Novo</a></li>
           </ul>
         </li>
 
-        <!-- 1: Veículo -->
+        <!-- 2: Veículo -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
-            Veículo
+            Veículos
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibeVeiculo">Exibir</a></li>
-            <li><a class="dropdown-item" routerLink="cadastraVeiculo">Novo</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeVeiculo">Exibir</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="cadastraVeiculo">Novo</a></li>
           </ul>
         </li>
 
         <!-- 3: Fornecedor -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
-            Fornecedor
+            Fornecedores
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibeFornecedor">Exibir</a></li>
-            <li><a class="dropdown-item" routerLink="cadastraFornecedor">Novo</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeFornecedor">Exibir</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="cadastraFornecedor">Novo</a></li>
           </ul>
         </li>
 
         <!-- 4: Peça -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
-            Peça
+            Peças
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibePeca">Exibir</a></li>
-            <li><a class="dropdown-item" routerLink="cadastraPeca">Nova</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibePeca">Exibir Peças</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="cadastraPeca">Nova Peça</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeFornecimentoPecas">Exibir Fornecimentos</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="cadastraFornecimentoPecas">Novo Fornecimento</a></li>
           </ul>
         </li>
 
         <!-- 5: Serviço -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
-            Serviço
+            Serviços
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibeServico">Exibir</a></li>
-            <li><a class="dropdown-item" routerLink="cadastraServico">Novo</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeServico">Exibir</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="cadastraServico">Novo</a></li>
           </ul>
         </li>
 
         <!-- 6: Relatório -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
-            Relatório
+            Relatórios
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibeRelatorioPecas">Peças</a></li>
-            <li><a class="dropdown-item" routerLink="exibeRelatorioServicos">Serviços</a></li>
-            <li><a class="dropdown-item" routerLink="exibeRelatorioVeiculos">Veículos</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeRelatorioPecas">Peças</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeRelatorioServicos">Serviços</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeRelatorioVeiculos">Veículos</a></li>
           </ul>
         </li>
 
         <!-- 7: Atendimentos -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
-            Atendimento
+            Atendimentos
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibeAtendimento">Exibir</a></li>
-            <li><a class="dropdown-item" routerLink="cadastraAtendimento">Novo</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeAtendimento">Exibir</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="cadastraAtendimento">Novo</a></li>
           </ul>
         </li>
 
-        <!-- 7: Encerrar -->
+        <!-- 8: Encerrar -->
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3" type="button" data-bs-toggle="dropdown"
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false"
                   style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
             Encerrar
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="/">Sessão</a></li>
+            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="/">Sessão</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item text-danger">Fechar</a></li>
           </ul>
         </li>
+
       </ul>
     </div>
   </div>
@@ -132,4 +137,44 @@
 <style>
   .btn-link.nav-link { text-decoration: none; }
   .dropdown-menu { z-index: 2000; }
+
+  /* Base (telas grandes/xxl+) */
+  .logo-clinicar { height: 100px; }
+  .pill-btn { text-decoration: none; }
+
+  /* ===== TELA PEQUENA (sm < md): colunar + botões 100% ===== */
+  @media (max-width: 767.98px) {
+    .logo-clinicar { height: 72px; }
+
+    #topNav .navbar-nav { width: 100%; }
+    #topNav .nav-item { width: 100%; }
+    .pill-btn { width: 100%; text-align: left; }
+
+    /* dropdown encaixado abaixo do botão (melhor no mobile) */
+    #topNav .dropdown-menu {
+      position: static;
+      width: 100%;
+      margin-top: .25rem;
+    }
+  }
+
+  /* ===== TELA MÉDIA/GRANDE (md até xl/xxl-): mesmo layout, menor ===== */
+  @media (min-width: 768px) and (max-width: 1399.98px) {
+    .logo-clinicar { height: 80px; }      /* escala menor que 100px */
+    .navbar-nav.gap-2 { gap: .35rem !important; }
+
+    .pill-btn {
+      padding-left: .75rem !important;
+      padding-right: .75rem !important;
+      padding-top: .35rem !important;
+      padding-bottom: .35rem !important;
+      font-size: .92rem;
+    }
+
+    .dropdown-menu .dropdown-item {
+      font-size: .92rem;
+      padding-top: .4rem;
+      padding-bottom: .4rem;
+    }
+  }
 </style>

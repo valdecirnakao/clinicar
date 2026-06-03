@@ -1,0 +1,20 @@
+.offcanvas-header {
+  border-bottom: 1px solid #d0e2f2;
+}
+
+.offcanvas-body {
+  background: #fafcff;
+}
+
+.offcanvas {
+  box-shadow: -10px 0 30px rgba(0,0,0,.12);
+}
+
+.offcanvas .form-control {
+  border-color: #d0e2f2;
+}
+
+.offcanvas .form-control:focus {
+  border-color: #8fb4da;
+  box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
+}

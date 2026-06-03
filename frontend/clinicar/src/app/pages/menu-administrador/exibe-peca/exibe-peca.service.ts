@@ -27,7 +27,7 @@ export class PecaService {
   }
 
   /** GET /api/pecas */
-  listarTodos(): Observable<Peca[]> {
+  listarTodasPecas(): Observable<Peca[]> {
     return this.http.get<Peca[]>(this.baseUrl);
   }
 

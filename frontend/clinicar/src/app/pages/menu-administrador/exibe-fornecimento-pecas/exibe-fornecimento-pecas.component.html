@@ -1,0 +1,342 @@
+<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 mt-sm-0">
+      <!-- Título / Cabeçalho -->
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">Fornecimentos de Peças</div>
+          </div>
+        </div>
+      </div>
+      <!-- Toolbar -->
+      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+        <div class="d-flex gap-2">
+          <button
+            class="btn btn-outline-primary"
+            type="button"
+            (click)="recarregarFornecimentos()"
+            style="border-color:#d0e2f2;color:#35689b;">
+            Atualizar
+          </button>
+        </div>
+      </div>
+      <!-- Estados globais -->
+      <div *ngIf="loading" class="alert alert-info py-2">Carregando fornecimentos…</div>
+      <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
+      <!-- Tabela -->
+      <div class="table-responsive">
+        <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+          <thead style="background:#eef6ff;color:#35689b;">
+            <tr>
+              <th>ID</th>
+              <th>Fornecedor</th>
+              <th>Peça</th>
+              <th>Custo Unitário</th>
+              <th>Prazo Entrega (Dias)</th>
+              <th>Quantidade Mínima</th>
+              <th>Status</th>
+              <th>Data Cadastro</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let fornecimento of fornecimentosPeca; let i = index"
+              [class.table-active]="editId === fornecimento.id"
+              [class.editing]="editId === fornecimento.id"><!-- <- habilita quebra apenas na linha em edição -->
+              <!-- ID -->
+              <td>
+                <ng-container *ngIf="editId !== fornecimento.id; else edit_id">
+                  {{ fornecimento.id }}
+                </ng-container>
+                <ng-template #edit_id>
+                    {{ fornecimento.id }}
+                </ng-template>
+              </td>
+              <!-- Fornecedor -->
+              <td>{{ fornecedorRazaoSocial(fornecimento) }}</td>
+              <!-- Peça -->
+              <td>{{ descricaoPeca(fornecimento) }}</td>
+              <!-- Valor Custo -->
+              <td>{{ fornecimento.valorCusto | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
+              <!-- Prazo Entrega Dias -->
+              <td>{{ fornecimento.prazoEntregaDias }}</td>
+              <!-- Quantidade Mínima -->
+              <td>{{ fornecimento.quantidadeMinima }}</td>
+              <!-- Status -->
+              <td>
+                <span class="badge" [ngClass]="fornecimento.ativo ? 'bg-success' : 'bg-secondary'">
+                  {{ fornecimento.ativo ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+              <!-- Data Cadastro -->
+              <td>{{ fornecimento.dataCadastro | date:'dd/MM/yyyy' }}</td>
+              <!-- Ações -->
+              <td class="text-center" style="min-width: 160px;">
+                <ng-container *ngIf="editId !== fornecimento.id; else edit_acoes">
+                  <button
+                    class="btn btn-sm btn-outline-primary me-1"
+                    (click)="abrirModalEdicao(fornecimento)"
+                    style="border-color:#8fb4da;color:#35689b;">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger"
+                    (click)="excluir(fornecimento.id)"
+                    style="border-color:#f3c7c7;color:#b03030;">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </ng-container>
+                <ng-template #edit_acoes>
+                  <button
+                    class="btn btn-sm btn-outline-primary me-1"
+                    (click)="abrirModalEdicao(fornecimento)"
+                    style="border-color:#8fb4da;color:#35689b;">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger"
+                    (click)="excluir(fornecimento.id)"
+                    style="border-color:#f3c7c7;color:#b03030;">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </ng-template>
+              </td>
+            </tr>
+            <!-- Sem dados -->
+            <tr *ngIf="!pecas || pecas.length === 0">
+              <td colspan="15" class="text-center text-muted py-4">Nenhuma peça encontrada.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO FORNECIMENTO -->
+<div class="modal fade" id="modalEdicaoFornecimento" tabindex="-1" aria-hidden="true" style="color:#35689b;">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <!-- HEADER -->
+      <div class="modal-header" style="background:#eef6ff;color:#35689b;">
+        <h5 class="modal-title">Editar Fornecimento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <!-- BODY -->
+      <div class="modal-body">
+        <div class="row g-3" style="color:#35689b;">
+          <!-- ID -->
+          <div class="col-md-2">
+            <label for="fornecimentoId" class="form-label">ID</label>
+            <input id="fornecimentoId" class="form-control" style="color:#35689b;" [value]="edit.id" readonly>
+          </div>
+          <!-- FORNECEDOR -->
+          <div class="col-md-5">
+            <label for="fornecedorInput" class="form-label">Fornecedor</label>
+            <div class="position-relative">
+              <input
+                id="fornecedorInput"
+                type="text"
+                class="form-control pe-5"
+                [value]="edit.fornecedor?.razaoSocial || ''"
+                readonly
+                placeholder="Selecione um fornecedor"
+                style="color:#35689b;"
+              >
+              <button
+                type="button"
+                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+                (click)="abrirModalFornecedor()"
+                style="color:#35689b;"
+                >
+                <i class="bi bi-search" style="color:#35689b;"></i>
+              </button>
+            </div>
+          </div>
+          <!-- PEÇA -->
+          <div class="col-md-5">
+            <label for="pecaInput" class="form-label">Peça</label>
+            <div class="position-relative" style="color:#35689b;">
+              <input
+                id="pecaInput"
+                type="text"
+                class="form-control pe-5"
+                [value]="edit.peca?.nome || ''"
+                readonly
+                placeholder="Selecione uma peça"
+                style="color:#35689b;"
+              >
+              <button
+                type="button"
+                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+                (click)="abrirModalPeca()"
+                style="color:#35689b;"
+              >
+                <i class="bi bi-search" style="color:#35689b;"></i>
+              </button>
+            </div>
+          </div>
+          <!-- VALOR -->
+          <div class="col-md-4">
+            <label class="form-label" for="valor-unitario">
+              Valor Unitário
+            </label>
+            <input
+              id="valor-unitario"
+              class="form-control"
+              [(ngModel)]="edit.valorCusto"
+              type="text"
+              [value]="edit.valorCusto"
+              style="color:#35689b;"
+              (blur)="formatarValorCusto()"
+            >
+          </div>
+          <!-- PRAZO -->
+          <div class="col-md-4">
+            <label class="form-label" for="prazo-entrega">
+              Prazo Entrega
+            </label>
+            <input id="prazo-entrega" class="form-control" [(ngModel)]="edit.prazoEntregaDias" style="color:#35689b;">
+          </div>
+
+          <!-- QUANTIDADE -->
+          <div class="col-md-4">
+            <label class="form-label" for="quantidade-minima">Quantidade Mínima</label>
+            <input id="quantidade-minima" class="form-control" [(ngModel)]="edit.quantidadeMinima" style="color:#35689b;">
+          </div>
+          <!-- STATUS -->
+          <div class="col-md-6">
+            <label class="form-label" for="status-ativo">Status</label>
+            <select id="status-ativo" class="form-select" [(ngModel)]="edit.ativo" style="color:#35689b;">
+              <option [ngValue]="true" style="color:#35689b;">Ativo</option>
+              <option [ngValue]="false" style="color:#35689b;">Inativo</option>
+            </select>
+          </div>
+          <!-- DATA -->
+          <div class="col-md-6" style="color:#35689b;">
+            <label class="form-label" for="data-cadastro" style="color:#35689b;">Data Cadastro</label>
+            <input id="data-cadastro" type="date" class="form-control" [(ngModel)]="edit.dataCadastro" style="color:#35689b;">
+          </div>
+        </div>
+      </div>
+      <!-- FOOTER -->
+      <div class="modal-footer" style="color:#35689b;">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" >Cancelar</button>
+        <button class="btn btn-primary" (click)="salvarEdicaoModal()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalFornecedor" tabindex="-1" aria-hidden="true" style="color:#35689b;">
+  <div class="modal-dialog modal-lg modal-dialog-centered" style="color:#35689b;">
+    <div class="modal-content" style="color:#35689b;">
+      <div class="modal-header" style="background:#eef6ff;color:#35689b;">
+        <h5 class="modal-title">Selecionar Fornecedor</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input
+          type="search"
+          class="form-control mb-3"
+          placeholder="Buscar fornecedor..."
+          [(ngModel)]="razaoSocialFiltroEdit"
+          (input)="aplicarFiltroFornecedorEdit()"
+        >
+        <div class="list-group fornecedor-lista">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action"
+            *ngFor="let f of fornecedoresFiltrados"
+            (click)="selecionarFornecedorModal(f)"
+          >
+            <div class="fw-semibold" style="color:#35689b;">{{ f.razaoSocial }}</div>
+            <small class="text-muted" style="color:#35689b;">{{ formatarCNPJ(f.cnpj) }}</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalPeca" tabindex="-1" aria-hidden="true" style="color:#35689b;">
+  <div class="modal-dialog modal-lg modal-dialog-centered" style="color:#35689b;">
+    <div class="modal-content" style="color:#35689b;">
+      <div class="modal-header" style="background:#eef6ff; color:#35689b;">
+        <h5 class="modal-title" style="color:#35689b;">Selecionar Peça</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" style="color:#35689b;"></button>
+      </div>
+      <div class="modal-body" style="color:#35689b;">
+        <input
+          type="search"
+          class="form-control mb-3"
+          placeholder="Buscar peça..."
+          [(ngModel)]="descricaoFiltroEdit"
+          (input)="aplicarFiltroPecaEdit()"
+          style="color:#35689b;"
+        >
+        <div class="list-group fornecedor-lista" style="color:#35689b;">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action"
+            *ngFor="let p of pecasFiltradas"
+            (click)="selecionarPecaModal(p)"
+            style="color:#35689b;"
+          >
+            <div class="fw-semibold" style="color:#35689b;">{{ capitalizar(p.nome) }}</div>
+            <small class="text-muted" style="color:#35689b;">{{ capitalizar(p.fabricante) }}-{{ capitalizar(p.modelo) }}</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Bordas/cores padrão */
+  .table thead th { border-color: #d0e2f2 !important; }
+  .table td, .table th { vertical-align: middle; color: #35689b; }
+  .table-hover tbody tr:hover { background-color: #f7fbff; }
+  .table-active { --bs-table-bg: #f1f7ff; }
+  /* Sem quebras e com elipse por padrão (uma linha por registro) */
+  .table.text-nowrap th,
+  .table.text-nowrap td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Linha em edição: mostrar todo o conteúdo (pode quebrar) */
+  .table.text-nowrap tr.editing > th,
+  .table.text-nowrap tr.editing > td {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word; /* ajuda com textos longos sem espaços */
+  }
+  /* Inputs na linha em edição com largura mínima confortável */
+  .table.text-nowrap tr.editing .form-control {
+    min-width: 220px;
+  }
+  .form-control:focus, .btn:focus {
+    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
+    border-color: #8fb4da;
+  }
+  .fornecedor-lista {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #d0e2f2;
+    border-radius: 6px;
+  }
+  .fornecedor-lista .list-group-item {
+    border: none;
+    border-bottom: 1px solid #eef3f8;
+  }
+  .fornecedor-lista .list-group-item:hover {
+    background: #f4f8fc;
+  }
+  .modal-content {
+    border-radius: 10px;
+    border: 1px solid #d0e2f2;
+  }
+  .modal-header {
+    border-bottom: 1px solid #d0e2f2;
+  }
+</style>

@@ -39,7 +39,7 @@ export class ExibePecaComponent implements OnInit {
   recarregar(): void {
     this.loading = true;
     this.errorMsg = '';
-    this.pecaService.listarTodos().subscribe({
+    this.pecaService.listarTodasPecas().subscribe({
       next: (lista) => {
         this.todos = (lista || []).map(u => ({
           ...u,
@@ -48,8 +48,8 @@ export class ExibePecaComponent implements OnInit {
         this.loading = false;
         this.cancelarEdicao();
       },
-      error: (err) => {
-        console.error(err);
+      error: (e) => {
+        console.error(e);
         this.loading = false;
         this.errorMsg = 'Falha ao carregar peças.';
       }
