@@ -24,7 +24,6 @@ public class UsuarioService {
         u.setNome_social(req.getNome_social());
         u.setSenha(req.getSenha());
         u.setTelefone(req.getTelefone());
-        u.setWhatsappapikey(req.getWhatsappapikey());
         u.setEmail(req.getEmail());
         u.setCep(soDigitos(req.getCep()));
         u.setLogradouro(req.getLogradouro());
@@ -34,7 +33,7 @@ public class UsuarioService {
         u.setComplemento_endereco(req.getComplemento_endereco());
         u.setNumero_endereco(req.getNumero_endereco());
         u.setTipo_do_acesso(req.getTipo_do_acesso());
-
+        u.setStatus(req.getStatus());
         // fundacao: front manda "dd/MM/yyyy"
         if (req.getNascimento() != null && !req.getNascimento().isBlank()) {
             try {

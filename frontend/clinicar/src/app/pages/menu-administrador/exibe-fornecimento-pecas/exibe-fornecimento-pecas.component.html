@@ -4,110 +4,129 @@
       <!-- Título / Cabeçalho -->
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">Fornecimentos de Peças</div>
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:8px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">  <i class="bi bi-box-seam me-2"></i>Gerenciamento do Fornecimento de Peças</div>
           </div>
         </div>
       </div>
-      <!-- Toolbar -->
-      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-        <div class="d-flex gap-2">
-          <button
-            class="btn btn-outline-primary"
-            type="button"
-            (click)="recarregarFornecimentos()"
-            style="border-color:#d0e2f2;color:#35689b;">
-            Atualizar
-          </button>
+      <div class="card clinicar-card" style="color:#35689b; border:1px solid #d0e2f2;">
+        <div class="card-body p-2" style="color:#35689b;">
+          <!-- Toolbar -->
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2" style="color:#35689b;">
+            <div class="input-group" style="max-width:40vw; color:#35689b;">
+              <span class="input-group-text">
+                <i class="bi bi-search"></i>
+              </span>
+              <input
+                #q
+                type="search"
+                class="form-control"
+                placeholder="Fornecedor ou peça"
+                (input)="filtrar(q.value)">
+              <div class=" d-flex flex-wrap gap-2 small text-muted input-group-text" style="color:#35689b; ">
+                <span style="color:#35689b;">Total de registros: </span>
+                <strong style="color:#35689b;">{{ fornecimentosPeca.length }}</strong>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <button
+                class="btn btn-outline-primary"
+                type="button"
+                (click)="recarregarFornecimentos()"
+                style="border-color:#d0e2f2;color:#35689b;">
+                Atualizar
+              </button>
+            </div>
+          </div>
+          <!-- Estados globais -->
+          <div *ngIf="loading" class="alert alert-info py-2">Carregando fornecimentos…</div>
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
+          <!-- Tabela -->
+          <div class="table-responsive">
+            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+              <thead style="background:#eef6ff;color:#35689b;">
+                <tr>
+                  <th>ID</th>
+                  <th>Fornecedor</th>
+                  <th>Peça</th>
+                  <th>Custo Unitário</th>
+                  <th>Prazo Entrega (Dias)</th>
+                  <th>Quantidade Mínima</th>
+                  <th>Status</th>
+                  <th>Data Cadastro</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let fornecimento of fornecimentosPeca; let i = index"
+                  [class.table-active]="editId === fornecimento.id"
+                  [class.editing]="editId === fornecimento.id"><!-- <- habilita quebra apenas na linha em edição -->
+                  <!-- ID -->
+                  <td>
+                    <ng-container *ngIf="editId !== fornecimento.id; else edit_id">
+                      {{ fornecimento.id }}
+                    </ng-container>
+                    <ng-template #edit_id>
+                        {{ fornecimento.id }}
+                    </ng-template>
+                  </td>
+                  <!-- Fornecedor -->
+                  <td>{{ fornecedorRazaoSocial(fornecimento) }}</td>
+                  <!-- Peça -->
+                  <td>{{ descricaoPeca(fornecimento) }}</td>
+                  <!-- Valor Custo -->
+                  <td>{{ fornecimento.valorCusto | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
+                  <!-- Prazo Entrega Dias -->
+                  <td>{{ fornecimento.prazoEntregaDias }}</td>
+                  <!-- Quantidade Mínima -->
+                  <td>{{ fornecimento.quantidadeMinima }}</td>
+                  <!-- Status -->
+                  <td>
+                    <span class="badge" [ngClass]="fornecimento.ativo ? 'bg-success' : 'bg-secondary'">
+                      {{ fornecimento.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </td>
+                  <!-- Data Cadastro -->
+                  <td>{{ fornecimento.dataCadastro | date:'dd/MM/yyyy' }}</td>
+                  <!-- Ações -->
+                  <td class="text-center" style="min-width: 160px;">
+                    <ng-container *ngIf="editId !== fornecimento.id; else edit_acoes">
+                      <button
+                        class="btn btn-sm btn-outline-primary me-1"
+                        (click)="abrirModalEdicao(fornecimento)"
+                        style="border-color:#8fb4da;color:#35689b;">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger"
+                        (click)="excluir(fornecimento.id)"
+                        style="border-color:#f3c7c7;color:#b03030;">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                    <ng-template #edit_acoes>
+                      <button
+                        class="btn btn-sm btn-outline-primary me-1"
+                        (click)="abrirModalEdicao(fornecimento)"
+                        style="border-color:#8fb4da;color:#35689b;">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger"
+                        (click)="excluir(fornecimento.id)"
+                        style="border-color:#f3c7c7;color:#b03030;">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-template>
+                  </td>
+                </tr>
+                <!-- Sem dados -->
+                <tr *ngIf="!pecas || pecas.length === 0">
+                  <td colspan="15" class="text-center text-muted py-4">Nenhuma peça encontrada.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-      <!-- Estados globais -->
-      <div *ngIf="loading" class="alert alert-info py-2">Carregando fornecimentos…</div>
-      <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
-      <!-- Tabela -->
-      <div class="table-responsive">
-        <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-          <thead style="background:#eef6ff;color:#35689b;">
-            <tr>
-              <th>ID</th>
-              <th>Fornecedor</th>
-              <th>Peça</th>
-              <th>Custo Unitário</th>
-              <th>Prazo Entrega (Dias)</th>
-              <th>Quantidade Mínima</th>
-              <th>Status</th>
-              <th>Data Cadastro</th>
-              <th class="text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              *ngFor="let fornecimento of fornecimentosPeca; let i = index"
-              [class.table-active]="editId === fornecimento.id"
-              [class.editing]="editId === fornecimento.id"><!-- <- habilita quebra apenas na linha em edição -->
-              <!-- ID -->
-              <td>
-                <ng-container *ngIf="editId !== fornecimento.id; else edit_id">
-                  {{ fornecimento.id }}
-                </ng-container>
-                <ng-template #edit_id>
-                    {{ fornecimento.id }}
-                </ng-template>
-              </td>
-              <!-- Fornecedor -->
-              <td>{{ fornecedorRazaoSocial(fornecimento) }}</td>
-              <!-- Peça -->
-              <td>{{ descricaoPeca(fornecimento) }}</td>
-              <!-- Valor Custo -->
-              <td>{{ fornecimento.valorCusto | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
-              <!-- Prazo Entrega Dias -->
-              <td>{{ fornecimento.prazoEntregaDias }}</td>
-              <!-- Quantidade Mínima -->
-              <td>{{ fornecimento.quantidadeMinima }}</td>
-              <!-- Status -->
-              <td>
-                <span class="badge" [ngClass]="fornecimento.ativo ? 'bg-success' : 'bg-secondary'">
-                  {{ fornecimento.ativo ? 'Ativo' : 'Inativo' }}
-                </span>
-              </td>
-              <!-- Data Cadastro -->
-              <td>{{ fornecimento.dataCadastro | date:'dd/MM/yyyy' }}</td>
-              <!-- Ações -->
-              <td class="text-center" style="min-width: 160px;">
-                <ng-container *ngIf="editId !== fornecimento.id; else edit_acoes">
-                  <button
-                    class="btn btn-sm btn-outline-primary me-1"
-                    (click)="abrirModalEdicao(fornecimento)"
-                    style="border-color:#8fb4da;color:#35689b;">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger"
-                    (click)="excluir(fornecimento.id)"
-                    style="border-color:#f3c7c7;color:#b03030;">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </ng-container>
-                <ng-template #edit_acoes>
-                  <button
-                    class="btn btn-sm btn-outline-primary me-1"
-                    (click)="abrirModalEdicao(fornecimento)"
-                    style="border-color:#8fb4da;color:#35689b;">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger"
-                    (click)="excluir(fornecimento.id)"
-                    style="border-color:#f3c7c7;color:#b03030;">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </ng-template>
-              </td>
-            </tr>
-            <!-- Sem dados -->
-            <tr *ngIf="!pecas || pecas.length === 0">
-              <td colspan="15" class="text-center text-muted py-4">Nenhuma peça encontrada.</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   </div>

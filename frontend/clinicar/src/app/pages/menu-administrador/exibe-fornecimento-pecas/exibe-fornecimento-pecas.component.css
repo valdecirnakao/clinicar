@@ -18,3 +18,9 @@
   border-color: #8fb4da;
   box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
 }
+
+.clinicar-card {
+  border: 1px solid #d0e2f2;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.05);
+}

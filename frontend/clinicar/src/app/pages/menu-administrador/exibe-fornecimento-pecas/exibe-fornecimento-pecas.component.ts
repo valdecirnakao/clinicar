@@ -407,4 +407,17 @@ export class ExibeFornecimentoPecaComponent implements OnInit {
       maximumFractionDigits: 2
     });
   }
+
+  filtrar(term: string): void {
+    const t = (term || '').trim().toLowerCase();
+    if (!t) { this.fornecimentosPeca = [...this.todos]; return; }
+
+    this.fornecimentosPeca = this.todos.filter(f => {
+      const fornecedorRaw = (f.fornecedor?.razaoSocial || '').toLowerCase();
+      const pecaRaw = (f.peca?.nome || '').toLowerCase();
+      return fornecedorRaw.includes(t)
+          || pecaRaw.includes(t);
+    });
+  }
+
 }

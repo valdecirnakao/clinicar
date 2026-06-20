@@ -10,7 +10,6 @@ public class UsuarioRequest {
     private String senha;
     private String nascimento;
     private String telefone;
-    private String whatsappapikey;
     private String email;
     private String cep;
     private String logradouro;
@@ -20,4 +19,5 @@ public class UsuarioRequest {
     private String complemento_endereco;
     private String numero_endereco;
     private String tipo_do_acesso;
+    private String status;
 }

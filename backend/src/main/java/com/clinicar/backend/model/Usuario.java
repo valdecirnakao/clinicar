@@ -21,7 +21,6 @@ public class Usuario {
     private String cpf;
     private LocalDate nascimento;       
     private String telefone;
-    private String whatsappapikey;
     private String cep;
     private String numero_endereco;
     private String complemento_endereco;
@@ -30,4 +29,5 @@ public class Usuario {
     private String cidade;
     private String estado;
     private String tipo_do_acesso;
+    private String status;
 }
