@@ -11,7 +11,7 @@ export interface Usuario {
   nome: string;
   nome_social: string;
   senha: string;
-  whatsappapikey: string;
+  status: string;
   email: string;
   nascimento: string | Date;     // 'yyyy-MM-dd' ou Date
   cep: string;

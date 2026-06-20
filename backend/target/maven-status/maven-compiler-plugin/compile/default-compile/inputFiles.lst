@@ -6,6 +6,7 @@ C:\TG\backend\src\main\java\com\clinicar\backend\controller\PecaController.java
 C:\TG\backend\src\main\java\com\clinicar\backend\controller\ServicoController.java
 C:\TG\backend\src\main\java\com\clinicar\backend\controller\UsuarioController.java
 C:\TG\backend\src\main\java\com\clinicar\backend\controller\VeiculoController.java
+C:\TG\backend\src\main\java\com\clinicar\backend\controller\WhatsAppController.java
 C:\TG\backend\src\main\java\com\clinicar\backend\dto\FornecedorRequest.java
 C:\TG\backend\src\main\java\com\clinicar\backend\dto\FornecimentoPecasRequest.java
 C:\TG\backend\src\main\java\com\clinicar\backend\dto\LoginDTO.java
@@ -13,6 +14,8 @@ C:\TG\backend\src\main\java\com\clinicar\backend\dto\PecaRequest.java
 C:\TG\backend\src\main\java\com\clinicar\backend\dto\ServicoRequest.java
 C:\TG\backend\src\main\java\com\clinicar\backend\dto\UsuarioRequest.java
 C:\TG\backend\src\main\java\com\clinicar\backend\dto\VeiculoRequest.java
+C:\TG\backend\src\main\java\com\clinicar\backend\dto\WhatsAppCadastroUsuarioDTO.java
+C:\TG\backend\src\main\java\com\clinicar\backend\dto\WhatsAppRequestDTO.java
 C:\TG\backend\src\main\java\com\clinicar\backend\model\Fornecedor.java
 C:\TG\backend\src\main\java\com\clinicar\backend\model\FornecimentoPecas.java
 C:\TG\backend\src\main\java\com\clinicar\backend\model\Peca.java
@@ -31,3 +34,4 @@ C:\TG\backend\src\main\java\com\clinicar\backend\service\PecaService.java
 C:\TG\backend\src\main\java\com\clinicar\backend\service\ServicoService.java
 C:\TG\backend\src\main\java\com\clinicar\backend\service\UsuarioService.java
 C:\TG\backend\src\main\java\com\clinicar\backend\service\VeiculoService.java
+C:\TG\backend\src\main\java\com\clinicar\backend\service\WhatsAppService.java

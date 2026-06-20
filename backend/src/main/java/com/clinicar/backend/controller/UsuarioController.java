@@ -77,7 +77,6 @@ public class UsuarioController {
     }
     usuario.setCpf(usuarioAtualizado.getCpf());
     usuario.setTelefone(usuarioAtualizado.getTelefone());
-    usuario.setWhatsappapikey(usuarioAtualizado.getWhatsappapikey());
     usuario.setCep(usuarioAtualizado.getCep());
     usuario.setLogradouro(usuarioAtualizado.getLogradouro());
     usuario.setBairro(usuarioAtualizado.getBairro());
@@ -86,6 +85,7 @@ public class UsuarioController {
     usuario.setComplemento_endereco(usuarioAtualizado.getComplemento_endereco());
     usuario.setNumero_endereco(usuarioAtualizado.getNumero_endereco());
     usuario.setTipo_do_acesso(usuarioAtualizado.getTipo_do_acesso());
+    usuario.setStatus(usuarioAtualizado.getStatus());
         usuarioRepository.save(usuario);
         return ResponseEntity.ok(usuario);
     } else {
@@ -102,7 +102,6 @@ public class UsuarioController {
     private String nascimento;
     private String cpf;
     private String telefone;
-    private String whatsappapikey;
     private String cep;
     private String logradouro;
     private String bairro;
@@ -111,7 +110,7 @@ public class UsuarioController {
     private String complemento_endereco;
     private String numero_endereco;
     private String tipo_do_acesso;
-
+    private String status;
     // getters and setters
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
@@ -127,8 +126,8 @@ public class UsuarioController {
     public void setCpf(String cpf) { this.cpf = cpf; }
     public String getTelefone() { return telefone; }
     public void setTelefone(String telefone) { this.telefone = telefone; }
-    public String getWhatsappapikey() { return whatsappapikey; }
-    public void setWhatsappapikey(String whatsappapikey) { this.whatsappapikey = whatsappapikey; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public String getCep() { return cep; }
     public void setCep(String cep) { this.cep = cep; }
     public String getLogradouro() { return logradouro; }

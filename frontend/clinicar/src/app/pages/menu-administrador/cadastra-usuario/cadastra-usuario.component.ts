@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { CadastraUsuarioService } from './cadastra-usuario.service';
+import { WhatsappCloudService } from '../../../services/whatsapp-cloud.service';
 
 interface ViaCepResponse {
   cep?: string;
@@ -25,7 +26,7 @@ type Usuario = {
   nome_social: string;
   tipo_do_acesso: string;
   telefone: string;
-  whatsappapikey: string;
+  status: string;
   senha: string;
   confirmarSenha: string;
   email: string;
@@ -47,13 +48,14 @@ type Usuario = {
   styleUrls: ['./cadastra-usuario.component.css']
 })
 export class CadastraUsuarioComponent implements OnInit {
+  camposInvalidos: string[] = [];
   usuario: Usuario = {
     cpf: '',
     nome: '',
     nome_social: '',
     tipo_do_acesso: '',
     telefone: '',
-    whatsappapikey: '',
+    status: '',
     senha: '',
     confirmarSenha: '',
     email: '',
@@ -77,6 +79,7 @@ export class CadastraUsuarioComponent implements OnInit {
   constructor(
     private readonly cadastraUsuarioService: CadastraUsuarioService,
     private readonly http: HttpClient,
+    private readonly whatsappCloudService: WhatsappCloudService,
     private readonly router: Router
   ) {}
 
@@ -130,7 +133,7 @@ export class CadastraUsuarioComponent implements OnInit {
   }
 
   // ========= VIA CEP =========
-  onCepBlur(): void {
+  consultarCepCadastro(): void {
     this.formatarCEP();
     const cepNums = this.onlyDigits(this.usuario.cep);
     if (cepNums.length !== 8) {
@@ -171,7 +174,7 @@ export class CadastraUsuarioComponent implements OnInit {
     // validações básicas
     const camposObrig = [
       'cpf','nome','telefone','email','nascimento',
-      'cep','numero_endereco','logradouro','bairro','cidade','estado'
+      'cep','numero_endereco','logradouro','bairro','cidade','estado', 'tipo_do_acesso', 'senha', 'confirmarSenha'
     ] as const;
 
     if (this.usuario.senha !== this.usuario.confirmarSenha) {
@@ -181,6 +184,7 @@ export class CadastraUsuarioComponent implements OnInit {
 
     const faltando = camposObrig.filter(c => !String(this.usuario[c]).trim());
     if (faltando.length) {
+      this.camposInvalidos = faltando;
       alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
@@ -191,7 +195,9 @@ export class CadastraUsuarioComponent implements OnInit {
       cpf: this.onlyDigits(this.usuario.cpf),
       telefone: this.onlyDigits(this.usuario.telefone),
       cep: this.onlyDigits(this.usuario.cep),
-      estado: (this.usuario.estado || '').toUpperCase()
+      estado: (this.usuario.estado || '').toUpperCase(),
+      nascimento: this.converterDataParaISO(this.usuario.nascimento),
+      status: 'ativo' // força status para ativo no cadastro
     };
     // opcional: não enviar confirmarSenha
     delete (payload as any).confirmarSenha;
@@ -201,11 +207,14 @@ export class CadastraUsuarioComponent implements OnInit {
     this.cadastraUsuarioService.cadastrar(payload).subscribe({
       next: () => {
         alert('Cadastro realizado com sucesso!');
+        const telefone = this.usuario.telefone;
+        const nome = this.usuario.nome;
+        this.whatsappCloudService.enviarMensagemCadastroUsuario({ telefone, nome }).subscribe();
         form.resetForm();
         for (const k of Object.keys(this.usuario)) {
           this.usuario[k as keyof Usuario] = '' as any;
         }
-        this.router.navigate(['/usuario']); // ajuste a rota se necessário
+        this.router.navigate(['/menuAdministrador/cadastraUsuario']); // ajuste a rota se necessário
       },
       error: (err) => {
         console.error(err);
@@ -235,7 +244,7 @@ export class CadastraUsuarioComponent implements OnInit {
         nome_social: '',
         tipo_do_acesso: '',
         telefone: '',
-        whatsappapikey: '',
+        status: '',
         senha: '',
         confirmarSenha: '',
         email: '',
@@ -259,7 +268,7 @@ export class CadastraUsuarioComponent implements OnInit {
       this.usuario.nome_social          = existente.nome_social || '';
       this.usuario.tipo_do_acesso      = existente.tipo_do_acesso || '';
       this.usuario.telefone            = existente.telefone || '';
-      this.usuario.whatsappapikey      = existente.whatsappapikey || '';
+      this.usuario.status              = existente.status || '';
       this.usuario.senha               = existente.senha || '';
       this.usuario.email               = existente.email || '';
       this.usuario.nascimento          = existente.nascimento || '';
@@ -271,5 +280,46 @@ export class CadastraUsuarioComponent implements OnInit {
       this.usuario.complemento_endereco = existente.complemento_endereco || '';
       this.usuario.numero_endereco      = existente.numero_endereco || '';
     }
+  }
+
+  formatarCPFouCNPJ(): void {
+    if (!this.usuario.cpf) return;
+    const d = this.onlyDigits(this.usuario.cpf);
+    if (d.length === 11) {
+      this.usuario.cpf = d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else if (d.length === 14) {
+      this.usuario.cpf = d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    } else {
+      this.usuario.cpf = d; // mantém só os dígitos se não tiver o tamanho esperado
+    }
+  }
+
+  formatarData(): void {
+let valor = this.usuario.nascimento || '';
+    valor = valor.replace(/\D/g, '');
+    if (valor.length > 2) { valor = valor.substring(0, 2) + '/' + valor.substring(2);}
+    if (valor.length > 5) {valor = valor.substring(0, 5) + '/' + valor.substring(5, 9);}
+    this.usuario.nascimento = valor;
+  }
+
+  mostrarSenha: boolean = false;
+  toggleMostrarSenha(): void {
+    this.mostrarSenha = !this.mostrarSenha;
+  }
+
+  confirmarSenha(): boolean {
+    return this.usuario.senha === this.usuario.confirmarSenha;
+  }
+
+  voltar(): void {
+    this.router.navigate(['/menuAdministrador']);
+  }
+
+  converterDataParaISO(dataBR: string): string {
+    if (!dataBR) return '';
+    const partes = dataBR.split('/');
+    if (partes.length !== 3) return '';
+    const [dia, mes, ano] = partes;
+    return `${ano}-${mes}-${dia}`;
   }
 }
