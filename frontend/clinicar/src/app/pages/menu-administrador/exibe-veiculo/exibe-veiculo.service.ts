@@ -55,15 +55,12 @@ export class VeiculoService {
   /** Converte do modelo da UI para o que o backend espera e remove undefined. */
   private toApi(d: Partial<VeiculoUI>): Record<string, unknown> {
     const out: Record<string, unknown> = {};
-
-    if (d['placa'] != null)        out['placa'] = d['placa'].toUpperCase().replaceAll(/\s+/g, '');
+    if (d['placa'] != null) { out['placa'] = d['placa'].toUpperCase().replace(/[^A-Z0-9]/g, '');}
     if (d['fabricante'] != null)   out['fabricante'] = d['fabricante'];
     if (d.cor != null)          out['cor'] = (d.cor ?? '').toString().trim();
     if (d.modelo != null)       out['modelo'] = d['modelo'];
-
     if (d.anoModeloCombustivel != null) out[AMC_KEY] = d.anoModeloCombustivel;
     if (d.idProprietario != null)       out[OWNER_KEY] = Number(d.idProprietario);
-
     // limpa undefined
     for (const k of Object.keys(out)) {
       if (out[k] === undefined) delete out[k];

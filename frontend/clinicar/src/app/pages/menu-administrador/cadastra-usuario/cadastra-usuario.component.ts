@@ -295,7 +295,7 @@ export class CadastraUsuarioComponent implements OnInit {
   }
 
   formatarData(): void {
-let valor = this.usuario.nascimento || '';
+    let valor = this.usuario.nascimento || '';
     valor = valor.replace(/\D/g, '');
     if (valor.length > 2) { valor = valor.substring(0, 2) + '/' + valor.substring(2);}
     if (valor.length > 5) {valor = valor.substring(0, 5) + '/' + valor.substring(5, 9);}

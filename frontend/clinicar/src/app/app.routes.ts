@@ -24,7 +24,6 @@ export const routes: Routes = [
       { path: 'exibeFornecedor', component: ExibeFornecedorComponent }, // filho (NÃO repete o pai)
       { path: 'cadastraUsuario', component: CadastraUsuarioComponent }, // filho (NÃO repete o pai)
       { path: 'exibeUsuario', component: ExibeUsuarioComponent }, // filho (NÃO repete o pai)
-      { path: 'exibeUsuario', component: ExibeUsuarioComponent }, // filho (NÃO repete o pai)
       { path: 'cadastraVeiculo', component: CadastroVeiculoComponent }, // filho (NÃO repete o pai)
       { path: 'exibeVeiculo', component: ExibeVeiculoComponent }, // filho (NÃO repete o pai)
       { path: 'cadastraPeca', component: CadastraPecaComponent }, // filho (NÃO repete o pai)
