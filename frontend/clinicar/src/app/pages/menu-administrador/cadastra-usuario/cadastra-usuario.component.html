@@ -1,10 +1,10 @@
-<div class="container-fluid px-0 mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid px-0 mt-0 mb-0 px-2" style="color:#35689b;">
   <div class="row justify-content-center">
     <div class="col-md-12 sm-mt-0">
       <!-- Título -->
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
             <div class="card-body" style="color:#35689b;">Cadastro de Usuários</div>
           </div>
         </div>
@@ -12,8 +12,8 @@
       <!-- Formulário -->
       <form #form="ngForm" (ngSubmit)="cadastrar(form)" style="color:#35689b;">
         <!-- DADOS PESSOAIS -->
-        <div class="card clinicar-card mb-2" style="color:#35689b;">
-          <div class="card-header clinicar-card-header" style="color:#35689b;">
+        <div class="card clinicar-card mb-2" style="color:#35689b; border:1px solid #d0e2f2;border-radius:10px;">
+          <div class="card-header clinicar-card-header" style="color:#35689b; background:#eef6ff; border-top-left-radius:9px; border-top-right-radius:9px; border-bottom:1px solid #d0e2f2">
             <i class="bi bi-person-vcard me-1"></i>
             Dados Pessoais | Empresariais
           </div>
@@ -75,8 +75,8 @@
           </div>
         </div>
         <!-- CONTATO E ACESSO -->
-        <div class="card clinicar-card mb-2" style="color:#35689b;">
-          <div class="card-header clinicar-card-header" style="color:#35689b;">
+        <div class="card clinicar-card mb-2" style="color:#35689b; border:1px solid #d0e2f2;border-radius:10px;">
+          <div class="card-header clinicar-card-header" style="color:#35689b; background:#eef6ff; border-top-left-radius:9px; border-top-right-radius:9px; border-bottom:1px solid #d0e2f2">
             <i class="bi bi-telephone me-1"></i>
             Contato e Acesso
           </div>
@@ -131,7 +131,7 @@
                   class="btn btn-sm btn-outline-primary w-100"
                   title="Mostrar/Ocultar senha"
                   (click)="toggleMostrarSenha()"
-                  style="color:#35689b;">
+                  style="color:#35689b; border:1px solid #d0e2f2; background:#eef6ff;">
                   <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"></i>
                 </button>
               </div>
@@ -141,16 +141,14 @@
         </div>
 
         <!-- ENDEREÇO -->
-        <div class="card clinicar-card mb-2" style="color:#35689b;">
-          <div class="card-header clinicar-card-header" style="color:#35689b;">
+        <div class="card clinicar-card mb-2" style="color:#35689b; border:1px solid #d0e2f2;border-radius:10px;">
+          <div class="card-header clinicar-card-header" style="color:#35689b; background:#eef6ff; border-top-left-radius:9px; border-top-right-radius:9px; border-bottom:1px solid #d0e2f2">
             <i class="bi bi-geo-alt me-1"></i>
             Endereço
           </div>
-
           <div class="card-body" style="color:#35689b;">
             <div class="row g-2" style="color:#35689b;">
-
-              <div class="col-md-2" style="color:#35689b;">
+              <div class="col-md-1" style="color:#35689b;">
                 <label class="form-label">CEP <span class="text-danger">*</span></label>
                 <input
                   class="form-control form-control-sm"
@@ -162,7 +160,7 @@
                   style="color:#35689b;">
               </div>
 
-              <div class="col-md-5" style="color:#35689b;">
+              <div class="col-md-3" style="color:#35689b;">
                 <label class="form-label">Logradouro <span class="text-danger">*</span></label>
                 <input
                   class="form-control form-control-sm campo-autopreenchido"
@@ -172,7 +170,7 @@
                   style="color:#35689b;">
               </div>
 
-              <div class="col-md-2" style="color:#35689b;">
+              <div class="col-md-1" style="color:#35689b;">
                 <label class="form-label">Número <span class="text-danger">*</span></label>
                 <input
                   class="form-control form-control-sm"
@@ -181,7 +179,15 @@
                   [class.is-invalid]="camposInvalidos.includes('numero_endereco')"
                   style="color:#35689b;">
               </div>
-
+              <div class="col-md-2" style="color:#35689b;">
+                <label class="form-label">Complemento</label>
+                <input
+                  class="form-control form-control-sm"
+                  name="complemento_endereco"
+                  [(ngModel)]="usuario.complemento_endereco"
+                  style="color:#35689b;"
+                  style="color:#35689b;">
+              </div>
               <div class="col-md-1" style="color:#35689b;">
                 <label class="form-label">UF <span class="text-danger">*</span></label>
                 <input
@@ -203,17 +209,7 @@
                   style="color:#35689b;">
               </div>
 
-              <div class="col-md-4" style="color:#35689b;">
-                <label class="form-label">Complemento</label>
-                <input
-                  class="form-control form-control-sm"
-                  name="complemento_endereco"
-                  [(ngModel)]="usuario.complemento_endereco"
-                  style="color:#35689b;"
-                  style="color:#35689b;">
-              </div>
-
-              <div class="col-md-4" style="color:#35689b;">
+              <div class="col-md-2" style="color:#35689b;">
                 <label class="form-label">Cidade <span class="text-danger">*</span></label>
                 <input
                   class="form-control form-control-sm campo-autopreenchido"

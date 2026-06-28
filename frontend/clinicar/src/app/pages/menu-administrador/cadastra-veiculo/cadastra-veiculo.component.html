@@ -1,236 +1,269 @@
-<div class="container mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
   <div class="row justify-content-center">
-    <div class="col-md-12 sm-mt-0">
-      <!-- Título -->
-      <div class="row mt-0">
-        <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">Cadastro de Veículos</div>
-          </div>
+    <div class="col-md-12">
+      <!-- Cabeçalho -->
+      <div class="card mb-3"
+           style="border:1px solid #d0e2f2;background:#eef6ff; color:#35689b;">
+        <div class="card-body text-center">
+          <h5 class="mb-0">
+            <i class="bi bi-car-front me-2"></i>
+            Cadastro de Veículos
+          </h5>
         </div>
       </div>
-
-      <form #form="ngForm" (ngSubmit)="cadastrar(form)">
-        <div class="row">
-          <!-- Placa -->
-          <div class="col-md-2 mb-2">
-            <label for="placa" class="form-label">Placa</label>
-            <input id="placa" name="placa" class="form-control"
-                   required [(ngModel)]="veiculo.placa"
-                   (blur)="formatarPlaca()" autocomplete="off"
-                   style="color:#35689b;">
-          </div>
-
-          <!-- Montadora (FIPE) -->
-          <div class="col-md-3 mb-2">
-            <label for="montadora" class="form-label">Montadora</label>
-            <!-- Montadora -->
-            <select id="montadora" class="form-select"
-              name="montadora"
-              [(ngModel)]="marcaSelCode"
-              [disabled]="fipeCarregando.marcas"
-              (ngModelChange)="onChangeMarca($event)">
-              <option value="">Selecione...</option>
-              <option *ngFor="let m of marcas; trackBy: trackByBrand" [value]="m.code">
-                {{ m.name }}
-              </option>
-            </select>
-            <!-- feedback de validação do form -->
-            <small class="text-danger" *ngIf="form?.submitted && !marcaSelCode">
-              Selecione a Montadora
-            </small>
-
-            <!-- feedback de erro de carga -->
-            <small class="text-danger" *ngIf="!fipeCarregando.marcas && fipeErro && (marcas.length || 0) === 0">
-              {{ fipeErro }}
-            </small>
-          </div>
-
-          <!-- Modelo (FIPE) -->
-          <div class="col-md-4 mb-2">
-            <label for="modeloFipe" class="form-label">Modelo</label>
-            <select id="modeloFipe" class="form-select"
-              name="modeloFipe"
-              [(ngModel)]="modeloSelCode"
-              [disabled]="!marcaSelCode || fipeCarregando.modelos"
-              (ngModelChange)="onChangeModelo($event)">
-              <option value="">Selecione...</option>
-              <option *ngFor="let mo of modelos; trackBy: trackByModel" [value]="mo.code">
-                {{ mo.name }}
-              </option>
-            </select>
-
-            <small class="text-danger" *ngIf="form?.submitted && !modeloSelCode">
-              Selecione um Modelo
-            </small>
-          </div>
-
-
-          <!-- Ano / Modelo / Combustível (FIPE) -->
-          <div class="col-md-3 mb-2">
-            <label for="anoFipe" class="form-label">Ano / Modelo / Combustível</label>
-
-            <select id="anoFipe" class="form-select"
-              name="anoFipe"
-              [(ngModel)]="anoSelCode"
-              [disabled]="!modeloSelCode || fipeCarregando.anos"
-              (ngModelChange)="onChangeAno($event)">
-              <option value="">Selecione...</option>
-              <option *ngFor="let a of anos; trackBy: trackByYear" [value]="a.code">
-                {{ a.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- feedback de validação -->
-          <small class="text-danger" *ngIf="form.submitted && !anoSelCode">
-            Selecione o Ano/Modelo/Combustível
-          </small>
-
-          <!-- resumo do que ficou escolhido -->
-          <div class="form-text" *ngIf="veiculo.anoModeloCombustivel">
-            Selecionado: {{ veiculo.fabricante }} / {{ veiculo.modelo }} — {{ veiculo.anoModeloCombustivel }}
-          </div>
-
-                      <!-- Cor -->
-          <div class="col-md-2 mb-2">
-            <label for="cor" class="form-label">Cor</label>
-            <input id="cor" name="cor" class="form-control"
-                   [(ngModel)]="veiculo.cor" style="color:#35689b;">
-          </div>
-
-
-
-          <!-- CPF do Proprietário (dropdown com busca) -->
-          <div class="col-md-4 mb-2">
-            <label for="cpfProprietario" class="form-label">CPF do Proprietário</label>
-            <!-- INPUT de exibição/ativação -->
-            <div class="position-relative cpf-picker">
-              <input
-                id="cpfProprietario"
-                class="form-control"
-                [value]="cpfDisplay || ''"
-                (click)="toggleDropdown(true)"
-                placeholder="Selecione um CPF"
-                readonly
-                style="color:#35689b; background:#fff; cursor:pointer;"/>
-              <!-- Dropdown -->
-              <div class="cpf-dropdown shadow-sm" *ngIf="dropdownOpen">
-                <!-- Barra de pesquisa -->
-                <div class="p-2 border-bottom" style="background:#f8fbff;">
-                  <input type="search" class="form-control form-control-sm"
-                         placeholder="Buscar por CPF, nome ou e-mail"
-                         [(ngModel)]="cpfFiltro" name="cpfFiltro"
-                         (input)="aplicarFiltro()">
-                </div>
-
-                <!-- Lista rolável -->
-                <div class="cpf-list">
-                  <button type="button"
-                          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                          *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuario"
-                          (click)="selecionarProprietario(u)">
-                    <span class="fw-semibold">{{ formatarCPF(u.cpf) }}</span>
-                    <small class="text-muted text-truncate ms-2">{{ u.nome }}</small>
+      <!-- Card Principal -->
+      <div class="card shadow-sm" style="border:1px solid #d0e2f2;">
+        <div class="card-body">
+          <form #form="ngForm" (ngSubmit)="cadastrar(form)">
+            <!-- Dados do Veículo -->
+            <h6 class="mb-3" style="color:#35689b;border-bottom:1px solid #d0e2f2;padding-bottom:8px;">
+              <i class="bi bi-car-front me-1"></i>
+              Dados do Veículo
+            </h6>
+            <div class="row">
+              <!-- Placa -->
+              <div class="col-md-2 mb-3" style = "color:#35689b;">
+                <label for="placa" class="form-label">Placa</label>
+                <input
+                  id="placa"
+                  name="placa"
+                  class="form-control text-uppercase"
+                  required
+                  maxlength="8"
+                  [(ngModel)]="veiculo.placa"
+                  (blur)="formatarPlaca()"
+                  autocomplete="off"
+                  placeholder="ABC1D23"
+                  style="color:#35689b;"
+                >
+              </div>
+              <!-- Montadora -->
+              <div class="col-md-2 mb-3" style = "color:#35689b;">
+                <label for="montadora" class="form-label">Montadora</label>
+                <select
+                  id="montadora"
+                  class="form-select"
+                  name="montadora"
+                  [(ngModel)]="marcaSelCode"
+                  style = "color:#35689b;"
+                  (ngModelChange)="onChangeMarca($event)"
+                >
+                  <option style = "color:#35689b;" value="">Selecione...</option>
+                  <option *ngFor="let m of marcas; trackBy: trackByBrand" [value]="m.code" style = "color:#35689b;">
+                    {{ formatarFabricante(m.name) }}
+                  </option>
+                </select>
+              </div>
+              <!-- Modelo -->
+              <div class="col-md-4 mb-3" style = "color:#35689b;">
+                <label for="modeloFipe" class="form-label" style = "color:#35689b;">Modelo</label>
+                <select
+                  id="modeloFipe"
+                  class="form-select"
+                  name="modeloFipe"
+                  [(ngModel)]="modeloSelCode"
+                  style = "color:#35689b;"
+                  (ngModelChange)="onChangeModelo($event)"
+                >
+                  <option style = "color:#35689b;" value="">Selecione...</option>
+                  <option *ngFor="let mo of modelos; trackBy: trackByModel" [value]="mo.code" style = "color:#35689b;">
+                    {{ capitalizar(mo.name) }}
+                  </option>
+                </select>
+              </div>
+              <!-- Ano -->
+              <div class="col-md-2 mb-3">
+                <label for="anoFipe" class="form-label" style = "color:#35689b;">Ano / Combustível</label>
+                <select
+                  id="anoFipe"
+                  class="form-select"
+                  style = "color:#35689b;"
+                  name="anoFipe"
+                  [(ngModel)]="anoSelCode"
+                  (ngModelChange)="onChangeAno($event)"
+                >
+                  <option value="">Selecione...</option>
+                  <option *ngFor="let a of anos; trackBy: trackByYear" [value]="a.code" style = "color:#35689b;"> {{ a.name }}</option>
+                </select>
+              </div>
+              <!-- Cor -->
+              <div class="col-md-2 mb-3">
+                <label for="cor" class="form-label" style = "color:#35689b;">Cor</label>
+                <input id="cor"
+                  class="form-control"
+                  name="cor"
+                  [(ngModel)]="veiculo.cor"
+                  style = "color:#35689b;"
+                  [value]= "capitalizar(veiculo.cor) || ''"
+                >
+              </div>
+            </div>
+            <!-- Resumo FIPE -->
+            <div style="border:1px solid #d0e2f2;background:#eef6ff; color:#35689b;"
+              *ngIf="veiculo.anoModeloCombustivel"
+              class="alert alert-info py-2">
+              <strong>Veículo informado:</strong>
+              {{ formatarFabricante(veiculo.fabricante) }} | {{ capitalizar(veiculo.modelo) }} |
+              {{ veiculo.anoModeloCombustivel.replace('/', '-') }}
+            </div>
+            <!-- Proprietário -->
+            <h6 class="mt-4 mb-3" style="color:#35689b;border-bottom:1px solid #d0e2f2;padding-bottom:8px;">
+              <i class="bi bi-person-badge me-1"></i>
+              Proprietário
+            </h6>
+            <div class="row align-items-end" style = "color:#35689b;">
+              <div class="col-md-5">
+                <label class="form-label" style = "color:#35689b;">Proprietário do Veículo</label>
+                <div class="input-group" style = "color:#35689b;">
+                  <input
+                    class="form-control"
+                    readonly
+                    [value]="nomeProprietarioSelecionado || ''"
+                    placeholder="Nenhum proprietário selecionado"
+                    style = "color:#35689b;"
+                    style="color:#35689b; background:#fff;"
+                  >
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    title="Pesquisar proprietário"
+                    (click)="abrirModalProprietario()"
+                    style = "color:#35689b;">
+                    <i class="bi bi-search" style = "color:#35689b;"></i>
                   </button>
-
-                  <div class="px-3 py-2 text-muted small" *ngIf="usuariosFiltrados.length === 0">
-                    Nenhum usuário encontrado.
+                </div>
+                <div class="text-danger small mt-1" style = "color:#35689b;" *ngIf="form.submitted && !veiculo.idProprietario">
+                  Selecione um proprietário para continuar.
+                </div>
+              </div>
+              <div class="col-md-7" style = "color:#35689b;" >
+                <div *ngIf="veiculo.idProprietario" class="alert alert-primary py-2 mb-0 " style = "border:1px solid #d0e2f2;background:#eef6ff; color:#35689b;">
+                  <div class="d-flex justify-content-between align-items-center" style = "color:#35689b;">
+                    <div><strong style = "color:#35689b;">{{ nomeProprietarioSelecionado }}</strong><br>
+                      <small style = "color:#35689b;">
+                        CPF: {{ cpfDisplay }}
+                        <span *ngIf="emailProprietarioSelecionado" style = "color:#35689b;">
+                          | E-mail: {{ emailProprietarioSelecionado }}
+                        </span>
+                        <span *ngIf="telefoneProprietarioSelecionado" style = "color:#35689b;">
+                          | WhatsApp: {{ formatarTelefone(telefoneProprietarioSelecionado) }}
+                        </span>
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      (click)="limparProprietario()"
+                      (click)="abrirModalProprietario()"
+                      style = "color:#35689b;">
+                      <i class="bi bi-person-gear me-1" style = "color:#35689b;"></i>
+                      Trocar
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- Feedback seleção -->
-            <div class="form-text" *ngIf="veiculo.idProprietario">
-              Selecionado: {{ nomeProprietarioSelecionado }}
+            <!-- Botões -->
+            <div class="text-center mt-4">
+              <button
+                type="submit"
+                class="btn btn-success me-2"
+                [disabled]="!veiculo.idProprietario"
+              >
+                <i class="bi bi-check-circle me-1"></i>Cadastrar Veículo
+              </button>
+              <button type="button" class="btn btn-secondary" (click)="form.resetForm(); resetarModelo();">
+                <i class="bi bi-eraser me-1"></i>
+                Limpar
+              </button>
             </div>
-            <div class="text-danger small" *ngIf="cpfErro">{{ cpfErro }}</div>
-          </div>
-
-        </div>
-
-
-        <!-- feedback de validação -->
-  <small class="text-danger" *ngIf="form.submitted && !anoSelCode">
-    Selecione o Ano/Modelo/Combustível
-  </small>
-
-    <!-- resumo do que ficou escolhido -->
-  <div class="form-text" *ngIf="veiculo.anoModeloCombustivel">
-    Selecionado: {{ veiculo.fabricante }} / {{ veiculo.modelo }} — {{ veiculo.anoModeloCombustivel }}
-  </div>
-          <!-- Ações -->
-          <div class="col-12 d-flex gap-2 justify-content-center mt-2">
-            <button type="submit" class="btn btn-success" [disabled]="!veiculo.idProprietario">
-              Cadastrar Veículo
-            </button>
-            <button type="button" class="btn btn-secondary" (click)="form.resetForm(); resetarModelo();">
-              Limpar
-            </button>
-          </div>
-      </form>
-      <!-- Tabela de apoio (opcional) -->
-      <div class="mt-4">
-        <div class="table-responsive">
-          <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-            <thead style="background:#eef6ff;color:#35689b;">
-              <tr>
-                <th>CPF</th>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>Telefone</th>
-                <th class="text-center">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuario">
-                <td>{{ formatarCPF(u.cpf) }}</td>
-                <td class="text-truncate" style="max-width:260px;">{{ u.nome }}</td>
-                <td class="text-truncate" style="max-width:260px;">{{ u.email }}</td>
-                <td class="text-truncate" style="max-width:180px;">{{ u.telefone }}</td>
-                <td class="text-center">
-                  <button class="btn btn-sm btn-outline-primary"
-                          (click)="selecionarProprietario(u)"
-                          style="border-color:#8fb4da;color:#35689b;">
-                    Usar este CPF
-                  </button>
-                </td>
-              </tr>
-              <tr *ngIf="!usuariosFiltrados || usuariosFiltrados.length === 0">
-                <td colspan="5" class="text-center text-muted py-3">
-                  Nenhum usuário encontrado.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          </form>
         </div>
       </div>
-
+    </div>
+  </div>
+  <div class="modal fade" id="modalPesquisaProprietario" tabindex="-1" aria-labelledby="modalPesquisaProprietarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content" style="color:#35689b;">
+        <div class="modal-header" style="background:#eef6ff;">
+          <h5 class="modal-title" id="modalPesquisaProprietarioLabel">
+            <i class="bi bi-search me-1"></i>
+            Pesquisar Proprietário
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" style = "color:#35689b;">
+          <div class="input-group mb-3" style = "color:#35689b;">
+            <span class="input-group-text" style="background:#eef6ff;color:#35689b;">
+              <i class="bi bi-search" style="color:#35689b;"></i>
+            </span>
+            <input
+              type="search"
+              class="form-control"
+              placeholder="Buscar por CPF, nome, e-mail ou telefone"
+              [(ngModel)]="cpfFiltro"
+              name="cpfFiltroModal"
+              (input)="aplicarFiltro()"
+              style="color:#35689b;"
+            >
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle text-nowrap" style="color:#35689b;">
+              <thead style="background:#eef6ff;color:#35689b;">
+                <tr>
+                  <th style="color:#35689b;">CPF</th>
+                  <th style="color:#35689b;">Nome</th>
+                  <th style="color:#35689b;">E-mail</th>
+                  <th style="color:#35689b;">Telefone</th>
+                  <th style="color:#35689b;">Status</th>
+                  <th class="text-center" style="color:#35689b;">Selecionar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuario" [class.table-active]="usuarioSelecionadoModal?.id === u.id">
+                  <td style="color:#35689b;">{{ formatarCPF(u.cpf) }}</td>
+                  <td style="color:#35689b;">{{ u.nome }}</td>
+                  <td style="color:#35689b;">{{ u.email }}</td>
+                  <td style="color:#35689b;">{{ formatarTelefone(u.telefone) }}</td>
+                  <td>
+                    <span class="badge bg-success">{{ u.status | titlecase }}</span>
+                  </td>
+                  <td class="text-center">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="marcarUsuarioModal(u)"
+                    >
+                      <i class="bi bi-check-circle me-1"></i>
+                      Selecionar
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="!usuariosFiltrados || usuariosFiltrados.length === 0">
+                  <td colspan="6" class="text-center text-muted py-3">
+                    Nenhum usuário ativo encontrado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!usuarioSelecionadoModal"
+            (click)="confirmarUsuarioModal()">
+            Confirmar seleção
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-
-<style>
-  .cpf-picker { position: relative; }
-  .cpf-dropdown {
-    position: absolute;
-    inset: auto 0 0 0; /* 100% width do input */
-    transform: translateY(2px);
-    background: #fff;
-    border: 1px solid #d0e2f2;
-    border-radius: .25rem;
-    z-index: 2000;
-  }
-  .cpf-list {
-    max-height: 280px;
-    overflow: auto;
-  }
-  .list-group-item {
-    border: none;
-  }
-  .form-control:focus, .btn:focus {
-    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
-    border-color: #8fb4da;
-  }
-</style>

@@ -1,18 +1,17 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { UsuarioService } from '../exibe-usuario/exibe-usuario.service';
 import { WhatsappCloudService } from '../../../services/whatsapp-cloud.service';
-
 declare var bootstrap: any;
-
 export interface Usuario {
   id?: number;
   cpf: string;
   nome: string;
   nome_social: string;
   senha: string;
+  confirmarSenha: string;
   telefone: string;
   email: string;
   nascimento: string | Date;
@@ -33,6 +32,9 @@ export interface Usuario {
   styleUrls: ['./exibe-usuario.component.css']
 })
 export class ExibeUsuarioComponent implements OnInit {
+  camposInvalidos: string[] = [];
+  novoUsuario: Partial<Usuario> = {};
+  modalCadastro: any;
   modalEdicao: any;
   usuarios: Usuario[] = [];
   private todos: Usuario[] = [];
@@ -43,7 +45,8 @@ export class ExibeUsuarioComponent implements OnInit {
   constructor(
     private readonly usuarioService: UsuarioService,
     private readonly whatsappCloudService: WhatsappCloudService,
-    private readonly http: HttpClient
+    private readonly http: HttpClient,
+    private readonly location: Location
   ) { }
   ngOnInit(): void {
     this.recarregar();
@@ -60,6 +63,7 @@ export class ExibeUsuarioComponent implements OnInit {
           cep: this.formatarCEP(u.cep),
           telefone: this.exibirTelefoneFormatado(u.telefone),
           nascimento: this.asInputDateString(u.nascimento),
+          senha: '', confirmarSenha: ''
         }));
         this.usuarios = [...this.todos];
         this.loading = false;
@@ -114,9 +118,7 @@ export class ExibeUsuarioComponent implements OnInit {
           this.todos[idxTodos] = {
             ...this.todos[idxTodos],
             ...atualizado,
-            ...{
-              tipo_do_acesso: (atualizado.tipo_do_acesso || '').toLowerCase()
-            },
+            tipo_do_acesso: (atualizado.tipo_do_acesso || '').toLowerCase(),
             nascimento: this.asInputDateString(atualizado.nascimento),
           };
         }
@@ -125,9 +127,7 @@ export class ExibeUsuarioComponent implements OnInit {
           this.usuarios[idxView] = {
             ...this.usuarios[idxView],
             ...atualizado,
-            ...{
-              tipo_do_acesso: (atualizado.tipo_do_acesso || '').toLowerCase()
-            },
+            tipo_do_acesso: (atualizado.tipo_do_acesso || '').toLowerCase(),
             nascimento: this.asInputDateString(atualizado.nascimento),
           };
         }
@@ -140,12 +140,8 @@ export class ExibeUsuarioComponent implements OnInit {
     });
   }
   inativar(id?: number): void {
-    if (!id) {
-      return;
-    }
-    if (!confirm('Confirma inativar este usuário?')) {
-      return;
-    }
+    if (!id) {return;}
+    if (!confirm('Confirma inativar este usuário?')) {return;}
     const usuarioAtual = this.todos.find(u => u.id === id) ?? this.usuarios.find(u => u.id === id);
     if (!usuarioAtual) {
       alert('Usuário não encontrado para inativação.');
@@ -281,93 +277,173 @@ export class ExibeUsuarioComponent implements OnInit {
       const parte1 = numero.slice(-9, -4);
       const parte2 = numero.slice(-4);
       usuario.telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
-  }
-  else if (numero.length >= 10) {
-    const ddd = numero.slice(0, 2);
-    const parte1 = numero.slice(2, 6);
-    const parte2 = numero.slice(6, 10);
-    usuario.telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
-  }
-  else if (numero.length >= 8) {
-    const ddd = '11';
-    const parte1 = numero.slice(0, -4);
-    const parte2 = numero.slice(-4);
-    usuario.telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
-  }
-}
-
-capitalizar(s: string | null | undefined): string {
-  if (!s) return '';
-  return s.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
-}
-enviarWhatsappUsuario(usuario: Usuario): void {
-  if(!usuario.telefone) {
-    alert('Este usuário não possui telefone cadastrado.');
-    return;
-  }
-  if (!confirm(`Enviar mensagem de WhatsApp para ${ usuario.nome } ?`)) {
-    return;
-  }
-  this.whatsappCloudService.enviarMensagem({
-    telefone: usuario.telefone
-  }).subscribe({
-    next: () => { alert('Mensagem enviada com sucesso.'); },
-    error: (err) => {
-      console.error(err);
-      alert('Erro ao enviar mensagem pelo WhatsApp.');
     }
-  });
-}
-abrirModalEdicao(usuario: Usuario): void {
-  this.editId = usuario.id ?? null; this.edit = {
-    ...usuario,
-    nascimento: this.asInputDateString(usuario.nascimento)
-  };
-  const el = document.getElementById('modalEdicaoUsuario');
-  if(!el) {
-    console.error('Modal modalEdicaoUsuario não encontrado.');
-    return;
-  }
-  this.modalEdicao = bootstrap.Modal.getOrCreateInstance(el);
-  this.modalEdicao.show();
-}
-salvarEdicaoModal(): void {
-  if(!this.editId) {
-  return;
-}
-const payload: Partial<Usuario> = {
-  ...this.edit,
-  cpf: this.onlyDigits(this.edit.cpf),
-  cep: this.onlyDigits(this.edit.cep),
-  telefone: this.onlyDigits(this.edit.telefone),
-  estado: (this.edit.estado || '').toString().toUpperCase()
-};
-this.usuarioService.atualizarUsuario(this.editId, payload).subscribe({
-  next: (atualizado) => {
-    const usuarioAtualizado = {
-      ...payload,
-      ...atualizado,
-      cpf: this.onlyDigits(payload.cpf ?? ''),
-      cep: this.onlyDigits(payload.cep ?? ''),
-      telefone: this.onlyDigits(payload.telefone ?? ''),
-      nascimento: this.asInputDateString(atualizado.nascimento)
-    } as Usuario;
-    const idxTodos = this.todos.findIndex(u => u.id === this.editId);
-    if (idxTodos > -1) {
-      this.todos[idxTodos] = usuarioAtualizado;
+    else if (numero.length >= 10) {
+      const ddd = numero.slice(0, 2);
+      const parte1 = numero.slice(2, 6);
+      const parte2 = numero.slice(6, 10);
+      usuario.telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
     }
-    const idxView = this.usuarios.findIndex(u => u.id === this.editId);
-    if (idxView > -1) {
-      this.usuarios[idxView] = usuarioAtualizado;
-    } this.modalEdicao?.hide();
-    this.cancelarEdicao();
-    alert('Usuário atualizado com sucesso.');
-    this.recarregar();
-  },
-  error: (err) => {
-    console.error(err);
-    alert('Erro ao salvar alterações do usuário.');
+    else if (numero.length >= 8) {
+      const ddd = '11';
+      const parte1 = numero.slice(0, -4);
+      const parte2 = numero.slice(-4);
+      usuario.telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
+    }
   }
-});
-          }
+  capitalizar(s: string | null | undefined): string {
+    if (!s) return '';
+    return s.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+  }
+  enviarWhatsappUsuario(usuario: Usuario): void {
+    if(!usuario.telefone) {
+      alert('Este usuário não possui telefone cadastrado.');
+      return;
+    }
+    if (!confirm(`Enviar mensagem de WhatsApp para ${ usuario.nome } ?`)) {
+      return;
+    }
+    this.whatsappCloudService.enviarMensagem({
+      telefone: usuario.telefone
+    }).subscribe({
+      next: () => { alert('Mensagem enviada com sucesso.'); },
+      error: (err) => {
+        console.error(err);
+        alert('Erro ao enviar mensagem pelo WhatsApp.');
+      }
+    });
+  }
+  abrirModalEdicao(usuario: Usuario): void {
+    this.editId = usuario.id ?? null; this.edit = {
+      ...usuario,
+      nascimento: this.asInputDateString(usuario.nascimento)
+    };
+    const el = document.getElementById('modalEdicaoUsuario');
+    if(!el) {
+      console.error('Modal modalEdicaoUsuario não encontrado.');
+      return;
+    }
+    this.modalEdicao = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalEdicao.show();
+  }
+  salvarEdicaoModal(): void {
+    if(!this.editId) {
+      return;
+    }
+    const payload: Partial<Usuario> = {
+      ...this.edit,
+      cpf: this.onlyDigits(this.edit.cpf),
+      cep: this.onlyDigits(this.edit.cep),
+      telefone: this.onlyDigits(this.edit.telefone),
+      estado: (this.edit.estado || '').toString().toUpperCase()
+    };
+    this.usuarioService.atualizarUsuario(this.editId, payload).subscribe({
+      next: (atualizado) => {
+        const usuarioAtualizado = {
+          ...payload,
+          ...atualizado,
+          cpf: this.onlyDigits(payload.cpf ?? ''),
+          cep: this.onlyDigits(payload.cep ?? ''),
+          telefone: this.onlyDigits(payload.telefone ?? ''),
+          nascimento: this.asInputDateString(atualizado.nascimento)
+        } as Usuario;
+        const idxTodos = this.todos.findIndex(u => u.id === this.editId);
+        if (idxTodos > -1) {
+          this.todos[idxTodos] = usuarioAtualizado;
         }
+        const idxView = this.usuarios.findIndex(u => u.id === this.editId);
+        if (idxView > -1) {
+          this.usuarios[idxView] = usuarioAtualizado;
+        }
+        this.modalEdicao?.hide();
+        this.cancelarEdicao();
+        alert('Usuário atualizado com sucesso.');
+        this.recarregar();
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Erro ao salvar alterações do usuário.');
+      }
+    });
+  }
+
+  voltar(): void {
+    this.location.back();
+  }
+
+  abrirModalCadastro(): void {
+    this.novoUsuario = {
+      cpf: '',
+      nome: '',
+      nome_social: '',
+      email: '',
+      telefone: '',
+      senha: '',
+      confirmarSenha: '',
+      nascimento: '',
+      cep: '',
+      logradouro: '',
+      numero_endereco: '',
+      complemento_endereco: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
+      tipo_do_acesso: 'cliente',
+      status: 'ativo'
+    };
+    const el = document.getElementById('modalCadastroUsuario');
+    if (!el) {
+      console.error('Modal modalCadastroUsuario não encontrado.');
+      return;
+    }
+    this.modalCadastro = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalCadastro.show();
+  }
+  salvarNovoUsuario(): void {
+    // validações básicas
+    const camposObrig = [
+      'cpf','nome','telefone','email','nascimento',
+      'cep','numero_endereco','logradouro','bairro','cidade','estado', 'tipo_do_acesso', 'senha', 'confirmarSenha'
+    ] as const;
+    if (this.novoUsuario.senha !== this.novoUsuario.confirmarSenha) {
+      alert('As senhas não coincidem.');
+      return;
+    }
+    const faltando = camposObrig.filter(c => !String(this.novoUsuario[c]).trim());
+    if (faltando.length) {
+      this.camposInvalidos = faltando;
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+    const payload: Partial<Usuario> = {
+      ...this.novoUsuario,
+      cpf: this.onlyDigits(this.novoUsuario.cpf),
+      cep: this.onlyDigits(this.novoUsuario.cep),
+      telefone: this.onlyDigits(this.novoUsuario.telefone),
+      estado: (this.novoUsuario.estado || '').toString().toUpperCase(),
+      tipo_do_acesso: (this.novoUsuario.tipo_do_acesso || 'cliente').toString().toLowerCase(),
+      status: 'ativo' // força status para ativo no cadastro
+    };
+    // opcional: não enviar confirmarSenha
+    delete (payload as any).confirmarSenha;
+    this.usuarioService.criarUsuario(payload).subscribe({
+      next: () => {
+        this.modalCadastro?.hide();
+        alert('Usuário cadastrado com sucesso.');
+        this.whatsappCloudService.enviarMensagemCadastroUsuario({
+          telefone: this.novoUsuario.telefone || '',
+          nome: this.novoUsuario.nome || ''
+        }).subscribe();
+        this.recarregar();
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Erro ao cadastrar usuário.');
+      }
+    });
+  }
+  mostrarSenha: boolean = false;
+  toggleMostrarSenha(): void {
+    this.mostrarSenha = !this.mostrarSenha;
+  }
+}

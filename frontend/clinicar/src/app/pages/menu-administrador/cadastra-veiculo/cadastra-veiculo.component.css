@@ -1,0 +1,31 @@
+.cpf-picker {
+  position: relative;
+  max-width: 100%;
+}
+
+.cpf-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border: 1px solid #d0e2f2;
+  border-radius: 6px;
+  z-index: 2000;
+}
+
+.cpf-list {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.cpf-list .list-group-item {
+  border: none;
+  border-bottom: 1px solid #eef3f8;
+  color: #35689b;
+}
+
+.cpf-list .list-group-item:hover {
+  background: #f7fbff;
+}

@@ -1,223 +1,667 @@
 <div class="container-fluid mt-0 mb-0" style="color:#35689b;">
   <div class="row justify-content-center">
     <div class="col-md-12 mt-sm-0">
-
       <!-- Título / Cabeçalho -->
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">Veículos</div>
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">
+              <i class="bi bi-car-front me-1"></i>
+              Gerenciamento de Veículos
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- Toolbar -->
-      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-        <div class="input-group" style="max-width:420px; color:#35689b;">
-          <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">Buscar</span>
-          <input #q type="search" class="form-control"
-                 placeholder="Placa, Montadora, Modelo, Cor"
-                 (input)="filtrar(q.value)"
-                 style="color:#35689b;" />
+      <div class="card clinicar-card" style="border-color:#d0e2f2; border-radius:10px;">
+        <div class="card-body p-2">
+          <!-- Toolbar -->
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+            <div class="input-group" style="max-width:42vw; color:#35689b;">
+              <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
+                Buscar
+              </span>
+              <label for="filtro-veiculos" class="visually-hidden">Buscar veículos</label>
+              <input #q
+                id="filtro-veiculos"
+                type="search"
+                class="form-control"
+                style="color:#35689b;"
+                placeholder="Placa, Montadora, Modelo, Cor"
+                (input)="filtrar(q.value)"
+              />
+              <div class="text-muted small input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
+                <span style="color:#35689b;">
+                  Total de registros: {{ veiculos.length }}
+                </span>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <button
+                class="btn btn-outline-success btn-sm"
+                type="button"
+                (click)="abrirModalCadastroVeiculo()">
+                <i class="bi-plus-lg"></i>
+                Novo Veículo
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" (click)="voltar()">
+                <i class="bi bi-arrow-left me-1"></i>
+                Voltar
+              </button>
+              <button class="btn btn-outline-primary btn-sm" type="button" (click)="recarregar()">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Atualizar
+              </button>
+            </div>
+          </div>
+          <!-- Estados globais -->
+          <div *ngIf="loading" class="alert alert-info py-2">Carregando veículos…</div>
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
+          <!-- Tabela -->
+          <div class="table-responsive">
+            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+              <thead style="background:#eef6ff;color:#35689b;">
+                <tr>
+                  <th>Placa</th>
+                  <th>Fabricante</th>
+                  <th>Modelo</th>
+                  <th>Cor</th>
+                  <th>Ano-modelo | Combustível</th>
+                  <th>CPF Proprietário</th>
+                  <th>Nome Proprietário</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let v of veiculos; trackBy: trackByVeiculo">
+                  <td>{{ formatarPlaca(v.placa) }}</td>
+                  <td>{{ formatarFabricante(v.fabricante) }}</td>
+                  <td>{{ capitalizar(v.modelo) }}</td>
+                  <td>{{ v.cor }}</td>
+                  <td>{{ v.anoModeloCombustivel }}</td>
+                  <td>{{ proprietarioCpf(v) }}</td>
+                  <td>{{ proprietarioNome(v) }}</td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary me-1"
+                      type="button"
+                      title="Editar veículo"
+                      (click)="abrirModalEdicao(v)"
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-warning"
+                      type="button"
+                      title="Excluir veículo"
+                      (click)="excluir(v.id)"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <!-- Sem dados -->
+                <tr *ngIf="!veiculos || veiculos.length === 0">
+                  <td colspan="7" class="text-center text-muted py-4">
+                    Nenhum veículo encontrado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary" type="button" (click)="recarregar()"
-                  style="border-color:#d0e2f2;color:#35689b;">
-            Atualizar
+      </div>
+    </div>
+  </div>
+  <!-- Modal de edição do veículo -->
+  <div class="modal fade" id="modalEdicaoVeiculo" tabindex="-1" aria-labelledby="modalEdicaoVeiculoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content" style="color:#35689b;">
+        <div class="modal-header" style="background:#eef6ff;">
+          <h5 class="modal-title" id="modalEdicaoVeiculoLabel">
+            <i class="bi bi-car-front me-1"></i>
+            Editar Veículo
+          </h5>
+          <button type="button"class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <h6 class="modal-section-title">
+              <i class="bi bi-car-front me-1"></i>
+              Dados do veículo
+            </h6>
+            <!-- Placa -->
+            <div class="col-md-1">
+              <label for="edit-placa" class="form-label">Placa</label>
+              <input id="edit-placa"
+                name="edit-placa"
+                class="form-control form-control-sm"
+                [(ngModel)]="edit.placa"
+                (blur)="formatarPlaca(edit.placa)"
+                style="color:#35689b;"
+                autocomplete="off"
+              />
+            </div>
+            <!-- Montadora / Fabricante -->
+            <div class="col-md-2">
+              <label for="edit-fabricante" class="form-label">Fabricante</label>
+              <select id="edit-fabricante"
+                name="edit-fabricante"
+                class="form-select form-select-sm"
+                [(ngModel)]="marcaSelCode"
+                (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
+                (ngModelChange)="onChangeMarca($event)"
+                style="color:#35689b;"
+              >
+                <option value="">
+                  {{ edit.fabricante ? formatarFabricante(edit.fabricante) : 'Selecione um fabricante...' }}
+                </option>
+                <option
+                  *ngFor="let m of marcas; trackBy: trackByBrand"
+                  [ngValue]="m.code"
+                  style="color:#35689b;"
+                >
+                  {{ formatarFabricante(m.name) }}
+                </option>
+              </select>
+            </div>
+            <!-- Modelo -->
+            <div class="col-md-4">
+              <label for="edit-modelo" class="form-label">Modelo</label>
+              <select id="edit-modelo"
+                name="edit-modelo"
+                class="form-select form-select-sm"
+                [(ngModel)]="modeloSelCode"
+                (ngModelChange)="onChangeModelo($event)"
+                [disabled]="!marcaSelCode || fipeCarregando.modelos"
+                style="color:#35689b;"
+              >
+                <option value="">
+                  {{ edit.modelo ? capitalizar(edit.modelo) : 'Selecione um modelo...' }}
+                </option>
+                <option
+                  *ngFor="let modelo of modelos; trackBy: trackByModel"
+                  [value]="modelo.code"
+                  style="color:#35689b;"
+                >
+                  {{ capitalizar(modelo.name) }}
+                </option>
+              </select>
+              <div class="text-muted small mt-1" *ngIf="fipeCarregando.modelos">
+                Carregando modelos da montadora...
+              </div>
+            </div>
+            <!-- Cor -->
+            <div class="col-md-2">
+              <label for="edit-cor" class="form-label">Cor</label>
+              <input id="edit-cor"
+                name="edit-cor"
+                class="form-control form-control-sm"
+                [(ngModel)]="edit.cor"
+                style="color:#35689b;"
+                autocomplete="off"
+              />
+            </div>
+            <!-- Ano / Modelo / Combustível -->
+            <div class="col-md-3">
+              <label for="edit-ano-modelo-combustivel" class="form-label">
+                Ano-modelo | Combustível
+              </label>
+              <select id="edit-ano-modelo-combustivel"
+                name="edit-ano-modelo-combustivel"
+                class="form-select form-select-sm"
+                [(ngModel)]="anoSelCode"
+                (ngModelChange)="onChangeAnoModeloCombustivel($event)"
+                [disabled]="!modeloSelCode || fipeCarregando.anos"
+                style="color:#35689b;"
+              >
+                <option
+                  *ngFor="let ano of anos; trackBy: trackByYear"
+                  [value]="ano.code.replace(' ', ' | ')"
+                  style="color:#35689b;"
+                >
+                  {{ ano.name.replace(' ', ' | ') }}
+                </option>
+              </select>
+              <div class="text-muted small mt-1" *ngIf="fipeCarregando.anos">
+                Carregando anos-modelo | combustíveis...
+              </div>
+            </div>
+            <h6 class="modal-section-title">
+              <i class="bi bi-person-vcard me-1"></i>
+              Proprietário
+            </h6>
+            <!-- CPF do proprietário -->
+            <div class="col-md-2">
+              <label class="form-label" for="cpfProprietario">CPF do proprietário</label>
+              <div class="input-group input-group-sm">
+                <input
+                  id="cpfProprietario"
+                  class="form-control"
+                  [value]="cpfProprietarioSelecionadoModal()"
+                  placeholder="Selecione um proprietário"
+                  readonly
+                  style="color:#35689b; cursor:pointer;"
+                  (click)="abrirModalSelecaoProprietario()"
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline-primary d-flex align-items-center justify-content-center"
+                  style="border-color:#d0e2f2;color:#35689b;"
+                  title="Selecionar proprietário"
+                  (click)="abrirModalSelecaoProprietario()"
+                >
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </div>
+            <!-- Nome do proprietário -->
+            <div class="col-md-10">
+              <div class="alert alert-primary py-2 mb-0 " style = "border:1px solid #d0e2f2;background:#eef6ff; color:#35689b;">
+                <div class="d-flex justify-content-between align-items-center" style = "color:#35689b;">
+                  <div>
+                    <strong style = "color:#35689b;">{{ nomeProprietarioSelecionadoModal() }}</strong><br>
+                    <small style = "color:#35689b;">
+                      CPF: {{ formatarCPF(proprietarioSelecionadoModal()?.cpf) }}
+                      <span style = "color:#35689b;">
+                        | E-mail: {{ emailProprietarioSelecionadoModal() }}
+                      </span>
+                      <span *ngIf="telefoneProprietarioSelecionadoModal" style = "color:#35689b;">
+                        | WhatsApp: {{ formatarTelefone(telefoneProprietarioSelecionadoModal()) }}
+                      </span>
+                    </small>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    (click)="abrirModalSelecaoProprietario('edicao')"
+                    style = "color:#35689b;"
+                  >
+                    <i class="bi bi-person-gear me-1" style = "color:#35689b;"></i>
+                    Trocar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-primary" (click)="salvarEdicaoModal()">
+            Salvar
           </button>
         </div>
       </div>
+    </div>
+  </div>
+  <!-- Modal de seleção do proprietário -->
+  <div class="modal fade" id="modalSelecionarProprietario" tabindex="-1" aria-labelledby="modalSelecionarProprietarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content" style="color:#35689b;">
+        <div class="modal-header" style="background:#eef6ff;">
+          <h5 class="modal-title" id="modalSelecionarProprietarioLabel">
+            <i class="bi bi-search me-1"></i>
+            Selecionar Proprietário
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" style="color:#35689b;">
+          <!-- Campo de busca -->
+          <label for="pesquisaProprietarioInput" class="form-label">Buscar Proprietário</label>
+          <div class="input-group mb-3" style="color:#35689b;">
+            <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
+              <i class="bi bi-search" style="color:#35689b;"></i>
+            </span>
+            <input
+              id="pesquisaProprietarioInput"
+              type="search"
+              class="form-control"
+              placeholder="Buscar por CPF, nome, e-mail ou telefone"
+              name="cpfFiltroModal"
+              [(ngModel)]="cpfFiltroModal"
+              (ngModelChange)="filtrarProprietariosModal($event)"
+              autocomplete="off"
+              style="color:#35689b;"
+              aria-label="Buscar proprietário por CPF, nome, e-mail ou telefone"
+            />
+          </div>
+          <!-- Tabela de proprietários -->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle text-nowrap" style="color:#35689b;">
+              <thead style="background:#eef6ff;color:#35689b;">
+                <tr>
+                  <th style="color:#35689b;">CPF</th>
+                  <th style="color:#35689b;">Nome</th>
+                  <th style="color:#35689b;">E-mail</th>
+                  <th style="color:#35689b;">Telefone</th>
+                  <th style="color:#35689b;">Status</th>
+                  <th class="text-center" style="color:#35689b;">Selecionar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let u of usuariosFiltradosModal; trackBy: trackByUsuario">
+                  <td style="color:#35689b;">
+                    {{ formatarCPF(u.cpf) }}
+                  </td>
+                  <td style="color:#35689b;">
+                    {{ u.nome || '—' }}
+                  </td>
+                  <td style="color:#35689b;">
+                    {{ u.email || '—' }}
+                  </td>
+                  <td style="color:#35689b;">
+                    {{ formatarTelefone(u.telefone) || '—' }}
+                  </td>
+                  <td>
+                    <span
+                      class="badge"
+                      [class.bg-success]="!u.status || u.status === 'ativo' || u.status === 'ATIVO'"
+                      [class.bg-secondary]="u.status && u.status !== 'ativo' && u.status !== 'ATIVO'"
+                    >
+                      {{ u.status ? (u.status | titlecase) : 'Ativo' }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="selecionarProprietarioModal(u)"
+                    >
+                      <i class="bi bi-check-circle me-1"></i>
+                      Selecionar
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="!usuariosFiltradosModal || usuariosFiltradosModal.length === 0">
+                  <td colspan="6" class="text-center text-muted py-3">
+                    Nenhum usuário encontrado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <!-- Estados globais -->
-      <div *ngIf="loading" class="alert alert-info py-2">Carregando veículos…</div>
-      <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
 
-      <!-- Tabela -->
-      <div class="table-responsive">
-        <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-          <thead style="background:#eef6ff;color:#35689b;">
-            <tr>
-              <th>Placa</th>
-              <th>Montadora</th>
-              <th>Modelo</th>
-              <th>Cor</th>
-              <th>Ano/Modelo/Combustível</th>
-              <th>CPF Proprietário</th>
-              <th class="text-center">Ações</th>
-            </tr>
-          </thead>
 
-          <tbody>
-            <tr *ngFor="let v of veiculos; trackBy: trackByVeiculo"
-                [class.table-active]="editId === v.id"
-                [class.editing]="editId === v.id">
 
-              <!-- Placa -->
-              <td>
-                <ng-container *ngIf="editId !== v.id; else edit_placa">
-                  {{ formatarPlaca(v.placa) }}
-                </ng-container>
-                <ng-template #edit_placa>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.placa"
-                         [attr.name]="'placa_' + (v.id ?? v.placa)"
-                         autocomplete="off">
-                </ng-template>
-              </td>
+  <!-- Modal de cadastro de novo veículo -->
+<div
+  class="modal fade"
+  id="modalCadastroVeiculo"
+  tabindex="-1"
+  aria-labelledby="modalCadastroVeiculoLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
 
-              <!-- Fabricante -->
-              <td>
-                <ng-container *ngIf="editId !== v.id; else edit_fabricante">
-                  {{ v.fabricante }}
-                </ng-container>
-                <ng-template #edit_fabricante>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.fabricante"
-                         [attr.name]="'fabricante_' + (v.id ?? v.fabricante)">
-                </ng-template>
-              </td>
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title" id="modalCadastroVeiculoLabel">
+          <i class="bi bi-car-front me-1"></i>
+          Cadastrar Veículo
+        </h5>
 
-              <!-- Modelo -->
-              <td>
-                <ng-container *ngIf="editId !== v.id; else edit_modelo">
-                  {{ v.modelo }}
-                </ng-container>
-                <ng-template #edit_modelo>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.modelo"
-                         [attr.name]="'modelo_' + (v.id ?? v.modelo)">
-                </ng-template>
-              </td>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+      </div>
 
-              <!-- Cor -->
-              <td>
-                <ng-container *ngIf="editId !== v.id; else edit_cor">
-                  {{ v.cor }}
-                </ng-container>
-                <ng-template #edit_cor>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.cor"
-                         [attr.name]="'cor_' + (v.id ?? v.cor)">
-                </ng-template>
-              </td>
+      <div class="modal-body">
+        <div class="row g-2">
 
-              <!-- Ano/Modelo/Combustível -->
-              <td>
-                <ng-container *ngIf="editId !== v.id; else edit_anoModeloCombustivel">
-                  {{ v.anoModeloCombustivel }}
-                </ng-container>
-                <ng-template #edit_anoModeloCombustivel>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.anoModeloCombustivel"
-                         [attr.name]="'anoModeloCombustivel_' + (v.id ?? v.anoModeloCombustivel)">
-                </ng-template>
-              </td>
+          <h6 class="modal-section-title">
+            <i class="bi bi-car-front me-1"></i>
+            Dados do veículo
+          </h6>
 
-              <!-- CPF Proprietário -->
-              <td>
-                <!-- Visualização -->
-                <ng-container *ngIf="editId !== v.id; else edit_cpf">
-                  {{ proprietarioCpf(v) }}
-                </ng-container>
+          <!-- Placa -->
+          <div class="col-md-1">
+            <label for="cadastro-placa" class="form-label">Placa</label>
+            <input
+              id="cadastro-placa"
+              name="cadastro-placa"
+              class="form-control form-control-sm"
+              [(ngModel)]="novoVeiculo.placa"
+              (blur)="novoVeiculo.placa = formatarPlaca(novoVeiculo.placa)"
+              style="color:#35689b;"
+              autocomplete="off"
+            />
+          </div>
 
-                <!-- Edição: picker com busca, salva ID -->
-                <ng-template #edit_cpf>
-                  <div class="position-relative cpf-picker">
-                    <!-- input readonly exibindo CPF atual -->
-                    <input
-                      class="form-control form-control-sm"
-                      [value]="cpfSelecionadoPara(v)"
-                      placeholder="Selecione um CPF"
-                      (click)="toggleUsersDropdownFor(v.id!, true)"
-                      (keydown.escape)="toggleUsersDropdownFor(v.id!, false)"
-                      readonly
-                      autocomplete="off"
-                    />
-                    <!-- Dropdown (abre apenas nesta linha) -->
-                    <div class="cpf-dropdown shadow-sm" *ngIf="dropdownOpenId === v.id">
-                      <!-- busca -->
-                      <div class="p-2 border-bottom" style="background:#f8fbff;">
-                        <input
-                          type="search"
-                          class="form-control form-control-sm"
-                          placeholder="Buscar por CPF, nome ou e-mail"
-                          [(ngModel)]="cpfFiltroEdit"
-                          [ngModelOptions]="{standalone: true}"
-                          (input)="aplicarFiltroEdit()"
-                          autocomplete="off"
-                        />
-                      </div>
-                      <!-- lista -->
-                      <div class="cpf-list">
-                        <button
-                          type="button"
-                          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                          *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuario"
-                          (click)="selecionarProprietarioEdit(u); toggleUsersDropdownFor(v.id!, false)"
-                        >
-                          <span class="fw-semibold">{{ formatarCPF(u.cpf) }}</span>
-                          <small class="text-muted text-truncate ms-2">{{ u.nome }}</small>
-                        </button>
+          <!-- Fabricante -->
+          <div class="col-md-2">
+            <label for="cadastro-fabricante" class="form-label">Fabricante</label>
+            <select
+              id="cadastro-fabricante"
+              name="cadastro-fabricante"
+              class="form-select form-select-sm"
+              [(ngModel)]="marcaCadastroSelCode"
+              (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
+              (ngModelChange)="onChangeMarcaCadastro($event)"
+              style="color:#35689b;"
+            >
+              <option value="">
+                Selecione...
+              </option>
 
-                        <div class="px-3 py-2 text-muted small" *ngIf="usuariosFiltrados.length === 0">
-                          Nenhum usuário encontrado.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </ng-template>
-              </td>
+              <option
+                *ngFor="let m of marcas; trackBy: trackByBrand"
+                [value]="m.code"
+                style="color:#35689b;"
+              >
+                {{ formatarFabricante(m.name) }}
+              </option>
+            </select>
+          </div>
 
-              <!-- Ações -->
-              <td class="text-center" style="min-width: 160px;">
-                <ng-container *ngIf="editId !== v.id; else edit_acoes">
-                  <button class="btn btn-sm btn-outline-primary me-1"
-                          (click)="iniciarEdicao(v)"
-                          style="border-color:#8fb4da;color:#35689b;">
-                    Editar
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger"
-                          (click)="excluir(v.id)"
-                          style="border-color:#f3c7c7;color:#b03030;">
-                    Excluir
-                  </button>
-                </ng-container>
-                <ng-template #edit_acoes>
-                  <button class="btn btn-sm btn-success me-1"
-                          (click)="salvarEdicao(v.id!)">
-                    Salvar
-                  </button>
-                  <button class="btn btn-sm btn-secondary"
-                          (click)="cancelarEdicao()">
-                    Cancelar
-                  </button>
-                </ng-template>
-              </td>
+          <!-- Modelo -->
+          <div class="col-md-4">
+            <label for="cadastro-modelo" class="form-label">Modelo</label>
+            <select
+              id="cadastro-modelo"
+              name="cadastro-modelo"
+              class="form-select form-select-sm"
+              [(ngModel)]="modeloCadastroSelCode"
+              (ngModelChange)="onChangeModeloCadastro($event)"
+              style="color:#35689b;"
+            >
+              <option value="">
+                Selecione um fabricante...
+              </option>
 
-            </tr>
+              <option
+                *ngFor="let modelo of modelosCadastro; trackBy: trackByModel"
+                [value]="modelo.code"
+                style="color:#35689b;"
+              >
+                {{ capitalizar(modelo.name) }}
+              </option>
+            </select>
 
-            <!-- Sem dados -->
-            <tr *ngIf="!veiculos || veiculos.length === 0">
-              <td colspan="15" class="text-center text-muted py-4">
-                Nenhum veículo encontrado.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+            <div class="text-muted small mt-1" *ngIf="fipeCarregando.modelos">
+              Carregando modelos da montadora...
+            </div>
+          </div>
+
+          <!-- Cor -->
+          <div class="col-md-2">
+            <label for="cadastro-cor" class="form-label">Cor</label>
+            <input
+              id="cadastro-cor"
+              name="cadastro-cor"
+              class="form-control form-control-sm"
+              [(ngModel)]="novoVeiculo.cor"
+              style="color:#35689b;"
+              autocomplete="off"
+              [value]="capitalizar(novoVeiculo.cor || '')"
+            />
+          </div>
+
+          <!-- Ano / Modelo / Combustível -->
+          <div class="col-md-3">
+            <label for="cadastro-ano-modelo-combustivel" class="form-label">
+              Ano-modelo | Combustível
+            </label>
+            <select
+              id="cadastro-ano-modelo-combustivel"
+              name="cadastro-ano-modelo-combustivel"
+              class="form-select form-select-sm"
+              [(ngModel)]="anoCadastroSelCode"
+              (ngModelChange)="onChangeAnoModeloCombustivelCadastro($event)"
+              style="color:#35689b;"
+            >
+              <option value="">
+                Selecione um modelo...
+              </option>
+
+              <option
+                *ngFor="let ano of anosCadastro; trackBy: trackByYear"
+                [value]="ano.code"
+                style="color:#35689b;"
+              >
+                {{ ano.name.replace(' ', ' | ') }}
+              </option>
+            </select>
+
+            <div class="text-muted small mt-1" *ngIf="fipeCarregando.anos">
+              Carregando anos-modelo | combustíveis...
+            </div>
+          </div>
+
+          <h6 class="modal-section-title mt-3">
+            <i class="bi bi-person-vcard me-1"></i>
+            Proprietário
+          </h6>
+
+          <!-- CPF do proprietário -->
+          <div class="col-md-3">
+            <label class="form-label" for="cpfProprietarioCadastro">
+              CPF do proprietário
+            </label>
+
+            <div class="input-group input-group-sm">
+              <input
+                id="cpfProprietarioCadastro"
+                class="form-control"
+                [value]="cpfProprietarioSelecionadoCadastro()"
+                placeholder="Selecione um proprietário"
+                readonly
+                style="color:#35689b; cursor:pointer;"
+                (click)="abrirModalSelecaoProprietario('cadastro')"
+              />
+              <button
+                type="button"
+                class="btn btn-outline-primary d-flex align-items-center justify-content-center"
+                style="border-color:#d0e2f2;color:#35689b;"
+                title="Selecionar proprietário"
+                (click)="abrirModalSelecaoProprietario('cadastro')"
+              >
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dados do proprietário -->
+          <div class="col-md-9">
+            <div
+              class="alert alert-primary py-2 mb-0"
+              style="border:1px solid #d0e2f2;background:#eef6ff;color:#35689b;"
+              [class.d-none]="!proprietarioSelecionadoCadastro()"
+            >
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong style="color:#35689b;">
+                    {{ nomeProprietarioSelecionadoCadastro() || 'Nenhum proprietário selecionado' }}
+                  </strong>
+                  <br>
+
+                  <small style="color:#35689b;">
+                    CPF: {{ cpfProprietarioSelecionadoCadastro() || '—' }}
+
+                    <span style="color:#35689b;">
+                      | E-mail: {{ emailProprietarioSelecionadoCadastro() || '—' }}
+                    </span>
+
+                    <span style="color:#35689b;">
+                      | WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ? formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}
+                    </span>
+                  </small>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  (click)="abrirModalSelecaoProprietario('cadastro')"
+                  style="color:#35689b;"
+                >
+                  <i class="bi bi-person-gear me-1" style="color:#35689b;"></i>
+                  Trocar
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="salvarCadastroVeiculo()"
+        >
+          Salvar
+        </button>
       </div>
 
     </div>
   </div>
 </div>
 
+
+
+</div>
 <style>
   /* Bordas/cores padrão */
-  .table thead th { border-color: #d0e2f2 !important; }
-  .table td, .table th { vertical-align: middle; color: #35689b; }
-  .table-hover tbody tr:hover { background-color: #f7fbff; }
-  .table-active { --bs-table-bg: #f1f7ff; }
+  .table thead th {
+    border-color: #d0e2f2 !important;
+  }
 
-  /* Sem quebras e com elipse por padrão (uma linha por registro) */
+  .table td,
+  .table th {
+    vertical-align: middle;
+    color: #35689b;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: #f7fbff;
+  }
+
+  .table-active {
+    --bs-table-bg: #f1f7ff;
+  }
+
+  /* Sem quebras e com elipse por padrão */
   .table.text-nowrap th,
   .table.text-nowrap td {
     white-space: nowrap;
@@ -225,36 +669,31 @@
     text-overflow: ellipsis;
   }
 
-  /* Linha em edição: mostrar todo o conteúdo (pode quebrar) */
-  .table.text-nowrap tr.editing > th,
-  .table.text-nowrap tr.editing > td {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    word-break: break-word;
-  }
-
-  /* Inputs na linha em edição com largura mínima confortável */
-  .table.text-nowrap tr.editing .form-control {
-    min-width: 220px;
-  }
-
-  /* Estilo do picker de CPF */
-  .cpf-picker { position: relative; }
-  .cpf-dropdown {
-    position: absolute;
-    inset: auto 0 0 0; /* largura do input */
-    transform: translateY(2px);
-    background: #fff;
-    border: 1px solid #d0e2f2;
-    border-radius: .25rem;
-    z-index: 2000;
-  }
-  .cpf-list { max-height: 280px; overflow: auto; }
-  .list-group-item { border: none; }
-
-  .form-control:focus, .btn:focus {
+  .form-control:focus,
+  .form-select:focus,
+  .btn:focus {
     box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
     border-color: #8fb4da;
+  }
+
+  .modal-section-title {
+    color: #35689b;
+    font-weight: 600;
+    border-bottom: 1px solid #d0e2f2;
+    padding-bottom: .35rem;
+    margin-bottom: .5rem;
+  }
+
+  .list-group-item {
+    color: #35689b;
+    border-color: #d0e2f2;
+  }
+
+  .list-group-item:hover {
+    background-color: #f7fbff;
+  }
+
+  .input-group-sm .btn {
+    min-width: 38px;
   }
 </style>

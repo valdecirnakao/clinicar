@@ -4,7 +4,7 @@
       <!-- Título / Cabeçalho -->
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
             <div class="card-body" style="color:#35689b;">
               <i class="bi bi-people me-1"></i>
               Gerenciamento de Usuários
@@ -12,7 +12,7 @@
           </div>
         </div>
       </div>
-      <div class="card clinicar-card">
+      <div class="card clinicar-card" style="border-color:#d0e2f2; border-radius:10px;">
         <div class="card-body p-2">
           <!-- Toolbar -->
           <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
@@ -35,18 +35,32 @@
               </div>
             </div>
             <div class="d-flex gap-2">
-              <button class="btn btn-outline-primary btn-sm" type="button" (click)="recarregar()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+              <button
+                class="btn btn-outline-success btn-sm"
+                type="button"
+                (click)="abrirModalCadastro()">
+                <i class="bi bi-person-plus me-1"></i>
+                Novo Usuário
+              </button>
+              <button
+                class="btn btn-outline-secondary btn-sm"
+                type="button"
+                (click)="voltar()">
+                <i class="bi bi-arrow-left me-1"></i>
+                Voltar
+              </button>
+              <button
+                class="btn btn-outline-primary btn-sm"
+                type="button"
+                (click)="recarregar()">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Atualizar
               </button>
             </div>
           </div>
           <!-- Estados globais -->
-          <div *ngIf="loading" class="alert alert-info py-2">
-            Carregando usuarios…
-          </div>
-          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">
-            {{ errorMsg }}
-          </div>
+          <div *ngIf="loading" class="alert alert-info py-2">Carregando usuarios…</div>
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
           <!-- Tabela -->
           <div class="table-responsive">
             <div class="small text-muted mb-1 right-align">
@@ -57,38 +71,40 @@
             <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
               <thead style="background:#eef6ff;color:#35689b;">
                 <tr>
-                  <th>CPF | CNPJ</th>
+                  <th class="text-center">CPF | CNPJ</th>
                   <th>Nome</th>
                   <th>E-mail</th>
                   <th>Telefone | WhatsApp</th>
-                  <th>Status</th>
-                  <th>Tipo do Acesso</th>
+                  <th >Status</th>
+                  <th class="text-center">Tipo do Acesso</th>
                   <th class="text-center">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let u of usuarios; trackBy: trackByUsuario" [class.table-secondary]="u.status === 'inativo'">
                 <!-- CNPJ/CPF -->
-                  <td>{{ formatarCPF(u.cpf) }}</td>
+                  <td class="text-center">{{ formatarCPF(u.cpf) }}</td>
                   <!-- Nome -->
                   <td>{{ u.nome }}</td>
                   <!-- E-mail -->
-                  <td>{{ u.email }}</td>
+                  <td>{{ u.email.toLowerCase() }}</td>
                   <!-- Telefone/WhatsApp -->
                   <td>{{ exibirTelefoneFormatado(u.telefone) }}</td>
                   <!-- Status -->
                   <td>
-                    <span class="badge" [ngClass]="u.status === 'ativo' ? 'bg-success' : 'bg-secondary'">{{ capitalizar(u.status) }}</span>
+                    <span class="badge" [ngClass]="u.status === 'ativo' ? 'bg-success' : 'bg-secondary'">
+                    {{ capitalizar(u.status) }}</span>
                   </td>
                   <!-- Tipo do Acesso -->
-                  <td>
+                  <td class="text-center">
                     <span class="badge"
                       [ngClass]="{ 'bg-primary':
-                      u.tipo_do_acesso.toLowerCase() === 'administrador', 'bg-secondary':
-                      u.tipo_do_acesso.toLowerCase() === 'cliente', 'bg-info text-dark':
-                      u.tipo_do_acesso.toLowerCase() === 'colaborador' }"
+                        u.tipo_do_acesso.toLowerCase() === 'administrador', 'bg-secondary':
+                        u.tipo_do_acesso.toLowerCase() === 'cliente', 'bg-info text-dark':
+                        u.tipo_do_acesso.toLowerCase() === 'colaborador'
+                      }"
                     >
-                      {{ capitalizar(u.tipo_do_acesso) }}
+                     {{ capitalizar(u.tipo_do_acesso) }}
                     </span>
                   </td>
                   <!-- Ações -->
@@ -96,7 +112,8 @@
                     <button
                       class="btn btn-sm btn-outline-success me-1"
                       title="Enviar WhatsApp"
-                      (click)="enviarWhatsappUsuario(u)">
+                      (click)="enviarWhatsappUsuario(u)"
+                    >
                       <i class="bi bi-whatsapp"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-primary me-1" title="Editar usuário" (click)="abrirModalEdicao(u)">
@@ -127,8 +144,7 @@
           <h5 class="modal-title" id="modalEdicaoUsuarioLabel">
             Editar Usuário
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar">
-          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body">
           <div class="row lg-1 g-1">
@@ -136,13 +152,11 @@
               <i class="bi bi-person-vcard me-1"></i> Dados pessoais
             </h6>
             <div class="col-md-1">
-              <label class="form-label">ID</label>
-              <input class="form-control form-control-sm" [(ngModel)]="edit.id" disabled style="color:#35689b;">
+              <label for="edit-id" class="form-label">ID</label>
+              <input id="edit-id" class="form-control form-control-sm" [(ngModel)]="edit.id" disabled style="color:#35689b;">
             </div>
             <div class="col-md-2">
-              <label class="form-label" for="editCpfCnpj">
-                CPF | CNPJ
-              </label>
+              <label class="form-label" for="editCpfCnpj">CPF | CNPJ</label>
               <input
                 id="editCpfCnpj"
                 class="form-control form-control-sm"
@@ -151,22 +165,26 @@
                 style="color:#35689b;">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Nome</label>
-              <input class="form-control form-control-sm" [(ngModel)]="edit.nome" style="color:#35689b;">
+              <label class="form-label" for="edit-nome">Nome</label>
+              <input id="edit-nome" class="form-control form-control-sm" [(ngModel)]="edit.nome" style="color:#35689b;">
             </div>
             <div class="col-md-2">
-              <label class="form-label">Nome Social</label>
-              <input class="form-control form-control-sm" [(ngModel)]="edit.nome_social" style="color:#35689b;">
+              <label class="form-label" for="edit-nome-social">Nome Social</label>
+              <input id="edit-nome-social" class="form-control form-control-sm" [(ngModel)]="edit.nome_social" style="color:#35689b;">
             </div>
             <div class="col-md-2">
-              <label class="form-label">Nascimento</label>
-              <input type="date" class="form-control form-control-sm" [(ngModel)]="edit.nascimento" style="color:#35689b;">
+              <label class="form-label" for="edit-nascimento">Nascimento</label>
+              <input id="edit-nascimento" type="date" class="form-control form-control-sm" [(ngModel)]="edit.nascimento" style="color:#35689b;">
             </div>
             <div class="col-md-2">
-              <label class="form-label">
-                Status
-              </label>
-              <select class="form-select form-select-sm" [(ngModel)]="edit.status" style="color:#35689b;" [value]="edit.status">
+              <label class="form-label" for="edit-status">Status</label>
+              <select
+                id="edit-status"
+                class="form-select form-select-sm"
+                [(ngModel)]="edit.status"
+                style="color:#35689b;"
+                [value]="edit.status"
+              >
                 <option value="ativo" style="color:#35689b;">Ativo</option>
                 <option value="inativo" style="color:#35689b;">Inativo</option>
               </select>
@@ -175,8 +193,8 @@
               <i class="bi bi-telephone me-1"></i> Contato e acesso
             </h6>
             <div class="col-md-3">
-              <label class="form-label">Telefone | WhatsApp</label>
-              <input
+              <label class="form-label" for="edit-telefone">Telefone | WhatsApp</label>
+              <input id="edit-telefone"
                 class="form-control form-control-sm"
                 type="tel"
                 style="color:#35689b;"
@@ -184,16 +202,14 @@
                 (blur)="edit.telefone = exibirTelefoneFormatado(edit.telefone ?? '')" >
             </div>
             <div class="col-md-6">
-              <label class="form-label">
+              <label class="form-label" for="edit-email">
                 E-mail
               </label>
-              <input class="form-control form-control-sm" [(ngModel)]="edit.email" style="color:#35689b;">
+              <input id="edit-email" class="form-control form-control-sm" [(ngModel)]="edit.email" style="color:#35689b;">
             </div>
             <div class="col-md-3">
-              <label class="form-label">
-                Tipo de Acesso
-              </label>
-              <select class="form-select form-select-sm" [(ngModel)]="edit.tipo_do_acesso" style="color:#35689b;">
+              <label class="form-label" for="edit-tipo-acesso">Tipo de Acesso</label>
+              <select id="edit-tipo-acesso" class="form-select form-select-sm" [(ngModel)]="edit.tipo_do_acesso" style="color:#35689b;">
                 <option value="administrador" style="color:#35689b;">Administrador</option>
                 <option value="cliente" style="color:#35689b;">Cliente</option>
                 <option value="colaborador" style="color:#35689b;">Colaborador</option>
@@ -203,8 +219,9 @@
               <i class="bi bi-geo-alt me-1"></i> Endereço
             </h6>
             <div class="col-md-2">
-              <label class="form-label">CEP</label>
+              <label class="form-label" for="edit-cep">CEP</label>
               <input
+                id="edit-cep"
                 class="form-control form-control-sm"
                 [(ngModel)]="edit.cep"
                 (blur)="onCepBlurRow(edit)"
@@ -212,28 +229,29 @@
               >
             </div>
             <div class="col-md-5">
-              <label class="form-label">Logradouro</label>
-              <input class="form-control form-control-sm" [(ngModel)]="edit.logradouro" style="color:#35689b;">
+              <label class="form-label" for="edit-logradouro">Logradouro</label>
+              <input id="edit-logradouro" class="form-control form-control-sm" [(ngModel)]="edit.logradouro" style="color:#35689b;">
             </div>
             <div class="col-md-2">
-              <label class="form-label">Número</label>
-              <input class="form-control form-control-sm" [(ngModel)]="edit.numero_endereco" style="color:#35689b;">
+              <label class="form-label" for="edit-numero-endereco">Número</label>
+              <input id="edit-numero-endereco" class="form-control form-control-sm" [(ngModel)]="edit.numero_endereco" style="color:#35689b;">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Complemento</label>
-              <input class="form-control form-control-sm" [(ngModel)]="edit.complemento_endereco" style="color:#35689b;">
+              <label class="form-label" for="edit-complemento">Complemento</label>
+              <input id="edit-complemento" class="form-control form-control-sm" [(ngModel)]="edit.complemento_endereco" style="color:#35689b;">
             </div>
             <div class="col-md-4">
-              <label class="form-label">Bairro</label>
-              <input class="form-control form-control-sm" style="color:#35689b;" [(ngModel)]="edit.bairro">
+              <label class="form-label" for="edit-bairro">Bairro</label>
+              <input id="edit-bairro" class="form-control form-control-sm" style="color:#35689b;" [(ngModel)]="edit.bairro">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Cidade</label>
-              <input class="form-control form-control-sm" style="color:#35689b;" [(ngModel)]="edit.cidade">
+              <label class="form-label" for="edit-cidade">Cidade</label>
+              <input id="edit-cidade" class="form-control form-control-sm" style="color:#35689b;" [(ngModel)]="edit.cidade">
             </div>
             <div class="col-md-2">
-              <label class="form-label">UF</label>
+              <label class="form-label" for="edit-uf">UF</label>
               <input
+                id="edit-uf"
                 class="form-control form-control-sm text-uppercase"
                 style="color:#35689b;"
                 maxlength="2"
@@ -244,6 +262,181 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> Cancelar </button>
           <button type="button" class="btn btn-primary" (click)="salvarEdicaoModal()"> Salvar </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="modalCadastroUsuario" tabindex="-1" aria-labelledby="modalCadastroUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content" style="color:#35689b;">
+        <div class="modal-header" style="background:#eef6ff;">
+          <h5 class="modal-title" id="modalCadastroUsuarioLabel">
+            <i class="bi bi-person-plus me-1"></i>
+            Novo Usuário
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <h6 class="modal-section-title">
+              <i class="bi bi-person-vcard me-1"></i>
+              Dados pessoais
+            </h6>
+            <div class="col-md-2">
+              <label for="cpfCnpj" class="form-label">CPF | CNPJ</label>
+              <input id="cpfCnpj"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.cpf"
+                (blur)="novoUsuario.cpf = formatarCPF(novoUsuario.cpf)"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-4">
+              <label for="nome" class="form-label">Nome</label>
+              <input id="nome" class="form-control form-control-sm" [(ngModel)]="novoUsuario.nome" style="color:#35689b;">
+            </div>
+            <div class="col-md-4">
+              <label for="nomeSocial" class="form-label">Nome Social</label>
+              <input id="nomeSocial" class="form-control form-control-sm" [(ngModel)]="novoUsuario.nome_social" style="color:#35689b;">
+            </div>
+            <div class="col-md-2">
+              <label for="nascimento" class="form-label">Nascimento</label>
+              <input id="nascimento"
+                type="date"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.nascimento"
+                style="color:#35689b;"
+              >
+            </div>
+            <h6 class="modal-section-title mt-3">
+              <i class="bi bi-telephone me-1"></i>
+              Contato e acesso
+            </h6>
+            <div class="col-md-2">
+              <label for="telefone" class="form-label">Telefone | WhatsApp</label>
+              <input id="telefone"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.telefone"
+                (blur)="novoUsuario.telefone = exibirTelefoneFormatado(novoUsuario.telefone ?? '')"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-3">
+              <label for="email" class="form-label">E-mail</label>
+              <input id="email" class="form-control form-control-sm" [(ngModel)]="novoUsuario.email" style="color:#35689b;">
+            </div>
+            <div class="col-md-2">
+              <label for="tipoDoAcesso" class="form-label">Tipo de Acesso</label>
+              <select id="tipoDoAcesso" class="form-select form-select-sm" [(ngModel)]="novoUsuario.tipo_do_acesso" style="color:#35689b;">
+                <option value="administrador">Administrador</option>
+                <option value="cliente">Cliente</option>
+                <option value="colaborador">Colaborador</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label for="senha" class="form-label">Senha</label>
+              <input
+                id="senha"
+                [type]="mostrarSenha ? 'text' : 'password'"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.senha"
+                [class.is-invalid]="camposInvalidos.includes('senha')"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-2">
+              <label for="confirmarSenha" class="form-label">
+                Confirmar <span class="text-danger" aria-hidden="true">*</span>
+              </label>
+              <input
+                id="confirmarSenha"
+                [type]="mostrarSenha ? 'text' : 'password'"
+                class="form-control form-control-sm"
+                name="confirmarSenha"
+                [(ngModel)]="novoUsuario.confirmarSenha"
+                [class.is-invalid]="camposInvalidos.includes('confirmarSenha')"
+                aria-required="true"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary w-100 senha-toggle-btn"
+                title="Mostrar/Ocultar senha"
+                (click)="toggleMostrarSenha()"
+              >
+                <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"></i>
+              </button>
+            </div>
+            <h6 class="modal-section-title mt-3">
+              <i class="bi bi-geo-alt me-1"></i>
+              Endereço
+            </h6>
+            <div class="col-md-2">
+              <label class="form-label" for="cep">CEP</label>
+              <input id="cep"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.cep"
+                (blur)="onCepBlurRow(novoUsuario)"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-5">
+              <label class="form-label" for="logradouro">Logradouro</label>
+              <input id="logradouro" class="form-control form-control-sm" [(ngModel)]="novoUsuario.logradouro" style="color:#35689b;">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="numero_endereco">Número</label>
+              <input id="numero_endereco"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.numero_endereco"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="complemento_endereco">Complemento</label>
+              <input id="complemento_endereco"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.complemento_endereco"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="bairro">Bairro</label>
+              <input id="bairro"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.bairro"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="cidade">Cidade</label>
+              <input id="cidade"
+                class="form-control form-control-sm"
+                [(ngModel)]="novoUsuario.cidade"
+                style="color:#35689b;"
+              >
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="estado">UF</label>
+              <input id="estado"
+                class="form-control form-control-sm text-uppercase"
+                maxlength="2"
+                [(ngModel)]="novoUsuario.estado"
+                style="color:#35689b;"
+              >
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-success" (click)="salvarNovoUsuario()">
+            <i class="bi bi-check-circle me-1"></i>
+            Cadastrar
+          </button>
         </div>
       </div>
     </div>
@@ -262,7 +455,7 @@
   .table-hover tbody tr:hover {
     background-color: #f7fbff;
   }
- .table-active {
+  .table-active {
     --bs-table-bg: #f1f7ff;
   }
   /* Sem quebras e com elipse por padrão (uma linha por registro) */
@@ -288,5 +481,16 @@
   .form-control:focus, .btn:focus {
     box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
     border-color: #8fb4da;
+  }
+  .senha-toggle-btn {
+    height: 31px;
+    color: #35689b;
+    border: 1px solid #d0e2f2;
+    background: #eef6ff;
+  }
+  .senha-toggle-btn:hover {
+    background: #dbeeff;
+    border-color: #8fb4da;
+    color: #35689b;
   }
 </style>
