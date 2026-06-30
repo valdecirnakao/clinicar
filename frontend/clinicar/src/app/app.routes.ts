@@ -13,9 +13,13 @@ import { ExibePecaComponent } from './pages/menu-administrador/exibe-peca/exibe-
 import { CadastroServicoComponent } from './pages/menu-administrador/cadastra-servico/cadastra-servico.component';
 import { CadastraFornecimentoPecasComponent } from './pages/menu-administrador/cadastra-fornecimento-pecas/cadastra-fornecimento-pecas.component';
 import { ExibeFornecimentoPecaComponent } from './pages/menu-administrador/exibe-fornecimento-pecas/exibe-fornecimento-pecas.component';
+import { RedefinirSenhaComponent } from './pages/login/redefinir-senha/redefinir-senha.component';
+import { EsqueciSenhaComponent } from './pages/login/esqueci-senha/esqueci-senha.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: 'esqueci-senha', component: EsqueciSenhaComponent },
+  { path: 'redefinir-senha', component: RedefinirSenhaComponent },
   { path: 'login', component: LoginComponent },
   { path: 'cadastraCliente', component: CadastraClienteComponent },
   { path: 'menuAdministrador', component: MenuAdministradorComponent,  // precisa ter <router-outlet> no template

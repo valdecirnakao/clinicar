@@ -1,0 +1,111 @@
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+  <div class="card shadow-sm" style="max-width: 480px; width: 100%; border-radius: 14px;">
+    <div class="card-body p-4">
+
+      <div class="text-center mb-4" style="color: #35689b;">
+        <i class="bi bi-key fs-1"></i>
+        <h4 class="mt-2 mb-1">Redefinir senha</h4>
+        <p class="text-muted mb-0">
+          Informe sua nova senha de acesso ao CliniCar.
+        </p>
+      </div>
+
+      <div *ngIf="mensagemSucesso" class="alert alert-success">
+        {{ mensagemSucesso }}
+        <div class="small mt-1">
+          Redirecionando para o login...
+        </div>
+      </div>
+
+      <div *ngIf="mensagemErro" class="alert alert-danger">
+        {{ mensagemErro }}
+      </div>
+
+      <form (ngSubmit)="redefinirSenha()" *ngIf="!mensagemSucesso">
+
+        <div class="mb-3">
+          <label for="novaSenha" class="form-label">Nova senha</label>
+
+          <div class="input-group">
+            <input
+              id="novaSenha"
+              name="novaSenha"
+              [type]="mostrarNovaSenha ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Digite a nova senha"
+              [(ngModel)]="novaSenha"
+              [disabled]="carregando || !token"
+              autocomplete="new-password"
+            >
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="alternarMostrarNovaSenha()"
+              [disabled]="carregando || !token"
+            >
+              <i
+                class="bi"
+                [ngClass]="mostrarNovaSenha ? 'bi-eye-slash' : 'bi-eye'"
+              ></i>
+            </button>
+          </div>
+
+          <div class="form-text">
+            Use pelo menos 8 caracteres, com letras e números.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="confirmarSenha" class="form-label">Confirmar nova senha</label>
+
+          <div class="input-group">
+            <input
+              id="confirmarSenha"
+              name="confirmarSenha"
+              [type]="mostrarConfirmarSenha ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Confirme a nova senha"
+              [(ngModel)]="confirmarSenha"
+              [disabled]="carregando || !token"
+              autocomplete="new-password"
+            >
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="alternarMostrarConfirmarSenha()"
+              [disabled]="carregando || !token"
+            >
+              <i
+                class="bi"
+                [ngClass]="mostrarConfirmarSenha ? 'bi-eye-slash' : 'bi-eye'"
+              ></i>
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="btn w-100 text-white"
+          style="background-color: #35689b;"
+          [disabled]="carregando || !token"
+        >
+          <span *ngIf="!carregando">Salvar nova senha</span>
+          <span *ngIf="carregando">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Salvando...
+          </span>
+        </button>
+
+      </form>
+
+      <div class="text-center mt-3">
+        <a routerLink="/login" class="text-decoration-none">
+          Voltar para o login
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+.card {
+  border: 1px solid #d0e2f2;
+}
+
+.input-group .btn {
+  min-width: 48px;
+}

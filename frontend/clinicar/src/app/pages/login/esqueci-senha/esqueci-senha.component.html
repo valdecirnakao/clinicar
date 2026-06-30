@@ -1,0 +1,60 @@
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+  <div class="card shadow-sm" style="max-width: 460px; width: 100%; border-radius: 14px;">
+    <div class="card-body p-4">
+
+      <div class="text-center mb-4" style="color: #35689b;">
+        <i class="bi bi-shield-lock fs-1"></i>
+        <h4 class="mt-2 mb-1">Recuperar senha</h4>
+        <p class="text-muted mb-0">
+          Informe seu e-mail para receber o link de redefinição.
+        </p>
+      </div>
+
+      <div *ngIf="mensagemSucesso" class="alert alert-success">
+        {{ mensagemSucesso }}
+      </div>
+
+      <div *ngIf="mensagemErro" class="alert alert-danger">
+        {{ mensagemErro }}
+      </div>
+
+      <form (ngSubmit)="solicitarRedefinicao()">
+
+        <div class="mb-3">
+          <label for="email" class="form-label">E-mail</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            class="form-control"
+            placeholder="Digite seu e-mail cadastrado"
+            [(ngModel)]="email"
+            [disabled]="carregando"
+            autocomplete="email"
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="btn w-100 text-white"
+          style="background-color: #35689b;"
+          [disabled]="carregando"
+        >
+          <span *ngIf="!carregando">Enviar link de recuperação</span>
+          <span *ngIf="carregando">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Enviando...
+          </span>
+        </button>
+
+      </form>
+
+      <div class="text-center mt-3">
+        <a routerLink="/login" class="text-decoration-none">
+          Voltar para o login
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>

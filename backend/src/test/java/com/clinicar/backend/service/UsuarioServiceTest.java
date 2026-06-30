@@ -15,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
@@ -22,12 +23,16 @@ class UsuarioServiceTest {
     @Mock
     private UsuarioRepository repo;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UsuarioService service;
 
     @Test
     void criarNormalizaCpfEcepEConverteNascimentoValido() {
         UsuarioRequest req = new UsuarioRequest();
+
         req.setCpf("123.456.789-00");
         req.setNome("Maria");
         req.setNome_social("Maria S.");
@@ -44,7 +49,11 @@ class UsuarioServiceTest {
         req.setTipo_do_acesso("ADMIN");
         req.setNascimento("31/12/2024");
 
-        when(repo.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(passwordEncoder.encode("secret"))
+                .thenReturn("$2a$10$senhaCriptografadaParaTeste");
+
+        when(repo.save(any(Usuario.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         Usuario salvo = service.criar(req);
 
@@ -52,11 +61,18 @@ class UsuarioServiceTest {
         verify(repo).save(captor.capture());
 
         Usuario usuario = captor.getValue();
+
         assertEquals("12345678900", usuario.getCpf());
         assertEquals("12345678", usuario.getCep());
         assertEquals("Maria", usuario.getNome());
         assertEquals("Maria S.", usuario.getNome_social());
-        assertEquals("secret", usuario.getSenha());
+
+        /*
+         * Agora a senha deve estar criptografada.
+         * Como usamos PasswordEncoder mockado, validamos o valor retornado pelo mock.
+         */
+        assertEquals("$2a$10$senhaCriptografadaParaTeste", usuario.getSenha());
+
         assertEquals("(11) 99999-1111", usuario.getTelefone());
         assertEquals("ATIVO", usuario.getStatus());
         assertEquals("maria@example.com", usuario.getEmail());
@@ -68,21 +84,25 @@ class UsuarioServiceTest {
         assertEquals("100", usuario.getNumero_endereco());
         assertEquals("ADMIN", usuario.getTipo_do_acesso());
         assertEquals("2024-12-31", usuario.getNascimento().toString());
+
         assertEquals(usuario, salvo);
     }
 
     @Test
     void criarDefineNascimentoNuloQuandoDataInvalida() {
         UsuarioRequest req = new UsuarioRequest();
+
         req.setCpf("999.999.999-99");
         req.setCep("00000-000");
         req.setNascimento("2024-12-31");
 
-        when(repo.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repo.save(any(Usuario.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         Usuario salvo = service.criar(req);
 
         assertNull(salvo.getNascimento());
+
         verify(repo).save(any(Usuario.class));
     }
 }
