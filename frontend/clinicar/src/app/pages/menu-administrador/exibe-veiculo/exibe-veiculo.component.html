@@ -435,6 +435,7 @@
               class="form-control form-control-sm"
               [(ngModel)]="novoVeiculo.placa"
               (blur)="novoVeiculo.placa = formatarPlaca(novoVeiculo.placa)"
+              (input) = "novoVeiculo.placa = novoVeiculo.placa?.toUpperCase()"
               style="color:#35689b;"
               autocomplete="off"
             />
@@ -478,7 +479,7 @@
               style="color:#35689b;"
             >
               <option value="">
-                Selecione um fabricante...
+                {{ novoVeiculo.fabricante ? 'Selecione um modelo...' : 'Selecione um fabricante...' }}
               </option>
 
               <option
@@ -523,7 +524,7 @@
               style="color:#35689b;"
             >
               <option value="">
-                Selecione um modelo...
+                {{ novoVeiculo.fabricante ? novoVeiculo.modelo ? 'Selecione um ano-modelo...' : 'Selecione um modelo...' : 'Selecione um fabricante...' }}
               </option>
 
               <option

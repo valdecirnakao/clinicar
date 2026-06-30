@@ -1,6 +1,6 @@
 package com.clinicar.backend.controller;
-import com.clinicar.backend.dto.WhatsAppCadastroUsuarioDTO;
-import com.clinicar.backend.dto.WhatsAppRequestDTO;
+
+import com.clinicar.backend.dto.WhatsAppCadastroVeiculoRequest;
 import com.clinicar.backend.service.WhatsAppService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,32 +16,17 @@ public class WhatsAppController {
         this.whatsAppService = whatsAppService;
     }
 
-    @PostMapping("/teste")
-    public ResponseEntity<String> enviarTeste() {
-        String resposta = whatsAppService.enviarMensagemTemplate(
-                "5511966063558"
-        );
-
-        return ResponseEntity.ok(resposta);
-    }
-
-    @PostMapping("/enviar")
-    public ResponseEntity<String> enviarMensagem(
-            @RequestBody WhatsAppRequestDTO request
+    @PostMapping("/cadastro-veiculo")
+    public ResponseEntity<String> enviarMensagemCadastroVeiculo(
+            @RequestBody WhatsAppCadastroVeiculoRequest request
     ) {
-        String resposta = whatsAppService.enviarMensagemTemplate(
-                request.getTelefone()
+        String resposta = whatsAppService.enviarMensagemCadastroVeiculo(
+                request.getTelefone(),
+                request.getTemplate(),
+                request.getLanguageCode(),
+                request.getParametrosBody()
         );
 
-        return ResponseEntity.ok(resposta);
-    }
-
-    @PostMapping("/cadastro-usuario")
-    public ResponseEntity<String> enviarCadastroUsuario(@RequestBody WhatsAppCadastroUsuarioDTO request) {
-        String resposta = whatsAppService.enviarMensagemCadastroUsuario(
-            request.getTelefone(),
-            request.getNome()
-        );
         return ResponseEntity.ok(resposta);
     }
 }

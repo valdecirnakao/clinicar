@@ -5,7 +5,10 @@ import { HttpClient } from '@angular/common/http';
 import { VeiculoService } from '../exibe-veiculo/exibe-veiculo.service';
 import { UsuarioService, Usuario } from '../exibe-usuario/exibe-usuario.service';
 import { firstValueFrom } from 'rxjs';
+import { WhatsappCloudService } from '../../../services/whatsapp-cloud.service';
+
 declare var bootstrap: any;
+
 export interface Veiculo {
   id?: number;
   placa: string;
@@ -15,6 +18,7 @@ export interface Veiculo {
   anoModeloCombustivel: string;
   idProprietario?: number;
 }
+
 /** ===== FIPE (v2) – tipos FRONT ===== */
 type VehicleType = 'cars' | 'motorcycles' | 'trucks';
 interface FipeBrand { code: string; name: string; }
@@ -31,6 +35,7 @@ interface FipeDetails {
   codeFipe?: string;
   vehicleType?: number;
 }
+
 const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
 
 @Component({
@@ -40,6 +45,7 @@ const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
   templateUrl: './exibe-veiculo.component.html',
   styleUrls: ['./exibe-veiculo.component.css']
 })
+
 export class ExibeVeiculoComponent implements OnInit {
   // lista exibida e cópia para filtro
   novoVeiculo: Partial<Veiculo> = {
@@ -55,15 +61,11 @@ export class ExibeVeiculoComponent implements OnInit {
   modalCadastroVeiculo: any;
   modalEdicao: any;
   modalProprietario: any;
-  /**
-   * Controla se o modal de proprietário está sendo usado
-   * pela edição ou pelo cadastro.
-   */
+
+  /* Controla se o modal de proprietário está sendo usado pela edição ou pelo cadastro.*/
   modoProprietarioModal: 'edicao' | 'cadastro' = 'edicao';
-  /**
-   * Estados FIPE exclusivos do cadastro.
-   * Isso evita conflito com os selects da edição.
-   */
+
+  /*Estados FIPE exclusivos do cadastro. Isso evita conflito com os selects da edição.*/
   marcaCadastroSelCode = '';
   modeloCadastroSelCode = '';
   anoCadastroSelCode = '';
@@ -73,18 +75,22 @@ export class ExibeVeiculoComponent implements OnInit {
   usuariosFiltradosModal: Usuario[] = [];
   modelosModal: any[] = [];
   anosModeloCombustivel: any[] = [];
+
   // cache id -> usuário (para resolver CPF/nome rapidamente)
   private readonly usuariosById = new Map<number, Usuario>();
+
   // estado de edição
   editId: number | null = null;
   edit: Partial<Veiculo> = {};
   loading = false;
   errorMsg = '';
+
   // picker de CPF (apenas na linha em edição)
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
   dropdownOpenId: number | null = null; // controla qual linha tem dropdown aberto
   cpfFiltroEdit = '';
+
   /** ===== FIPE ===== */
   tipo: VehicleType = 'cars';
   fipeCarregando = { marcas: false, modelos: false, anos: false, detalhes: false };
@@ -104,14 +110,15 @@ export class ExibeVeiculoComponent implements OnInit {
     private readonly usuarioService: UsuarioService,
     private readonly veiculoService: VeiculoService,
     private readonly host: ElementRef,
-    private readonly location: Location
+    private readonly location: Location,
+    private readonly whatsappService: WhatsappCloudService
   ) {}
-
   ngOnInit(): void {
     this.carregarUsuarios();
     this.recarregar();
     this.fipeCarregarMarcas();
   }
+
   // ---------- Usuários / CPF ----------
   private carregarUsuarios(): void {
     this.usuarioService.listarTodos().subscribe({
@@ -119,9 +126,7 @@ export class ExibeVeiculoComponent implements OnInit {
         this.usuarios = lista ?? [];
         this.usuariosFiltrados = [...this.usuarios];
         this.usuariosFiltradosModal = [...this.usuarios];
-
         this.usuariosById.clear();
-
         for (const u of this.usuarios) {
           if (u?.id != null) this.usuariosById.set(u.id, u);
         }
@@ -167,7 +172,6 @@ export class ExibeVeiculoComponent implements OnInit {
       this.usuariosFiltrados = [...this.usuarios];
       return;
     }
-
     const tDigits = this.onlyDigits(t);
     this.usuariosFiltrados = this.usuarios.filter((u) => {
       const cpfFmt = this.formatarCPF(u.cpf).toLowerCase();
@@ -196,7 +200,6 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   // ---------- Veículos ----------
-
   recarregar(): void {
     this.loading = true;
     this.errorMsg = '';
@@ -221,7 +224,6 @@ export class ExibeVeiculoComponent implements OnInit {
       this.veiculos = [...this.todos];
       return;
     }
-
     this.veiculos = this.todos.filter((v) => {
       const placaRaw = (v.placa || '').toLowerCase();
       const placaFmt = this.formatarPlaca(v.placa).toLowerCase();
@@ -236,6 +238,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   trackByVeiculo = (_: number, v: Veiculo) => v.id ?? v.placa;
+
   trackByUsuario = (_: number, u: Usuario) => u.id ?? u.cpf;
 
   iniciarEdicao(v: Veiculo): void {
@@ -261,11 +264,9 @@ export class ExibeVeiculoComponent implements OnInit {
       placa: ((this.edit.placa ?? '')).toUpperCase().replaceAll(/\s+-/g, ''),
       cor: ((this.edit.cor ?? '')).trim()
     };
-
     if (payload.idProprietario != null) {
       payload.idProprietario = Number(payload.idProprietario);
     }
-
     this.veiculoService.atualizarVeiculo(id, payload as any).subscribe({
       next: (atualizado) => {
         const i1 = this.todos.findIndex((x) => x.id === id);
@@ -284,7 +285,6 @@ export class ExibeVeiculoComponent implements OnInit {
   excluir(id?: number): void {
     if (!id) return;
     if (!confirm('Confirma excluir este veículo?')) return;
-
     this.veiculoService.removerVeiculo(id).subscribe({
       next: () => {
         this.todos = this.todos.filter((f) => f.id !== id);
@@ -299,7 +299,6 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   // ---------- Helpers ----------
-
   formatarPlaca(v: any): string {
     if (!v) return '';
     const s = (v || '').toString().toUpperCase().replaceAll(/\s+/g, '');
@@ -392,7 +391,7 @@ export class ExibeVeiculoComponent implements OnInit {
         const veiculoAtualizado = {
           ...this.edit,
           ...atualizado
-        } as Veiculo;
+        };
         const idxTodos = this.todos.findIndex(v => v.id === this.editId);
         if (idxTodos > -1) {
           this.todos[idxTodos] = veiculoAtualizado;
@@ -414,28 +413,19 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   abrirModalSelecaoProprietario(modo?: 'edicao' | 'cadastro'): void {
-    if (modo) {
-      this.modoProprietarioModal = modo;
-    }
-
+    if (modo) {this.modoProprietarioModal = modo;}
     this.cpfFiltroModal = '';
     this.usuariosFiltradosModal = [...this.usuarios];
 
     // Esconde temporariamente o modal que chamou a seleção
-    if (this.modoProprietarioModal === 'cadastro') {
-      this.modalCadastroVeiculo?.hide();
-    } else {
-      this.modalEdicao?.hide();
-    }
+    this.modoProprietarioModal === 'cadastro' ? this.modalCadastroVeiculo?.hide() : this.modalEdicao?.hide();
 
     setTimeout(() => {
       const el = document.getElementById('modalSelecionarProprietario');
-
       if (!el) {
         console.error('Modal modalSelecionarProprietario não encontrado.');
         return;
       }
-
       this.modalProprietario = bootstrap.Modal.getOrCreateInstance(el);
       this.modalProprietario.show();
     }, 300);
@@ -468,12 +458,7 @@ export class ExibeVeiculoComponent implements OnInit {
         this.normalizarTexto(cpfFormatado).includes(termoTexto);
       const encontrouPorTelefoneFormatado =
         this.normalizarTexto(telefoneFormatado).includes(termoTexto);
-      const encontrouPorNumeros =
-        termoNumeros.length > 0 &&
-        (
-          cpfNumeros.includes(termoNumeros) ||
-          telefoneNumeros.includes(termoNumeros)
-        );
+      const encontrouPorNumeros = termoNumeros.length > 0 && (cpfNumeros.includes(termoNumeros) || telefoneNumeros.includes(termoNumeros));
       return (
         encontrouPorTexto ||
         encontrouPorCpfFormatado ||
@@ -484,36 +469,26 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   private normalizarTexto(valor: any): string {
-    return (valor ?? '')
-      .toString()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
+    return (valor ?? '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
   selecionarProprietarioModal(u: Usuario): void {
     if (!u?.id) return;
-
     if (this.modoProprietarioModal === 'cadastro') {
       this.novoVeiculo.idProprietario = u.id;
     } else {
       this.edit.idProprietario = u.id;
     }
-
     this.modalProprietario?.hide();
-
     setTimeout(() => {
       if (this.modoProprietarioModal === 'cadastro') {
         const elCadastro = document.getElementById('modalCadastroVeiculo');
-
         if (elCadastro) {
           this.modalCadastroVeiculo = bootstrap.Modal.getOrCreateInstance(elCadastro);
           this.modalCadastroVeiculo.show();
         }
       } else {
         const elEdicao = document.getElementById('modalEdicaoVeiculo');
-
         if (elEdicao) {
           this.modalEdicao = bootstrap.Modal.getOrCreateInstance(elEdicao);
           this.modalEdicao.show();
@@ -550,40 +525,33 @@ export class ExibeVeiculoComponent implements OnInit {
 
   proprietarioSelecionadoCadastro(): Usuario | undefined {
     const id = this.novoVeiculo.idProprietario;
-
     if (id == null) return undefined;
-
     return this.usuariosById.get(Number(id));
   }
 
   cpfProprietarioSelecionadoCadastro(): string {
     const usuario = this.proprietarioSelecionadoCadastro();
-
     return this.formatarCPF(usuario?.cpf) || '';
   }
+
   nomeProprietarioSelecionadoCadastro(): string {
     const usuario = this.proprietarioSelecionadoCadastro();
-
     return usuario?.nome || '';
   }
 
   emailProprietarioSelecionadoCadastro(): string {
     const usuario = this.proprietarioSelecionadoCadastro();
-
     return usuario?.email || '';
   }
 
   telefoneProprietarioSelecionadoCadastro(): string {
     const usuario = this.proprietarioSelecionadoCadastro();
-
     return usuario?.telefone || '';
   }
 
-    // ========= FIPE =========
+  // ========= FIPE =========
   async fipeCarregarMarcas(): Promise<void> {
-    if (this.marcas.length > 0) {
-      return;
-    }
+    if (this.marcas.length > 0) {return;}
     this.fipeErro = '';
     this.fipeCarregando.marcas = true;
     try {
@@ -616,12 +584,8 @@ export class ExibeVeiculoComponent implements OnInit {
       const resp = await firstValueFrom(
         this.http.get<any>(`${FIPE_BASE}/${this.tipo}/brands/${marcaCode}/models`)
       );
-      const arr = Array.isArray(resp)
-        ? resp
-        : (resp?.models ?? resp?.modelos ?? []);
-      this.modelos = (arr ?? []).sort((a: FipeModel, b: FipeModel) =>
-        a.name.localeCompare(b.name, 'pt-BR')
-      );
+      const arr = Array.isArray(resp) ? resp : (resp?.models ?? resp?.modelos ?? []);
+      this.modelos = (arr ?? []).sort((a: FipeModel, b: FipeModel) => a.name.localeCompare(b.name, 'pt-BR'));
     } catch (err) {
       console.error('Erro ao carregar modelos FIPE:', err);
       this.modelos = [];
@@ -670,12 +634,8 @@ export class ExibeVeiculoComponent implements OnInit {
       this.edit.fabricante = '';
       return;
     }
-    const marcaSelecionada = this.marcas.find(
-      (m) => String(m.code) === String(this.marcaSelCode)
-    );
-    this.edit.fabricante = marcaSelecionada
-      ? this.formatarFabricante(marcaSelecionada.name)
-      : '';
+    const marcaSelecionada = this.marcas.find((m) => String(m.code) === String(this.marcaSelCode));
+    this.edit.fabricante = marcaSelecionada ? this.formatarFabricante(marcaSelecionada.name) : '';
     await this.fipeCarregarModelosDaMarca(this.marcaSelCode);
   }
 
@@ -689,20 +649,15 @@ export class ExibeVeiculoComponent implements OnInit {
       this.edit.modelo = '';
       return;
     }
-    const modeloSelecionado = this.modelos.find(
-      (m) => String(m.code) === String(this.modeloSelCode)
-    );
-    this.edit.modelo = modeloSelecionado
-      ? modeloSelecionado.name
-      : '';
+    const modeloSelecionado = this.modelos.find((m) => String(m.code) === String(this.modeloSelCode));
+    this.edit.modelo = modeloSelecionado ? modeloSelecionado.name : '';
     await this.fipeCarregarAnosDoModelo(this.marcaSelCode, this.modeloSelCode);
   }
+
   async onChangeAnoModeloCombustivel(code: string): Promise<void> {
     this.anoSelCode = code || '';
     this.edit.anoModeloCombustivel = '';
-    if (!this.marcaSelCode || !this.modeloSelCode || !this.anoSelCode) {
-      return;
-    }
+    if (!this.marcaSelCode || !this.modeloSelCode || !this.anoSelCode) {return;}
     this.fipeErro = '';
     this.fipeCarregando.detalhes = true;
     try {
@@ -711,12 +666,8 @@ export class ExibeVeiculoComponent implements OnInit {
           `${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models/${this.modeloSelCode}/years/${this.anoSelCode}`
         )
       );
-      if (det?.brand) {
-        this.edit.fabricante = this.formatarFabricante(det.brand);
-      }
-      if (det?.model) {
-        this.edit.modelo = det.model;
-      }
+      if (det?.brand) {this.edit.fabricante = this.formatarFabricante(det.brand);}
+      if (det?.model) {this.edit.modelo = det.model;}
       const ano = det?.modelYear ?? '';
       const combustivel = det?.fuel ?? '';
       this.edit.anoModeloCombustivel = `${ano} | ${combustivel}`.trim();
@@ -729,18 +680,11 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   private normalizarFipeTexto(valor: any): string {
-    return (valor ?? '')
-      .toString()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, '');
+    return (valor ?? '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   }
   private encontrarMarcaPorNome(nome?: string): FipeBrand | undefined {
     const alvo = this.normalizarFipeTexto(nome);
-    if (!alvo) {
-      return undefined;
-    }
+    if (!alvo) {return undefined;}
     return this.marcas.find((m) => {
       const nomeOriginal = this.normalizarFipeTexto(m.name);
       const nomeFormatado = this.normalizarFipeTexto(this.formatarFabricante(m.name));
@@ -757,15 +701,9 @@ export class ExibeVeiculoComponent implements OnInit {
 
   private encontrarModeloPorNome(nome?: string): FipeModel | undefined {
     const alvo = this.normalizarFipeTexto(nome);
-    if (!alvo) {
-      return undefined;
-    }
-    const exato = this.modelos.find(
-      (m) => this.normalizarFipeTexto(m.name) === alvo
-    );
-    if (exato) {
-      return exato;
-    }
+    if (!alvo) {return undefined;}
+    const exato = this.modelos.find((m) => this.normalizarFipeTexto(m.name) === alvo);
+    if (exato) {return exato;}
     return this.modelos.find((m) => {
       const nomeModelo = this.normalizarFipeTexto(m.name);
       return nomeModelo.includes(alvo) || alvo.includes(nomeModelo);
@@ -774,20 +712,15 @@ export class ExibeVeiculoComponent implements OnInit {
 
   private encontrarAnoPorDescricao(descricao?: string): FipeYear | undefined {
     const alvo = this.normalizarFipeTexto(descricao);
-    if (!alvo) {
-      return undefined;
-    }
-    const exato = this.anos.find(
-      (a) => this.normalizarFipeTexto(a.name) === alvo
-    );
-    if (exato) {
-      return exato;
-    }
+    if (!alvo) {return undefined;}
+    const exato = this.anos.find((a) => this.normalizarFipeTexto(a.name) === alvo);
+    if (exato) {return exato;}
     return this.anos.find((a) => {
       const nomeAno = this.normalizarFipeTexto(a.name);
       return nomeAno.includes(alvo) || alvo.includes(nomeAno);
     });
   }
+
   formatarFabricante(fabricante: string): string {
     if (!fabricante) { return ''; }
     const siglas = ['GM', 'VW', 'BMW', 'GWM', 'BYD', 'JAC'];
@@ -827,6 +760,7 @@ export class ExibeVeiculoComponent implements OnInit {
       return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     } else { return n;}
   }
+
   async abrirModalCadastroVeiculo(): Promise<void> {
     this.novoVeiculo = {
       placa: '',
@@ -836,236 +770,253 @@ export class ExibeVeiculoComponent implements OnInit {
       anoModeloCombustivel: '',
       idProprietario: undefined
     };
-
     this.modoProprietarioModal = 'cadastro';
-
     this.marcaCadastroSelCode = '';
     this.modeloCadastroSelCode = '';
     this.anoCadastroSelCode = '';
-
     this.modelosCadastro = [];
     this.anosCadastro = [];
-
     this.cpfFiltroModal = '';
     this.usuariosFiltradosModal = [...this.usuarios];
-
     if (!this.marcas || this.marcas.length === 0) {
       await this.fipeCarregarMarcas();
     }
-
     const el = document.getElementById('modalCadastroVeiculo');
-
     if (!el) {
       console.error('Modal modalCadastroVeiculo não encontrado.');
       return;
     }
-
     this.modalCadastroVeiculo = bootstrap.Modal.getOrCreateInstance(el);
     this.modalCadastroVeiculo.show();
   }
 
   async onChangeMarcaCadastro(code: string): Promise<void> {
-  this.marcaCadastroSelCode = code || '';
-
-  this.modeloCadastroSelCode = '';
-  this.anoCadastroSelCode = '';
-
-  this.modelosCadastro = [];
-  this.anosCadastro = [];
-
-  this.novoVeiculo.modelo = '';
-  this.novoVeiculo.anoModeloCombustivel = '';
-
-  if (!this.marcaCadastroSelCode) {
-    this.novoVeiculo.fabricante = '';
-    return;
-  }
-
-  const marcaSelecionada = this.marcas.find(
-    (m) => String(m.code) === String(this.marcaCadastroSelCode)
-  );
-
-  this.novoVeiculo.fabricante = marcaSelecionada
-    ? this.formatarFabricante(marcaSelecionada.name)
-    : '';
-
-  this.fipeErro = '';
-  this.fipeCarregando.modelos = true;
-
-  try {
-    const resp = await firstValueFrom(
-      this.http.get<any>(
-        `${FIPE_BASE}/${this.tipo}/brands/${this.marcaCadastroSelCode}/models`
-      )
-    );
-
-    const arr = Array.isArray(resp)
-      ? resp
-      : (resp?.models ?? resp?.modelos ?? []);
-
-    this.modelosCadastro = (arr ?? []).sort((a: FipeModel, b: FipeModel) =>
-      a.name.localeCompare(b.name, 'pt-BR')
-    );
-  } catch (err) {
-    console.error('Erro ao carregar modelos FIPE no cadastro:', err);
+    this.marcaCadastroSelCode = code || '';
+    this.modeloCadastroSelCode = '';
+    this.anoCadastroSelCode = '';
     this.modelosCadastro = [];
-    this.fipeErro = 'Falha ao carregar modelos da Tabela FIPE.';
-  } finally {
-    this.fipeCarregando.modelos = false;
-  }
-}
-
-async onChangeModeloCadastro(code: string): Promise<void> {
-  this.modeloCadastroSelCode = code || '';
-
-  this.anoCadastroSelCode = '';
-  this.anosCadastro = [];
-
-  this.novoVeiculo.anoModeloCombustivel = '';
-
-  if (!this.marcaCadastroSelCode || !this.modeloCadastroSelCode) {
-    this.novoVeiculo.modelo = '';
-    return;
-  }
-
-  const modeloSelecionado = this.modelosCadastro.find(
-    (m) => String(m.code) === String(this.modeloCadastroSelCode)
-  );
-
-  this.novoVeiculo.modelo = modeloSelecionado
-    ? modeloSelecionado.name
-    : '';
-
-  this.fipeErro = '';
-  this.fipeCarregando.anos = true;
-
-  try {
-    const lista = await firstValueFrom(
-      this.http.get<FipeYear[]>(
-        `${FIPE_BASE}/${this.tipo}/brands/${this.marcaCadastroSelCode}/models/${this.modeloCadastroSelCode}/years`
-      )
-    );
-
-    this.anosCadastro = lista ?? [];
-  } catch (err) {
-    console.error('Erro ao carregar anos FIPE no cadastro:', err);
     this.anosCadastro = [];
-    this.fipeErro = 'Falha ao carregar anos/modelos/combustíveis da Tabela FIPE.';
-  } finally {
-    this.fipeCarregando.anos = false;
+    this.novoVeiculo.modelo = '';
+    this.novoVeiculo.anoModeloCombustivel = '';
+    if (!this.marcaCadastroSelCode) {
+      this.novoVeiculo.fabricante = '';
+      return;
+    }
+    const marcaSelecionada = this.marcas.find((m) => String(m.code) === String(this.marcaCadastroSelCode));
+    this.novoVeiculo.fabricante = marcaSelecionada ? this.formatarFabricante(marcaSelecionada.name) : '';
+    this.fipeErro = '';
+    this.fipeCarregando.modelos = true;
+    try {
+      const resp = await firstValueFrom(this.http.get<any>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaCadastroSelCode}/models`));
+      const arr = Array.isArray(resp) ? resp : (resp?.models ?? resp?.modelos ?? []);
+      this.modelosCadastro = (arr ?? []).sort((a: FipeModel, b: FipeModel) => a.name.localeCompare(b.name, 'pt-BR'));
+    } catch (err) {
+      console.error('Erro ao carregar modelos FIPE no cadastro:', err);
+      this.modelosCadastro = [];
+      this.fipeErro = 'Falha ao carregar modelos da Tabela FIPE.';
+    } finally {
+      this.fipeCarregando.modelos = false;
+    }
   }
-}
 
-async onChangeAnoModeloCombustivelCadastro(code: string): Promise<void> {
-  this.anoCadastroSelCode = code || '';
-
-  this.novoVeiculo.anoModeloCombustivel = '';
-
-  if (
-    !this.marcaCadastroSelCode ||
-    !this.modeloCadastroSelCode ||
-    !this.anoCadastroSelCode
-  ) {
-    return;
-  }
-
-  this.fipeErro = '';
-  this.fipeCarregando.detalhes = true;
-
-  try {
-    const det = await firstValueFrom(
-      this.http.get<FipeDetails>(
-        `${FIPE_BASE}/${this.tipo}/brands/${this.marcaCadastroSelCode}/models/${this.modeloCadastroSelCode}/years/${this.anoCadastroSelCode}`
-      )
+  async onChangeModeloCadastro(code: string): Promise<void> {
+    this.modeloCadastroSelCode = code || '';
+    this.anoCadastroSelCode = '';
+    this.anosCadastro = [];
+    this.novoVeiculo.anoModeloCombustivel = '';
+    if (!this.marcaCadastroSelCode || !this.modeloCadastroSelCode) {
+      this.novoVeiculo.modelo = '';
+      return;
+    }
+    const modeloSelecionado = this.modelosCadastro.find((m) => String(m.code) === String(this.modeloCadastroSelCode));
+    this.novoVeiculo.modelo = modeloSelecionado ? modeloSelecionado.name : '';
+    this.fipeErro = '';
+    this.fipeCarregando.anos = true;
+    try {
+      const lista = await firstValueFrom(
+        this.http.get<FipeYear[]>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaCadastroSelCode}/models/${this.modeloCadastroSelCode}/years`)
     );
-
-    if (det?.brand) {
-      this.novoVeiculo.fabricante = this.formatarFabricante(det.brand);
+    this.anosCadastro = lista ?? [];
+    } catch (err) {
+      console.error('Erro ao carregar anos FIPE no cadastro:', err);
+      this.anosCadastro = [];
+      this.fipeErro = 'Falha ao carregar anos/modelos/combustíveis da Tabela FIPE.';
+    } finally {
+      this.fipeCarregando.anos = false;
     }
+  }
 
-    if (det?.model) {
-      this.novoVeiculo.modelo = det.model;
+  async onChangeAnoModeloCombustivelCadastro(code: string): Promise<void> {
+    this.anoCadastroSelCode = code || '';
+    this.novoVeiculo.anoModeloCombustivel = '';
+    if (!this.marcaCadastroSelCode || !this.modeloCadastroSelCode || !this.anoCadastroSelCode) {
+      return;
     }
-
-    const ano = det?.modelYear ?? '';
-    const combustivel = det?.fuel ?? '';
-
-    this.novoVeiculo.anoModeloCombustivel = `${ano} | ${combustivel}`.trim();
-  } catch (err) {
-    console.error('Erro ao buscar detalhes FIPE no cadastro:', err);
-    this.fipeErro = 'Falha ao buscar detalhes do veículo na Tabela FIPE.';
-  } finally {
-    this.fipeCarregando.detalhes = false;
-  }
-}
-
-
-salvarCadastroVeiculo(): void {
-  const payload: Partial<Veiculo> = {
-    placa: (this.novoVeiculo.placa || '')
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, ''),
-    fabricante: (this.novoVeiculo.fabricante || '').trim(),
-    modelo: (this.novoVeiculo.modelo || '').trim(),
-    cor: (this.novoVeiculo.cor || '').trim(),
-    anoModeloCombustivel: (this.novoVeiculo.anoModeloCombustivel || '')
-      .replace('/', '|')
-      .trim(),
-    idProprietario: this.novoVeiculo.idProprietario != null
-      ? Number(this.novoVeiculo.idProprietario)
-      : undefined
-  };
-
-  if (!payload.placa) {
-    alert('Informe a placa do veículo.');
-    return;
-  }
-
-  if (!payload.fabricante) {
-    alert('Selecione o fabricante do veículo.');
-    return;
-  }
-
-  if (!payload.modelo) {
-    alert('Selecione o modelo do veículo.');
-    return;
-  }
-
-  if (!payload.anoModeloCombustivel) {
-    alert('Selecione o ano-modelo/combustível do veículo.');
-    return;
-  }
-
-  if (!payload.cor) {
-    alert('Informe a cor do veículo.');
-    return;
-  }
-
-  if (!payload.idProprietario) {
-    alert('Selecione o proprietário do veículo.');
-    return;
-  }
-
-  this.veiculoService.cadastrar(payload as Omit<Veiculo, 'id'>).subscribe({
-    next: () => {
-      this.modalCadastroVeiculo?.hide();
-
-      this.novoVeiculo = {
-        placa: '',
-        fabricante: '',
-        modelo: '',
-        cor: '',
-        anoModeloCombustivel: '',
-        idProprietario: undefined
-      };
-
-      alert('Veículo cadastrado com sucesso.');
-      this.recarregar();
-    },
-    error: (err) => {
-      console.error('Erro ao cadastrar veículo:', err);
-      alert('Erro ao cadastrar veículo.');
+    this.fipeErro = '';
+    this.fipeCarregando.detalhes = true;
+    try {
+      const det = await firstValueFrom(
+        this.http.get<FipeDetails>(
+          `${FIPE_BASE}/${this.tipo}/brands/${this.marcaCadastroSelCode}/models/${this.modeloCadastroSelCode}/years/${this.anoCadastroSelCode}`
+        )
+      );
+      if (det?.brand) {
+        this.novoVeiculo.fabricante = this.formatarFabricante(det.brand);
+      }
+      if (det?.model) {
+        this.novoVeiculo.modelo = det.model;
+      }
+      const ano = det?.modelYear ?? '';
+      const combustivel = det?.fuel ?? '';
+      this.novoVeiculo.anoModeloCombustivel = `${ano} | ${combustivel}`.trim();
+    } catch (err) {
+      console.error('Erro ao buscar detalhes FIPE no cadastro:', err);
+      this.fipeErro = 'Falha ao buscar detalhes do veículo na Tabela FIPE.';
+    } finally {
+      this.fipeCarregando.detalhes = false;
     }
-  });
-}
+  }
+
+  salvarCadastroVeiculo(): void {
+    const payload: Partial<Veiculo> = {
+      placa: (this.novoVeiculo.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+      fabricante: (this.novoVeiculo.fabricante || '').trim(),
+      modelo: (this.novoVeiculo.modelo || '').trim(),
+      cor: (this.novoVeiculo.cor || '').trim(),
+      anoModeloCombustivel: (this.novoVeiculo.anoModeloCombustivel || '').replace('/', '|').trim(),
+      idProprietario: this.novoVeiculo.idProprietario !== null &&
+        this.novoVeiculo.idProprietario !== undefined
+          ? Number(this.novoVeiculo.idProprietario)
+          : undefined
+    };
+    if (!payload.placa) {
+      alert('Informe a placa do veículo.');
+      return;
+    }
+    if (!payload.fabricante) {
+      alert('Selecione o fabricante do veículo.');
+      return;
+    }
+    if (!payload.modelo) {
+      alert('Selecione o modelo do veículo.');
+      return;
+    }
+    if (!payload.anoModeloCombustivel) {
+      alert('Selecione o ano-modelo/combustível do veículo.');
+      return;
+    }
+    if (!payload.cor) {
+      alert('Informe a cor do veículo.');
+      return;
+    }
+    if (!payload.idProprietario) {
+      alert('Selecione o proprietário do veículo.');
+      return;
+    }
+    const proprietario = this.buscarUsuarioPorId(payload.idProprietario);
+    if (!proprietario) {
+      alert('Não foi possível localizar os dados do proprietário selecionado.');
+      return;
+    }
+    if (!this.normalizarTelefoneWhatsapp(proprietario.telefone)) {
+      alert('O proprietário selecionado não possui telefone válido para WhatsApp.');
+      return;
+    }
+    this.veiculoService.cadastrar(payload as Omit<Veiculo, 'id'>).subscribe({
+      next: (veiculoCadastrado) => {
+        const veiculoParaMensagem: Partial<Veiculo> = {
+          ...payload,
+          ...veiculoCadastrado,
+          idProprietario: payload.idProprietario
+        };
+        this.modalCadastroVeiculo?.hide();
+        alert('Veículo cadastrado com sucesso.');
+        this.enviarWhatsappCadastroVeiculo(veiculoParaMensagem, true);
+        this.novoVeiculo = {
+          placa: '',
+          fabricante: '',
+          modelo: '',
+          cor: '',
+          anoModeloCombustivel: '',
+          idProprietario: undefined
+        };
+        this.recarregar();
+      },
+      error: (err) => {
+        console.error('Erro ao cadastrar veículo:', err);
+        alert('Erro ao cadastrar veículo.');
+      }
+    });
+  }
+
+  private buscarUsuarioPorId(idProprietario?: number): Usuario | undefined {
+    if (idProprietario == null) {
+      return undefined;
+    }
+    return this.usuariosById.get(Number(idProprietario));
+  }
+
+  private normalizarTelefoneWhatsapp(telefone?: string): string {
+    const digitos = this.onlyDigits(telefone);
+    if (!digitos) { return '';}
+
+    // Se já vier com DDI 55, mantém.
+    if (digitos.startsWith('55')) {return digitos;}
+
+    // Se vier com DDD + número, adiciona 55.
+    if (digitos.length === 10 || digitos.length === 11) {return `55${digitos}`;}
+
+    // Se vier apenas o número sem DDD, aqui estou assumindo DDD 11.
+    // Ajuste se você quiser obrigar o cadastro com DDD.
+    if (digitos.length === 8 || digitos.length === 9) {return `5511${digitos}`;}
+      return digitos;
+  }
+
+  private montarParametrosTemplateCadastroVeiculo(veiculo: Partial<Veiculo>, proprietario: Usuario): string[] {
+    return [
+      proprietario.nome || 'Cliente',
+      this.capitalizar(veiculo.modelo || 'Veículo')
+    ];
+  }
+
+  private enviarWhatsappCadastroVeiculo(veiculo: Partial<Veiculo>, exibirAlertas = false): void {
+    const proprietario = this.buscarUsuarioPorId(veiculo.idProprietario);
+    if (!proprietario) {
+      console.warn('Proprietário não encontrado para envio de WhatsApp.', veiculo);
+      if (exibirAlertas) {
+        alert('Proprietário não encontrado para envio de WhatsApp.');
+      }
+      return;
+    }
+    const telefoneWhatsapp = this.normalizarTelefoneWhatsapp(proprietario.telefone);
+    if (!telefoneWhatsapp) {
+      console.warn('Proprietário sem telefone cadastrado.', proprietario);
+      if (exibirAlertas) {alert('O proprietário selecionado não possui telefone cadastrado.');}
+      return;
+    }
+    this.whatsappService.enviarMensagemCadastroVeiculo({
+      telefone: telefoneWhatsapp,
+      template: 'cadastro_veiculo',
+      languageCode: 'pt_BR',
+      parametrosBody: [
+        proprietario.nome || 'Cliente',
+        this.capitalizar(veiculo.modelo || 'Veículo')
+      ]
+    }).subscribe({
+      next: () => {
+        alert('Mensagem de WhatsApp enviada com sucesso.');
+      },
+      error: (err) => {
+        console.error('Erro ao enviar mensagem pelo WhatsApp:', err);
+        alert('Veículo cadastrado, mas houve erro ao enviar a mensagem pelo WhatsApp.');
+      }
+    });
+  }
+
+
+  /*this.whatsappCloudService.enviarMensagemCadastroUsuario({
+          telefone: this.novoUsuario.telefone || '',
+          nome: this.novoUsuario.nome || ''
+        }).subscribe();
+        this.recarregar();*/
 }

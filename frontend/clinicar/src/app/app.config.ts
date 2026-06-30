@@ -2,7 +2,7 @@ import { ApplicationConfig, LOCALE_ID, provideZoneChangeDetection } from '@angul
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withFetch} from '@angular/common/http';
 import { routes } from './app.routes';
 
 registerLocaleData(localePt);
@@ -15,5 +15,6 @@ export const appConfig: ApplicationConfig = {
       provide: LOCALE_ID,
       useValue: 'pt-BR'
     }
+    ,provideHttpClient(withFetch())
   ]
 };
