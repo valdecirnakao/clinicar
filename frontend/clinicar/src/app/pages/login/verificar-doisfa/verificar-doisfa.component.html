@@ -1,0 +1,94 @@
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center mfa-page">
+  <div class="card mfa-card shadow-sm">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <img
+          src="assets/img/LogoClinicar.png"
+          alt="CliniCar Logo"
+          class="img-fluid mb-3"
+          style="max-width: 190px;"
+        />
+        <h4>Verificação em duas etapas</h4>
+        <p class="text-muted mb-0" *ngIf="!mfaPendente?.mfaSetupNecessario">
+          Informe o código gerado pelo seu aplicativo autenticador.
+        </p>
+        <p class="text-muted mb-0" *ngIf="mfaPendente?.mfaSetupNecessario">
+          Configure o CliniCar no seu aplicativo autenticador e informe o código gerado.
+        </p>
+      </div>
+      <div *ngIf="mensagemSucesso" class="alert alert-success">
+        <i class="bi bi-check-circle-fill me-1"></i>
+        {{ mensagemSucesso }}
+      </div>
+      <div *ngIf="mensagemErro" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        {{ mensagemErro }}
+      </div>
+      <div *ngIf="mfaPendente?.mfaSetupNecessario" class="setup-box mb-4">
+        <div class="text-center mb-3">
+          <img
+            *ngIf="mfaPendente?.qrCodeDataUrl"
+            [src]="mfaPendente?.qrCodeDataUrl"
+            alt="QR Code para configurar autenticação em duas etapas"
+            class="qr-code"
+          />
+        </div>
+        <div class="manual-key-box">
+          <div class="small text-muted mb-1">
+            Caso não consiga escanear o QR Code, cadastre manualmente esta chave:
+          </div>
+          <code>
+            {{ mfaPendente?.chaveManual }}
+          </code>
+        </div>
+        <div class="alert alert-info mt-3 mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          Abra o Google Authenticator, Microsoft Authenticator, Authy ou outro app compatível,
+          escaneie o QR Code e informe abaixo o código de 6 dígitos.
+        </div>
+      </div>
+      <form (ngSubmit)="validarCodigo()" novalidate>
+        <div class="mb-3">
+          <label for="codigo" class="form-label">
+            Código de verificação
+          </label>
+          <input
+            id="codigo"
+            name="codigo"
+            type="text"
+            inputmode="numeric"
+            maxlength="6"
+            class="form-control text-center code-input"
+            placeholder="000000"
+            [(ngModel)]="codigo"
+            (input)="formatarCodigo()"
+            [disabled]="carregando || !mfaPendente"
+            autocomplete="one-time-code"
+          />
+        </div>
+        <button
+          type="submit"
+          class="btn btn-primary w-100"
+          [disabled]="carregando || !mfaPendente"
+        >
+          <span *ngIf="!carregando">
+            Validar código
+          </span>
+          <span *ngIf="carregando">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Validando...
+          </span>
+        </button>
+      </form>
+      <div class="text-center mt-3">
+        <button
+          type="button"
+          class="btn btn-link text-decoration-none"
+          (click)="cancelar()"
+        >
+          Cancelar e voltar ao login
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

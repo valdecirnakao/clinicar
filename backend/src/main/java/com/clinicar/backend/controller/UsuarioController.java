@@ -1,5 +1,6 @@
 package com.clinicar.backend.controller;
-
+import com.clinicar.backend.dto.LoginResponse;
+import com.clinicar.backend.service.MfaService;
 import com.clinicar.backend.dto.UsuarioRequest;
 import com.clinicar.backend.model.Usuario;
 import com.clinicar.backend.repository.UsuarioRepository;
@@ -24,15 +25,17 @@ public class UsuarioController {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioService usuarioService;
     private final PasswordEncoder passwordEncoder;
-
+    private final MfaService mfaService;
     public UsuarioController(
-            UsuarioRepository usuarioRepository,
-            UsuarioService usuarioService,
-            PasswordEncoder passwordEncoder
+        UsuarioRepository usuarioRepository,
+        UsuarioService usuarioService,
+        PasswordEncoder passwordEncoder,
+        MfaService mfaService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.usuarioService = usuarioService;
         this.passwordEncoder = passwordEncoder;
+        this.mfaService = mfaService;
     }
 
     @PostMapping
@@ -48,18 +51,15 @@ public class UsuarioController {
     public ResponseEntity<Object> login(@RequestBody Map<String, String> loginData) {
         String email = loginData.get("email");
         String senha = loginData.get("senha");
-
         Optional<Usuario> usuarioOpt = usuarioService.autenticar(email, senha);
-
         if (usuarioOpt.isEmpty()) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body("E-mail ou senha inválidos.");
         }
-
         Usuario usuario = usuarioOpt.get();
-
-        return ResponseEntity.ok(ocultarSenha(usuario));
+        LoginResponse response = mfaService.prepararSegundoFator(usuario);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/email/{email}")

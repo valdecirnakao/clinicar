@@ -20,10 +20,8 @@ export class RedefinirSenhaComponent implements OnInit {
   token = '';
   novaSenha = '';
   confirmarSenha = '';
-
   mostrarNovaSenha = false;
   mostrarConfirmarSenha = false;
-
   carregando = false;
   mensagemSucesso = '';
   mensagemErro = '';
@@ -89,11 +87,8 @@ export class RedefinirSenhaComponent implements OnInit {
       },
       error: (erro) => {
         console.error('Erro ao redefinir senha:', erro);
-
-        this.mensagemErro =
-          erro?.error ||
-          'Não foi possível redefinir a senha. Solicite um novo link e tente novamente.';
-
+        this.mensagemErro = erro?.error?.mensagem || erro?.error ||
+        'Não foi possível redefinir a senha. Solicite um novo link e tente novamente.';
         this.carregando = false;
       }
     });

@@ -15,12 +15,14 @@ import { CadastraFornecimentoPecasComponent } from './pages/menu-administrador/c
 import { ExibeFornecimentoPecaComponent } from './pages/menu-administrador/exibe-fornecimento-pecas/exibe-fornecimento-pecas.component';
 import { RedefinirSenhaComponent } from './pages/login/redefinir-senha/redefinir-senha.component';
 import { EsqueciSenhaComponent } from './pages/login/esqueci-senha/esqueci-senha.component';
+import { Verificar2faComponent } from './pages/login/verificar-doisfa/verificar-doisfa.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'esqueci-senha', component: EsqueciSenhaComponent },
   { path: 'redefinir-senha', component: RedefinirSenhaComponent },
   { path: 'login', component: LoginComponent },
+  { path: 'verificar-2fa', component: Verificar2faComponent },
   { path: 'cadastraCliente', component: CadastraClienteComponent },
   { path: 'menuAdministrador', component: MenuAdministradorComponent,  // precisa ter <router-outlet> no template
     children: [

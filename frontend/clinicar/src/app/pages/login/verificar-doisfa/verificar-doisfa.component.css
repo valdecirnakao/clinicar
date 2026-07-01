@@ -1,0 +1,75 @@
+.mfa-page {
+  background:
+    radial-gradient(circle at top left, rgba(53, 104, 155, 0.12), transparent 34%),
+    linear-gradient(135deg, #eef6ff 0%, #ffffff 45%, #f8fbff 100%);
+  color: #35689b;
+}
+
+.mfa-card {
+  max-width: 520px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid #d0e2f2;
+}
+
+h4,
+.form-label {
+  color: #35689b;
+  font-weight: 700;
+}
+
+.setup-box {
+  background: #f8fbff;
+  border: 1px solid #d0e2f2;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.qr-code {
+  width: 230px;
+  height: 230px;
+  border: 8px solid #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(53, 104, 155, 0.12);
+}
+
+.manual-key-box {
+  background: #ffffff;
+  border: 1px dashed #d0e2f2;
+  border-radius: 10px;
+  padding: 0.75rem;
+  word-break: break-all;
+}
+
+.manual-key-box code {
+  color: #35689b;
+  font-size: 0.9rem;
+}
+
+.code-input {
+  letter-spacing: 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #35689b;
+}
+
+.form-control {
+  border-color: #d0e2f2;
+}
+
+.form-control:focus {
+  border-color: #35689b;
+  box-shadow: 0 0 0 0.2rem rgba(53, 104, 155, 0.16);
+}
+
+.btn-primary {
+  background-color: #35689b;
+  border-color: #35689b;
+  font-weight: 600;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #2f5d8b;
+  border-color: #2f5d8b;
+}

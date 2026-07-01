@@ -1,5 +1,7 @@
 package com.clinicar.backend.controller;
-
+import com.clinicar.backend.dto.MfaValidarRequest;
+import com.clinicar.backend.model.Usuario;
+import com.clinicar.backend.service.MfaService;
 import com.clinicar.backend.dto.EsqueciSenhaRequest;
 import com.clinicar.backend.dto.RedefinirSenhaRequest;
 import com.clinicar.backend.service.RecuperacaoSenhaService;
@@ -12,9 +14,14 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final RecuperacaoSenhaService recuperacaoSenhaService;
-
-    public AuthController(RecuperacaoSenhaService recuperacaoSenhaService) {
+    private final MfaService mfaService;
+    
+    public AuthController(
+        RecuperacaoSenhaService recuperacaoSenhaService,
+        MfaService mfaService
+    ) {
         this.recuperacaoSenhaService = recuperacaoSenhaService;
+        this.mfaService = mfaService;
     }
 
     @PostMapping("/esqueci-senha")
@@ -43,5 +50,17 @@ public class AuthController {
         );
 
         return ResponseEntity.ok("Senha redefinida com sucesso.");
+    }
+
+    @PostMapping("/mfa/validar")
+    public ResponseEntity<Usuario> validarMfa(
+            @RequestBody MfaValidarRequest request
+    ) {
+        Usuario usuario = mfaService.validarMfa(
+            request.getMfaToken(),
+            request.getCodigo()
+        );
+
+        return ResponseEntity.ok(usuario);
     }
 }

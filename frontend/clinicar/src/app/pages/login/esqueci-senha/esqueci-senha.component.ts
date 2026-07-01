@@ -50,11 +50,8 @@ export class EsqueciSenhaComponent {
       },
       error: (erro) => {
         console.error('Erro ao solicitar recuperação de senha:', erro);
-
-        this.mensagemErro =
-          erro?.error ||
-          'Não foi possível solicitar a recuperação de senha. Tente novamente.';
-
+        this.mensagemErro = erro?.error?.mensagem || erro?.error ||
+        'Não foi possível solicitar a recuperação de senha. Tente novamente.';
         this.carregando = false;
       }
     });
