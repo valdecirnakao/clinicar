@@ -24,6 +24,8 @@ export interface Usuario {
   estado: string;
   tipo_do_acesso: string;
   status: string;
+  mfaAtivo?: boolean;
+  mfaTipo?: string;
 }
 @Component({
   selector: 'app-exibe-usuario', standalone: true,
@@ -42,6 +44,7 @@ export class ExibeUsuarioComponent implements OnInit {
   edit: Partial<Usuario> = {};
   loading = false;
   errorMsg = '';
+  resetandoMfaId: number | null = null;
   constructor(
     private readonly usuarioService: UsuarioService,
     private readonly whatsappCloudService: WhatsappCloudService,
@@ -445,5 +448,51 @@ export class ExibeUsuarioComponent implements OnInit {
   mostrarSenha: boolean = false;
   toggleMostrarSenha(): void {
     this.mostrarSenha = !this.mostrarSenha;
+  }
+
+  confirmarResetarMfa(usuario: Usuario): void {
+    if (!usuario?.id) {
+      alert('Usuário inválido para reset de MFA.');
+      return;
+    }
+    const nome = usuario.nome || usuario.email || 'usuário selecionado';
+    const confirmar = confirm(`Resetar autenticação em duas etapas?\n\n` +
+      `Usuário: ${nome}\n\n` +
+      `Essa ação removerá o vínculo atual com o aplicativo autenticador. ` +
+      `No próximo login, o usuário precisará escanear um novo QR Code.\n\n` +
+      `Deseja continuar?`
+    );
+    if (!confirmar) {
+      return;
+    }
+    this.resetarMfa(usuario);
+  }
+
+  private resetarMfa(usuario: Usuario): void {
+    if (!usuario.id) {
+      return;
+    }
+    this.resetandoMfaId = usuario.id;
+    this.usuarioService.resetarMfa(usuario.id).subscribe({
+      next: (resposta) => {
+        alert(resposta?.mensagem || 'Autenticação em duas etapas resetada com sucesso.');
+        usuario.mfaAtivo = false;
+        usuario.mfaTipo = undefined;
+        /*
+         * Se o seu componente já possui método de recarregar/listar usuários,
+         * você pode chamar aqui também:
+         */
+        this.recarregar?.();
+      },
+      error: (erro) => {
+        console.error('Erro ao resetar MFA:', erro);
+        alert(
+          erro?.error?.mensagem ||
+          erro?.error ||
+        'Não foi possível resetar a autenticação em duas etapas.'
+        );
+        this.resetandoMfaId = null;
+      }
+    });
   }
 }

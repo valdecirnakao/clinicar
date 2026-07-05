@@ -76,6 +76,7 @@
                   <th>E-mail</th>
                   <th>Telefone | WhatsApp</th>
                   <th >Status</th>
+                  <th>2FA</th>
                   <th class="text-center">Tipo do Acesso</th>
                   <th class="text-center">Ações</th>
                 </tr>
@@ -95,6 +96,15 @@
                     <span class="badge" [ngClass]="u.status === 'ativo' ? 'bg-success' : 'bg-secondary'">
                     {{ capitalizar(u.status) }}</span>
                   </td>
+                  <!-- 2FA -->
+                  <td>
+                    <span *ngIf="u.mfaAtivo" class="badge bg-success">
+                      Ativo
+                    </span>
+                    <span *ngIf="!u.mfaAtivo" class="badge bg-secondary">
+                      Não configurado
+                    </span>
+                  </td>
                   <!-- Tipo do Acesso -->
                   <td class="text-center">
                     <span class="badge"
@@ -109,6 +119,23 @@
                   </td>
                   <!-- Ações -->
                   <td class="text-center">
+                    <button
+                      type="button"
+                      class="btn btn-outline-warning btn-sm me-1"
+                      title="Resetar autenticação em duas etapas"
+                      (click)="confirmarResetarMfa(u)"
+                      [disabled]="!u.mfaAtivo || resetandoMfaId === u.id"
+                    >
+                      <span *ngIf="resetandoMfaId !== u.id">
+                        <i class="bi bi-shield-x"></i>
+                        Resetar 2FA
+                      </span>
+
+                      <span *ngIf="resetandoMfaId === u.id">
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                        Resetando...
+                      </span>
+                    </button>
                     <button
                       class="btn btn-sm btn-outline-success me-1"
                       title="Enviar WhatsApp"

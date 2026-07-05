@@ -20,6 +20,8 @@ export interface Usuario {
   estado: string;                // UF
   tipo_do_acesso: string;        // confirmado por você
   telefone: string;
+  mfaAtivo?: boolean;
+  mfaTipo?: string;
 }
 @Injectable({ providedIn: 'root' })
 export class UsuarioService {
@@ -34,29 +36,46 @@ export class UsuarioService {
   }
   /** GET /api/usuario */
   listarTodos(): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>(this.baseUrl);
+    return this.http.get<Usuario[]>(this.baseUrl, {
+      withCredentials: true
+    });
   }
   /** GET /api/usuario/cpf/{cpf} */
   buscarPorCpf(cpf: string): Observable<Usuario> {
     const clean = this.onlyDigits(cpf);
-    return this.http.get<Usuario>(`${this.baseUrl}/cpf/${encodeURIComponent(clean)}`);
+    return this.http.get<Usuario>(`${this.baseUrl}/cpf/${encodeURIComponent(clean)}`, {
+      withCredentials: true
+    });
   }
   /** POST /api/usuario */
   cadastrar(body: Omit<Usuario, 'id'>): Observable<Usuario> {
-    return this.http.post<Usuario>(this.baseUrl, body, { headers: this.jsonHeaders });
+    return this.http.post<Usuario>(this.baseUrl, body, { headers: this.jsonHeaders, withCredentials: true });
   }
   /** PUT /api/usuario/{id} */
   atualizarUsuario(id: number, body: Partial<Usuario>): Observable<Usuario> {
-    return this.http.put<Usuario>(`${this.baseUrl}/${id}`, body, { headers: this.jsonHeaders });
+    return this.http.put<Usuario>(`${this.baseUrl}/${id}`, body, { headers: this.jsonHeaders, withCredentials: true });
   }
   /** DELETE /api/usuario/{id} */
   removerUsuario(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`,
+    {
+      withCredentials: true
+    });
   }
+
   criarUsuario(usuario: Partial<Usuario>): Observable<Usuario> {
     return this.http.post<Usuario>(
       'http://localhost:8080/api/usuario',
-      usuario
+      usuario,
+      {
+        withCredentials: true
+      }
     );
+  }
+
+  resetarMfa(id: number): Observable<{ mensagem: string }> {
+    return this.http.put<{ mensagem: string }>(`${this.baseUrl}/${id}/resetar-mfa`,{}, {
+      withCredentials: true
+    });
   }
 }

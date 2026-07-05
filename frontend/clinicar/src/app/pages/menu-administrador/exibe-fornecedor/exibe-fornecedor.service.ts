@@ -37,29 +37,38 @@ export class FornecedorService {
 
   /** GET /api/fornecedores */
   listarTodosFornecedores(): Observable<Fornecedor[]> {
-    return this.http.get<Fornecedor[]>(this.baseUrl);
+    return this.http.get<Fornecedor[]>(this.baseUrl, {
+      withCredentials: true
+    });
   }
 
   /** GET /api/fornecedores/cnpj/{cnpj} */
   buscarPorCnpj(cnpj: string): Observable<Fornecedor> {
     // se você salva sem máscara, pode limpar aqui: cnpj = cnpj.replace(/\D/g, '')
-    return this.http.get<Fornecedor>(`${this.baseUrl}/cnpj/${encodeURIComponent(cnpj)}`);
+    return this.http.get<Fornecedor>(`${this.baseUrl}/cnpj/${encodeURIComponent(cnpj)}`, {
+      withCredentials: true
+    });
   }
 
   /** PUT /api/fornecedores/{id} */
   atualizarFornecedor(id: number, body: Partial<Fornecedor>): Observable<Fornecedor> {
     return this.http.put<Fornecedor>(`${this.baseUrl}/${id}`, body, {
       headers: this.jsonHeaders,
+      withCredentials: true
     });
   }
 
   /** DELETE /api/fornecedores/{id} */
   removerFornecedor(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, {
+      withCredentials: true
+    });
   }
 
     /** GET /api/fornecedores/id/{id} */
   buscarPorId(id: number): Observable<Fornecedor> {
-    return this.http.get<Fornecedor>(`${this.baseUrl}/${id}`);
+    return this.http.get<Fornecedor>(`${this.baseUrl}/${id}`, {
+      withCredentials: true
+    });
   }
 }

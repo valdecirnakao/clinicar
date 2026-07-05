@@ -1,5 +1,6 @@
 package com.clinicar.backend.dto;
 
+import com.clinicar.backend.dto.UsuarioResponse;
 import com.clinicar.backend.model.Usuario;
 
 public class LoginResponse {
@@ -13,7 +14,7 @@ public class LoginResponse {
     private String chaveManual;
     private String mensagem;
 
-    private Usuario usuario;
+    private UsuarioResponse usuario;
 
     public static LoginResponse mfaLogin(String mfaToken) {
         LoginResponse response = new LoginResponse();
@@ -101,11 +102,11 @@ public class LoginResponse {
         this.mensagem = mensagem;
     }
 
-    public Usuario getUsuario() {
+    public UsuarioResponse getUsuario() {
         return usuario;
     }
 
-    public void setUsuario(Usuario usuario) {
+    public void setUsuario(UsuarioResponse usuario) {
         this.usuario = usuario;
     }
 }

@@ -1,9 +1,11 @@
 package com.clinicar.backend.controller;
+import com.clinicar.backend.mapper.UsuarioMapper;
 import com.clinicar.backend.dto.LoginResponse;
-import com.clinicar.backend.service.MfaService;
 import com.clinicar.backend.dto.UsuarioRequest;
+import com.clinicar.backend.dto.UsuarioResponse;
 import com.clinicar.backend.model.Usuario;
 import com.clinicar.backend.repository.UsuarioRepository;
+import com.clinicar.backend.service.MfaService;
 import com.clinicar.backend.service.UsuarioService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,70 +21,86 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/usuario")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(
+        origins = "http://localhost:4200",
+        allowCredentials = "true"
+)
 public class UsuarioController {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioService usuarioService;
     private final PasswordEncoder passwordEncoder;
     private final MfaService mfaService;
+    private final UsuarioMapper usuarioMapper;
+
     public UsuarioController(
         UsuarioRepository usuarioRepository,
         UsuarioService usuarioService,
         PasswordEncoder passwordEncoder,
-        MfaService mfaService
+        MfaService mfaService,
+        UsuarioMapper usuarioMapper
     ) {
         this.usuarioRepository = usuarioRepository;
         this.usuarioService = usuarioService;
         this.passwordEncoder = passwordEncoder;
         this.mfaService = mfaService;
+        this.usuarioMapper = usuarioMapper;
     }
 
     @PostMapping
-    public ResponseEntity<Usuario> criarUsuario(@RequestBody UsuarioRequest request) {
+    public ResponseEntity<UsuarioResponse> criarUsuario(@RequestBody UsuarioRequest request) {
         Usuario salvo = usuarioService.criar(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ocultarSenha(salvo));
+                .body(usuarioMapper.toResponse(salvo));
     }
 
     @PostMapping("/login")
     public ResponseEntity<Object> login(@RequestBody Map<String, String> loginData) {
         String email = loginData.get("email");
         String senha = loginData.get("senha");
+
         Optional<Usuario> usuarioOpt = usuarioService.autenticar(email, senha);
+
         if (usuarioOpt.isEmpty()) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body("E-mail ou senha inválidos.");
+                    .body(Map.of("mensagem", "E-mail ou senha inválidos."));
         }
+
         Usuario usuario = usuarioOpt.get();
+
+        /*
+         * Como todos os usuários usam MFA/TOTP, o login não devolve usuário direto.
+         * Ele devolve um desafio MFA.
+         */
         LoginResponse response = mfaService.prepararSegundoFator(usuario);
+
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/email/{email}")
-    public ResponseEntity<Usuario> buscarPorEmail(@PathVariable String email) {
+    public ResponseEntity<UsuarioResponse> buscarPorEmail(@PathVariable String email) {
         Optional<Usuario> usuario = usuarioRepository.findByEmail(email);
 
         return usuario
-                .map(u -> ResponseEntity.ok(ocultarSenha(u)))
+                .map(u -> ResponseEntity.ok(usuarioMapper.toResponse(u)))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @GetMapping
-    public ResponseEntity<List<Usuario>> listarTodos() {
-        List<Usuario> usuarios = usuarioRepository.findAll()
+    public ResponseEntity<List<UsuarioResponse>> listarTodos() {
+        List<UsuarioResponse> usuarios = usuarioRepository.findAll()
                 .stream()
-                .map(this::ocultarSenha)
+                .map(usuarioMapper::toResponse)
                 .toList();
 
         return ResponseEntity.ok(usuarios);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> atualizarUsuario(
+    public ResponseEntity<UsuarioResponse> atualizarUsuario(
             @PathVariable Long id,
             @RequestBody UsuarioDTO usuarioAtualizado
     ) {
@@ -99,7 +117,6 @@ public class UsuarioController {
         usuario.setEmail(usuarioAtualizado.getEmail());
 
         /*
-         * Importante:
          * Só altera a senha se uma nova senha for enviada.
          * Se vier null ou vazia, mantém a senha atual.
          */
@@ -133,7 +150,16 @@ public class UsuarioController {
 
         Usuario salvo = usuarioRepository.save(usuario);
 
-        return ResponseEntity.ok(ocultarSenha(salvo));
+        return ResponseEntity.ok(usuarioMapper.toResponse(salvo));
+    }
+
+    @PutMapping("/{id}/resetar-mfa")
+    public ResponseEntity<Map<String, String>> resetarMfaUsuario(@PathVariable Long id) {
+        mfaService.resetarMfaUsuario(id);
+
+        return ResponseEntity.ok(
+                Map.of("mensagem", "Autenticação em duas etapas resetada com sucesso.")
+        );
     }
 
     @DeleteMapping("/{id}")
@@ -145,14 +171,6 @@ public class UsuarioController {
         usuarioRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();
-    }
-
-    private Usuario ocultarSenha(Usuario usuario) {
-        if (usuario != null) {
-            usuario.setSenha(null);
-        }
-
-        return usuario;
     }
 
     private String soDigitos(String valor) {

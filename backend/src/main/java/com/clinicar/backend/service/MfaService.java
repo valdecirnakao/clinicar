@@ -7,7 +7,8 @@ import com.clinicar.backend.repository.MfaChallengeRepository;
 import com.clinicar.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
+import com.clinicar.backend.dto.UsuarioResponse;
+import com.clinicar.backend.mapper.UsuarioMapper;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -21,7 +22,7 @@ public class MfaService {
     private static final String TIPO_SETUP = "SETUP";
     private static final String TIPO_LOGIN = "LOGIN";
     private static final int MAX_TENTATIVAS = 5;
-
+    private final UsuarioMapper usuarioMapper;
     private final MfaChallengeRepository challengeRepository;
     private final UsuarioRepository usuarioRepository;
     private final TotpService totpService;
@@ -35,17 +36,19 @@ public class MfaService {
     private Integer minutosExpiracao;
 
     public MfaService(
-            MfaChallengeRepository challengeRepository,
-            UsuarioRepository usuarioRepository,
-            TotpService totpService,
-            MfaCryptoService cryptoService,
-            QrCodeService qrCodeService
+        MfaChallengeRepository challengeRepository,
+        UsuarioRepository usuarioRepository,
+        TotpService totpService,
+        MfaCryptoService cryptoService,
+        QrCodeService qrCodeService,
+        UsuarioMapper usuarioMapper
     ) {
         this.challengeRepository = challengeRepository;
         this.usuarioRepository = usuarioRepository;
         this.totpService = totpService;
         this.cryptoService = cryptoService;
         this.qrCodeService = qrCodeService;
+        this.usuarioMapper = usuarioMapper;
     }
 
     public LoginResponse prepararSegundoFator(Usuario usuario) {
@@ -66,7 +69,7 @@ public class MfaService {
         return criarChallengeSetup(usuario);
     }
 
-    public Usuario validarMfa(String mfaToken, String codigo) {
+    public UsuarioResponse validarMfa(String mfaToken, String codigo) {
         if (mfaToken == null || mfaToken.isBlank()) {
             throw new IllegalArgumentException("Token MFA não informado.");
         }
@@ -112,8 +115,12 @@ public class MfaService {
             }
 
         } else if (TIPO_LOGIN.equals(challenge.getTipo())) {
+            if (usuario.getMfaSecret() == null || usuario.getMfaSecret().isBlank()) {
+                throw new IllegalArgumentException(
+                    "MFA não configurado para este usuário. Faça login novamente para configurar o aplicativo autenticador."
+                );
+            }
             String secretBase32 = cryptoService.descriptografar(usuario.getMfaSecret());
-
             codigoValido = totpService.validarCodigo(secretBase32, codigo);
 
         } else {
@@ -135,11 +142,7 @@ public class MfaService {
 
         challenge.setUsado(true);
         challengeRepository.save(challenge);
-
-        usuario.setSenha(null);
-        usuario.setMfaSecret(null);
-
-        return usuario;
+        return usuarioMapper.toResponse(usuario);
     }
 
     private LoginResponse criarChallengeLogin(Usuario usuario) {
@@ -235,5 +238,18 @@ public class MfaService {
         } catch (Exception e) {
             throw new RuntimeException("Erro ao gerar hash MFA.", e);
         }
+    }
+
+    public void resetarMfaUsuario(Long usuarioId) {
+        if (usuarioId == null) {
+            throw new IllegalArgumentException("ID do usuário não informado.");
+        }
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+            .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        usuario.setMfaAtivo(false);
+        usuario.setMfaTipo(null);
+        usuario.setMfaSecret(null);
+        usuarioRepository.save(usuario);
+        invalidarChallengesAnteriores(usuarioId);
     }
 }

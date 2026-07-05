@@ -48,7 +48,7 @@ export class WhatsappCloudService {
     return this.http.post(
       `${this.apiUrl}/enviar`,
       request,
-      { responseType: 'text' }
+      { responseType: 'text', withCredentials: true }
     );
   }
 
@@ -58,7 +58,7 @@ export class WhatsappCloudService {
     return this.http.post(
       `${this.apiUrl}/cadastro-usuario`,
       request,
-      { responseType: 'text' }
+      { responseType: 'text', withCredentials: true }
     );
   }
 
@@ -68,7 +68,7 @@ export class WhatsappCloudService {
     return this.http.post(
       `${this.apiUrl}/cadastro-veiculo`,
       request,
-      { responseType: 'text' }
+      { responseType: 'text', withCredentials: true }
     );
   }
 }

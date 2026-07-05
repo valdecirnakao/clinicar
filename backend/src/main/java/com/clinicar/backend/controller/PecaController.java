@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/peca")
-@CrossOrigin(origins = "http://localhost:4200") // Libera requisições do Angular
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true") // Libera requisições do Angular
 public class PecaController {   
     
     private final PecaRepository pecaRepository;

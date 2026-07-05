@@ -102,6 +102,8 @@ export class VeiculoService {
 
   /** DELETE /api/veiculo/{id} */
   removerVeiculo(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, {
+      withCredentials: true
+    });
   }
 }

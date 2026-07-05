@@ -27,7 +27,6 @@ interface MfaPendente {
 export class Verificar2faComponent implements OnInit {
 
   mfaPendente: MfaPendente | null = null;
-
   codigo = '';
   carregando = false;
   mensagemErro = '';
@@ -40,12 +39,10 @@ export class Verificar2faComponent implements OnInit {
 
   ngOnInit(): void {
     const bruto = sessionStorage.getItem('mfaPendente');
-
     if (!bruto) {
       this.mensagemErro = 'Nenhuma verificação em duas etapas foi iniciada. Faça login novamente.';
       return;
     }
-
     try {
       this.mfaPendente = JSON.parse(bruto);
     } catch {
@@ -57,21 +54,17 @@ export class Verificar2faComponent implements OnInit {
   validarCodigo(): void {
     this.mensagemErro = '';
     this.mensagemSucesso = '';
-
     if (!this.mfaPendente?.mfaToken) {
       this.mensagemErro = 'Token de verificação não encontrado. Faça login novamente.';
       return;
     }
-
     const codigoTratado = this.codigo.replace(/\D/g, '');
 
     if (!codigoTratado || codigoTratado.length !== 6) {
       this.mensagemErro = 'Informe o código de 6 dígitos do aplicativo autenticador.';
       return;
     }
-
     this.carregando = true;
-
     this.loginService.validarMfa({
       mfaToken: this.mfaPendente.mfaToken,
       codigo: codigoTratado
@@ -79,15 +72,16 @@ export class Verificar2faComponent implements OnInit {
       next: (usuario) => {
         this.carregando = false;
         this.mensagemSucesso = 'Verificação concluída com sucesso.';
-
         sessionStorage.removeItem('mfaPendente');
-
         this.finalizarLogin(usuario);
       },
       error: (erro) => {
         console.error('Erro ao validar MFA:', erro);
         this.carregando = false;
-        this.mensagemErro = erro?.error?.mensagem || erro?.error || 'Código inválido ou expirado. Faça login novamente.';
+        this.mensagemErro = this.extrairMensagemErro(
+          erro,
+          'Código inválido ou expirado. Faça login novamente.'
+        );
       }
     });
   }
@@ -102,10 +96,11 @@ export class Verificar2faComponent implements OnInit {
   }
 
   private finalizarLogin(usuario: UsuarioLogado): void {
-    sessionStorage.setItem('usuarioLogado', JSON.stringify(usuario));
-
+    /*
+    * Não salvamos mais o usuário no sessionStorage como prova de autenticação.
+    * A sessão real agora está no cookie HttpOnly criado pelo backend.
+    */
     const tipoAcesso = (usuario.tipo_do_acesso || '').toLowerCase().trim();
-
     if (tipoAcesso === 'administrador') {
       this.router.navigate(['/menuAdministrador']);
       return;
@@ -122,5 +117,18 @@ export class Verificar2faComponent implements OnInit {
     }
 
     this.mensagemErro = 'Usuário autenticado, porém o tipo de acesso não foi reconhecido.';
+  }
+
+  private extrairMensagemErro(erro: any, mensagemPadrao: string): string {
+    if (typeof erro?.error === 'string') {
+      return erro.error;
+    }
+    if (typeof erro?.error?.mensagem === 'string') {
+      return erro.error.mensagem;
+    }
+    if (typeof erro?.message === 'string') {
+      return erro.message;
+    }
+    return mensagemPadrao;
   }
 }

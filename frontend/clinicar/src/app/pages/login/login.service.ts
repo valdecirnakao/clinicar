@@ -8,6 +8,8 @@ export interface UsuarioLogado {
   email?: string;
   tipo_do_acesso?: string;
   status?: string;
+  mfaAtivo?: boolean;
+  mfaTipo?: string;
 }
 
 export interface LoginResponse {
@@ -37,14 +39,23 @@ export class LoginService {
   constructor(private readonly http: HttpClient) {}
 
   login(email: string, senha: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.usuarioApiUrl}/login`, {
-      email,
-      senha
-    });
+    return this.http.post<LoginResponse>(
+      `${this.usuarioApiUrl}/login`,
+      { email, senha },
+      {
+        withCredentials: true
+      }
+    );
   }
 
   validarMfa(request: MfaValidarRequest): Observable<UsuarioLogado> {
-    return this.http.post<UsuarioLogado>(`${this.authApiUrl}/mfa/validar`, request);
+    return this.http.post<UsuarioLogado>(
+      `${this.authApiUrl}/mfa/validar`,
+      request,
+      {
+        withCredentials: true
+      }
+    );
   }
 
   solicitarRecuperacaoSenha(email: string): Observable<string> {
@@ -68,26 +79,62 @@ export class LoginService {
   }
 
   buscarUsuarios(): Observable<any[]> {
-    return this.http.get<any[]>(this.usuarioApiUrl);
+    return this.http.get<any[]>(this.usuarioApiUrl,
+    {
+      withCredentials: true
+    });
   }
 
   buscarUsuarioPorEmail(email: string): Observable<any> {
-    return this.http.get<any>(`${this.usuarioApiUrl}/email/${email}`);
+    return this.http.get<any>(`${this.usuarioApiUrl}/email/${email}`,
+    {
+      withCredentials: true
+    });
   }
 
   listar(): Observable<any[]> {
-    return this.http.get<any[]>(this.usuarioApiUrl);
+    return this.http.get<any[]>(this.usuarioApiUrl,
+    {
+      withCredentials: true
+    });
   }
 
   atualizar(id: number, usuario: any): Observable<any> {
-    return this.http.put<any>(`${this.usuarioApiUrl}/${id}`, usuario);
+    return this.http.put<any>(`${this.usuarioApiUrl}/${id}`, usuario,
+    {
+      withCredentials: true
+    });
   }
 
   remover(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.usuarioApiUrl}/${id}`);
+    return this.http.delete<any>(`${this.usuarioApiUrl}/${id}`, {
+      withCredentials: true
+    });
   }
 
   atualizarUsuario(id: number, usuario: any): Observable<any> {
-    return this.http.put<any>(`${this.usuarioApiUrl}/${id}`, usuario);
+    return this.http.put<any>(`${this.usuarioApiUrl}/${id}`, usuario, {
+      withCredentials: true
+    });
+  }
+
+  obterUsuarioLogado(): Observable<UsuarioLogado> {
+    return this.http.get<UsuarioLogado>(
+      `${this.authApiUrl}/me`,
+      {
+        withCredentials: true
+      }
+    );
+  }
+
+  logout(): Observable<string> {
+    return this.http.post(
+      `${this.authApiUrl}/logout`,
+      {},
+      {
+        responseType: 'text',
+        withCredentials: true
+      }
+    );
   }
 }

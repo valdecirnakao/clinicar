@@ -63,12 +63,14 @@ export class ExibeFornecimentoPecasService  {
   // ---------- CRUD ----------
   /** GET /api/fornecimento-pecas */
   listarTodosFornecimentos(): Observable<FornecimentoPeca[]> {
-    return this.http.get<FornecimentoPeca[]>(this.baseUrl);
+    return this.http.get<FornecimentoPeca[]>(this.baseUrl, {
+      withCredentials: true
+    });
   }
   /** POST /api/fornecimento-pecas */
   cadastrar(body: Omit<FornecimentoPecaUI, 'id'>): Observable<FornecimentoPecaUI> {
     const apiBody = this.toApi(body);
-    return this.http.post<any>(this.baseUrl, apiBody, { headers: this.jsonHeaders }).pipe(
+    return this.http.post<any>(this.baseUrl, apiBody, { headers: this.jsonHeaders, withCredentials: true }).pipe(
       map(v => this.fromApi(v)), catchError(err => {
         console.error('Falha em cadastrar', { bodyUI: body, apiBody, err });
         return throwError(() => err);
@@ -78,7 +80,7 @@ export class ExibeFornecimentoPecasService  {
   /** PUT /api/fornecimento-pecas/{id} */
   atualizarFornecimentoPeca(id: number, body: Partial<FornecimentoPecaUI>): Observable<FornecimentoPecaUI> {
     const apiBody = this.toApi(body);
-    return this.http.put<any>(`${this.baseUrl}/${id}`, apiBody, { headers: this.jsonHeaders }).pipe(
+    return this.http.put<any>(`${this.baseUrl}/${id}`, apiBody, { headers: this.jsonHeaders, withCredentials: true }).pipe(
       map(v => this.fromApi(v)), catchError(err => {
         console.error('Falha em atualizarFornecimentoPeca', { id, bodyUI: body, apiBody, err });
         return throwError(() => err);
@@ -87,6 +89,9 @@ export class ExibeFornecimentoPecasService  {
   }
   /** DELETE /api/fornecimento-pecas/{id} */
   removerFornecimentoPeca(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`,
+    {
+      withCredentials: true
+    });
   }
 }

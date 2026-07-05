@@ -28,21 +28,25 @@ export class PecaService {
 
   /** GET /api/pecas */
   listarTodasPecas(): Observable<Peca[]> {
-    return this.http.get<Peca[]>(this.baseUrl);
+    return this.http.get<Peca[]>(this.baseUrl, {
+      withCredentials: true
+    });
   }
 
   /** POST /api/pecas */
   cadastrar(body: Omit<Peca, 'id'>): Observable<Peca> {
-    return this.http.post<Peca>(this.baseUrl, body, { headers: this.jsonHeaders });
+    return this.http.post<Peca>(this.baseUrl, body, { headers: this.jsonHeaders, withCredentials: true });
   }
 
   /** PUT /api/pecas/{id} */
   atualizarPeca(id: number, body: Partial<Peca>): Observable<Peca> {
-    return this.http.put<Peca>(`${this.baseUrl}/${id}`, body, { headers: this.jsonHeaders });
+    return this.http.put<Peca>(`${this.baseUrl}/${id}`, body, { headers: this.jsonHeaders, withCredentials: true });
   }
 
   /** DELETE /api/pecas/{id} */
   removerPeca(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, {
+      withCredentials: true
+    });
   }
 }

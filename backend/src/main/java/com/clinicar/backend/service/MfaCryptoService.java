@@ -77,7 +77,10 @@ public class MfaCryptoService {
             return new String(textoPuro);
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao descriptografar segredo MFA.", e);
+            throw new IllegalArgumentException(
+                "Não foi possível validar a autenticação em duas etapas. " +
+                "Solicite ao administrador o reset do 2FA e configure o aplicativo autenticador novamente."
+            );
         }
     }
 }
