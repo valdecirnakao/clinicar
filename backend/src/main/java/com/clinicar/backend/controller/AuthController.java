@@ -1,7 +1,6 @@
 package com.clinicar.backend.controller;
 import com.clinicar.backend.dto.MfaValidarRequest;
 import com.clinicar.backend.dto.UsuarioResponse;
-import com.clinicar.backend.model.Usuario;
 import com.clinicar.backend.service.MfaService;
 import com.clinicar.backend.dto.EsqueciSenhaRequest;
 import com.clinicar.backend.dto.RedefinirSenhaRequest;

@@ -2,7 +2,7 @@ import { Component, ElementRef, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ExibeFornecimentoPecasService } from '../exibe-fornecimento-pecas/exibe-fornecimento-pecas.service';
-import { FornecedorService, Fornecedor } from '../exibe-fornecedor/exibe-fornecedor.service';
+import { ExibeFornecedorService, Fornecedor } from '../exibe-fornecedor/exibe-fornecedor.service';
 import { PecaService, Peca } from '../exibe-peca/exibe-peca.service';
 
 declare var bootstrap: any;
@@ -57,7 +57,7 @@ export class ExibeFornecimentoPecaComponent implements OnInit {
   dropdownOpenIdPeca: number | null = null;
   descricaoFiltroEdit = '';
   constructor(
-    private readonly fornecedorService: FornecedorService,
+    private readonly fornecedorService: ExibeFornecedorService,
     private readonly pecaService: PecaService,
     private readonly fornecimentoPecaService: ExibeFornecimentoPecasService,
     private readonly host: ElementRef
@@ -80,7 +80,7 @@ export class ExibeFornecimentoPecaComponent implements OnInit {
   }
   selecionarFornecedorModal(fornecedor: Fornecedor): void {
     this.edit.fornecedor = {
-      id: fornecedor.id,
+      id: fornecedor.id!,
       razaoSocial: fornecedor.razaoSocial
     };
     this.modalFornecedor.hide();
@@ -103,14 +103,14 @@ export class ExibeFornecimentoPecaComponent implements OnInit {
     this.modalPeca.hide();
   }
   private carregarFornecedores(): void {
-    this.fornecedorService.listarTodosFornecedores().subscribe({
-      next: (lista) => {
+    (this.fornecedorService as any).listarTodosFornecedores().subscribe({
+      next: (lista: never[]) => {
         this.fornecedores = lista ?? [];
         this.fornecedoresFiltrados = [
           ...this.fornecedores
         ];
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error('Falha ao carregar fornecedores:', e);
       }
     });

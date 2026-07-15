@@ -1,74 +1,86 @@
-// exibeFornecedor.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-// Ajuste se tiver environment:
-// import { environment } from '../../environments/environment';
-// const API_BASE = environment.apiUrl;
-const API_BASE = 'http://localhost:8080'; // <— ajuste para o seu backend
+const API_BASE = 'http://localhost:8080';
 
 export interface Fornecedor {
-  id: number;                // não exibido na UI, mas usado p/ update/delete
+  id?: number;
   cnpj: string;
   razaoSocial: string;
   nomeFantasia: string;
   itemFornecido: string;
   telefone: string;
   email: string;
-  fundacao: string | Date;    // 'yyyy-MM-dd' (recomendado) ou Date
+  fundacao: string | Date;
   cep: string;
   logradouro: string;
-  numeroEndereco: string;
-  complementoEndereco?: string;
   bairro: string;
   cidade: string;
-  estado: string;             // UF
+  estado: string;
+  complementoEndereco?: string;
+  numeroEndereco: string;
 }
 
-@Injectable({ providedIn: 'root' })
-export class FornecedorService {
+@Injectable({
+  providedIn: 'root'
+})
+export class ExibeFornecedorService {
+
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${API_BASE}/api/fornecedor`;
 
   private get jsonHeaders(): HttpHeaders {
-    return new HttpHeaders({ 'Content-Type': 'application/json' });
+    return new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
   }
 
-  /** GET /api/fornecedores */
+  listarTodos(): Observable<Fornecedor[]> {
+    return this.http.get<Fornecedor[]>(
+      this.baseUrl,
+      {
+        withCredentials: true
+      }
+    );
+  }
+
+  /*
+   * Mantido apenas como compatibilidade, caso algum componente antigo
+   * ainda chame listarTodosFornecedores().
+   */
   listarTodosFornecedores(): Observable<Fornecedor[]> {
-    return this.http.get<Fornecedor[]>(this.baseUrl, {
-      withCredentials: true
-    });
+    return this.listarTodos();
   }
 
-  /** GET /api/fornecedores/cnpj/{cnpj} */
-  buscarPorCnpj(cnpj: string): Observable<Fornecedor> {
-    // se você salva sem máscara, pode limpar aqui: cnpj = cnpj.replace(/\D/g, '')
-    return this.http.get<Fornecedor>(`${this.baseUrl}/cnpj/${encodeURIComponent(cnpj)}`, {
-      withCredentials: true
-    });
+  cadastrarFornecedor(fornecedor: Partial<Fornecedor>): Observable<Fornecedor> {
+    return this.http.post<Fornecedor>(
+      this.baseUrl,
+      fornecedor,
+      {
+        headers: this.jsonHeaders,
+        withCredentials: true
+      }
+    );
   }
 
-  /** PUT /api/fornecedores/{id} */
-  atualizarFornecedor(id: number, body: Partial<Fornecedor>): Observable<Fornecedor> {
-    return this.http.put<Fornecedor>(`${this.baseUrl}/${id}`, body, {
-      headers: this.jsonHeaders,
-      withCredentials: true
-    });
+  atualizarFornecedor(id: number, fornecedor: Partial<Fornecedor>): Observable<Fornecedor> {
+    return this.http.put<Fornecedor>(
+      `${this.baseUrl}/${id}`,
+      fornecedor,
+      {
+        headers: this.jsonHeaders,
+        withCredentials: true
+      }
+    );
   }
 
-  /** DELETE /api/fornecedores/{id} */
   removerFornecedor(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`, {
-      withCredentials: true
-    });
-  }
-
-    /** GET /api/fornecedores/id/{id} */
-  buscarPorId(id: number): Observable<Fornecedor> {
-    return this.http.get<Fornecedor>(`${this.baseUrl}/${id}`, {
-      withCredentials: true
-    });
+    return this.http.delete<void>(
+      `${this.baseUrl}/${id}`,
+      {
+        withCredentials: true
+      }
+    );
   }
 }

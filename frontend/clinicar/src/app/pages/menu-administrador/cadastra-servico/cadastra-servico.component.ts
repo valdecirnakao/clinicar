@@ -1,7 +1,7 @@
 import { Component, ElementRef, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { FornecedorService, Fornecedor } from '../exibe-fornecedor/exibe-fornecedor.service';
+import { ExibeFornecedorService, Fornecedor } from '../exibe-fornecedor/exibe-fornecedor.service';
 import { ServicoService } from '../cadastra-servico/cadastra-servico.service';
 
 
@@ -42,7 +42,7 @@ export class CadastroServicoComponent implements OnInit {
   nomeFornecedorSelecionado = '';
 
   constructor(
-    private readonly fornecedorService: FornecedorService,
+    private readonly fornecedorService: ExibeFornecedorService,
     private readonly servicoService: ServicoService,
     private readonly host: ElementRef
   ) {}
@@ -54,12 +54,19 @@ export class CadastroServicoComponent implements OnInit {
   // ========= CNPJ / Fornecedor =========
 
   recarregarFornecedores(): void {
-    this.fornecedorService.listarTodosFornecedores().subscribe({
-      next: lista => {
+    const service: any = this.fornecedorService;
+    const request$ =
+      service.listarTodosFornecedores?.() ??
+      service.listarFornecedores?.() ??
+      service.buscarTodosFornecedores?.() ??
+      service.getAllFornecedores?.();
+
+    request$?.subscribe({
+      next: (lista: never[]) => {
         this.fornecedores = lista ?? [];
         this.fornecedoresFiltrados = [...this.fornecedores];
       },
-      error: e => console.error('Falha ao carregar fornecedores:', e)
+      error: (e: any) => console.error('Falha ao carregar fornecedores:', e)
     });
   }
 

@@ -1,309 +1,415 @@
 <div class="container-fluid mt-0 mb-0" style="color:#35689b;">
   <div class="row justify-content-center">
     <div class="col-md-12 mt-sm-0">
-
-      <!-- Título / Cabeçalho -->
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">Fornecedores</div>
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">
+              <i class="bi bi-truck me-1"></i>
+              Gerenciamento de Fornecedores
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- Toolbar -->
-      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-        <div class="input-group" style="max-width:420px; color:#35689b;">
-          <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">Buscar</span>
-          <input #q type="search" class="form-control" style="color:#35689b;"
-                 placeholder="CNPJ, Razão Social ou Nome Fantasia"
-                 (input)="filtrar(q.value)" style="color:#35689b;"/>
-        </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary" type="button" (click)="recarregar()"
-                  style="border-color:#d0e2f2;color:#35689b;">
-            Atualizar
-          </button>
+      <div class="card clinicar-card" style="border-color:#d0e2f2; border-radius:10px;">
+        <div class="card-body p-2">
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+            <div class="input-group" style="max-width:42vw; color:#35689b;">
+              <label class="input-group-text" for="filtro-fornecedores" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
+                Buscar
+              </label>
+              <input
+                id="filtro-fornecedores"
+                #q
+                type="search"
+                class="form-control"
+                placeholder="CNPJ, razão social, nome fantasia, item, e-mail ou cidade"
+                (input)="filtrar(q.value)"
+                style="color:#35689b;"
+              />
+              <div class="text-muted small input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
+                <span style="color:#35689b;">
+                  Total de registros: {{ fornecedores.length }}
+                </span>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-success btn-sm" type="button" (click)="abrirModalCadastro()">
+                <i class="bi bi-plus-circle me-1"></i>
+                Novo Fornecedor
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" (click)="voltar()">
+                <i class="bi bi-arrow-left me-1"></i>
+                Voltar
+              </button>
+              <button class="btn btn-outline-primary btn-sm" type="button" (click)="recarregar()">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Atualizar
+              </button>
+            </div>
+          </div>
+          <div *ngIf="loading" class="alert alert-info py-2">
+            Carregando fornecedores…
+          </div>
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">
+            {{ errorMsg }}
+          </div>
+          <div class="table-responsive" style="color:#35689b;">
+            <div class="small text-muted mb-1 right-align" style="color:#35689b;">
+              <i style="color:#35689b;"class="bi bi-pencil-square text-primary"></i> Editar |
+              <i style="color:#35689b;"class="bi bi-trash text-danger"></i> Excluir
+            </div>
+            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+              <thead style="background:#eef6ff;color:#35689b;">
+                <tr>
+                  <th class="text-center" style="color:#35689b;">CNPJ</th>
+                  <th style="color:#35689b;">Razão Social</th>
+                  <th style="color:#35689b;">Nome Fantasia</th>
+                  <th style="color:#35689b;">Item Fornecido</th>
+                  <th style="color:#35689b;">E-mail</th>
+                  <th style="color:#35689b;">Telefone</th>
+                  <th style="color:#35689b;">Cidade-UF</th>
+                  <th style="color:#35689b;">Fundação</th>
+                  <th class="text-center" style="color:#35689b;">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let f of fornecedores; trackBy: trackByFornecedor">
+                  <td class="text-center" style="color:#35689b;">{{ formatarCNPJ(f.cnpj) }}</td>
+                  <td style="color:#35689b;">{{ f.razaoSocial }}</td>
+                  <td style="color:#35689b;">{{ f.nomeFantasia }}</td>
+                  <td style="color:#35689b;">{{ f.itemFornecido }}</td>
+                  <td style="color:#35689b;">{{ f.email.toLowerCase() }}</td>
+                  <td style="color:#35689b;">{{ exibirTelefoneFormatado(f.telefone) }}</td>
+                  <td style="color:#35689b;">{{ f.cidade }} - {{ f.estado }}</td>
+                  <td style="color:#35689b;">{{ formatarDataBr(f.fundacao) }}</td>
+                  <td class="text-center">
+                    <button
+                      class="btn btn-sm btn-outline-primary me-1"
+                      title="Editar fornecedor"
+                      (click)="abrirModalEdicao(f)">
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      title="Excluir fornecedor"
+                      (click)="remover(f.id)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="!fornecedores || fornecedores.length === 0">
+                  <td colspan="9" class="text-center text-muted py-4">
+                    Nenhum fornecedor encontrado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="modal fade" id="modalCadastroFornecedor" tabindex="-1" aria-labelledby="modalCadastroFornecedorLabel" aria-hidden="true">
+              <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content" style="color:#35689b;">
+                  <div class="modal-header" style="background:#eef6ff;">
+                    <h5 class="modal-title" id="modalCadastroFornecedorLabel">
+                      Novo Fornecedor
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row g-2">
+                      <h6 class="modal-section-title">
+                        <i class="bi bi-building me-1"></i>
+                        Dados do fornecedor
+                      </h6>
+                      <div class="col-md-3">
+                        <label class="form-label" for="cnpjFornecedorCadastro">CNPJ</label>
+                        <input
+                          id="cnpjFornecedorCadastro"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.cnpj"
+                          (blur)="novoFornecedor.cnpj = formatarCNPJ(novoFornecedor.cnpj)"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label" for="razaoSocialFornecedor">Razão Social</label>
+                        <input
+                          id="razaoSocialFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.razaoSocial"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="nomeFantasiaFornecedor">Nome Fantasia</label>
+                        <input
+                          id="nomeFantasiaFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.nomeFantasia"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="itemFornecidoFornecedor">Item Fornecido</label>
+                        <input
+                          id="itemFornecidoFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.itemFornecido"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="emailFornecedor">E-mail</label>
+                        <input
+                          id="emailFornecedor"
+                          type="email"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.email"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="telefoneFornecedorEdicao">Telefone</label>
+                        <input
+                          id="telefoneFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.telefone"
+                          (blur)="novoFornecedor.telefone = exibirTelefoneFormatado(novoFornecedor.telefone)"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="fundacaoFornecedor">Fundação</label>
+                        <input
+                          id="fundacaoFornecedor"
+                          type="date"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.fundacao"
+                          style="color:#35689b;">
+                      </div>
+                      <h6 class="modal-section-title mt-3">
+                        <i class="bi bi-geo-alt me-1"></i>
+                        Endereço
+                      </h6>
+                      <div class="col-md-2">
+                        <label class="form-label" for="cepFornecedor">CEP</label>
+                        <input
+                          id="cepFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.cep"
+                          (blur)="onCepBlurCadastro()"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label" for="logradouroFornecedor">Logradouro</label>
+                        <input
+                          id="logradouroFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.logradouro"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="numeroEnderecoFornecedor">Número</label>
+                        <input
+                          id="numeroEnderecoFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.numeroEndereco"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label" for="complementoEnderecoFornecedor">Complemento</label>
+                        <input
+                          id="complementoEnderecoFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.complementoEndereco"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="bairroFornecedor">Bairro</label>
+                        <input
+                          id="bairroFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.bairro"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="cidadeFornecedor">Cidade</label>
+                        <input
+                          id="cidadeFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.cidade"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="estadoFornecedor">Estado</label>
+                        <input
+                          id="estadoFornecedor"
+                          maxlength="2"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="novoFornecedor.estado"
+                          style="color:#35689b;">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                      Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarNovoFornecedor()">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Salvar Fornecedor
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal fade" id="modalEdicaoFornecedor" tabindex="-1" aria-labelledby="modalEdicaoFornecedorLabel" aria-hidden="true">
+              <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content" style="color:#35689b;">
+                  <div class="modal-header" style="background:#eef6ff;">
+                    <h5 class="modal-title" id="modalEdicaoFornecedorLabel">
+                      Editar Fornecedor
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row g-2">
+                      <h6 class="modal-section-title">
+                        <i class="bi bi-building me-1"></i>
+                        Dados do fornecedor
+                      </h6>
+                      <div class="col-md-3">
+                        <label class="form-label" for="cnpjFornecedorEdicao">CNPJ</label>
+                        <input
+                          id="cnpjFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.cnpj"
+                          (blur)="edit.cnpj = formatarCNPJ(edit.cnpj)"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label" for="razaoSocialFornecedorEdicao">Razão Social</label>
+                        <input
+                          id="razaoSocialFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.razaoSocial"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="nomeFantasiaFornecedorEdicao">Nome Fantasia</label>
+                        <input
+                          id="nomeFantasiaFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.nomeFantasia"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="itemFornecidoFornecedorEdicao">Item Fornecido</label>
+                        <input
+                          id="itemFornecidoFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.itemFornecido"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="emailFornecedorEdicao">E-mail</label>
+                        <input
+                          id="emailFornecedorEdicao"
+                          type="email"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.email"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="telefoneFornecedor">Telefone</label>
+                        <input
+                          id="telefoneFornecedor"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.telefone"
+                          (blur)="edit.telefone = exibirTelefoneFormatado(edit.telefone)"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="fundacaoFornecedorEdicao">Fundação</label>
+                        <input
+                          id="fundacaoFornecedorEdicao"
+                          type="date"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.fundacao"
+                          style="color:#35689b;">
+                      </div>
+                      <h6 class="modal-section-title mt-3">
+                        <i class="bi bi-geo-alt me-1"></i>
+                        Endereço
+                      </h6>
+                      <div class="col-md-2">
+                        <label class="form-label" for="cepFornecedorEdicao">CEP</label>
+                        <input
+                          id="cepFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.cep"
+                          (blur)="onCepBlurEdicao()"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label" for="logradouroFornecedorEdicao">Logradouro</label>
+                        <input
+                          id="logradouroFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.logradouro"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="numeroEnderecoFornecedorEdicao">Número</label>
+                        <input
+                          id="numeroEnderecoFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.numeroEndereco"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label" for="complementoEnderecoFornecedorEdicao">Complemento</label>
+                        <input
+                          id="complementoEnderecoFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.complementoEndereco"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="bairroFornecedorEdicao">Bairro</label>
+                        <input
+                          id="bairroFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.bairro"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label" for="cidadeFornecedorEdicao">Cidade</label>
+                        <input
+                          id="cidadeFornecedorEdicao"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.cidade"
+                          style="color:#35689b;">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label" for="estadoFornecedorEdicao">Estado</label>
+                        <input
+                          id="estadoFornecedorEdicao"
+                          maxlength="2"
+                          class="form-control form-control-sm"
+                          [(ngModel)]="edit.estado"
+                          style="color:#35689b;">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                      Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="salvarEdicaoModal()">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Salvar Alterações
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <!-- Estados globais -->
-      <div *ngIf="loading" class="alert alert-info py-2">Carregando fornecedores…</div>
-      <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
-
-      <!-- Tabela -->
-      <div class="table-responsive">
-        <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-          <thead style="background:#eef6ff;color:#35689b;">
-            <tr>
-              <th>CNPJ</th>
-              <th>Razão Social</th>
-              <th>Nome Fantasia</th>
-              <th>Item Fornecido</th>
-              <th>Telefone</th>
-              <th>Email</th>
-              <th>Fundação</th>
-              <th>CEP</th>
-              <th>Logradouro</th>
-              <th>Número</th>
-              <th>Complemento</th>
-              <th>Bairro</th>
-              <th>Cidade</th>
-              <th>UF</th>
-              <th class="text-center">Ações</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr *ngFor="let f of fornecedores; trackBy: trackByFornecedor"
-                [class.table-active]="editId === f.id"
-                [class.editing]="editId === f.id"><!-- <- habilita quebra apenas na linha em edição -->
-
-              <!-- CNPJ -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_cnpj">
-                {{ formatarCNPJ(f.cnpj) }} <!-- << formatado -->
-                </ng-container>
-                  <ng-template #edit_cnpj>
-                    <input class="form-control form-control-sm"
-                      [(ngModel)]="edit.cnpj"
-                      [attr.name]="'cnpj_' + (f.id ?? f.cnpj)"
-                      autocomplete="off">
-                  </ng-template>
-              </td>
-
-              <!-- Razão Social -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_razao">
-                  {{ f.razaoSocial }}
-                </ng-container>
-                <ng-template #edit_razao>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.razaoSocial"
-                         [attr.name]="'razao_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Nome Fantasia -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_nomefant">
-                  {{ f.nomeFantasia }}
-                </ng-container>
-                <ng-template #edit_nomefant>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.nomeFantasia"
-                         [attr.name]="'nomeFantasia_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Item Fornecido -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_item">
-                  {{ f.itemFornecido }}
-                </ng-container>
-                <ng-template #edit_item>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.itemFornecido"
-                         [attr.name]="'item_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Telefone -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_tel">
-                  {{ f.telefone }}
-                </ng-container>
-                <ng-template #edit_tel>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.telefone"
-                         [attr.name]="'tel_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Email -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_email">
-                  {{ f.email }}
-                </ng-container>
-                <ng-template #edit_email>
-                  <input type="email" class="form-control form-control-sm"
-                         [(ngModel)]="edit.email"
-                         [attr.name]="'email_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Fundação -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_funda">
-                  {{ f.fundacao | date:'dd/MM/yyyy' }}
-                </ng-container>
-                <ng-template #edit_funda>
-                  <input type="date" class="form-control form-control-sm"
-                         [(ngModel)]="edit.fundacao"
-                         [attr.name]="'fundacao_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- CEP -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_cep">
-                  {{ formatarCEP(f.cep) }} <!-- << formatado -->
-                </ng-container>
-                <ng-template #edit_cep>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.cep"
-                         [attr.name]="'cep_' + (f.id ?? f.cnpj)"
-                         (blur)="onCepBlurRow(edit)"
-                         >
-                </ng-template>
-              </td>
-
-              <!-- Logradouro -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_logr">
-                  {{ f.logradouro }}
-                </ng-container>
-                <ng-template #edit_logr>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.logradouro"
-                         [attr.name]="'logradouro_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Número -->
-              <td style="min-width: 90px;">
-                <ng-container *ngIf="editId !== f.id; else edit_num">
-                  {{ f.numeroEndereco }}
-                </ng-container>
-                <ng-template #edit_num>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.numeroEndereco"
-                         [attr.name]="'numero_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Complemento -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_comp">
-                  {{ f.complementoEndereco }}
-                </ng-container>
-                <ng-template #edit_comp>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.complementoEndereco"
-                         [attr.name]="'compl_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Bairro -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_bairro">
-                  {{ f.bairro }}
-                </ng-container>
-                <ng-template #edit_bairro>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.bairro"
-                         [attr.name]="'bairro_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Cidade -->
-              <td>
-                <ng-container *ngIf="editId !== f.id; else edit_cidade">
-                  {{ f.cidade }}
-                </ng-container>
-                <ng-template #edit_cidade>
-                  <input class="form-control form-control-sm"
-                         [(ngModel)]="edit.cidade"
-                         [attr.name]="'cidade_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- UF -->
-              <td style="min-width: 64px;">
-                <ng-container *ngIf="editId !== f.id; else edit_uf">
-                  {{ f.estado }}
-                </ng-container>
-                <ng-template #edit_uf>
-                  <input class="form-control form-control-sm text-uppercase"
-                         maxlength="2"
-                         [(ngModel)]="edit.estado"
-                         [attr.name]="'estado_' + (f.id ?? f.cnpj)">
-                </ng-template>
-              </td>
-
-              <!-- Ações -->
-              <td class="text-center" style="min-width: 160px;">
-                <ng-container *ngIf="editId !== f.id; else edit_acoes">
-                  <button class="btn btn-sm btn-outline-primary me-1"
-                          (click)="iniciarEdicao(f)"
-                          style="border-color:#8fb4da;color:#35689b;">
-                    Editar
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger"
-                          (click)="excluir(f.id)"
-                          style="border-color:#f3c7c7;color:#b03030;">
-                    Excluir
-                  </button>
-                </ng-container>
-                <ng-template #edit_acoes>
-                  <button class="btn btn-sm btn-success me-1"
-                          (click)="salvarEdicao(f.id!)">
-                    Salvar
-                  </button>
-                  <button class="btn btn-sm btn-secondary"
-                          (click)="cancelarEdicao()">
-                    Cancelar
-                  </button>
-                </ng-template>
-              </td>
-
-            </tr>
-
-            <!-- Sem dados -->
-            <tr *ngIf="!fornecedores || fornecedores.length === 0">
-              <td colspan="15" class="text-center text-muted py-4">
-                Nenhum fornecedor encontrado.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
     </div>
   </div>
 </div>
-
-<style>
-  /* Bordas/cores padrão */
-  .table thead th { border-color: #d0e2f2 !important; }
-  .table td, .table th { vertical-align: middle; color: #35689b; }
-  .table-hover tbody tr:hover { background-color: #f7fbff; }
-  .table-active { --bs-table-bg: #f1f7ff; }
-
-  /* Sem quebras e com elipse por padrão (uma linha por registro) */
-  .table.text-nowrap th,
-  .table.text-nowrap td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Linha em edição: mostrar todo o conteúdo (pode quebrar) */
-  .table.text-nowrap tr.editing > th,
-  .table.text-nowrap tr.editing > td {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    word-break: break-word; /* ajuda com textos longos sem espaços */
-  }
-
-  /* Inputs na linha em edição com largura mínima confortável */
-  .table.text-nowrap tr.editing .form-control {
-    min-width: 220px;
-  }
-
-  .form-control:focus, .btn:focus {
-    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
-    border-color: #8fb4da;
-  }
-</style>

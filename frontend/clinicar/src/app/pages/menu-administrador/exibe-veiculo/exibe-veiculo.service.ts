@@ -71,7 +71,10 @@ export class VeiculoService {
   // ---------- CRUD ----------
   /** GET /api/veiculo */
   listarTodos(): Observable<VeiculoUI[]> {
-    return this.http.get<any[]>(this.baseUrl).pipe(
+    return this.http.get<any[]>(this.baseUrl,
+      {
+        withCredentials: true
+      }).pipe(
       map(arr => (arr ?? []).map(v => this.fromApi(v)))
     );
   }
@@ -79,7 +82,7 @@ export class VeiculoService {
   /** POST /api/veiculo */
   cadastrar(body: Omit<VeiculoUI, 'id'>): Observable<VeiculoUI> {
     const apiBody = this.toApi(body);
-    return this.http.post<any>(this.baseUrl, apiBody, { headers: this.jsonHeaders }).pipe(
+    return this.http.post<any>(this.baseUrl, apiBody, { headers: this.jsonHeaders, withCredentials: true }).pipe(
       map(v => this.fromApi(v)),
       catchError(err => {
         console.error('Falha em cadastrar', { bodyUI: body, apiBody, err });
@@ -91,7 +94,7 @@ export class VeiculoService {
   /** PUT /api/veiculo/{id} */
   atualizarVeiculo(id: number, body: Partial<VeiculoUI>): Observable<VeiculoUI> {
     const apiBody = this.toApi(body);
-    return this.http.put<any>(`${this.baseUrl}/${id}`, apiBody, { headers: this.jsonHeaders }).pipe(
+    return this.http.put<any>(`${this.baseUrl}/${id}`, apiBody, { headers: this.jsonHeaders, withCredentials: true }).pipe(
       map(v => this.fromApi(v)),
       catchError(err => {
         console.error('Falha em atualizarVeiculo', { id, bodyUI: body, apiBody, err });

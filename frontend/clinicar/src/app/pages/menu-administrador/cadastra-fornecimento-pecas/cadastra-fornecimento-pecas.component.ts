@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import {FornecedorService, Fornecedor} from '../exibe-fornecedor/exibe-fornecedor.service';
+import { Fornecedor, ExibeFornecedorService } from '../exibe-fornecedor/exibe-fornecedor.service';
 import {PecaService, Peca} from '../exibe-peca/exibe-peca.service';
 import { FornecimentoPecasService } from './cadastra-fornecimento-pecas.service';
 declare var bootstrap: any;
@@ -60,7 +60,7 @@ export class CadastraFornecimentoPecasComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly fornecedorService: FornecedorService,
+    private readonly fornecedorService: ExibeFornecedorService,
     private readonly pecaService: PecaService,
     private readonly fornecimentoPecasService: FornecimentoPecasService
   ) {}
@@ -75,12 +75,12 @@ export class CadastraFornecimentoPecasComponent implements OnInit {
   // ======================================================
 
   recarregarFornecedores(): void {
-    this.fornecedorService.listarTodosFornecedores().subscribe({
-      next: lista => {
+    (this.fornecedorService as any).listarTodosFornecedores().subscribe({
+      next: (lista: { filter: (arg0: (f: any) => any) => never[]; }) => {
         this.fornecedores = lista?.filter(f => f.itemFornecido.startsWith('Peças')) ?? [];
         this.fornecedoresFiltrados = [...this.fornecedores];
       },
-      error: e => console.error('Falha ao carregar fornecedores:', e)
+      error: (e: any) => console.error('Falha ao carregar fornecedores:', e)
     });
   }
 

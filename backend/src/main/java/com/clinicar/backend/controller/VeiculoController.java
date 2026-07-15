@@ -1,21 +1,16 @@
 package com.clinicar.backend.controller;
-
 import java.util.List;
 import java.util.Optional;
-
 import com.clinicar.backend.model.Veiculo;
 import com.clinicar.backend.repository.VeiculoRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 @RestController
 @RequestMapping("/api/veiculo")
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class VeiculoController {
-
   private final VeiculoRepository veiculoRepository;
-
   public VeiculoController(VeiculoRepository veiculoRepository) {
     this.veiculoRepository = veiculoRepository;
   }
