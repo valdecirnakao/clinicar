@@ -1,18 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PecaService } from '../exibe-peca/exibe-peca.service';
+import { Peca, PecaService } from './exibe-peca.service';
 
-export interface Peca {
-  id?: number;
-  nome: string;
-  tipo?: string;
-  especificacao?: string;
-  fabricante: string;
-  modelo?: string;
-  norma?: string;
-  unidade: string;
-}
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-exibe-peca',
@@ -22,59 +13,208 @@ export interface Peca {
   styleUrls: ['./exibe-peca.component.css']
 })
 export class ExibePecaComponent implements OnInit {
+
   pecas: Peca[] = [];
   private todos: Peca[] = [];
 
-  editId: number | null = null;
+  novaPeca: Partial<Peca> = {};
   edit: Partial<Peca> = {};
+  editId: number | null = null;
+
+  modalCadastro: any;
+  modalEdicao: any;
 
   loading = false;
   errorMsg = '';
+  camposInvalidos: string[] = [];
 
   constructor(
-    private readonly pecaService: PecaService  ) {}
+    private readonly pecaService: PecaService,
+    private readonly location: Location
+  ) {}
 
-  ngOnInit(): void { this.recarregar(); }
+  ngOnInit(): void {
+    this.recarregar();
+  }
 
   recarregar(): void {
     this.loading = true;
     this.errorMsg = '';
+
     this.pecaService.listarTodasPecas().subscribe({
       next: (lista) => {
-        this.todos = (lista || []).map(u => ({
-          ...u,
+        this.todos = (lista || []).map(p => ({
+          ...p,
+          nome: this.capitalizarTexto(p.nome),
+          tipo: this.capitalizarTexto(p.tipo),
+          especificacao: this.caixaAltaTexto(p.especificacao),
+          fabricante: this.capitalizarTexto(p.fabricante),
+          modelo: this.capitalizarTexto(p.modelo),
+          norma: this.caixaAltaTexto(p.norma),
+          unidade: this.capitalizarTexto(p.unidade)
         }));
+
         this.pecas = [...this.todos];
         this.loading = false;
         this.cancelarEdicao();
       },
-      error: (e) => {
-        console.error(e);
+      error: (erro) => {
+        console.error('Erro ao carregar peças:', erro);
+
         this.loading = false;
-        this.errorMsg = 'Falha ao carregar peças.';
+        this.errorMsg = this.extrairMensagemErro(
+          erro,
+          'Falha ao carregar peças.'
+        );
       }
     });
   }
 
   filtrar(term: string): void {
     const t = (term || '').trim().toLowerCase();
-    if (!t) { this.pecas = [...this.todos]; return; }
 
-    this.pecas = this.todos.filter(u => {
-      return (u.nome || '').toLowerCase().includes(t)
-        || (u.fabricante || '').toLowerCase().includes(t)
-        || (u.modelo || '').toLowerCase().includes(t)
-        || (u.norma || '').toLowerCase().includes(t)
-        || (u.unidade || '').toLowerCase().includes(t);
+    if (!t) {
+      this.pecas = [...this.todos];
+      return;
+    }
+
+    this.pecas = this.todos.filter(p => {
+      return (
+        (p.nome || '').toLowerCase().includes(t) ||
+        (p.tipo || '').toLowerCase().includes(t) ||
+        (p.especificacao || '').toLowerCase().includes(t) ||
+        (p.fabricante || '').toLowerCase().includes(t) ||
+        (p.modelo || '').toLowerCase().includes(t) ||
+        (p.norma || '').toLowerCase().includes(t) ||
+        (p.unidade || '').toLowerCase().includes(t)
+      );
     });
   }
 
   trackByPeca = (_: number, p: Peca) => p.id ?? p.nome;
 
+  abrirModalCadastro(): void {
+    this.camposInvalidos = [];
 
-  iniciarEdicao(u: Peca): void {
-    this.editId = u.id ?? null;
-    this.edit = { ...u };
+    this.novaPeca = {
+      nome: '',
+      tipo: '',
+      especificacao: '',
+      fabricante: '',
+      modelo: '',
+      norma: '',
+      unidade: ''
+    };
+
+    const el = document.getElementById('modalCadastroPeca');
+
+    if (!el) {
+      console.error('Modal modalCadastroPeca não encontrado.');
+      return;
+    }
+
+    this.modalCadastro = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalCadastro.show();
+  }
+
+  salvarNovaPeca(): void {
+    const camposObrigatorios = [
+      'nome',
+      'fabricante',
+      'unidade'
+    ] as const;
+
+    const faltando = camposObrigatorios.filter(campo =>
+      !String(this.novaPeca[campo] ?? '').trim()
+    );
+
+    if (faltando.length) {
+      this.camposInvalidos = [...faltando];
+      alert('Por favor, preencha os campos obrigatórios: nome, fabricante e unidade.');
+      return;
+    }
+
+    const payload = this.montarPayloadCadastro(this.novaPeca);
+
+    this.pecaService.cadastrar(payload).subscribe({
+      next: () => {
+        this.modalCadastro?.hide();
+        alert('Peça cadastrada com sucesso.');
+        this.recarregar();
+      },
+      error: (erro) => {
+        console.error('Erro ao cadastrar peça:', erro);
+
+        alert(
+          this.extrairMensagemErro(
+            erro,
+            'Erro ao cadastrar peça.'
+          )
+        );
+      }
+    });
+  }
+
+  abrirModalEdicao(peca: Peca): void {
+    this.camposInvalidos = [];
+    this.editId = peca.id ?? null;
+
+    this.edit = {
+      ...peca
+    };
+
+    const el = document.getElementById('modalEdicaoPeca');
+
+    if (!el) {
+      console.error('Modal modalEdicaoPeca não encontrado.');
+      return;
+    }
+
+    this.modalEdicao = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalEdicao.show();
+  }
+
+  salvarEdicaoModal(): void {
+    if (!this.editId) {
+      return;
+    }
+
+    const camposObrigatorios = [
+      'nome',
+      'fabricante',
+      'unidade'
+    ] as const;
+
+    const faltando = camposObrigatorios.filter(campo =>
+      !String(this.edit[campo] ?? '').trim()
+    );
+
+    if (faltando.length) {
+      this.camposInvalidos = [...faltando];
+      alert('Por favor, preencha os campos obrigatórios: nome, fabricante e unidade.');
+      return;
+    }
+
+    const payload = this.montarPayloadEdicao(this.edit);
+
+    this.pecaService.atualizarPeca(this.editId, payload).subscribe({
+      next: () => {
+        this.modalEdicao?.hide();
+        this.cancelarEdicao();
+        alert('Peça atualizada com sucesso.');
+        this.recarregar();
+      },
+      error: (erro) => {
+        console.error('Erro ao salvar alterações da peça:', erro);
+
+        alert(
+          this.extrairMensagemErro(
+            erro,
+            'Erro ao salvar alterações da peça.'
+          )
+        );
+      }
+    });
   }
 
   cancelarEdicao(): void {
@@ -82,67 +222,119 @@ export class ExibePecaComponent implements OnInit {
     this.edit = {};
   }
 
-  salvarEdicao(id: number): void {
-    if (!this.editId || this.editId !== id) return;
-
-    const payload: Partial<Peca> = {
-      ...this.edit,
-    };
-
-    this.pecaService.atualizarPeca(id, payload).subscribe({
-      next: (atualizado) => {
-        const idxTodos = this.todos.findIndex(x => x.id === id);
-        if (idxTodos > -1) {
-          this.todos[idxTodos] = {
-            ...this.todos[idxTodos],
-            ...atualizado
-          };
-        }
-        const idxView = this.pecas.findIndex(x => x.id === id);
-        if (idxView > -1) {
-          this.pecas[idxView] = {
-            ...this.pecas[idxView],
-            ...atualizado
-          };
-        }
-        this.cancelarEdicao();
-      },
-      error: (err) => {
-        console.error(err);
-        alert('Erro ao salvar alterações.');
-      }
-    });
-  }
-
   excluir(id?: number): void {
-    if (!id) return;
-    if (!confirm('Confirma excluir esta peça?')) return;
+    if (!id) {
+      return;
+    }
+
+    if (!confirm('Confirma a exclusão desta peça?')) {
+      return;
+    }
 
     this.pecaService.removerPeca(id).subscribe({
       next: () => {
-        this.todos = this.todos.filter(f => f.id !== id);
-        this.pecas = this.pecas.filter(f => f.id !== id);
-        if (this.editId === id) this.cancelarEdicao();
+        alert('Peça removida com sucesso.');
+        this.recarregar();
       },
-      error: (err) => {
-        console.error(err);
-        alert('Erro ao excluir peça.');
+      error: (erro) => {
+        console.error('Erro ao excluir peça:', erro);
+
+        alert(
+          this.extrairMensagemErro(
+            erro,
+            'Erro ao excluir peça.'
+          )
+        );
       }
     });
   }
 
-  capitalizar(campo: keyof Peca): string {
-    const raw = this.edit[campo];
-    const s = typeof raw === 'string' ? raw.trim() : '';
-    const result = s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
-    (this.edit as any)[campo] = result;
-    return result;
+  voltar(): void {
+    this.location.back();
   }
 
-  caixaAlta(campo: keyof Peca): string {
-    const raw = this.edit[campo];
-    const s = typeof raw === 'string' ? raw.trim() : '';
-    (this.edit as any)[campo] = s.toUpperCase();
-    return s.toUpperCase();
+  aoSairCampoCapitalizar(model: Partial<Peca>, campo: keyof Peca): void {
+    const valor = model[campo];
+
+    if (typeof valor === 'string') {
+      (model as any)[campo] = this.capitalizarTexto(valor);
+    }
+  }
+
+  aoSairCampoCaixaAlta(model: Partial<Peca>, campo: keyof Peca): void {
+    const valor = model[campo];
+
+    if (typeof valor === 'string') {
+      (model as any)[campo] = this.caixaAltaTexto(valor);
+    }
+  }
+
+  exibirCapitalizado(valor: string | null | undefined): string {
+    return this.capitalizarTexto(valor);
+  }
+
+  exibirCaixaAlta(valor: string | null | undefined): string {
+    return this.caixaAltaTexto(valor);
+  }
+
+  private montarPayloadCadastro(model: Partial<Peca>): Omit<Peca, 'id'> {
+    return {
+      nome: this.capitalizarTexto(model.nome),
+      tipo: this.capitalizarTexto(model.tipo),
+      especificacao: this.caixaAltaTexto(model.especificacao),
+      fabricante: this.capitalizarTexto(model.fabricante),
+      modelo: this.capitalizarTexto(model.modelo),
+      norma: this.caixaAltaTexto(model.norma),
+      unidade: this.capitalizarTexto(model.unidade)
+    };
+  }
+
+  private montarPayloadEdicao(model: Partial<Peca>): Partial<Peca> {
+    return {
+      nome: this.capitalizarTexto(model.nome),
+      tipo: this.capitalizarTexto(model.tipo),
+      especificacao: this.caixaAltaTexto(model.especificacao),
+      fabricante: this.capitalizarTexto(model.fabricante),
+      modelo: this.capitalizarTexto(model.modelo),
+      norma: this.caixaAltaTexto(model.norma),
+      unidade: this.capitalizarTexto(model.unidade)
+    };
+  }
+
+  private capitalizarTexto(valor: string | null | undefined): string {
+    if (!valor) {
+      return '';
+    }
+
+    return valor
+      .trim()
+      .split(' ')
+      .filter(parte => parte.length > 0)
+      .map(parte => parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  private caixaAltaTexto(valor: string | null | undefined): string {
+    if (!valor) {
+      return '';
+    }
+
+    return valor.trim().toUpperCase();
+  }
+
+  private extrairMensagemErro(erro: any, mensagemPadrao: string): string {
+    if (typeof erro?.error === 'string') {
+      return erro.error;
+    }
+
+    if (typeof erro?.error?.mensagem === 'string') {
+      return erro.error.mensagem;
+    }
+
+    if (typeof erro?.message === 'string') {
+      return erro.message;
+    }
+
+    return mensagemPadrao;
   }
 }
