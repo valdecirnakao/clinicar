@@ -2,8 +2,13 @@ package com.clinicar.backend.dto;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 @Data
-public class ServicoRequest {
+public class ServicoResponse {
+
+    private Long id;
 
     private String nome;
     private String descricao;
@@ -11,10 +16,10 @@ public class ServicoRequest {
 
     private String tipoDoPrestador;
 
-    private String duracaoEstimada;
+    private BigDecimal duracaoEstimada;
     private String unidadeDuracao;
 
-    private String valorBase;
+    private BigDecimal valorBase;
     private String unidadeCobranca;
 
     private Integer garantiaDias;
@@ -25,4 +30,8 @@ public class ServicoRequest {
     private String observacoes;
 
     private Long idFornecedor;
+    private String razaoSocialFornecedor;
+
+    private LocalDateTime criadoEm;
+    private LocalDateTime atualizadoEm;
 }
