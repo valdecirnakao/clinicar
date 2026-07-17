@@ -1,0 +1,1099 @@
+<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 mt-sm-0">
+
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">
+              <i class="bi bi-box-seam me-1"></i>
+              Controle de Estoque de Peças
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-2">
+          <div class="card resumo-card">
+            <div class="card-body py-2">
+              <div class="small">Total</div>
+              <div class="fs-5 fw-bold">{{ resumo.total }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-normal">
+            <div class="card-body py-2">
+              <div class="small">Normal</div>
+              <div class="fs-5 fw-bold">{{ resumo.normal }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-atencao">
+            <div class="card-body py-2">
+              <div class="small">Atenção</div>
+              <div class="fs-5 fw-bold">{{ resumo.atencao }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-critico">
+            <div class="card-body py-2">
+              <div class="small">Crítico</div>
+              <div class="fs-5 fw-bold">{{ resumo.critico }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-zerado">
+            <div class="card-body py-2">
+              <div class="small">Zerado</div>
+              <div class="fs-5 fw-bold">{{ resumo.zerado }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-alerta" role="button" (click)="abrirModalAlertas()">
+            <div class="card-body py-2">
+              <div class="small">Alertas Abertos</div>
+              <div class="fs-5 fw-bold">{{ resumo.alertasAbertos }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card clinicar-card">
+        <div class="card-body p-2">
+
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+            <div class="input-group" style="max-width:52vw;color:#35689b;">
+              <label
+                class="input-group-text"
+                for="filtro-estoque"
+                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
+              >
+                Buscar
+              </label>
+
+              <input
+                id="filtro-estoque"
+                type="search"
+                class="form-control"
+                placeholder="Peça, fabricante, modelo, local, localização ou status"
+                [(ngModel)]="filtroTexto"
+                (input)="filtrar(filtroTexto)"
+                style="color:#35689b;"
+              />
+
+              <select
+                class="form-select"
+                style="max-width:180px;color:#35689b;"
+                [(ngModel)]="filtroStatus"
+                (change)="aplicarFiltros()"
+              >
+                <option *ngFor="let s of statusFiltro" [ngValue]="s">
+                  {{ s ? formatarStatus(s) : 'Todos os status' }}
+                </option>
+              </select>
+
+              <div
+                class="text-muted small input-group-text"
+                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
+              >
+                Total: {{ estoques.length }}
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                class="btn btn-outline-success btn-sm"
+                type="button"
+                (click)="abrirModalCadastro()"
+              >
+                <i class="bi bi-plus-circle me-1"></i>
+                Novo Controle
+              </button>
+
+              <button
+                class="btn btn-outline-info btn-sm"
+                type="button"
+                (click)="abrirModalNovoLocal()"
+              >
+                <i class="bi bi-geo-alt me-1"></i>
+                Novo Local
+              </button>
+
+              <button
+                class="btn btn-outline-warning btn-sm"
+                type="button"
+                (click)="abrirModalAlertas()"
+              >
+                <i class="bi bi-bell me-1"></i>
+                Alertas
+              </button>
+
+              <button
+                class="btn btn-outline-secondary btn-sm"
+                type="button"
+                (click)="voltar()"
+              >
+                <i class="bi bi-arrow-left me-1"></i>
+                Voltar
+              </button>
+
+              <button
+                class="btn btn-outline-primary btn-sm"
+                type="button"
+                (click)="recarregar()"
+              >
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Atualizar
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="loading" class="alert alert-info py-2">
+            Carregando controle de estoque…
+          </div>
+
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">
+            {{ errorMsg }}
+          </div>
+
+          <div class="table-responsive estoque-table-responsive">
+            <div class="small text-muted mb-1 right-align" style="color:#35689b;">
+              <i class="bi bi-box-arrow-in-down text-success"></i> Entrada |
+              <i class="bi bi-box-arrow-up text-danger"></i> Saída |
+              <i class="bi bi-sliders text-warning"></i> Ajuste |
+              <i class="bi bi-clock-history text-info"></i> Histórico |
+              <i class="bi bi-pencil-square text-primary"></i> Editar
+            </div>
+
+            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+              <thead style="background:#eef6ff;color:#35689b;">
+                <tr>
+                  <th style="color:#35689b;">Peça</th>
+                  <th style="color:#35689b;">Fabricante / Modelo</th>
+                  <th style="color:#35689b;">Local</th>
+                  <th style="color:#35689b;">Qtd. Atual</th>
+                  <th style="color:#35689b;">Reservada</th>
+                  <th style="color:#35689b;">Mínimo / Crítico</th>
+                  <th style="color:#35689b;">Custo Médio</th>
+                  <th style="color:#35689b;">Localização</th>
+                  <th style="color:#35689b;">Status</th>
+                  <th class="text-center" style="color:#35689b;">Ações</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr *ngFor="let item of estoques; trackBy: trackByEstoque">
+                  <td style="color:#35689b;">
+                    <div class="fw-semibold">{{ item.nomePeca }}</div>
+                    <small class="text-muted">{{ item.unidadePeca || 'un.' }}</small>
+                  </td>
+
+                  <td style="color:#35689b;">
+                    {{ item.fabricantePeca || '—' }}
+                    <span *ngIf="item.modeloPeca"> / {{ item.modeloPeca }}</span>
+                  </td>
+
+                  <td style="color:#35689b;">
+                    {{ item.nomeLocalEstoque || '—' }}
+                  </td>
+
+                  <td style="color:#35689b;">
+                    {{ formatarQuantidade(item.quantidadeAtual, item.unidadePeca) }}
+                  </td>
+
+                  <td style="color:#35689b;">
+                    {{ formatarQuantidade(item.quantidadeReservada, item.unidadePeca) }}
+                  </td>
+
+                  <td style="color:#35689b;">
+                    <div>Mín.: {{ formatarQuantidade(item.estoqueMinimo, item.unidadePeca) }}</div>
+                    <small>Crít.: {{ formatarQuantidade(item.estoqueCritico, item.unidadePeca) }}</small>
+                  </td>
+
+                  <td style="color:#35689b;">
+                    {{ formatarMoedaBR(item.custoMedio) || '—' }}
+                  </td>
+
+                  <td style="color:#35689b;">
+                    {{ item.localizacaoFisica || '—' }}
+                  </td>
+
+                  <td>
+                    <span
+                      class="badge"
+                      [ngClass]="statusBadgeClass(item.statusEstoque)"
+                    >
+                      {{ formatarStatus(item.statusEstoque) }}
+                    </span>
+                  </td>
+
+                  <td class="text-center">
+                    <button
+                      class="btn btn-sm btn-outline-success me-1"
+                      title="Entrada"
+                      (click)="abrirModalMovimentacao(item, 'ENTRADA')"
+                    >
+                      <i class="bi bi-box-arrow-in-down"></i>
+                    </button>
+
+                    <button
+                      class="btn btn-sm btn-outline-danger me-1"
+                      title="Saída"
+                      (click)="abrirModalMovimentacao(item, 'SAIDA')"
+                    >
+                      <i class="bi bi-box-arrow-up"></i>
+                    </button>
+
+                    <div class="btn-group me-1">
+                      <button
+                        class="btn btn-sm btn-outline-warning dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        title="Ajuste"
+                      >
+                        <i class="bi bi-sliders"></i>
+
+                      </button>
+
+                      <ul class="dropdown-menu">
+                        <li>
+                          <button
+                            class="dropdown-item"
+                            type="button"
+                            (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')"
+                          >
+                            Ajuste de entrada
+                          </button>
+                        </li>
+
+                        <li>
+                          <button
+                            class="dropdown-item"
+                            type="button"
+                            (click)="abrirModalMovimentacao(item, 'AJUSTE_SAIDA')"
+                          >
+                            Ajuste de saída
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <button
+                      class="btn btn-sm btn-outline-info me-1"
+                      title="Histórico"
+                      (click)="abrirModalMovimentacoes(item)"
+                    >
+                      <i class="bi bi-clock-history"></i>
+                    </button>
+
+                    <button
+                      class="btn btn-sm btn-outline-primary"
+                      title="Editar"
+                      (click)="abrirModalEdicao(item)"
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <tr *ngIf="!estoques || estoques.length === 0">
+                  <td colspan="10" class="text-center text-muted py-4">
+                    Nenhum controle de estoque encontrado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cadastro -->
+<div
+  class="modal fade"
+  id="modalCadastroEstoquePeca"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          Novo Controle de Estoque
+        </h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-2">
+
+          <h6 class="modal-section-title">
+            <i class="bi bi-box-seam me-1"></i>
+            Identificação
+          </h6>
+
+          <div class="col-md-6">
+            <label class="form-label">Peça *</label>
+
+            <div class="position-relative">
+              <input
+                class="form-control form-control-sm pe-5"
+                [value]="pecaTexto(novoEstoque)"
+                readonly
+                placeholder="Selecione uma peça"
+                style="color:#35689b;"
+              />
+
+              <button
+                type="button"
+                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+                (click)="abrirModalPeca('cadastro')"
+                style="color:#35689b;"
+              >
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Local de Estoque *</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="novoEstoque.idLocalEstoque"
+              (change)="atualizarNomeLocalCadastro()"
+              style="color:#35689b;"
+            >
+              <option [ngValue]="undefined">Selecione</option>
+              <option *ngFor="let local of locais; trackBy: trackByLocal" [ngValue]="local.id">
+                {{ local.nome }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-2 d-flex align-items-end">
+            <button
+              type="button"
+              class="btn btn-outline-info btn-sm w-100"
+              (click)="abrirModalNovoLocal()"
+            >
+              <i class="bi bi-plus-circle me-1"></i>
+              Local
+            </button>
+          </div>
+
+          <h6 class="modal-section-title mt-3">
+            <i class="bi bi-123 me-1"></i>
+            Quantidades
+          </h6>
+
+          <div class="col-md-3">
+            <label class="form-label">Quantidade Atual</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.quantidadeAtual"
+              placeholder="0"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Quantidade Reservada</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.quantidadeReservada"
+              placeholder="0"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Estoque Mínimo *</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.estoqueMinimo"
+              placeholder="Ex.: 5"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Estoque Crítico *</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.estoqueCritico"
+              placeholder="Ex.: 2"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <h6 class="modal-section-title mt-3">
+            <i class="bi bi-graph-up-arrow me-1"></i>
+            Reposição e custo
+          </h6>
+
+          <div class="col-md-3">
+            <label class="form-label">Estoque Máximo</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.estoqueMaximo"
+              placeholder="Ex.: 30"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Ponto de Reposição</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.pontoReposicao"
+              placeholder="Ex.: 6"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Qtd. Reposição Sugerida</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.quantidadeReposicaoSugerida"
+              placeholder="Ex.: 15"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Custo Médio</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.custoMedio"
+              (blur)="formatarCustoMedioCadastro()"
+              placeholder="R$ 0,00"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-9">
+            <label class="form-label">Localização Física</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoEstoque.localizacaoFisica"
+              placeholder="Ex.: Prateleira A1"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Status do Cadastro</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="novoEstoque.ativo"
+              style="color:#35689b;"
+            >
+              <option [ngValue]="true">Ativo</option>
+              <option [ngValue]="false">Inativo</option>
+            </select>
+          </div>
+
+          <div class="col-12 mt-2">
+            <small class="text-muted">
+              O status do estoque será calculado automaticamente conforme quantidade atual, estoque mínimo e estoque crítico.
+            </small>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarNovoEstoque()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar Controle
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição -->
+<div
+  class="modal fade"
+  id="modalEdicaoEstoquePeca"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          Editar Controle de Estoque
+        </h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-2">
+
+          <h6 class="modal-section-title">
+            <i class="bi bi-pencil-square me-1"></i>
+            Peça vinculada
+          </h6>
+
+          <div class="col-md-8">
+            <label class="form-label">Peça</label>
+            <input
+              class="form-control form-control-sm"
+              [value]="pecaTexto(edit)"
+              readonly
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Local de Estoque</label>
+            <input
+              class="form-control form-control-sm"
+              [value]="edit.nomeLocalEstoque || ''"
+              readonly
+              style="color:#35689b;"
+            />
+          </div>
+
+          <h6 class="modal-section-title mt-3">
+            <i class="bi bi-123 me-1"></i>
+            Quantidades e limites
+          </h6>
+
+          <div class="col-md-3">
+            <label class="form-label">Quantidade Atual</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.quantidadeAtual"
+              style="color:#35689b;"
+            />
+            <small class="text-muted">Ajuste direto apenas para correção administrativa.</small>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Quantidade Reservada</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.quantidadeReservada"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Estoque Mínimo *</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.estoqueMinimo"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Estoque Crítico *</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.estoqueCritico"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <h6 class="modal-section-title mt-3">
+            <i class="bi bi-graph-up-arrow me-1"></i>
+            Reposição e custo
+          </h6>
+
+          <div class="col-md-3">
+            <label class="form-label">Estoque Máximo</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.estoqueMaximo"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Ponto de Reposição</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.pontoReposicao"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Qtd. Reposição Sugerida</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.quantidadeReposicaoSugerida"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Custo Médio</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.custoMedio"
+              (blur)="formatarCustoMedioEdicao()"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-9">
+            <label class="form-label">Localização Física</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="edit.localizacaoFisica"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Status do Cadastro</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="edit.ativo"
+              style="color:#35689b;"
+            >
+              <option [ngValue]="true">Ativo</option>
+              <option [ngValue]="false">Inativo</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-outline-primary btn-sm" (click)="salvarEdicao()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar Alterações
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Selecionar Peça -->
+<div
+  class="modal fade"
+  id="modalSelecionarPecaEstoque"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          Selecionar Peça
+        </h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input
+          type="search"
+          class="form-control mb-3"
+          placeholder="Buscar peça por nome, fabricante, modelo, tipo ou especificação..."
+          [(ngModel)]="filtroPeca"
+          (input)="aplicarFiltroPeca()"
+          style="color:#35689b;"
+        />
+
+        <div class="selection-lista">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action"
+            *ngFor="let peca of pecasFiltradas; trackBy: trackByPeca"
+            (click)="selecionarPeca(peca)"
+          >
+            <div class="fw-semibold" style="color:#35689b;">
+              {{ peca.nome }}
+            </div>
+
+            <small class="text-muted">
+              {{ peca.fabricante }}
+              <span *ngIf="peca.modelo"> / {{ peca.modelo }}</span>
+              <span *ngIf="peca.unidade"> | Unidade: {{ peca.unidade }}</span>
+            </small>
+          </button>
+
+          <div *ngIf="pecasFiltradas.length === 0" class="text-center text-muted py-3">
+            Nenhuma peça encontrada.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Movimentação -->
+<div
+  class="modal fade"
+  id="modalMovimentacaoEstoque"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          {{ tituloMovimentacao() }}
+        </h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-light border py-2" style="color:#35689b;">
+          {{ descricaoMovimentacao() }}
+        </div>
+
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label">Quantidade *</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="movimento.quantidade"
+              placeholder="Ex.: 1"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-4" *ngIf="exibirCampoValorUnitario()">
+            <label class="form-label">Valor Unitário</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="movimento.valorUnitario"
+              (blur)="formatarValorUnitarioMovimento()"
+              placeholder="R$ 0,00"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Origem</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="movimento.origem"
+              placeholder="MANUAL, COMPRA, OS..."
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Documento / Referência</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="movimento.documentoReferencia"
+              placeholder="NF, OS, ajuste interno..."
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Motivo</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="movimento.motivo"
+              placeholder="Motivo da movimentação"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Observações</label>
+            <textarea
+              class="form-control form-control-sm"
+              rows="2"
+              [(ngModel)]="movimento.observacoes"
+              style="color:#35689b;"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarMovimentacao()">
+          <i class="bi bi-check-circle me-1"></i>
+          Confirmar Movimentação
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Histórico -->
+<div
+  class="modal fade"
+  id="modalHistoricoMovimentacoes"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          Histórico de Movimentações
+        </h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-light border py-2" style="color:#35689b;" *ngIf="estoqueSelecionado">
+          {{ estoqueSelecionado.nomePeca }} |
+          Local: {{ estoqueSelecionado.nomeLocalEstoque }} |
+          Saldo atual: {{ formatarQuantidade(estoqueSelecionado.quantidadeAtual, estoqueSelecionado.unidadePeca) }}
+        </div>
+
+        <div class="table-responsive estoque-table-responsive">
+          <table class="table table-hover align-middle text-nowrap">
+            <thead style="background:#eef6ff;color:#35689b;">
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Quantidade</th>
+                <th>Saldo Anterior</th>
+                <th>Saldo Posterior</th>
+                <th>Valor Unitário</th>
+                <th>Valor Total</th>
+                <th>Origem</th>
+                <th>Documento</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let mov of movimentacoes; trackBy: trackByMovimentacao">
+                <td>{{ formatarDataHora(mov.criadoEm) }}</td>
+                <td>
+                  <span class="badge" [ngClass]="movimentoBadgeClass(mov.tipoMovimento)">
+                    {{ formatarTipoMovimento(mov.tipoMovimento) }}
+                  </span>
+                </td>
+                <td>{{ formatarQuantidadeSemUnidade(mov.quantidade) }}</td>
+                <td>{{ formatarQuantidadeSemUnidade(mov.saldoAnterior) }}</td>
+                <td>{{ formatarQuantidadeSemUnidade(mov.saldoPosterior) }}</td>
+                <td>{{ formatarMoedaBR(mov.valorUnitario) || '—' }}</td>
+                <td>{{ formatarMoedaBR(mov.valorTotal) || '—' }}</td>
+                <td>{{ mov.origem || '—' }}</td>
+                <td>{{ mov.documentoReferencia || '—' }}</td>
+                <td>{{ mov.motivo || '—' }}</td>
+              </tr>
+
+              <tr *ngIf="movimentacoes.length === 0">
+                <td colspan="10" class="text-center text-muted py-4">
+                  Nenhuma movimentação encontrada.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Alertas -->
+<div
+  class="modal fade"
+  id="modalAlertasEstoque"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          Alertas Abertos de Estoque
+        </h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle text-nowrap">
+            <thead style="background:#eef6ff;color:#35689b;">
+              <tr>
+                <th>Data</th>
+                <th>Peça</th>
+                <th>Local</th>
+                <th>Nível</th>
+                <th>Qtd. Atual</th>
+                <th>Mínimo</th>
+                <th>Crítico</th>
+                <th>WhatsApp</th>
+                <th>Último Erro</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let alerta of alertasAbertos; trackBy: trackByAlerta">
+                <td>{{ formatarDataHora(alerta.criadoEm) }}</td>
+                <td>{{ alerta.nomePeca }}</td>
+                <td>{{ alerta.nomeLocalEstoque || '—' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="statusBadgeClass(alerta.nivelAlerta)">
+                    {{ formatarStatus(alerta.nivelAlerta) }}
+                  </span>
+                </td>
+                <td>{{ formatarQuantidadeSemUnidade(alerta.quantidadeAtual) }}</td>
+                <td>{{ formatarQuantidadeSemUnidade(alerta.estoqueMinimo) }}</td>
+                <td>{{ formatarQuantidadeSemUnidade(alerta.estoqueCritico) }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [ngClass]="alerta.whatsappEnviado ? 'bg-success' : 'bg-secondary'"
+                  >
+                    {{ alerta.whatsappEnviado ? 'Enviado' : 'Não enviado' }}
+                  </span>
+                </td>
+                <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;">
+                  {{ alerta.ultimoErro || '—' }}
+                </td>
+                <td class="text-center">
+                  <button
+                    class="btn btn-sm btn-outline-success me-1"
+                    title="Resolver alerta"
+                    (click)="resolverAlerta(alerta)"
+                  >
+                    <i class="bi bi-check2-circle"></i>
+                  </button>
+
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    title="Reenviar WhatsApp"
+                    (click)="reenviarWhatsapp(alerta)"
+                  >
+                    <i class="bi bi-whatsapp"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <tr *ngIf="alertasAbertos.length === 0">
+                <td colspan="10" class="text-center text-muted py-4">
+                  Nenhum alerta aberto.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Local -->
+<div
+  class="modal fade"
+  id="modalNovoLocalEstoque"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          Novo Local de Estoque
+        </h5>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-2">
+          <div class="col-md-12">
+            <label class="form-label">Nome *</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="novoLocal.nome"
+              placeholder="Ex.: Almoxarifado Principal"
+              style="color:#35689b;"
+            />
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Descrição</label>
+            <textarea
+              class="form-control form-control-sm"
+              rows="2"
+              [(ngModel)]="novoLocal.descricao"
+              style="color:#35689b;"
+            ></textarea>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Status</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="novoLocal.ativo"
+              style="color:#35689b;"
+            >
+              <option [ngValue]="true">Ativo</option>
+              <option [ngValue]="false">Inativo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarNovoLocal()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar Local
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

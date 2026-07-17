@@ -18,6 +18,7 @@ import { EsqueciSenhaComponent } from './pages/login/esqueci-senha/esqueci-senha
 import { Verificar2faComponent } from './pages/login/verificar-doisfa/verificar-doisfa.component';
 import { ExibeServicoComponent } from './pages/menu-administrador/exibe-servico/exibe-servico.component';
 import { ExibeFornecimentoServicosComponent } from './pages/menu-administrador/exibe-fornecimento-servicos/exibe-fornecimento-servicos.component';
+import { ExibeControleEstoquePecasComponent } from './pages/menu-administrador/exibe-controle-estoque-pecas/exibe-controle-estoque-pecas.component';
 
 
 export const routes: Routes = [
@@ -41,7 +42,9 @@ export const routes: Routes = [
       { path: 'cadastraFornecimentoPecas', component: CadastraFornecimentoPecasComponent }, // filho (NÃO repete o pai)
       { path: 'exibeFornecimentoPecas', component: ExibeFornecimentoPecaComponent }, // filho (NÃO repete o pai)
       { path: 'exibeServico', component: ExibeServicoComponent }, // filho (NÃO repete o pai)
-      { path: 'exibeFornecimentoServicos', component: ExibeFornecimentoServicosComponent } // filho (NÃO repete o pai)
+      { path: 'exibeFornecimentoServicos', component: ExibeFornecimentoServicosComponent }, // filho (NÃO repete o pai)
+      { path: 'exibeControleEstoquePecas', component: ExibeControleEstoquePecasComponent } // filho (NÃO repete o pai)
+
     ]
   },
 ];
