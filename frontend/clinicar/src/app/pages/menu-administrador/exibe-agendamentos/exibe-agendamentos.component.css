@@ -17,33 +17,29 @@
   opacity: .85;
 }
 
-.resumo-normal {
+.resumo-agendado {
+  border-left: 5px solid #0d6efd;
+}
+
+.resumo-confirmado {
   border-left: 5px solid #198754;
 }
 
-.resumo-atencao {
+.resumo-atendimento {
   border-left: 5px solid #ffc107;
 }
 
-.resumo-critico {
+.resumo-concluido {
+  border-left: 5px solid #0dcaf0;
+}
+
+.resumo-cancelado {
   border-left: 5px solid #dc3545;
-}
-
-.resumo-zerado {
-  border-left: 5px solid #212529;
-}
-
-.resumo-alerta {
-  border-left: 5px solid #fd7e14;
-  cursor: pointer;
-}
-
-.resumo-alerta:hover {
-  background: #f7fbff;
 }
 
 .table thead th {
   border-color: #d0e2f2 !important;
+  color: #35689b;
 }
 
 .table td,
@@ -54,10 +50,6 @@
 
 .table-hover tbody tr:hover {
   background-color: #f7fbff;
-}
-
-.table-active {
-  --bs-table-bg: #f1f7ff;
 }
 
 .table.text-nowrap th,
@@ -99,7 +91,7 @@
 }
 
 .selection-lista {
-  max-height: 420px;
+  max-height: 430px;
   overflow-y: auto;
   border: 1px solid #d0e2f2;
   border-radius: 8px;
@@ -127,80 +119,30 @@ textarea {
   resize: vertical;
 }
 
-.dropdown-menu {
-  border-color: #d0e2f2;
-  color: #35689b;
-}
-
-.dropdown-item {
-  color: #35689b;
-}
-
-.dropdown-item:hover {
-  background: #eef6ff;
-  color: #35689b;
-}
-
-/*
- * Ajuda na sobreposição de modais auxiliares.
- */
-#modalSelecionarPecaEstoque,
-#modalNovoLocalEstoque {
-  z-index: 1065;
-}
-
-.movimento-painel {
+.detail-box {
   border: 1px solid #d0e2f2;
   border-radius: 10px;
   padding: .75rem;
   background: #f8fbff;
   color: #35689b;
+  min-height: 100%;
 }
 
-.movimento-entrada {
-  border-left: 5px solid #198754;
+.detail-box small {
+  display: block;
+  font-weight: 700;
+  color: #35689b;
+  margin-bottom: .25rem;
 }
 
-.movimento-saida {
+.detail-cancelamento {
   border-left: 5px solid #dc3545;
+  background: #fff8f8;
 }
 
-.movimento-ajuste-entrada {
-  border-left: 5px solid #ffc107;
-}
-
-.movimento-ajuste-saida {
-  border-left: 5px solid #fd7e14;
-}
-
-.ajuste-switch-card {
-  border: 1px solid #d0e2f2;
-  border-radius: 10px;
-  padding: .75rem;
-  color: #35689b;
-  background: #ffffff;
-}
-
-.ajuste-switch-card.ajuste-entrada {
-  border-left: 5px solid #ffc107;
-  background: #fffdf3;
-}
-
-.ajuste-switch-card.ajuste-saida {
-  border-left: 5px solid #fd7e14;
-  background: #fff8f0;
-}
-
-.ajuste-switch-card .form-check-input {
-  cursor: pointer;
-}
-
-.ajuste-switch-card .form-check-input:focus {
-  box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
-  border-color: #8fb4da;
-}
-
-.ajuste-switch-card .form-check-label {
-  color: #35689b;
-  cursor: pointer;
+/*
+ * Mantém os modais auxiliares acima dos modais principais.
+ */
+#modalSelecaoAgendamento {
+  z-index: 1065;
 }

@@ -255,39 +255,14 @@
                       <i class="bi bi-box-arrow-up"></i>
                     </button>
 
-                    <div class="btn-group me-1">
-                      <button
-                        class="btn btn-sm btn-outline-warning dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        title="Ajuste"
-                      >
-                        <i class="bi bi-sliders"></i>
-
-                      </button>
-
-                      <ul class="dropdown-menu">
-                        <li>
-                          <button
-                            class="dropdown-item"
-                            type="button"
-                            (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')"
-                          >
-                            Ajuste de entrada
-                          </button>
-                        </li>
-
-                        <li>
-                          <button
-                            class="dropdown-item"
-                            type="button"
-                            (click)="abrirModalMovimentacao(item, 'AJUSTE_SAIDA')"
-                          >
-                            Ajuste de saída
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
+                    <button
+                      class="btn btn-sm btn-outline-warning me-1"
+                      title="Ajustar estoque"
+                      type="button"
+                      (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')"
+                    >
+                      <i class="bi bi-sliders"></i>
+                    </button>
 
                     <button
                       class="btn btn-sm btn-outline-info me-1"
@@ -761,6 +736,8 @@
 </div>
 
 <!-- Modal Movimentação -->
+
+<!-- Modal Movimentação -->
 <div
   class="modal fade"
   id="modalMovimentacaoEstoque"
@@ -779,80 +756,169 @@
       </div>
 
       <div class="modal-body">
-        <div class="alert alert-light border py-2" style="color:#35689b;">
-          {{ descricaoMovimentacao() }}
+
+        <div [ngClass]="classePainelMovimentacao()">
+          <div class="fw-semibold mb-1">
+            {{ descricaoMovimentacao() }}
+          </div>
+
+          <small>
+            {{ textoAjudaTipoMovimentacao() }}
+          </small>
+        </div>
+
+        <div
+          class="ajuste-switch-card mt-3 mb-3"
+          *ngIf="isMovimentacaoAjuste()"
+          [ngClass]="ajusteSaidaSelecionado ? 'ajuste-saida' : 'ajuste-entrada'"
+        >
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+              <div class="fw-semibold">
+                Tipo de ajuste
+              </div>
+
+              <small class="text-muted">
+                Escolha se a correção irá adicionar ou retirar saldo do estoque.
+              </small>
+            </div>
+
+            <div class="form-check form-switch m-0">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="switchTipoAjuste"
+                [(ngModel)]="ajusteSaidaSelecionado"
+                (change)="alternarTipoAjuste()"
+              />
+
+              <label class="form-check-label fw-semibold" for="switchTipoAjuste">
+                {{ ajusteSaidaSelecionado ? 'Ajuste de saída' : 'Ajuste de entrada' }}
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="row g-2">
-          <div class="col-md-4">
-            <label class="form-label">Quantidade *</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="movimento.quantidade"
-              placeholder="Ex.: 1"
-              style="color:#35689b;"
-            />
-          </div>
 
-          <div class="col-md-4" *ngIf="exibirCampoValorUnitario()">
-            <label class="form-label">Valor Unitário</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="movimento.valorUnitario"
-              (blur)="formatarValorUnitarioMovimento()"
-              placeholder="R$ 0,00"
-              style="color:#35689b;"
-            />
-          </div>
+  <div class="col-12 col-md-4">
+    <label class="form-label">
+      {{ rotuloQuantidadeMovimentacao() }}
+    </label>
 
-          <div class="col-md-4">
-            <label class="form-label">Origem</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="movimento.origem"
-              placeholder="MANUAL, COMPRA, OS..."
-              style="color:#35689b;"
-            />
-          </div>
+    <input
+      class="form-control form-control-sm"
+      [(ngModel)]="movimento.quantidade"
+      [placeholder]="placeholderQuantidadeMovimentacao()"
+      style="color:#35689b;"
+    />
+  </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Documento / Referência</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="movimento.documentoReferencia"
-              placeholder="NF, OS, ajuste interno..."
-              style="color:#35689b;"
-            />
-          </div>
+  <div class="col-12 col-md-4" *ngIf="exibirCampoValorUnitario()">
+    <label class="form-label">
+      Valor Unitário
+    </label>
 
-          <div class="col-md-6">
-            <label class="form-label">Motivo</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="movimento.motivo"
-              placeholder="Motivo da movimentação"
-              style="color:#35689b;"
-            />
-          </div>
+    <input
+      class="form-control form-control-sm"
+      [(ngModel)]="movimento.valorUnitario"
+      (blur)="formatarValorUnitarioMovimento()"
+      placeholder="R$ 0,00"
+      style="color:#35689b;"
+    />
 
-          <div class="col-md-12">
-            <label class="form-label">Observações</label>
-            <textarea
-              class="form-control form-control-sm"
-              rows="2"
-              [(ngModel)]="movimento.observacoes"
-              style="color:#35689b;"
-            ></textarea>
-          </div>
-        </div>
+    <small class="text-muted">
+      Utilizado para registrar custo da entrada.
+    </small>
+  </div>
+
+  <div
+    class="col-12"
+    [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-8'"
+  >
+    <label class="form-label">
+      Origem
+    </label>
+
+    <input
+      class="form-control form-control-sm"
+      [(ngModel)]="movimento.origem"
+      placeholder="MANUAL, COMPRA, OS, AJUSTE..."
+      style="color:#35689b;"
+    />
+  </div>
+
+  <div
+    class="col-12"
+    [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-12'"
+  >
+    <label class="form-label">
+      Documento / Referência
+    </label>
+
+    <input
+      class="form-control form-control-sm"
+      [(ngModel)]="movimento.documentoReferencia"
+      placeholder="NF, OS, ajuste interno..."
+      style="color:#35689b;"
+    />
+  </div>
+
+  <div
+    class="col-12"
+    [ngClass]="exibirCampoValorUnitario() ? 'col-md-8' : 'col-md-12'"
+  >
+    <label class="form-label">
+      Motivo
+    </label>
+
+    <input
+      class="form-control form-control-sm"
+      [(ngModel)]="movimento.motivo"
+      placeholder="Motivo da movimentação"
+      style="color:#35689b;"
+    />
+  </div>
+
+  <div class="col-md-12">
+    <label class="form-label">
+      Observações
+    </label>
+
+    <textarea
+      class="form-control form-control-sm"
+      rows="2"
+      [(ngModel)]="movimento.observacoes"
+      placeholder="Detalhe a justificativa da movimentação, se necessário."
+      style="color:#35689b;"
+    ></textarea>
+  </div>
+
+  <div class="col-md-12" *ngIf="isMovimentacaoAjuste()">
+    <div class="alert alert-warning py-2 mb-0">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      Ajustes devem ser usados apenas para correções administrativas de saldo.
+      Para compras ou consumo normal, utilize os botões de entrada ou saída.
+    </div>
+  </div>
+
+</div>
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          data-bs-dismiss="modal"
+        >
           Cancelar
         </button>
 
-        <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarMovimentacao()">
+        <button
+          type="button"
+          class="btn btn-outline-success btn-sm"
+          (click)="salvarMovimentacao()"
+        >
           <i class="bi bi-check-circle me-1"></i>
           Confirmar Movimentação
         </button>

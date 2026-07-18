@@ -51,6 +51,7 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   editId: number | null = null;
 
   tipoMovimentacaoSelecionado: TipoMovimentacaoTela = 'ENTRADA';
+  ajusteSaidaSelecionado = false;
   modoSelecaoPeca: ModoSelecaoPeca = 'cadastro';
 
   loading = false;
@@ -541,75 +542,176 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   // ======================================================
 
   abrirModalMovimentacao(item: EstoquePeca, tipo: TipoMovimentacaoTela): void {
-    this.estoqueSelecionado = item;
-    this.tipoMovimentacaoSelecionado = tipo;
+  this.estoqueSelecionado = item;
+  this.tipoMovimentacaoSelecionado = tipo;
 
-    this.movimento = {
-      tipoMovimento: tipo,
-      quantidade: '',
-      valorUnitario: '',
-      origem: 'MANUAL',
-      documentoReferencia: '',
-      motivo: '',
-      observacoes: '',
-      idUsuario: null
-    };
+  /*
+   * Quando o usuário clicar no botão Ajuste da tabela,
+   * o modal sempre abrirá inicialmente como AJUSTE_ENTRADA.
+   */
+  this.ajusteSaidaSelecionado = tipo === 'AJUSTE_SAIDA';
 
-    const el = document.getElementById('modalMovimentacaoEstoque');
+  this.movimento = {
+    tipoMovimento: tipo,
+    quantidade: '',
+    valorUnitario: '',
+    origem: this.isMovimentacaoAjuste() ? 'AJUSTE_MANUAL' : 'MANUAL',
+    documentoReferencia: '',
+    motivo: this.motivoPadraoMovimentacao(),
+    observacoes: '',
+    idUsuario: null
+  };
 
-    if (!el) {
-      console.error('Modal modalMovimentacaoEstoque não encontrado.');
-      return;
-    }
+  const el = document.getElementById('modalMovimentacaoEstoque');
 
-    this.modalMovimentacao = bootstrap.Modal.getOrCreateInstance(el);
-    this.modalMovimentacao.show();
+  if (!el) {
+    console.error('Modal modalMovimentacaoEstoque não encontrado.');
+    return;
   }
+
+  this.modalMovimentacao = bootstrap.Modal.getOrCreateInstance(el);
+  this.modalMovimentacao.show();
+}
+
+alternarTipoAjuste(): void {
+  if (!this.isMovimentacaoAjuste()) {
+    return;
+  }
+
+  this.tipoMovimentacaoSelecionado = this.ajusteSaidaSelecionado
+    ? 'AJUSTE_SAIDA'
+    : 'AJUSTE_ENTRADA';
+
+  this.movimento.tipoMovimento = this.tipoMovimentacaoSelecionado;
+  this.movimento.motivo = this.motivoPadraoMovimentacao();
+
+  /*
+   * Ajuste de saída não usa valor unitário.
+   * Limpamos o campo para evitar envio desnecessário.
+   */
+  if (this.tipoMovimentacaoSelecionado === 'AJUSTE_SAIDA') {
+    this.movimento.valorUnitario = '';
+  }
+}
+
+isMovimentacaoAjuste(): boolean {
+  return (
+    this.tipoMovimentacaoSelecionado === 'AJUSTE_ENTRADA' ||
+    this.tipoMovimentacaoSelecionado === 'AJUSTE_SAIDA'
+  );
+}
+
+private isMovimentacaoSaida(): boolean {
+  return (
+    this.tipoMovimentacaoSelecionado === 'SAIDA' ||
+    this.tipoMovimentacaoSelecionado === 'AJUSTE_SAIDA'
+  );
+}
+
+textoAjudaTipoMovimentacao(): string {
+  if (this.tipoMovimentacaoSelecionado === 'AJUSTE_ENTRADA') {
+    return 'Use esta opção quando o saldo físico encontrado for maior do que o saldo registrado no sistema.';
+  }
+
+  if (this.tipoMovimentacaoSelecionado === 'AJUSTE_SAIDA') {
+    return 'Use esta opção quando o saldo físico encontrado for menor do que o saldo registrado no sistema.';
+  }
+
+  if (this.tipoMovimentacaoSelecionado === 'ENTRADA') {
+    return 'Use esta opção para registrar entrada real de peças no estoque, como compra ou reposição.';
+  }
+
+  return 'Use esta opção para registrar consumo, retirada ou baixa real de peças do estoque.';
+}
+
+rotuloQuantidadeMovimentacao(): string {
+  if (this.isMovimentacaoSaida()) {
+    return 'Quantidade a retirar *';
+  }
+
+  return 'Quantidade a adicionar *';
+}
+
+placeholderQuantidadeMovimentacao(): string {
+  if (this.isMovimentacaoSaida()) {
+    return 'Ex.: 1 peça retirada';
+  }
+
+  return 'Ex.: 1 peça adicionada';
+}
+
+classePainelMovimentacao(): string {
+  if (this.tipoMovimentacaoSelecionado === 'ENTRADA') {
+    return 'movimento-painel movimento-entrada';
+  }
+
+  if (this.tipoMovimentacaoSelecionado === 'SAIDA') {
+    return 'movimento-painel movimento-saida';
+  }
+
+  if (this.tipoMovimentacaoSelecionado === 'AJUSTE_ENTRADA') {
+    return 'movimento-painel movimento-ajuste-entrada';
+  }
+
+  return 'movimento-painel movimento-ajuste-saida';
+}
+
+motivoPadraoMovimentacao(): string {
+  if (this.tipoMovimentacaoSelecionado === 'AJUSTE_ENTRADA') {
+    return 'Correção administrativa de entrada';
+  }
+
+  if (this.tipoMovimentacaoSelecionado === 'AJUSTE_SAIDA') {
+    return 'Correção administrativa de saída';
+  }
+
+  return '';
+}
 
   salvarMovimentacao(): void {
-    if (!this.estoqueSelecionado?.id) {
-      return;
-    }
-
-    const erroValidacao = this.validarMovimentacao();
-
-    if (erroValidacao) {
-      alert(erroValidacao);
-      return;
-    }
-
-    const payload = this.montarPayloadMovimentacao();
-
-    const id = this.estoqueSelecionado.id;
-
-    let request$;
-
-    if (this.tipoMovimentacaoSelecionado === 'ENTRADA') {
-      request$ = this.service.registrarEntrada(id, payload);
-    } else if (this.tipoMovimentacaoSelecionado === 'SAIDA') {
-      request$ = this.service.registrarSaida(id, payload);
-    } else {
-      request$ = this.service.registrarAjuste(id, payload);
-    }
-
-    request$.subscribe({
-      next: () => {
-        this.modalMovimentacao?.hide();
-        alert('Movimentação registrada com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        console.error('Erro ao registrar movimentação:', erro);
-
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao registrar movimentação.'
-          )
-        );
-      }
-    });
+  if (!this.estoqueSelecionado?.id) {
+    return;
   }
+
+  const erroValidacao = this.validarMovimentacao();
+
+  if (erroValidacao) {
+    alert(erroValidacao);
+    return;
+  }
+
+  const payload = this.montarPayloadMovimentacao();
+
+  const id = this.estoqueSelecionado.id;
+
+  let request$;
+
+  if (this.tipoMovimentacaoSelecionado === 'ENTRADA') {
+    request$ = this.service.registrarEntrada(id, payload);
+  } else if (this.tipoMovimentacaoSelecionado === 'SAIDA') {
+    request$ = this.service.registrarSaida(id, payload);
+  } else {
+    request$ = this.service.registrarAjuste(id, payload);
+  }
+
+  request$.subscribe({
+    next: () => {
+      this.modalMovimentacao?.hide();
+      alert('Movimentação registrada com sucesso.');
+      this.recarregar();
+    },
+    error: (erro: any) => {
+      console.error('Erro ao registrar movimentação:', erro);
+
+      alert(
+        this.extrairMensagemErro(
+          erro,
+          'Erro ao registrar movimentação.'
+        )
+      );
+    }
+  });
+}
 
   private validarMovimentacao(): string | null {
     if (!String(this.movimento.quantidade ?? '').trim()) {
@@ -637,17 +739,19 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   }
 
   private montarPayloadMovimentacao(): MovimentacaoEstoquePecaRequest {
-    return {
-      tipoMovimento: this.tipoMovimentacaoSelecionado,
-      quantidade: this.converterQuantidadeParaBackend(this.movimento.quantidade),
-      valorUnitario: this.converterMoedaOpcionalParaNumero(this.movimento.valorUnitario),
-      origem: this.limparOpcional(this.movimento.origem),
-      documentoReferencia: this.limparOpcional(this.movimento.documentoReferencia),
-      motivo: this.limparOpcional(this.movimento.motivo),
-      observacoes: this.limparOpcional(this.movimento.observacoes),
-      idUsuario: this.movimento.idUsuario ?? null
-    };
-  }
+  return {
+    tipoMovimento: this.tipoMovimentacaoSelecionado,
+    quantidade: this.converterQuantidadeParaBackend(this.movimento.quantidade),
+    valorUnitario: this.exibirCampoValorUnitario()
+      ? this.converterMoedaOpcionalParaNumero(this.movimento.valorUnitario)
+      : '',
+    origem: this.limparOpcional(this.movimento.origem),
+    documentoReferencia: this.limparOpcional(this.movimento.documentoReferencia),
+    motivo: this.limparOpcional(this.movimento.motivo),
+    observacoes: this.limparOpcional(this.movimento.observacoes),
+    idUsuario: this.movimento.idUsuario ?? null
+  };
+}
 
   abrirModalMovimentacoes(item: EstoquePeca): void {
     if (!item.id) {
