@@ -62,7 +62,7 @@
         <div class="col-md-2">
           <div class="card resumo-card resumo-cancelado">
             <div class="card-body py-2">
-              <div class="small">Cancelados/NC</div>
+              <div class="small">Cancelados | Não Compareceram</div>
               <div class="fs-5 fw-bold">{{ resumo.cancelado + resumo.naoCompareceu }}</div>
             </div>
           </div>
@@ -446,7 +446,7 @@
 
     <h6 class="modal-section-title">
       <i class="bi bi-person me-1"></i>
-      Cliente, veículo e serviço
+      Cliente | Veículo | Serviço
     </h6>
 
     <div class="col-md-6">
@@ -543,7 +543,7 @@
 
     <h6 class="modal-section-title mt-3">
       <i class="bi bi-calendar-event me-1"></i>
-      Período e classificação
+      Período | Classificação
     </h6>
 
     <div class="col-md-3">
@@ -565,7 +565,6 @@
         [(ngModel)]="model.dataHoraFim"
         style="color:#35689b;"
       />
-      <small class="text-muted">Se vazio, o backend calcula pela duração do serviço.</small>
     </div>
 
     <div class="col-md-3">
@@ -646,7 +645,7 @@
 
     <h6 class="modal-section-title mt-3">
       <i class="bi bi-cash-coin me-1"></i>
-      Valores e informações técnicas
+      Valores | Informações técnicas
     </h6>
 
     <div class="col-md-3">
@@ -686,7 +685,7 @@
       <label class="form-label">Queixa do cliente</label>
       <textarea
         class="form-control form-control-sm"
-        rows="2"
+        rows="1"
         [(ngModel)]="model.queixaCliente"
         placeholder="Descreva o relato principal do cliente."
         style="color:#35689b;"
@@ -697,7 +696,7 @@
       <label class="form-label">Diagnóstico prévio</label>
       <textarea
         class="form-control form-control-sm"
-        rows="2"
+        rows="1"
         [(ngModel)]="model.diagnosticoPrevio"
         placeholder="Informe uma avaliação inicial, se houver."
         style="color:#35689b;"
@@ -708,7 +707,7 @@
       <label class="form-label">Observações</label>
       <textarea
         class="form-control form-control-sm"
-        rows="2"
+        rows="1"
         [(ngModel)]="model.observacoes"
         placeholder="Observações adicionais sobre o agendamento."
         style="color:#35689b;"

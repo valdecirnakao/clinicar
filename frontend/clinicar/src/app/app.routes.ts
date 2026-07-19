@@ -20,6 +20,7 @@ import { ExibeServicoComponent } from './pages/menu-administrador/exibe-servico/
 import { ExibeFornecimentoServicosComponent } from './pages/menu-administrador/exibe-fornecimento-servicos/exibe-fornecimento-servicos.component';
 import { ExibeControleEstoquePecasComponent } from './pages/menu-administrador/exibe-controle-estoque-pecas/exibe-controle-estoque-pecas.component';
 import { ExibeAgendamentosComponent } from './pages/menu-administrador/exibe-agendamentos/exibe-agendamentos.component';
+import { ExibeAtendimentosComponent } from './pages/menu-administrador/exibe-atendimentos/exibe-atendimentos.component';
 
 
 export const routes: Routes = [
@@ -45,6 +46,7 @@ export const routes: Routes = [
       { path: 'exibeServico', component: ExibeServicoComponent }, // filho (NÃO repete o pai)
       { path: 'exibeFornecimentoServicos', component: ExibeFornecimentoServicosComponent }, // filho (NÃO repete o pai)
       { path: 'exibeControleEstoquePecas', component: ExibeControleEstoquePecasComponent }, // filho (NÃO repete o pai)
+      { path: 'exibeAtendimentos', component: ExibeAtendimentosComponent }, // filho (NÃO repete o pai)
       { path: 'exibeAgendamentos', component: ExibeAgendamentosComponent } // filho (NÃO repete o pai)
     ]
   },

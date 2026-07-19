@@ -1,0 +1,1094 @@
+<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 mt-sm-0">
+
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
+            <div class="card-body" style="color:#35689b;">
+              <i class="bi bi-tools me-1"></i>
+              Gerenciamento de Atendimentos
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-2">
+          <div class="card resumo-card">
+            <div class="card-body py-2">
+              <div class="small">Total</div>
+              <div class="fs-5 fw-bold">{{ resumo.total }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-aberto">
+            <div class="card-body py-2">
+              <div class="small">Abertos</div>
+              <div class="fs-5 fw-bold">{{ resumo.aberto }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-diagnostico">
+            <div class="card-body py-2">
+              <div class="small">Diagnóstico</div>
+              <div class="fs-5 fw-bold">{{ resumo.diagnostico }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-execucao">
+            <div class="card-body py-2">
+              <div class="small">Execução</div>
+              <div class="fs-5 fw-bold">{{ resumo.execucao }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-terceiro">
+            <div class="card-body py-2">
+              <div class="small">Terceiros</div>
+              <div class="fs-5 fw-bold">{{ resumo.terceiro }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="card resumo-card resumo-concluido">
+            <div class="card-body py-2">
+              <div class="small">Concl./Entreg.</div>
+              <div class="fs-5 fw-bold">{{ resumo.concluido + resumo.entregue }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card clinicar-card">
+        <div class="card-body p-2">
+
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
+            <div class="input-group" style="max-width:62vw;color:#35689b;">
+              <label
+                class="input-group-text"
+                for="filtro-atendimento"
+                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
+              >
+                Buscar
+              </label>
+
+              <input
+                id="filtro-atendimento"
+                type="search"
+                class="form-control"
+                placeholder="Código, agendamento, cliente, CPF, placa, serviço, responsável ou fornecedor"
+                [(ngModel)]="filtroTexto"
+                (input)="filtrar(filtroTexto)"
+                style="color:#35689b;"
+              />
+
+              <select
+                class="form-select"
+                style="max-width:210px;color:#35689b;"
+                [(ngModel)]="filtroStatus"
+                (change)="aplicarFiltrosLocais()"
+              >
+                <option *ngFor="let s of statusFiltro; trackBy: trackByString" [ngValue]="s">
+                  {{ s ? formatarStatus(s) : 'Todos os status' }}
+                </option>
+              </select>
+
+              <select
+                class="form-select"
+                style="max-width:160px;color:#35689b;"
+                [(ngModel)]="filtroTipoExecucao"
+                (change)="aplicarFiltrosLocais()"
+              >
+                <option *ngFor="let t of tipoExecucaoFiltro; trackBy: trackByString" [ngValue]="t">
+                  {{ t ? formatarTipoExecucao(t) : 'Todos os tipos' }}
+                </option>
+              </select>
+
+              <div
+                class="text-muted small input-group-text"
+                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
+              >
+                Total: {{ atendimentos.length }}
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                class="btn btn-outline-success btn-sm"
+                type="button"
+                (click)="abrirModalCadastro()"
+              >
+                <i class="bi bi-plus-circle me-1"></i>
+                Novo Atendimento
+              </button>
+
+              <button
+                class="btn btn-outline-secondary btn-sm"
+                type="button"
+                (click)="voltar()"
+              >
+                <i class="bi bi-arrow-left me-1"></i>
+                Voltar
+              </button>
+
+              <button
+                class="btn btn-outline-primary btn-sm"
+                type="button"
+                (click)="recarregar()"
+              >
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Atualizar
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-md-3">
+              <label class="form-label small mb-1">Início do período</label>
+              <input
+                type="datetime-local"
+                class="form-control form-control-sm"
+                [(ngModel)]="filtroPeriodoInicio"
+                style="color:#35689b;"
+              />
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label small mb-1">Fim do período</label>
+              <input
+                type="datetime-local"
+                class="form-control form-control-sm"
+                [(ngModel)]="filtroPeriodoFim"
+                style="color:#35689b;"
+              />
+            </div>
+
+            <div class="col-md-6 d-flex align-items-end gap-2">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                (click)="filtrarPorPeriodo()"
+              >
+                <i class="bi bi-calendar-range me-1"></i>
+                Filtrar Período
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                (click)="limparPeriodo()"
+              >
+                Limpar Período
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="loading" class="alert alert-info py-2">
+            Carregando atendimentos…
+          </div>
+
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">
+            {{ errorMsg }}
+          </div>
+
+          <div class="table-responsive">
+            <div class="small text-muted mb-1 right-align" style="color:#35689b;">
+              <i class="bi bi-eye text-secondary"></i> Detalhes |
+              <i class="bi bi-play-circle text-warning"></i> Iniciar |
+              <i class="bi bi-check2-circle text-success"></i> Aprovar |
+              <i class="bi bi-truck text-dark"></i> Terceiro |
+              <i class="bi bi-flag text-info"></i> Concluir |
+              <i class="bi bi-box-arrow-right text-primary"></i> Entregar |
+              <i class="bi bi-x-circle text-danger"></i> Cancelar |
+              <i class="bi bi-pencil-square text-primary"></i> Editar
+            </div>
+
+            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
+              <thead style="background:#eef6ff;color:#35689b;">
+                <tr>
+                  <th>Código</th>
+                  <th>Cliente</th>
+                  <th>Veículo</th>
+                  <th>Serviço</th>
+                  <th>Execução</th>
+                  <th>Status</th>
+                  <th>Responsável</th>
+                  <th>Fornecedor</th>
+                  <th>Total</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr *ngFor="let item of atendimentos; trackBy: trackByAtendimento">
+                  <td>
+                    <div class="fw-semibold">{{ item.codigoAtendimento }}</div>
+                    <small class="text-muted">Ag.: {{ item.codigoAgendamento || '—' }}</small>
+                  </td>
+
+                  <td>
+                    <div class="fw-semibold">{{ item.nomeCliente }}</div>
+                    <small class="text-muted">{{ formatarCPF(item.cpfCliente) }}</small>
+                  </td>
+
+                  <td>
+                    <div class="fw-semibold">{{ formatarPlaca(item.placaVeiculo) }}</div>
+                    <small>{{ item.fabricanteVeiculo }} {{ item.modeloVeiculo }}</small>
+                  </td>
+
+                  <td>
+                    <div>{{ item.nomeServico }}</div>
+                    <small class="text-muted">{{ item.categoriaServico || '—' }}</small>
+                  </td>
+
+                  <td>
+                    <span class="badge" [ngClass]="tipoExecucaoBadgeClass(item.tipoExecucao)">
+                      {{ formatarTipoExecucao(item.tipoExecucao) }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span class="badge" [ngClass]="statusBadgeClass(item.statusAtendimento)">
+                      {{ formatarStatus(item.statusAtendimento) }}
+                    </span>
+                  </td>
+
+                  <td>{{ item.nomeResponsavel || '—' }}</td>
+
+                  <td>{{ item.razaoSocialFornecedor || '—' }}</td>
+
+                  <td>
+                    <div class="fw-semibold">{{ formatarMoedaBR(item.valorTotal) || 'R$ 0,00' }}</div>
+                    <small *ngIf="item.aprovado" class="text-success">Aprovado</small>
+                  </td>
+
+                  <td class="text-center">
+                    <div class="d-flex justify-content-center align-items-center gap-1">
+
+                      <button
+                        class="btn btn-sm btn-outline-secondary"
+                        title="Detalhes"
+                        type="button"
+                        (click)="abrirModalDetalhes(item)"
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+
+                      <button
+                        class="btn btn-sm btn-outline-warning"
+                        title="Iniciar"
+                        type="button"
+                        [disabled]="!podeIniciar(item)"
+                        (click)="iniciar(item)"
+                      >
+                        <i class="bi bi-play-circle"></i>
+                      </button>
+
+                      <button
+                        class="btn btn-sm btn-outline-success"
+                        title="Aprovar"
+                        type="button"
+                        [disabled]="!podeAprovar(item)"
+                        (click)="aprovar(item)"
+                      >
+                        <i class="bi bi-check2-circle"></i>
+                      </button>
+
+                      <button
+                        class="btn btn-sm btn-outline-dark"
+                        title="Aguardar terceiro"
+                        type="button"
+                        [disabled]="!podeAguardarTerceiro(item)"
+                        (click)="aguardarTerceiro(item)"
+                      >
+                        <i class="bi bi-truck"></i>
+                      </button>
+
+                      <button
+                        class="btn btn-sm btn-outline-info"
+                        title="Concluir"
+                        type="button"
+                        [disabled]="!podeConcluir(item)"
+                        (click)="concluir(item)"
+                      >
+                        <i class="bi bi-flag"></i>
+                      </button>
+
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        title="Entregar veículo"
+                        type="button"
+                        [disabled]="!podeEntregar(item)"
+                        (click)="entregar(item)"
+                      >
+                        <i class="bi bi-box-arrow-right"></i>
+                      </button>
+
+                      <button
+                        class="btn btn-sm btn-outline-danger"
+                        title="Cancelar"
+                        type="button"
+                        [disabled]="!podeCancelar(item)"
+                        (click)="abrirModalCancelamento(item)"
+                      >
+                        <i class="bi bi-x-circle"></i>
+                      </button>
+
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        title="Editar"
+                        type="button"
+                        [disabled]="!podeEditar(item)"
+                        (click)="abrirModalEdicao(item)"
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="!atendimentos || atendimentos.length === 0">
+                  <td colspan="10" class="text-center text-muted py-4">
+                    Nenhum atendimento encontrado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cadastro -->
+<div
+  class="modal fade"
+  id="modalCadastroAtendimento"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">Novo Atendimento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <ng-container
+          *ngTemplateOutlet="formAtendimento; context: { model: novoAtendimento, modo: 'cadastro' }"
+        ></ng-container>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarNovoAtendimento()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar Atendimento
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição -->
+<div
+  class="modal fade"
+  id="modalEdicaoAtendimento"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">Editar Atendimento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <ng-container
+          *ngTemplateOutlet="formAtendimento; context: { model: edit, modo: 'edicao' }"
+        ></ng-container>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-outline-primary btn-sm" (click)="salvarEdicaoAtendimento()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar Alterações
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Template Formulário -->
+<ng-template #formAtendimento let-model="model" let-modo="modo">
+  <div class="row g-2">
+
+    <h6 class="modal-section-title">
+      <i class="bi bi-calendar-check me-1"></i>
+      Origem do atendimento
+    </h6>
+
+    <div class="col-md-8">
+      <label class="form-label">Agendamento de origem *</label>
+
+      <div class="position-relative">
+        <input
+          class="form-control form-control-sm pe-5"
+          [value]="textoAgendamento(model)"
+          readonly
+          placeholder="Selecione o agendamento"
+          style="color:#35689b;"
+        />
+
+        <button
+          *ngIf="modo === 'cadastro'"
+          type="button"
+          class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+          (click)="abrirModalSelecao('agendamento', modo)"
+          style="color:#35689b;"
+        >
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+
+      <small class="text-muted" *ngIf="modo === 'edicao'">
+        O agendamento de origem não é alterado após a criação do atendimento.
+      </small>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Tipo de execução *</label>
+      <select
+        class="form-select form-select-sm"
+        [(ngModel)]="model.tipoExecucao"
+        (change)="aoAlterarTipoExecucao(model)"
+        style="color:#35689b;"
+      >
+        <option *ngFor="let t of tiposExecucao; trackBy: trackByString" [ngValue]="t">
+          {{ formatarTipoExecucao(t) }}
+        </option>
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Cliente</label>
+      <input
+        class="form-control form-control-sm"
+        [value]="model.nomeCliente || ''"
+        readonly
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Veículo</label>
+      <input
+        class="form-control form-control-sm"
+        [value]="formatarPlaca(model.placaVeiculo) + ' - ' + (model.fabricanteVeiculo || '') + ' ' + (model.modeloVeiculo || '')"
+        readonly
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Serviço</label>
+      <input
+        class="form-control form-control-sm"
+        [value]="model.nomeServico || ''"
+        readonly
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Status do atendimento</label>
+      <select
+        class="form-select form-select-sm"
+        [(ngModel)]="model.statusAtendimento"
+        style="color:#35689b;"
+      >
+        <option *ngFor="let s of statusFormulario; trackBy: trackByString" [ngValue]="s">
+          {{ formatarStatus(s) }}
+        </option>
+      </select>
+    </div>
+
+    <h6 class="modal-section-title mt-3">
+      <i class="bi bi-person-gear me-1"></i>
+      Responsáveis e fornecedor
+    </h6>
+
+    <div class="col-md-6">
+      <label class="form-label">Responsável interno</label>
+
+      <div class="position-relative">
+        <input
+          class="form-control form-control-sm pe-5"
+          [value]="textoResponsavel(model)"
+          readonly
+          placeholder="Selecione colaborador ou administrador"
+          style="color:#35689b;"
+        />
+
+        <button
+          type="button"
+          class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+          (click)="abrirModalSelecao('responsavel', modo)"
+          style="color:#35689b;"
+        >
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">
+        Fornecedor
+        <span *ngIf="model.tipoExecucao === 'TERCEIRO' || model.tipoExecucao === 'MISTO'">*</span>
+      </label>
+
+      <div class="position-relative">
+        <input
+          class="form-control form-control-sm pe-5"
+          [value]="textoFornecedor(model)"
+          readonly
+          placeholder="Selecione o fornecedor, quando houver"
+          style="color:#35689b;"
+        />
+
+        <button
+          type="button"
+          class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+          (click)="abrirModalSelecao('fornecedor', modo)"
+          style="color:#35689b;"
+        >
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-link btn-sm p-0 mt-1"
+        *ngIf="model.idFornecedor"
+        (click)="limparFornecedor(model)"
+      >
+        Remover fornecedor
+      </button>
+    </div>
+
+    <h6 class="modal-section-title mt-3">
+      <i class="bi bi-clock-history me-1"></i>
+      Datas e quilometragem
+    </h6>
+
+    <div class="col-md-3">
+      <label class="form-label">Data de entrada</label>
+      <input
+        type="datetime-local"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.dataEntrada"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Início real</label>
+      <input
+        type="datetime-local"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.inicioReal"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Fim real</label>
+      <input
+        type="datetime-local"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.fimReal"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Prazo estimado entrega</label>
+      <input
+        type="datetime-local"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.prazoEstimadoEntrega"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Data de entrega</label>
+      <input
+        type="datetime-local"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.dataEntrega"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Km entrada</label>
+      <input
+        type="number"
+        min="0"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.quilometragemEntrada"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Km saída</label>
+      <input
+        type="number"
+        min="0"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.quilometragemSaida"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Garantia dias</label>
+      <input
+        type="number"
+        min="0"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.garantiaDias"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <h6 class="modal-section-title mt-3">
+      <i class="bi bi-card-text me-1"></i>
+      Diagnóstico e execução
+    </h6>
+
+    <div class="col-md-12">
+      <label class="form-label">Relato do cliente</label>
+      <textarea
+        class="form-control form-control-sm"
+        rows="2"
+        [(ngModel)]="model.relatoCliente"
+        placeholder="Relato original do cliente."
+        style="color:#35689b;"
+      ></textarea>
+    </div>
+
+    <div class="col-md-12">
+      <label class="form-label">Diagnóstico técnico</label>
+      <textarea
+        class="form-control form-control-sm"
+        rows="2"
+        [(ngModel)]="model.diagnosticoTecnico"
+        placeholder="Informe o diagnóstico técnico do veículo."
+        style="color:#35689b;"
+      ></textarea>
+    </div>
+
+    <div class="col-md-12">
+      <label class="form-label">Serviço executado</label>
+      <textarea
+        class="form-control form-control-sm"
+        rows="2"
+        [(ngModel)]="model.servicoExecutado"
+        placeholder="Descreva o serviço efetivamente executado."
+        style="color:#35689b;"
+      ></textarea>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Observações internas</label>
+      <textarea
+        class="form-control form-control-sm"
+        rows="2"
+        [(ngModel)]="model.observacoesInternas"
+        style="color:#35689b;"
+      ></textarea>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Recomendações ao cliente</label>
+      <textarea
+        class="form-control form-control-sm"
+        rows="2"
+        [(ngModel)]="model.recomendacoesCliente"
+        style="color:#35689b;"
+      ></textarea>
+    </div>
+
+    <h6 class="modal-section-title mt-3">
+      <i class="bi bi-cash-coin me-1"></i>
+      Valores e retorno
+    </h6>
+
+    <div class="col-md-3">
+      <label class="form-label">Mão de obra</label>
+      <input
+        class="form-control form-control-sm"
+        [(ngModel)]="model.valorMaoObra"
+        (blur)="formatarValores(model)"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Peças</label>
+      <input
+        class="form-control form-control-sm"
+        [(ngModel)]="model.valorPecas"
+        (blur)="formatarValores(model)"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Terceiros</label>
+      <input
+        class="form-control form-control-sm"
+        [(ngModel)]="model.valorTerceiros"
+        (blur)="formatarValores(model)"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Desconto</label>
+      <input
+        class="form-control form-control-sm"
+        [(ngModel)]="model.desconto"
+        (blur)="formatarValores(model)"
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Total</label>
+      <input
+        class="form-control form-control-sm fw-semibold"
+        [value]="model.valorTotal || 'R$ 0,00'"
+        readonly
+        style="color:#35689b;"
+      />
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Aprovado?</label>
+      <select
+        class="form-select form-select-sm"
+        [(ngModel)]="model.aprovado"
+        style="color:#35689b;"
+      >
+        <option [ngValue]="true">Sim</option>
+        <option [ngValue]="false">Não</option>
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Necessita retorno?</label>
+      <select
+        class="form-select form-select-sm"
+        [(ngModel)]="model.necessitaRetorno"
+        style="color:#35689b;"
+      >
+        <option [ngValue]="true">Sim</option>
+        <option [ngValue]="false">Não</option>
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Data retorno sugerida</label>
+      <input
+        type="datetime-local"
+        class="form-control form-control-sm"
+        [(ngModel)]="model.dataRetornoSugerida"
+        [disabled]="!model.necessitaRetorno"
+        style="color:#35689b;"
+      />
+    </div>
+
+  </div>
+</ng-template>
+
+<!-- Modal Seleção -->
+<div
+  class="modal fade"
+  id="modalSelecaoAtendimento"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">{{ tituloSelecao() }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input
+          type="search"
+          class="form-control mb-3"
+          [placeholder]="placeholderSelecao()"
+          [(ngModel)]="filtroSelecao"
+          (input)="aplicarFiltroSelecao()"
+          style="color:#35689b;"
+        />
+
+        <div class="selection-lista">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action"
+            *ngFor="let item of itensSelecaoFiltrados; trackBy: trackBySelecao"
+            (click)="selecionarItem(item)"
+          >
+            <div class="fw-semibold" style="color:#35689b;">
+              {{ textoItemSelecaoPrincipal(item) }}
+            </div>
+
+            <small class="text-muted">
+              {{ textoItemSelecaoSecundario(item) }}
+            </small>
+          </button>
+
+          <div *ngIf="itensSelecaoFiltrados.length === 0" class="text-center text-muted py-3">
+            Nenhum registro encontrado.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cancelamento -->
+<div
+  class="modal fade"
+  id="modalCancelamentoAtendimento"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">Cancelar Atendimento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-warning py-2">
+          Confirme o cancelamento do atendimento
+          <strong>{{ atendimentoSelecionado?.codigoAtendimento }}</strong>.
+        </div>
+
+        <label class="form-label">Motivo do cancelamento</label>
+        <textarea
+          class="form-control form-control-sm"
+          rows="3"
+          [(ngModel)]="motivoCancelamento"
+          placeholder="Informe o motivo do cancelamento."
+          style="color:#35689b;"
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          Voltar
+        </button>
+
+        <button type="button" class="btn btn-outline-danger btn-sm" (click)="cancelarAtendimento()">
+          <i class="bi bi-x-circle me-1"></i>
+          Confirmar Cancelamento
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div
+  class="modal fade"
+  id="modalDetalhesAtendimento"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" style="color:#35689b;">
+
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">Detalhes do Atendimento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body" *ngIf="atendimentoSelecionado">
+        <div class="row g-2">
+
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Código</small>
+              <div class="fw-semibold">{{ atendimentoSelecionado.codigoAtendimento }}</div>
+              <div>Agendamento: {{ atendimentoSelecionado.codigoAgendamento || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Status</small>
+              <span class="badge" [ngClass]="statusBadgeClass(atendimentoSelecionado.statusAtendimento)">
+                {{ formatarStatus(atendimentoSelecionado.statusAtendimento) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Execução</small>
+              <span class="badge" [ngClass]="tipoExecucaoBadgeClass(atendimentoSelecionado.tipoExecucao)">
+                {{ formatarTipoExecucao(atendimentoSelecionado.tipoExecucao) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-box">
+              <small>Cliente</small>
+              <div class="fw-semibold">{{ atendimentoSelecionado.nomeCliente }}</div>
+              <div>{{ formatarCPF(atendimentoSelecionado.cpfCliente) }}</div>
+              <div>{{ atendimentoSelecionado.telefoneCliente || '—' }}</div>
+              <div>{{ atendimentoSelecionado.emailCliente || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-box">
+              <small>Veículo</small>
+              <div class="fw-semibold">{{ formatarPlaca(atendimentoSelecionado.placaVeiculo) }}</div>
+              <div>{{ atendimentoSelecionado.fabricanteVeiculo }} {{ atendimentoSelecionado.modeloVeiculo }}</div>
+              <div>Km entrada: {{ atendimentoSelecionado.quilometragemEntrada || '—' }}</div>
+              <div>Km saída: {{ atendimentoSelecionado.quilometragemSaida || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-box">
+              <small>Serviço</small>
+              <div class="fw-semibold">{{ atendimentoSelecionado.nomeServico }}</div>
+              <div>{{ atendimentoSelecionado.categoriaServico || '—' }}</div>
+              <div>Responsável: {{ atendimentoSelecionado.nomeResponsavel || '—' }}</div>
+              <div>Fornecedor: {{ atendimentoSelecionado.razaoSocialFornecedor || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="detail-box">
+              <small>Datas</small>
+              <div>Entrada: {{ formatarDataHora(atendimentoSelecionado.dataEntrada) || '—' }}</div>
+              <div>Início: {{ formatarDataHora(atendimentoSelecionado.inicioReal) || '—' }}</div>
+              <div>Fim: {{ formatarDataHora(atendimentoSelecionado.fimReal) || '—' }}</div>
+              <div>Entrega: {{ formatarDataHora(atendimentoSelecionado.dataEntrega) || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Valores</small>
+              <div>Mão de obra: {{ formatarMoedaBR(atendimentoSelecionado.valorMaoObra) }}</div>
+              <div>Peças: {{ formatarMoedaBR(atendimentoSelecionado.valorPecas) }}</div>
+              <div>Terceiros: {{ formatarMoedaBR(atendimentoSelecionado.valorTerceiros) }}</div>
+              <div>Desconto: {{ formatarMoedaBR(atendimentoSelecionado.desconto) }}</div>
+              <div class="fw-semibold">Total: {{ formatarMoedaBR(atendimentoSelecionado.valorTotal) }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Aprovação e garantia</small>
+              <div>Aprovado: {{ atendimentoSelecionado.aprovado ? 'Sim' : 'Não' }}</div>
+              <div>Aprovado em: {{ formatarDataHora(atendimentoSelecionado.aprovadoEm) || '—' }}</div>
+              <div>Garantia: {{ atendimentoSelecionado.garantiaDias || 0 }} dias</div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Retorno</small>
+              <div>Necessita retorno: {{ atendimentoSelecionado.necessitaRetorno ? 'Sim' : 'Não' }}</div>
+              <div>Data sugerida: {{ formatarDataHora(atendimentoSelecionado.dataRetornoSugerida) || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-12" *ngIf="atendimentoSelecionado.relatoCliente">
+            <div class="detail-box">
+              <small>Relato do cliente</small>
+              <div>{{ atendimentoSelecionado.relatoCliente }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-12" *ngIf="atendimentoSelecionado.diagnosticoTecnico">
+            <div class="detail-box">
+              <small>Diagnóstico técnico</small>
+              <div>{{ atendimentoSelecionado.diagnosticoTecnico }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-12" *ngIf="atendimentoSelecionado.servicoExecutado">
+            <div class="detail-box">
+              <small>Serviço executado</small>
+              <div>{{ atendimentoSelecionado.servicoExecutado }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-12" *ngIf="atendimentoSelecionado.recomendacoesCliente">
+            <div class="detail-box">
+              <small>Recomendações ao cliente</small>
+              <div>{{ atendimentoSelecionado.recomendacoesCliente }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-12" *ngIf="atendimentoSelecionado.motivoCancelamento">
+            <div class="detail-box detail-cancelamento">
+              <small>Motivo do cancelamento</small>
+              <div>{{ atendimentoSelecionado.motivoCancelamento }}</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
