@@ -226,4 +226,15 @@ public class AtendimentoController {
                 )
         );
     }
+
+    @PostMapping("/{id}/reenviar-os-email")
+        public ResponseEntity<AtendimentoResponse> reenviarOrdemServicoEmail(
+                @PathVariable Long id
+        ) {
+            return ResponseEntity.ok(
+                    atendimentoMapper.toResponse(
+                            atendimentoService.reenviarOrdemServicoEmail(id)
+                )
+            );
+        }
 }

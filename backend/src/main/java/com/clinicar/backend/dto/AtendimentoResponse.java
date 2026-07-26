@@ -72,6 +72,12 @@ public class AtendimentoResponse {
     private LocalDateTime canceladoEm;
     private String motivoCancelamento;
 
+    private LocalDateTime osPdfGeradaEm;
+    private Boolean osEnviadaEmail;
+    private LocalDateTime osEnviadaEmailEm;
+    private String osEmailDestino;
+    private String osUltimoErro;
+
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
 }

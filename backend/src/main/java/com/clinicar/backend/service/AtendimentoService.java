@@ -2,8 +2,15 @@ package com.clinicar.backend.service;
 
 import com.clinicar.backend.dto.AtendimentoCancelamentoRequest;
 import com.clinicar.backend.dto.AtendimentoRequest;
-import com.clinicar.backend.model.*;
-import com.clinicar.backend.repository.*;
+import com.clinicar.backend.model.Agendamento;
+import com.clinicar.backend.model.Atendimento;
+import com.clinicar.backend.model.Fornecedor;
+import com.clinicar.backend.model.Servico;
+import com.clinicar.backend.model.Usuario;
+import com.clinicar.backend.repository.AgendamentoRepository;
+import com.clinicar.backend.repository.AtendimentoRepository;
+import com.clinicar.backend.repository.FornecedorRepository;
+import com.clinicar.backend.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -48,18 +55,21 @@ public class AtendimentoService {
     private final AgendamentoRepository agendamentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final FornecedorRepository fornecedorRepository;
+    private final OrdemServicoEnvioService ordemServicoEnvioService;
 
     public AtendimentoService(
-            AtendimentoRepository atendimentoRepository,
-            AgendamentoRepository agendamentoRepository,
-            UsuarioRepository usuarioRepository,
-            FornecedorRepository fornecedorRepository
-    ) {
-        this.atendimentoRepository = atendimentoRepository;
-        this.agendamentoRepository = agendamentoRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.fornecedorRepository = fornecedorRepository;
-    }
+        AtendimentoRepository atendimentoRepository,
+        AgendamentoRepository agendamentoRepository,
+        UsuarioRepository usuarioRepository,
+        FornecedorRepository fornecedorRepository,
+        OrdemServicoEnvioService ordemServicoEnvioService
+) {
+    this.atendimentoRepository = atendimentoRepository;
+    this.agendamentoRepository = agendamentoRepository;
+    this.usuarioRepository = usuarioRepository;
+    this.fornecedorRepository = fornecedorRepository;
+    this.ordemServicoEnvioService = ordemServicoEnvioService;
+}
 
     @Transactional
     public Atendimento criar(AtendimentoRequest request) {
@@ -335,8 +345,24 @@ public class AtendimentoService {
         atendimento.setStatusAtendimento("ENTREGUE");
         atendimento.setDataEntrega(agora);
 
-        return atendimentoRepository.save(atendimento);
+        Atendimento salvo = atendimentoRepository.save(atendimento);
+
+        return ordemServicoEnvioService.enviarOrdemServicoPorEmail(salvo);
     }
+
+    @Transactional
+public Atendimento reenviarOrdemServicoEmail(Long id) {
+    Atendimento atendimento = buscarPorId(id);
+
+    if (!"CONCLUIDO".equals(atendimento.getStatusAtendimento())
+            && !"ENTREGUE".equals(atendimento.getStatusAtendimento())) {
+        throw new IllegalArgumentException(
+                "A Ordem de Serviço só pode ser enviada para atendimento concluído ou entregue."
+        );
+    }
+
+    return ordemServicoEnvioService.enviarOrdemServicoPorEmail(atendimento);
+}
 
     @Transactional
     public Atendimento cancelar(

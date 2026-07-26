@@ -160,6 +160,21 @@ public class Atendimento {
     @Column(name = "motivo_cancelamento", length = 500)
     private String motivoCancelamento;
 
+    @Column(name = "os_pdf_gerada_em")
+    private LocalDateTime osPdfGeradaEm;
+
+    @Column(name = "os_enviada_email", nullable = false)
+    private Boolean osEnviadaEmail = false;
+
+    @Column(name = "os_enviada_email_em")
+    private LocalDateTime osEnviadaEmailEm;
+
+    @Column(name = "os_email_destino", length = 255)
+    private String osEmailDestino;
+
+    @Column(name = "os_ultimo_erro", length = 1000)
+    private String osUltimoErro;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm;
 
@@ -185,6 +200,11 @@ public class Atendimento {
     }
 
     private void aplicarDefaults() {
+
+        if (osEnviadaEmail == null) {
+            osEnviadaEmail = false;
+        }
+
         if (tipoExecucao == null || tipoExecucao.isBlank()) {
             tipoExecucao = "INTERNO";
         }

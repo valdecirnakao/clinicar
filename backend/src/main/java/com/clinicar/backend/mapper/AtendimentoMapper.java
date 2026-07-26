@@ -104,6 +104,12 @@ public class AtendimentoMapper {
         response.setCanceladoEm(atendimento.getCanceladoEm());
         response.setMotivoCancelamento(atendimento.getMotivoCancelamento());
 
+        response.setOsPdfGeradaEm(atendimento.getOsPdfGeradaEm());
+        response.setOsEnviadaEmail(atendimento.getOsEnviadaEmail());
+        response.setOsEnviadaEmailEm(atendimento.getOsEnviadaEmailEm());
+        response.setOsEmailDestino(atendimento.getOsEmailDestino());
+        response.setOsUltimoErro(atendimento.getOsUltimoErro());
+
         response.setCriadoEm(atendimento.getCriadoEm());
         response.setAtualizadoEm(atendimento.getAtualizadoEm());
 

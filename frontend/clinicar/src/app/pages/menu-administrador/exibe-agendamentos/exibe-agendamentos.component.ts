@@ -1,11 +1,17 @@
-import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { catchError, forkJoin, of } from 'rxjs';
 
 import {
   Agendamento,
+  AgendamentoCancelamentoRequest,
+  AgendamentoPecaSelecionada,
   AgendamentoRequest,
   ExibeAgendamentosService,
+  FornecedorResumo,
+  FornecimentoPecaResumo,
+  PecaResumo,
   ServicoResumo,
   UsuarioResumo,
   VeiculoResumo
@@ -13,60 +19,53 @@ import {
 
 declare var bootstrap: any;
 
-type ModoFormulario = 'cadastro' | 'edicao';
-type TipoSelecao = 'cliente' | 'veiculo' | 'servico' | 'responsavel';
-
 @Component({
   selector: 'app-exibe-agendamentos',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './exibe-agendamentos.component.html',
-  styleUrls: ['./exibe-agendamentos.component.css']
+  styleUrl: './exibe-agendamentos.component.css'
 })
 export class ExibeAgendamentosComponent implements OnInit {
 
   agendamentos: Agendamento[] = [];
-  private todos: Agendamento[] = [];
-
   usuarios: UsuarioResumo[] = [];
-  clientes: UsuarioResumo[] = [];
-  responsaveis: UsuarioResumo[] = [];
-
   veiculos: VeiculoResumo[] = [];
-  veiculosFiltradosParaCliente: VeiculoResumo[] = [];
-
   servicos: ServicoResumo[] = [];
+  fornecedores: FornecedorResumo[] = [];
+  pecas: PecaResumo[] = [];
+  fornecimentosPecas: FornecimentoPecaResumo[] = [];
 
-  itensSelecao: any[] = [];
-  itensSelecaoFiltrados: any[] = [];
+  pecasNovoAgendamento: AgendamentoPecaSelecionada[] = [];
 
   novoAgendamento: Partial<Agendamento> = {};
-  edit: Partial<Agendamento> = {};
-  editId: number | null = null;
-
   agendamentoSelecionado: Agendamento | null = null;
-  motivoCancelamento = '';
 
-  filtroTexto = '';
+  pecaForm: Partial<AgendamentoPecaSelecionada> = {};
+
+  filtro = '';
   filtroStatus = '';
-  filtroPeriodoInicio = '';
-  filtroPeriodoFim = '';
-  filtroSelecao = '';
 
-  modoFormulario: ModoFormulario = 'cadastro';
-  tipoSelecao: TipoSelecao = 'cliente';
+  carregando = false;
+  mensagemErro = '';
+  mensagemErroModal = '';
+  mensagemDisponibilidadeResponsavel = '';
 
-  loading = false;
-  errorMsg = '';
+  abaNovoAgendamento: 'agendamento' | 'pecas' | 'adicionais' = 'agendamento';
 
   modalCadastro: any;
-  modalEdicao: any;
-  modalSelecao: any;
-  modalCancelamento: any;
+  modalPeca: any;
   modalDetalhes: any;
+  modalCancelamento: any;
 
-  readonly statusFiltro = [
-    '',
+  editandoId: number | null = null;
+  editandoPecaId: number | null = null;
+
+  private tempPecaId = -1;
+
+  motivoCancelamento = '';
+
+  readonly statusAgendamento = [
     'AGENDADO',
     'CONFIRMADO',
     'EM_ATENDIMENTO',
@@ -76,211 +75,144 @@ export class ExibeAgendamentosComponent implements OnInit {
     'REAGENDADO'
   ];
 
-  readonly canaisOrigem = [
-    'SISTEMA',
-    'TELEFONE',
-    'WHATSAPP',
-    'PRESENCIAL',
-    'SITE'
-  ];
-
-  readonly prioridades = [
-    'BAIXA',
-    'NORMAL',
-    'ALTA',
-    'URGENTE'
-  ];
-
-  readonly tiposAtendimento = [
-    'PRESENCIAL',
-    'RETIRADA_ENTREGA',
-    'GUINCHO'
-  ];
-
-  readonly statusFormulario = [
-    'AGENDADO',
-    'CONFIRMADO',
-    'REAGENDADO'
-  ];
-
-  resumo = {
-    total: 0,
-    agendado: 0,
-    confirmado: 0,
-    emAtendimento: 0,
-    concluido: 0,
-    cancelado: 0,
-    naoCompareceu: 0
-  };
+  readonly canais = ['SISTEMA', 'TELEFONE', 'WHATSAPP', 'PRESENCIAL', 'SITE'];
+  readonly prioridades = ['BAIXA', 'NORMAL', 'ALTA', 'URGENTE'];
+  readonly tiposAtendimento = ['PRESENCIAL', 'RETIRADA_ENTREGA', 'GUINCHO'];
 
   constructor(
-    private readonly service: ExibeAgendamentosService,
-    private readonly location: Location
+    private service: ExibeAgendamentosService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
-    this.carregarUsuarios();
-    this.carregarVeiculos();
-    this.carregarServicos();
-    this.recarregar();
+    this.carregarTudo();
+  }
+
+  get clientes(): UsuarioResumo[] {
+    return this.usuarios.filter(usuario => {
+      const tipo = this.normalizarTipoAcesso(usuario.tipo_do_acesso || usuario.tipoDoAcesso);
+      return tipo === 'CLIENTE' || tipo === 'ADMINISTRADOR';
+    });
+  }
+
+  get responsaveis(): UsuarioResumo[] {
+    return this.usuarios.filter(usuario => {
+      const tipo = this.normalizarTipoAcesso(usuario.tipo_do_acesso || usuario.tipoDoAcesso);
+      return tipo === 'COLABORADOR' || tipo === 'ADMINISTRADOR';
+    });
+  }
+
+  get agendamentosFiltrados(): Agendamento[] {
+    const termo = this.normalizar(this.filtro);
+
+    return this.agendamentos.filter(item => {
+      const statusOk = !this.filtroStatus || item.statusAgendamento === this.filtroStatus;
+
+      const texto = this.normalizar([
+        item.codigoAgendamento,
+        item.nomeCliente,
+        item.placaVeiculo,
+        item.modeloVeiculo,
+        item.nomeServico,
+        item.statusAgendamento
+      ].join(' '));
+
+      return statusOk && (!termo || texto.includes(termo));
+    });
+  }
+
+  get totalAgendamentos(): number {
+    return this.agendamentos.length;
+  }
+
+  get totalConfirmados(): number {
+    return this.agendamentos.filter(a => a.statusAgendamento === 'CONFIRMADO').length;
+  }
+
+  get totalEmAtendimento(): number {
+    return this.agendamentos.filter(a => a.statusAgendamento === 'EM_ATENDIMENTO').length;
+  }
+
+  get totalConcluidos(): number {
+    return this.agendamentos.filter(a => a.statusAgendamento === 'CONCLUIDO').length;
+  }
+
+  get agendamentoProntoParaSalvar(): boolean {
+    return this.validarCamposObrigatoriosAgendamento() === null;
+  }
+
+  get mensagemBloqueioSalvar(): string {
+    return this.validarCamposObrigatoriosAgendamento() || '';
+  }
+
+  carregarTudo(): void {
+    this.carregando = true;
+    this.mensagemErro = '';
+
+    forkJoin({
+      agendamentos: this.service.listar(),
+      usuarios: this.service.listarUsuarios(),
+      veiculos: this.service.listarVeiculos(),
+      servicos: this.service.listarServicos(),
+      fornecedores: this.service.listarFornecedores(),
+      pecas: this.service.listarPecas(),
+      fornecimentosPecas: this.service.listarFornecimentosPecas().pipe(
+        catchError((erro) => {
+          console.warn('Não foi possível carregar fornecimentos de peças:', erro);
+          return of([]);
+        })
+      )
+    }).subscribe({
+      next: (resposta) => {
+        this.agendamentos = this.extrairLista<Agendamento>(resposta.agendamentos);
+        this.usuarios = this.extrairLista<UsuarioResumo>(resposta.usuarios);
+        this.veiculos = this.extrairLista<VeiculoResumo>(resposta.veiculos);
+        this.servicos = this.extrairLista<ServicoResumo>(resposta.servicos);
+        this.fornecedores = this.extrairLista<FornecedorResumo>(resposta.fornecedores);
+        this.pecas = this.extrairLista<PecaResumo>(resposta.pecas);
+        this.fornecimentosPecas = this.extrairLista<FornecimentoPecaResumo>(resposta.fornecimentosPecas);
+
+        this.carregando = false;
+      },
+      error: (erro) => {
+        this.mensagemErro = this.extrairMensagemErro(erro, 'Erro ao carregar agendamentos.');
+        this.carregando = false;
+      }
+    });
   }
 
   recarregar(): void {
-    this.loading = true;
-    this.errorMsg = '';
+    this.carregando = true;
 
-    this.service.listarTodos().subscribe({
+    this.service.listar().subscribe({
       next: (lista) => {
-        this.todos = lista ?? [];
-        this.aplicarFiltrosLocais();
-        this.atualizarResumo();
-        this.loading = false;
+        this.agendamentos = this.extrairLista<Agendamento>(lista);
+        this.carregando = false;
       },
       error: (erro) => {
-        console.error('Erro ao carregar agendamentos:', erro);
-        this.errorMsg = this.extrairMensagemErro(
-          erro,
-          'Falha ao carregar os agendamentos.'
-        );
-        this.loading = false;
+        this.mensagemErro = this.extrairMensagemErro(erro, 'Erro ao recarregar agendamentos.');
+        this.carregando = false;
       }
     });
   }
 
-  private carregarUsuarios(): void {
-    this.service.listarUsuarios().subscribe({
-      next: (lista) => {
-        this.usuarios = lista ?? [];
-
-        this.clientes = this.usuarios.filter(u =>
-          this.tipoAcessoNormalizado(u.tipo_do_acesso) === 'CLIENTE' ||
-          this.tipoAcessoNormalizado(u.tipo_do_acesso) === 'ADMINISTRADOR'
-        );
-
-        this.responsaveis = this.usuarios.filter(u =>
-          this.tipoAcessoNormalizado(u.tipo_do_acesso) === 'COLABORADOR' ||
-          this.tipoAcessoNormalizado(u.tipo_do_acesso) === 'ADMINISTRADOR'
-        );
-      },
-      error: (erro) => {
-        console.error('Erro ao carregar usuários:', erro);
-      }
-    });
+  voltar(): void {
+    this.location.back();
   }
 
-  private carregarVeiculos(): void {
-    this.service.listarVeiculos().subscribe({
-      next: (lista) => {
-        this.veiculos = lista ?? [];
-        this.veiculosFiltradosParaCliente = [...this.veiculos];
-      },
-      error: (erro) => {
-        console.error('Erro ao carregar veículos:', erro);
-      }
-    });
+  trocarAbaNovoAgendamento(
+    aba: 'agendamento' | 'pecas' | 'adicionais'
+  ): void {
+    this.abaNovoAgendamento = aba;
   }
-
-  private carregarServicos(): void {
-    this.service.listarServicos().subscribe({
-      next: (lista) => {
-        this.servicos = (lista ?? []).filter(s => s.ativo !== false);
-      },
-      error: (erro) => {
-        console.error('Erro ao carregar serviços:', erro);
-      }
-    });
-  }
-
-  filtrar(term: string): void {
-    this.filtroTexto = term ?? '';
-    this.aplicarFiltrosLocais();
-  }
-
-  aplicarFiltrosLocais(): void {
-    const texto = this.filtroTexto.trim().toLowerCase();
-
-    this.agendamentos = this.todos.filter(item => {
-      const status = (item.statusAgendamento || '').toUpperCase();
-
-      if (this.filtroStatus && status !== this.filtroStatus) {
-        return false;
-      }
-
-      if (!texto) {
-        return true;
-      }
-
-      return (
-        (item.codigoAgendamento || '').toLowerCase().includes(texto) ||
-        (item.nomeCliente || '').toLowerCase().includes(texto) ||
-        (item.cpfCliente || '').toLowerCase().includes(texto) ||
-        (item.placaVeiculo || '').toLowerCase().includes(texto) ||
-        (item.fabricanteVeiculo || '').toLowerCase().includes(texto) ||
-        (item.modeloVeiculo || '').toLowerCase().includes(texto) ||
-        (item.nomeServico || '').toLowerCase().includes(texto) ||
-        (item.nomeResponsavel || '').toLowerCase().includes(texto) ||
-        (item.prioridade || '').toLowerCase().includes(texto) ||
-        this.formatarStatus(status).toLowerCase().includes(texto)
-      );
-    });
-  }
-
-  filtrarPorPeriodo(): void {
-    if (!this.filtroPeriodoInicio || !this.filtroPeriodoFim) {
-      alert('Informe a data/hora inicial e final do período.');
-      return;
-    }
-
-    this.loading = true;
-    this.errorMsg = '';
-
-    this.service.listarPorPeriodo(
-      this.filtroPeriodoInicio,
-      this.filtroPeriodoFim
-    ).subscribe({
-      next: (lista) => {
-        this.todos = lista ?? [];
-        this.aplicarFiltrosLocais();
-        this.atualizarResumo();
-        this.loading = false;
-      },
-      error: (erro) => {
-        console.error('Erro ao filtrar por período:', erro);
-        this.errorMsg = this.extrairMensagemErro(
-          erro,
-          'Falha ao filtrar agendamentos por período.'
-        );
-        this.loading = false;
-      }
-    });
-  }
-
-  limparPeriodo(): void {
-    this.filtroPeriodoInicio = '';
-    this.filtroPeriodoFim = '';
-    this.recarregar();
-  }
-
-  private atualizarResumo(): void {
-    this.resumo.total = this.todos.length;
-    this.resumo.agendado = this.todos.filter(a => a.statusAgendamento === 'AGENDADO').length;
-    this.resumo.confirmado = this.todos.filter(a => a.statusAgendamento === 'CONFIRMADO').length;
-    this.resumo.emAtendimento = this.todos.filter(a => a.statusAgendamento === 'EM_ATENDIMENTO').length;
-    this.resumo.concluido = this.todos.filter(a => a.statusAgendamento === 'CONCLUIDO').length;
-    this.resumo.cancelado = this.todos.filter(a => a.statusAgendamento === 'CANCELADO').length;
-    this.resumo.naoCompareceu = this.todos.filter(a => a.statusAgendamento === 'NAO_COMPARECEU').length;
-  }
-
-  trackByAgendamento = (_: number, item: Agendamento) => item.id ?? _;
-  trackBySelecao = (_: number, item: any) => item.id ?? _;
-  trackByStatus = (_: number, item: string) => item;
-
-  // ======================================================
-  // CADASTRO
-  // ======================================================
 
   abrirModalCadastro(): void {
-    this.modoFormulario = 'cadastro';
+    this.editandoId = null;
+    this.abaNovoAgendamento = 'agendamento';
+    this.mensagemErroModal = '';
+    this.mensagemDisponibilidadeResponsavel = '';
+    this.pecasNovoAgendamento = [];
+    this.tempPecaId = -1;
 
     this.novoAgendamento = {
       idCliente: undefined,
@@ -288,9 +220,13 @@ export class ExibeAgendamentosComponent implements OnInit {
 
       idVeiculo: undefined,
       placaVeiculo: '',
+      fabricanteVeiculo: '',
+      modeloVeiculo: '',
+      corVeiculo: '',
 
       idServico: undefined,
       nomeServico: '',
+      categoriaServico: '',
 
       idFornecedor: undefined,
       razaoSocialFornecedor: '',
@@ -298,8 +234,9 @@ export class ExibeAgendamentosComponent implements OnInit {
       idResponsavel: undefined,
       nomeResponsavel: '',
 
-      dataHoraInicio: '',
+      dataHoraInicio: this.agoraInputDateTime(),
       dataHoraFim: '',
+      duracaoEstimadaMinutos: 60,
 
       statusAgendamento: 'AGENDADO',
       canalOrigem: 'SISTEMA',
@@ -307,229 +244,853 @@ export class ExibeAgendamentosComponent implements OnInit {
       tipoAtendimento: 'PRESENCIAL',
 
       quilometragemAtual: null,
-
       queixaCliente: '',
       diagnosticoPrevio: '',
       observacoes: '',
 
-      valorEstimado: '',
+      valorEstimado: 'R$ 0,00',
       valorFinal: '',
 
       requerConfirmacao: true,
       confirmado: false
     };
 
-    this.veiculosFiltradosParaCliente = [...this.veiculos];
+    this.recalcularDataFim();
+    this.recalcularValoresAgendamento();
+    this.atualizarDisponibilidadeResponsavel();
 
     const el = document.getElementById('modalCadastroAgendamento');
 
-    if (!el) {
-      console.error('Modal modalCadastroAgendamento não encontrado.');
-      return;
-    }
+    if (!el) return;
 
     this.modalCadastro = bootstrap.Modal.getOrCreateInstance(el);
     this.modalCadastro.show();
   }
 
-  salvarNovoAgendamento(): void {
-    const erro = this.validarAgendamento(this.novoAgendamento);
-
-    if (erro) {
-      alert(erro);
-      return;
-    }
-
-    const payload = this.montarPayload(this.novoAgendamento);
-
-    this.service.criar(payload).subscribe({
-      next: () => {
-        this.modalCadastro?.hide();
-        alert('Agendamento cadastrado com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        console.error('Erro ao cadastrar agendamento:', erro);
-        alert(this.extrairMensagemErro(erro, 'Erro ao cadastrar agendamento.'));
-      }
-    });
-  }
-
-  // ======================================================
-  // EDIÇÃO
-  // ======================================================
-
   abrirModalEdicao(item: Agendamento): void {
-    this.modoFormulario = 'edicao';
-    this.editId = item.id ?? null;
+    this.editandoId = item.id ?? null;
+    this.abaNovoAgendamento = 'agendamento';
+    this.mensagemErroModal = '';
+    this.mensagemDisponibilidadeResponsavel = '';
+    this.pecasNovoAgendamento = [];
 
-    this.edit = {
+    this.novoAgendamento = {
       ...item,
-      dataHoraInicio: this.asDateTimeLocal(item.dataHoraInicio),
-      dataHoraFim: this.asDateTimeLocal(item.dataHoraFim),
+      idCliente: item.idCliente ?? item.cliente?.id,
+      idVeiculo: item.idVeiculo ?? item.veiculo?.id,
+      idServico: item.idServico ?? item.servico?.id,
+      idFornecedor: item.idFornecedor ?? item.fornecedor?.id,
+      idResponsavel: item.idResponsavel ?? item.responsavel?.id,
+      dataHoraInicio: this.paraDatetimeLocal(item.dataHoraInicio || ''),
+      dataHoraFim: this.paraDatetimeLocal(item.dataHoraFim || ''),
       valorEstimado: this.formatarMoedaBR(item.valorEstimado),
-      valorFinal: this.formatarMoedaBR(item.valorFinal)
+      valorFinal: item.valorFinal ? this.formatarMoedaBR(item.valorFinal) : ''
     };
 
-    this.atualizarVeiculosPorCliente(this.edit);
+    this.selecionarCliente(false);
+    this.selecionarVeiculo();
+    this.selecionarServico(false);
+    this.atualizarDisponibilidadeResponsavel();
 
-    const el = document.getElementById('modalEdicaoAgendamento');
+    const el = document.getElementById('modalCadastroAgendamento');
 
-    if (!el) {
-      console.error('Modal modalEdicaoAgendamento não encontrado.');
-      return;
-    }
+    if (!el) return;
 
-    this.modalEdicao = bootstrap.Modal.getOrCreateInstance(el);
-    this.modalEdicao.show();
+    this.modalCadastro = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalCadastro.show();
   }
 
-  salvarEdicaoAgendamento(): void {
-    if (!this.editId) {
+  selecionarCliente(limparVeiculo: boolean = true): void {
+    const idCliente = Number(this.novoAgendamento.idCliente);
+
+    const cliente = this.clientes.find(c => Number(c.id) === idCliente);
+
+    if (!cliente) return;
+
+    this.novoAgendamento.nomeCliente = cliente.nome || cliente.nome_social || cliente.nomeSocial || '';
+    this.novoAgendamento.cpfCliente = cliente.cpf || '';
+    this.novoAgendamento.emailCliente = cliente.email || '';
+    this.novoAgendamento.telefoneCliente = cliente.telefone || '';
+
+    if (limparVeiculo) {
+      this.novoAgendamento.idVeiculo = undefined;
+      this.novoAgendamento.placaVeiculo = '';
+      this.novoAgendamento.modeloVeiculo = '';
+      this.novoAgendamento.fabricanteVeiculo = '';
+      this.novoAgendamento.corVeiculo = '';
+      this.novoAgendamento.anoModeloCombustivelVeiculo = '';
+
+      const veiculosEncontrados = this.veiculosDoCliente();
+
+      if (veiculosEncontrados.length === 1 && veiculosEncontrados[0].id) {
+        this.novoAgendamento.idVeiculo = veiculosEncontrados[0].id;
+        this.selecionarVeiculo();
+      }
+    }
+  }
+
+  veiculosDoCliente(): VeiculoResumo[] {
+    const idCliente = Number(this.novoAgendamento.idCliente);
+
+    if (!idCliente) {
+      return this.veiculos;
+    }
+
+    return this.veiculos.filter(veiculo => {
+      const idClienteVeiculo = this.idClienteDoVeiculo(veiculo);
+      return Number(idClienteVeiculo) === Number(idCliente);
+    });
+  }
+
+  labelVeiculo(veiculo: VeiculoResumo): string {
+    const placa = this.placaDoVeiculo(veiculo);
+    const modelo = this.modeloDoVeiculo(veiculo);
+    const fabricante = this.fabricanteDoVeiculo(veiculo);
+
+    return `${this.formatarPlaca(placa)} - ${fabricante || 'Fabricante não informado'} ${modelo || ''}`.trim();
+  }
+
+  selecionarVeiculo(): void {
+    const idVeiculo = Number(this.novoAgendamento.idVeiculo);
+
+    const veiculo = this.veiculos.find(v => Number(v.id) === idVeiculo);
+
+    if (!veiculo) return;
+
+    this.novoAgendamento.placaVeiculo = this.placaDoVeiculo(veiculo);
+    this.novoAgendamento.fabricanteVeiculo = this.fabricanteDoVeiculo(veiculo);
+    this.novoAgendamento.modeloVeiculo = this.modeloDoVeiculo(veiculo);
+    this.novoAgendamento.corVeiculo = this.corDoVeiculo(veiculo);
+    this.novoAgendamento.anoModeloCombustivelVeiculo =
+      veiculo.anoModeloCombustivel
+      || veiculo.ano_modelo_combustivel
+      || '';
+  }
+
+  selecionarServico(recalcular: boolean = true): void {
+    const idServico = Number(this.novoAgendamento.idServico);
+
+    const servico = this.servicos.find(s => Number(s.id) === idServico);
+
+    if (!servico) return;
+
+    this.novoAgendamento.nomeServico = servico.nome || servico.descricao || '';
+    this.novoAgendamento.categoriaServico = servico.categoria || '';
+
+    const duracaoMinutos = this.duracaoServicoEmMinutos(servico);
+
+    this.novoAgendamento.duracaoEstimadaMinutos = duracaoMinutos;
+
+    const idFornecedor = this.idFornecedorObjeto(servico);
+
+    if (idFornecedor) {
+      this.novoAgendamento.idFornecedor = idFornecedor;
+    }
+
+    const nomeFornecedor = this.nomeFornecedorObjeto(servico);
+
+    if (nomeFornecedor) {
+      this.novoAgendamento.razaoSocialFornecedor = nomeFornecedor;
+    }
+
+    if (recalcular) {
+      this.recalcularDataFim();
+      this.recalcularValoresAgendamento();
+      this.atualizarDisponibilidadeResponsavel();
+    }
+  }
+
+  recalcularDataFim(): void {
+    if (!this.novoAgendamento.dataHoraInicio) return;
+
+    const inicio = new Date(this.novoAgendamento.dataHoraInicio);
+
+    if (Number.isNaN(inicio.getTime())) return;
+
+    const duracao = Number(this.novoAgendamento.duracaoEstimadaMinutos || 60);
+
+    inicio.setMinutes(inicio.getMinutes() + duracao);
+
+    this.novoAgendamento.dataHoraFim = this.paraDatetimeLocal(inicio.toISOString());
+
+    this.atualizarDisponibilidadeResponsavel();
+  }
+
+  atualizarDisponibilidadeResponsavel(): void {
+    this.mensagemDisponibilidadeResponsavel = '';
+
+    if (!this.periodoAgendamentoValido()) {
+      this.novoAgendamento.idResponsavel = undefined;
+      this.novoAgendamento.nomeResponsavel = '';
       return;
     }
 
-    const erro = this.validarAgendamento(this.edit);
+    const disponiveis = this.responsaveisDisponiveis();
+
+    if (disponiveis.length === 0) {
+      this.novoAgendamento.idResponsavel = undefined;
+      this.novoAgendamento.nomeResponsavel = '';
+      this.mensagemDisponibilidadeResponsavel =
+        'Nenhum responsável disponível para o período informado.';
+      return;
+    }
+
+    const idResponsavelAtual = Number(this.novoAgendamento.idResponsavel);
+
+    if (!idResponsavelAtual) {
+      return;
+    }
+
+    const aindaDisponivel = disponiveis.some(r => Number(r.id) === idResponsavelAtual);
+
+    if (!aindaDisponivel) {
+      this.novoAgendamento.idResponsavel = undefined;
+      this.novoAgendamento.nomeResponsavel = '';
+      this.mensagemDisponibilidadeResponsavel =
+        'O responsável selecionado não está disponível neste período. Selecione outro responsável.';
+    }
+  }
+
+  periodoAgendamentoValido(): boolean {
+    const inicio = this.dataValida(this.novoAgendamento.dataHoraInicio);
+    const fim = this.dataValida(this.novoAgendamento.dataHoraFim);
+
+    if (!inicio || !fim) return false;
+
+    return fim.getTime() > inicio.getTime();
+  }
+
+  responsaveisDisponiveis(): UsuarioResumo[] {
+    if (!this.periodoAgendamentoValido()) {
+      return [];
+    }
+
+    return this.responsaveis.filter(responsavel =>
+      this.responsavelDisponivelNoPeriodo(responsavel)
+    );
+  }
+
+  selecionarResponsavel(): void {
+    this.mensagemDisponibilidadeResponsavel = '';
+
+    const idResponsavel = Number(this.novoAgendamento.idResponsavel);
+
+    if (!idResponsavel) {
+      this.novoAgendamento.nomeResponsavel = '';
+      return;
+    }
+
+    const responsavel = this.responsaveis.find(r => Number(r.id) === idResponsavel);
+
+    if (!responsavel) {
+      this.novoAgendamento.idResponsavel = undefined;
+      this.novoAgendamento.nomeResponsavel = '';
+      return;
+    }
+
+    if (!this.responsavelDisponivelNoPeriodo(responsavel)) {
+      this.novoAgendamento.idResponsavel = undefined;
+      this.novoAgendamento.nomeResponsavel = '';
+      this.mensagemDisponibilidadeResponsavel =
+        'Este responsável já possui agendamento no período informado.';
+      return;
+    }
+
+    this.novoAgendamento.nomeResponsavel =
+      responsavel.nome
+      || responsavel.nome_social
+      || responsavel.nomeSocial
+      || '';
+  }
+
+  private responsavelDisponivelNoPeriodo(responsavel: UsuarioResumo): boolean {
+    const idResponsavel = Number(responsavel.id);
+
+    if (!idResponsavel) return false;
+
+    const inicioNovo = this.dataValida(this.novoAgendamento.dataHoraInicio);
+    const fimNovo = this.dataValida(this.novoAgendamento.dataHoraFim);
+
+    if (!inicioNovo || !fimNovo) return false;
+
+    return !this.agendamentos.some(agendamento => {
+      if (this.editandoId && Number(agendamento.id) === Number(this.editandoId)) {
+        return false;
+      }
+
+      const idResponsavelAgendamento = this.idResponsavelDoAgendamento(agendamento);
+
+      if (!idResponsavelAgendamento || Number(idResponsavelAgendamento) !== idResponsavel) {
+        return false;
+      }
+
+      if (!this.statusBloqueiaResponsavel(agendamento.statusAgendamento)) {
+        return false;
+      }
+
+      const inicioExistente = this.dataValida(agendamento.dataHoraInicio);
+      const fimExistente = this.dataValida(agendamento.dataHoraFim);
+
+      if (!inicioExistente || !fimExistente) {
+        return false;
+      }
+
+      return this.periodosSobrepostos(
+        inicioNovo,
+        fimNovo,
+        inicioExistente,
+        fimExistente
+      );
+    });
+  }
+
+  private periodosSobrepostos(
+    inicioNovo: Date,
+    fimNovo: Date,
+    inicioExistente: Date,
+    fimExistente: Date
+  ): boolean {
+    return inicioNovo.getTime() < fimExistente.getTime()
+      && fimNovo.getTime() > inicioExistente.getTime();
+  }
+
+  private statusBloqueiaResponsavel(status?: string | null): boolean {
+    const statusNormalizado = String(status || '').toUpperCase();
+
+    return statusNormalizado === 'AGENDADO'
+      || statusNormalizado === 'CONFIRMADO'
+      || statusNormalizado === 'EM_ATENDIMENTO'
+      || statusNormalizado === 'REAGENDADO';
+  }
+
+  private idResponsavelDoAgendamento(agendamento: any): number | undefined {
+    const valor = this.obterCampo(
+      agendamento,
+      [
+        'idResponsavel',
+        'id_responsavel',
+        'responsavel.id'
+      ]
+    );
+
+    if (valor === null || valor === undefined || valor === '') {
+      return undefined;
+    }
+
+    const numero = Number(valor);
+
+    return Number.isNaN(numero) ? undefined : numero;
+  }
+
+  private dataValida(valor?: string | null): Date | null {
+    if (!valor) return null;
+
+    const data = new Date(valor);
+
+    if (Number.isNaN(data.getTime())) {
+      return null;
+    }
+
+    return data;
+  }
+
+  abrirModalPecaAgendamento(): void {
+    this.resetarPecaForm();
+
+    const el = document.getElementById('modalPecaAgendamento');
+
+    if (!el) return;
+
+    this.modalPeca = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalPeca.show();
+  }
+
+  abrirModalEditarPecaAgendamento(item: AgendamentoPecaSelecionada): void {
+    this.editarPecaAgendamento(item);
+
+    const el = document.getElementById('modalPecaAgendamento');
+
+    if (!el) return;
+
+    this.modalPeca = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalPeca.show();
+  }
+
+  resetarPecaForm(): void {
+    this.editandoPecaId = null;
+
+    this.pecaForm = {
+      idPeca: undefined,
+      nomePeca: '',
+      descricaoPeca: '',
+      fabricantePeca: '',
+      modeloPeca: '',
+      idFornecedor: undefined,
+      razaoSocialFornecedor: '',
+      quantidade: '1',
+      unidadeMedida: 'UNIDADE',
+      valorUnitario: 'R$ 0,00',
+      valorTotal: 'R$ 0,00',
+      observacoes: ''
+    };
+  }
+
+  selecionarPecaCatalogo(): void {
+    const idPeca = Number(this.pecaForm.idPeca);
+
+    if (!idPeca) return;
+
+    const peca = this.pecas.find(p => Number(p.id) === idPeca);
+
+    if (!peca) return;
+
+    const fornecimento = this.encontrarFornecimentoDaPeca(idPeca);
+
+    this.pecaForm.nomePeca = peca.nome || peca.descricao || '';
+    this.pecaForm.descricaoPeca = peca.descricao || peca.nome || '';
+    this.pecaForm.fabricantePeca = peca.fabricante || '';
+    this.pecaForm.modeloPeca = peca.modelo || '';
+
+    this.pecaForm.quantidade = '1';
+
+    if (fornecimento) {
+      this.pecaForm.unidadeMedida =
+        this.unidadePadraoFornecimentoPeca(fornecimento)
+        || this.unidadePadraoPeca(peca);
+
+      this.pecaForm.valorUnitario = this.formatarMoedaBR(
+        this.valorPadraoFornecimentoPeca(fornecimento)
+      );
+
+      const idFornecedor = this.idFornecedorObjeto(fornecimento);
+
+      if (idFornecedor) {
+        this.pecaForm.idFornecedor = idFornecedor;
+      }
+
+      const nomeFornecedor = this.nomeFornecedorObjeto(fornecimento);
+
+      if (nomeFornecedor) {
+        this.pecaForm.razaoSocialFornecedor = nomeFornecedor;
+      }
+    } else {
+      this.pecaForm.unidadeMedida = this.unidadePadraoPeca(peca);
+      this.pecaForm.valorUnitario = this.formatarMoedaBR(0);
+    }
+
+    this.recalcularTotalPecaForm();
+  }
+
+  recalcularTotalPecaForm(): void {
+    const qtd = this.quantidadeInteiraMinima(this.pecaForm.quantidade);
+    const unitario = this.moedaParaNumero(this.pecaForm.valorUnitario);
+    const total = Math.max(qtd * unitario, 0);
+
+    this.pecaForm.valorTotal = this.formatarMoedaBR(total);
+  }
+
+  normalizarQuantidadePecaForm(): void {
+    const qtd = this.quantidadeInteiraMinima(this.pecaForm.quantidade);
+
+    this.pecaForm.quantidade = String(qtd);
+    this.recalcularTotalPecaForm();
+  }
+
+  formatarValorUnitarioPeca(): void {
+    this.pecaForm.valorUnitario = this.formatarMoedaBR(this.pecaForm.valorUnitario);
+    this.recalcularTotalPecaForm();
+  }
+
+  salvarPecaAgendamento(): void {
+    this.normalizarQuantidadePecaForm();
+
+    if (!this.pecaForm.idPeca) {
+      alert('Selecione uma peça.');
+      return;
+    }
+
+    if (this.quantidadeInteiraMinima(this.pecaForm.quantidade) <= 0) {
+      alert('Informe uma quantidade maior que zero.');
+      return;
+    }
+
+    const quantidade = this.quantidadeInteiraMinima(this.pecaForm.quantidade);
+    const valorUnitario = this.moedaParaNumero(this.pecaForm.valorUnitario);
+
+    const item: AgendamentoPecaSelecionada = {
+      id: this.editandoPecaId ?? this.tempPecaId--,
+      idPeca: Number(this.pecaForm.idPeca),
+      nomePeca: this.pecaForm.nomePeca || '',
+      descricaoPeca: this.pecaForm.descricaoPeca || this.pecaForm.nomePeca || '',
+      fabricantePeca: this.pecaForm.fabricantePeca || '',
+      modeloPeca: this.pecaForm.modeloPeca || '',
+      idFornecedor: this.pecaForm.idFornecedor ? Number(this.pecaForm.idFornecedor) : null,
+      razaoSocialFornecedor: this.pecaForm.razaoSocialFornecedor || '',
+      quantidade,
+      unidadeMedida: this.pecaForm.unidadeMedida || 'UNIDADE',
+      valorUnitario: valorUnitario.toFixed(2),
+      valorTotal: (quantidade * valorUnitario).toFixed(2),
+      observacoes: this.pecaForm.observacoes || ''
+    };
+
+    this.inserirOuSomarPeca(item);
+    this.recalcularValoresAgendamento();
+    this.modalPeca?.hide();
+    this.resetarPecaForm();
+    this.abaNovoAgendamento = 'pecas';
+  }
+
+  private inserirOuSomarPeca(novaPeca: AgendamentoPecaSelecionada): void {
+    const indiceAtual = this.editandoPecaId !== null
+      ? this.pecasNovoAgendamento.findIndex(item => item.id === this.editandoPecaId)
+      : -1;
+
+    const indiceDuplicado = this.pecasNovoAgendamento.findIndex(item =>
+      Number(item.idPeca) === Number(novaPeca.idPeca)
+      && item.id !== this.editandoPecaId
+    );
+
+    if (indiceDuplicado >= 0) {
+      const existente = this.pecasNovoAgendamento[indiceDuplicado];
+
+      const quantidadeFinal =
+        this.quantidadeInteiraMinima(existente.quantidade)
+        + this.quantidadeInteiraMinima(novaPeca.quantidade);
+
+      const valorUnitario = this.moedaParaNumero(existente.valorUnitario || novaPeca.valorUnitario);
+      const valorTotal = quantidadeFinal * valorUnitario;
+
+      this.pecasNovoAgendamento[indiceDuplicado] = {
+        ...existente,
+        quantidade: quantidadeFinal,
+        valorTotal: valorTotal.toFixed(2)
+      };
+
+      if (indiceAtual >= 0) {
+        this.pecasNovoAgendamento.splice(indiceAtual, 1);
+      }
+
+      return;
+    }
+
+    if (indiceAtual >= 0) {
+      this.pecasNovoAgendamento[indiceAtual] = novaPeca;
+      return;
+    }
+
+    this.pecasNovoAgendamento.push(novaPeca);
+  }
+
+  editarPecaAgendamento(item: AgendamentoPecaSelecionada): void {
+    this.editandoPecaId = item.id ?? null;
+
+    this.pecaForm = {
+      idPeca: item.idPeca,
+      nomePeca: item.nomePeca,
+      descricaoPeca: item.descricaoPeca,
+      fabricantePeca: item.fabricantePeca,
+      modeloPeca: item.modeloPeca,
+      idFornecedor: item.idFornecedor ?? undefined,
+      razaoSocialFornecedor: item.razaoSocialFornecedor || '',
+      quantidade: String(this.quantidadeInteiraMinima(item.quantidade)),
+      unidadeMedida: item.unidadeMedida || 'UNIDADE',
+      valorUnitario: this.formatarMoedaBR(item.valorUnitario),
+      valorTotal: this.formatarMoedaBR(item.valorTotal),
+      observacoes: item.observacoes || ''
+    };
+  }
+
+  removerPecaAgendamento(item: AgendamentoPecaSelecionada): void {
+    if (!item.id) return;
+
+    if (!confirm('Deseja remover esta peça do agendamento?')) {
+      return;
+    }
+
+    this.pecasNovoAgendamento = this.pecasNovoAgendamento.filter(p => p.id !== item.id);
+    this.recalcularValoresAgendamento();
+  }
+
+  salvarAgendamento(): void {
+    this.mensagemErroModal = '';
+
+    const erro = this.validarCamposObrigatoriosAgendamento();
 
     if (erro) {
-      alert(erro);
+      this.mensagemErroModal = erro;
+      this.abaNovoAgendamento = 'agendamento';
       return;
     }
 
-    const payload = this.montarPayload(this.edit);
+    const payload = this.montarPayloadAgendamento();
 
-    this.service.atualizar(this.editId, payload).subscribe({
+    const request$ = this.editandoId
+      ? this.service.atualizar(this.editandoId, payload)
+      : this.service.criar(payload);
+
+    request$.subscribe({
       next: () => {
-        this.modalEdicao?.hide();
-        alert('Agendamento atualizado com sucesso.');
+        this.modalCadastro?.hide();
+        alert(this.editandoId ? 'Agendamento atualizado com sucesso.' : 'Agendamento cadastrado com sucesso.');
         this.recarregar();
       },
-      error: (erro) => {
-        console.error('Erro ao atualizar agendamento:', erro);
-        alert(this.extrairMensagemErro(erro, 'Erro ao atualizar agendamento.'));
+      error: (erroResposta) => {
+        this.mensagemErroModal = this.extrairMensagemErro(
+          erroResposta,
+          'Erro ao salvar agendamento.'
+        );
       }
     });
   }
 
-  // ======================================================
-  // AÇÕES DE STATUS
-  // ======================================================
+  clienteInvalido(): boolean {
+  return !this.novoAgendamento.idCliente;
+}
 
-  confirmar(item: Agendamento): void {
-    if (!item.id) {
-      return;
+veiculoInvalido(): boolean {
+  return !this.novoAgendamento.idVeiculo;
+}
+
+servicoPrevistoInvalido(): boolean {
+  return !this.novoAgendamento.idServico;
+}
+
+responsavelDisponivelInvalido(): boolean {
+  if (!this.periodoAgendamentoValido()) {
+    return true;
+  }
+
+  if (!this.novoAgendamento.idResponsavel) {
+    return true;
+  }
+
+  const responsavel = this.responsaveis.find(r =>
+    Number(r.id) === Number(this.novoAgendamento.idResponsavel)
+  );
+
+  if (!responsavel) {
+    return true;
+  }
+
+  return !this.responsavelDisponivelNoPeriodo(responsavel);
+}
+
+mensagemResponsavelInvalido(): string {
+  if (!this.periodoAgendamentoValido()) {
+    return 'Informe um período válido antes de selecionar o responsável.';
+  }
+
+  if (this.responsaveisDisponiveis().length === 0) {
+    return 'Nenhum responsável disponível para o período informado.';
+  }
+
+  if (!this.novoAgendamento.idResponsavel) {
+    return 'Selecione um responsável disponível.';
+  }
+
+  return 'O responsável selecionado não está disponível neste período.';
+}
+
+  private validarCamposObrigatoriosAgendamento(): string | null {
+  if (this.clienteInvalido()) {
+    return 'Selecione o cliente.';
+  }
+
+  if (this.veiculoInvalido()) {
+    return 'Selecione o veículo.';
+  }
+
+  if (this.servicoPrevistoInvalido()) {
+    return 'Selecione o serviço previsto para o agendamento.';
+  }
+
+  if (this.quilometragemAtualInvalida()) {
+    return 'Informe a quilometragem atual do veículo para salvar o agendamento.';
+  }
+
+  if (!this.novoAgendamento.dataHoraInicio) {
+    return 'Informe a data e hora de início do agendamento.';
+  }
+
+  if (!this.novoAgendamento.dataHoraFim) {
+    return 'Informe a data e hora de fim do agendamento.';
+  }
+
+  if (!this.periodoAgendamentoValido()) {
+    return 'Informe um período válido para o agendamento.';
+  }
+
+  if (this.responsavelDisponivelInvalido()) {
+    return this.mensagemResponsavelInvalido();
+  }
+
+  return null;
+}
+
+  private montarPayloadAgendamento(): AgendamentoRequest {
+    return {
+      idCliente: this.novoAgendamento.idCliente ? Number(this.novoAgendamento.idCliente) : null,
+      idVeiculo: this.novoAgendamento.idVeiculo ? Number(this.novoAgendamento.idVeiculo) : null,
+      idServico: this.novoAgendamento.idServico ? Number(this.novoAgendamento.idServico) : null,
+      idFornecedor: this.novoAgendamento.idFornecedor ? Number(this.novoAgendamento.idFornecedor) : null,
+      idResponsavel: this.novoAgendamento.idResponsavel ? Number(this.novoAgendamento.idResponsavel) : null,
+
+      dataHoraInicio: this.novoAgendamento.dataHoraInicio || '',
+      dataHoraFim: this.novoAgendamento.dataHoraFim || '',
+      duracaoEstimadaMinutos: this.novoAgendamento.duracaoEstimadaMinutos ?? null,
+
+      statusAgendamento: this.novoAgendamento.statusAgendamento || 'AGENDADO',
+      canalOrigem: this.novoAgendamento.canalOrigem || 'SISTEMA',
+      prioridade: this.novoAgendamento.prioridade || 'NORMAL',
+      tipoAtendimento: this.novoAgendamento.tipoAtendimento || 'PRESENCIAL',
+
+      quilometragemAtual: this.quilometragemAtualParaNumero(),
+      queixaCliente: this.limparOpcional(this.novoAgendamento.queixaCliente),
+      diagnosticoPrevio: this.limparOpcional(this.novoAgendamento.diagnosticoPrevio),
+      observacoes: this.montarObservacoesComPecas(),
+
+      valorEstimado: this.converterMoedaOpcionalParaNumero(this.novoAgendamento.valorEstimado),
+      valorFinal: this.converterMoedaOpcionalParaNumero(this.novoAgendamento.valorFinal),
+
+      requerConfirmacao: !!this.novoAgendamento.requerConfirmacao,
+      confirmado: !!this.novoAgendamento.confirmado
+    };
+  }
+
+  private montarObservacoesComPecas(): string {
+    const observacoesBase = this.limparOpcional(this.novoAgendamento.observacoes);
+
+    if (this.pecasNovoAgendamento.length === 0) {
+      return observacoesBase;
     }
 
+    const linhasPecas = this.pecasNovoAgendamento.map(item => {
+      return `- ${item.descricaoPeca || item.nomePeca || 'Peça'} | Fabricante: ${item.fabricantePeca || '—'} | Modelo: ${item.modeloPeca || '—'} | Qtd: ${item.quantidade || 0} ${item.unidadeMedida || ''} | Unitário: ${this.formatarMoedaBR(item.valorUnitario)} | Total: ${this.formatarMoedaBR(item.valorTotal)}`;
+    });
+
+    const bloco = [
+      '',
+      '[PEÇAS PREVISTAS NO AGENDAMENTO]',
+      ...linhasPecas,
+      `Total estimado de peças: ${this.formatarMoedaBR(this.totalPecasAgendamento())}`,
+      '[/PEÇAS PREVISTAS NO AGENDAMENTO]'
+    ].join('\n');
+
+    return `${observacoesBase}${bloco}`.trim();
+  }
+
+  private recalcularValoresAgendamento(): void {
+    const maoObra = this.valorServicoSelecionado();
+    const pecas = this.totalPecasAgendamento();
+    const total = maoObra + pecas;
+
+    this.novoAgendamento.valorEstimado = this.formatarMoedaBR(total);
+  }
+
+  totalPecasAgendamento(): number {
+    return this.pecasNovoAgendamento.reduce((total, item) => {
+      return total + this.moedaParaNumero(item.valorTotal);
+    }, 0);
+  }
+
+  valorServicoSelecionado(): number {
+    const idServico = Number(this.novoAgendamento.idServico);
+
+    if (!idServico) return 0;
+
+    const servico = this.servicos.find(s => Number(s.id) === idServico);
+
+    if (!servico) return 0;
+
+    return this.moedaParaNumero(this.valorPadraoServico(servico));
+  }
+
+  abrirDetalhes(item: Agendamento): void {
+    this.agendamentoSelecionado = item;
+
+    const el = document.getElementById('modalDetalhesAgendamento');
+
+    if (!el) return;
+
+    this.modalDetalhes = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalDetalhes.show();
+  }
+
+  confirmar(item: Agendamento): void {
+    if (!item.id) return;
+
     this.service.confirmar(item.id).subscribe({
-      next: () => {
-        alert('Agendamento confirmado com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        alert(this.extrairMensagemErro(erro, 'Erro ao confirmar agendamento.'));
-      }
+      next: () => this.recarregar(),
+      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao confirmar agendamento.'))
     });
   }
 
   iniciar(item: Agendamento): void {
-    if (!item.id) {
-      return;
-    }
+    if (!item.id) return;
 
     this.service.iniciar(item.id).subscribe({
-      next: () => {
-        alert('Atendimento iniciado com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        alert(this.extrairMensagemErro(erro, 'Erro ao iniciar atendimento.'));
-      }
+      next: () => this.recarregar(),
+      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao iniciar agendamento.'))
     });
   }
 
   concluir(item: Agendamento): void {
-    if (!item.id) {
-      return;
-    }
-
-    if (!confirm('Confirma concluir este agendamento?')) {
-      return;
-    }
+    if (!item.id) return;
 
     this.service.concluir(item.id).subscribe({
-      next: () => {
-        alert('Agendamento concluído com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        alert(this.extrairMensagemErro(erro, 'Erro ao concluir agendamento.'));
-      }
+      next: () => this.recarregar(),
+      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao concluir agendamento.'))
     });
   }
 
-  abrirModalCancelamento(item: Agendamento): void {
+  abrirCancelamento(item: Agendamento): void {
     this.agendamentoSelecionado = item;
     this.motivoCancelamento = '';
 
     const el = document.getElementById('modalCancelamentoAgendamento');
 
-    if (!el) {
-      console.error('Modal modalCancelamentoAgendamento não encontrado.');
-      return;
-    }
+    if (!el) return;
 
     this.modalCancelamento = bootstrap.Modal.getOrCreateInstance(el);
     this.modalCancelamento.show();
   }
 
-  cancelarAgendamento(): void {
-    if (!this.agendamentoSelecionado?.id) {
-      return;
-    }
+  confirmarCancelamento(): void {
+    if (!this.agendamentoSelecionado?.id) return;
 
-    this.service.cancelar(
-      this.agendamentoSelecionado.id,
-      {
-        motivoCancelamento: this.limparOpcional(this.motivoCancelamento)
-      }
-    ).subscribe({
+    const body: AgendamentoCancelamentoRequest = {
+      motivoCancelamento: this.motivoCancelamento || 'Cancelado pelo administrador.'
+    };
+
+    this.service.cancelar(this.agendamentoSelecionado.id, body).subscribe({
       next: () => {
         this.modalCancelamento?.hide();
-        alert('Agendamento cancelado com sucesso.');
         this.recarregar();
       },
-      error: (erro) => {
-        alert(this.extrairMensagemErro(erro, 'Erro ao cancelar agendamento.'));
-      }
+      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao cancelar agendamento.'))
     });
   }
 
-  naoCompareceu(item: Agendamento): void {
-    if (!item.id) {
+  excluir(item: Agendamento): void {
+    if (!item.id) return;
+
+    if (!confirm('Deseja excluir este agendamento?')) {
       return;
     }
 
-    if (!confirm('Confirma marcar este agendamento como não compareceu?')) {
-      return;
-    }
-
-    this.service.naoCompareceu(item.id).subscribe({
-      next: () => {
-        alert('Agendamento marcado como não compareceu.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        alert(this.extrairMensagemErro(erro, 'Erro ao marcar não comparecimento.'));
-      }
+    this.service.excluir(item.id).subscribe({
+      next: () => this.recarregar(),
+      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao excluir agendamento.'))
     });
   }
 
   podeConfirmar(item: Agendamento): boolean {
-    return item.statusAgendamento === 'AGENDADO' || item.statusAgendamento === 'REAGENDADO';
+    return item.statusAgendamento === 'AGENDADO';
   }
 
   podeIniciar(item: Agendamento): boolean {
-    return item.statusAgendamento === 'AGENDADO' || item.statusAgendamento === 'CONFIRMADO';
+    return item.statusAgendamento === 'AGENDADO'
+      || item.statusAgendamento === 'CONFIRMADO';
   }
 
   podeConcluir(item: Agendamento): boolean {
@@ -542,754 +1103,470 @@ export class ExibeAgendamentosComponent implements OnInit {
       && item.statusAgendamento !== 'NAO_COMPARECEU';
   }
 
-  podeNaoCompareceu(item: Agendamento): boolean {
-    return item.statusAgendamento !== 'CANCELADO'
-      && item.statusAgendamento !== 'CONCLUIDO'
-      && item.statusAgendamento !== 'NAO_COMPARECEU';
+  formatarStatus(status?: string | null): string {
+    if (!status) return '—';
+
+    return status
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, letra => letra.toUpperCase());
   }
 
-  // ======================================================
-  // DETALHES
-  // ======================================================
-
-  abrirModalDetalhes(item: Agendamento): void {
-    this.agendamentoSelecionado = item;
-
-    const el = document.getElementById('modalDetalhesAgendamento');
-
-    if (!el) {
-      console.error('Modal modalDetalhesAgendamento não encontrado.');
-      return;
+  statusBadgeClass(status?: string | null): string {
+    switch (status) {
+      case 'AGENDADO':
+        return 'bg-primary';
+      case 'CONFIRMADO':
+        return 'bg-success';
+      case 'EM_ATENDIMENTO':
+        return 'bg-warning text-dark';
+      case 'CONCLUIDO':
+        return 'bg-success';
+      case 'CANCELADO':
+      case 'NAO_COMPARECEU':
+        return 'bg-danger';
+      case 'REAGENDADO':
+        return 'bg-info text-dark';
+      default:
+        return 'bg-secondary';
     }
-
-    this.modalDetalhes = bootstrap.Modal.getOrCreateInstance(el);
-    this.modalDetalhes.show();
   }
 
-  // ======================================================
-  // SELEÇÕES
-  // ======================================================
+  formatarMoedaBR(valor: any): string {
+    const numero = this.moedaParaNumero(valor);
 
-  abrirModalSelecao(tipo: TipoSelecao, modo: ModoFormulario): void {
-    this.tipoSelecao = tipo;
-    this.modoFormulario = modo;
-    this.filtroSelecao = '';
-
-    if (tipo === 'cliente') {
-      this.itensSelecao = [...this.clientes];
-    } else if (tipo === 'responsavel') {
-      this.itensSelecao = [...this.responsaveis];
-    } else if (tipo === 'veiculo') {
-      const model = this.obterModelAtual();
-      this.atualizarVeiculosPorCliente(model);
-      this.itensSelecao = [...this.veiculosFiltradosParaCliente];
-    } else {
-      this.itensSelecao = [...this.servicos];
-    }
-
-    this.itensSelecaoFiltrados = [...this.itensSelecao];
-
-    const el = document.getElementById('modalSelecaoAgendamento');
-
-    if (!el) {
-      console.error('Modal modalSelecaoAgendamento não encontrado.');
-      return;
-    }
-
-    this.modalSelecao = bootstrap.Modal.getOrCreateInstance(el);
-    this.modalSelecao.show();
-  }
-
-  aplicarFiltroSelecao(): void {
-    const t = this.filtroSelecao.trim().toLowerCase();
-
-    if (!t) {
-      this.itensSelecaoFiltrados = [...this.itensSelecao];
-      return;
-    }
-
-    this.itensSelecaoFiltrados = this.itensSelecao.filter(item => {
-      if (this.tipoSelecao === 'cliente' || this.tipoSelecao === 'responsavel') {
-        return (
-          (item.nome || '').toLowerCase().includes(t) ||
-          (item.nome_social || '').toLowerCase().includes(t) ||
-          (item.cpf || '').toLowerCase().includes(t) ||
-          (item.email || '').toLowerCase().includes(t) ||
-          (item.telefone || '').toLowerCase().includes(t)
-        );
-      }
-
-      if (this.tipoSelecao === 'veiculo') {
-        return (
-          (item.placa || '').toLowerCase().includes(t) ||
-          (item.fabricante || '').toLowerCase().includes(t) ||
-          (item.modelo || '').toLowerCase().includes(t) ||
-          (item.cor || '').toLowerCase().includes(t)
-        );
-      }
-
-      return (
-        (item.nome || '').toLowerCase().includes(t) ||
-        (item.categoria || '').toLowerCase().includes(t) ||
-        (item.tipoDoPrestador || '').toLowerCase().includes(t) ||
-        (item.descricao || '').toLowerCase().includes(t)
-      );
+    return numero.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
     });
   }
 
-  selecionarItem(item: any): void {
-    const model = this.obterModelAtual();
+  formatarDataHora(valor?: string | null): string {
+    if (!valor) return '—';
 
-    if (this.tipoSelecao === 'cliente') {
-      model.idCliente = item.id;
-      model.nomeCliente = item.nome;
-      model.cpfCliente = item.cpf;
-      model.telefoneCliente = item.telefone;
-      model.emailCliente = item.email;
+    const data = new Date(valor);
 
-      model.idVeiculo = undefined;
-      model.placaVeiculo = '';
-      model.fabricanteVeiculo = '';
-      model.modeloVeiculo = '';
-
-      this.atualizarVeiculosPorCliente(model);
+    if (Number.isNaN(data.getTime())) {
+      return valor;
     }
 
-    if (this.tipoSelecao === 'veiculo') {
-      model.idVeiculo = item.id;
-      model.placaVeiculo = item.placa;
-      model.fabricanteVeiculo = item.fabricante;
-      model.modeloVeiculo = item.modelo;
+    return data.toLocaleString('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    });
+  }
+
+  formatarCpf(cpf?: string | null): string {
+    if (!cpf) return '—';
+
+    const d = cpf.replace(/\D/g, '');
+
+    if (d.length !== 11) return cpf;
+
+    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  }
+
+  formatarPlaca(placa?: string | null): string {
+    if (!placa) return '—';
+
+    const p = placa.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    if (p.length === 7 && /^[A-Z]{3}\d{4}$/.test(p)) {
+      return `${p.substring(0, 3)}-${p.substring(3)}`;
     }
 
-    if (this.tipoSelecao === 'servico') {
-      model.idServico = item.id;
-      model.nomeServico = item.nome;
-      model.categoriaServico = item.categoria;
+    return p;
+  }
 
-      model.idFornecedor = item.idFornecedor;
-      model.razaoSocialFornecedor = item.razaoSocialFornecedor;
+  private quantidadeInteiraMinima(valor: any): number {
+    const numero = this.moedaParaNumero(valor);
 
-      if (!model.valorEstimado && item.valorBase !== null && item.valorBase !== undefined) {
-        model.valorEstimado = this.formatarMoedaBR(item.valorBase);
+    if (numero <= 0) return 1;
+
+    return Math.max(1, Math.ceil(numero));
+  }
+
+  private idClienteDoVeiculo(veiculo: VeiculoResumo): number | undefined {
+    const valor = this.obterCampo(
+      veiculo,
+      [
+        'idCliente',
+        'id_cliente',
+        'clienteId',
+        'cliente_id',
+        'cliente.id',
+        'idUsuario',
+        'id_usuario',
+        'usuarioId',
+        'usuario_id',
+        'usuario.id',
+        'idProprietario',
+        'id_proprietario',
+        'proprietario.id'
+      ]
+    );
+
+    if (valor === null || valor === undefined || valor === '') {
+      return undefined;
+    }
+
+    const numero = Number(valor);
+
+    return Number.isNaN(numero) ? undefined : numero;
+  }
+
+  private placaDoVeiculo(veiculo: VeiculoResumo): string {
+    return this.textoCampo(
+      veiculo,
+      ['placa', 'placaVeiculo', 'placa_veiculo'],
+      ''
+    );
+  }
+
+  private fabricanteDoVeiculo(veiculo: VeiculoResumo): string {
+    return this.textoCampo(
+      veiculo,
+      ['fabricante', 'marca', 'montadora'],
+      ''
+    );
+  }
+
+  private modeloDoVeiculo(veiculo: VeiculoResumo): string {
+    return this.textoCampo(
+      veiculo,
+      ['modelo', 'nomeModelo', 'nome_modelo'],
+      ''
+    );
+  }
+
+  private corDoVeiculo(veiculo: VeiculoResumo): string {
+    return this.textoCampo(
+      veiculo,
+      ['cor'],
+      ''
+    );
+  }
+
+  private encontrarFornecimentoDaPeca(idPeca: number): FornecimentoPecaResumo | null {
+    const encontrados = this.fornecimentosPecas.filter(f =>
+      Number(this.idPecaObjeto(f)) === Number(idPeca)
+    );
+
+    if (encontrados.length === 0) return null;
+
+    const ativos = encontrados.filter(f => this.fornecimentoEstaAtivo(f));
+    const candidatos = ativos.length > 0 ? ativos : encontrados;
+
+    return [...candidatos].sort((a, b) => {
+      return this.moedaParaNumero(this.valorPadraoFornecimentoPeca(a))
+        - this.moedaParaNumero(this.valorPadraoFornecimentoPeca(b));
+    })[0];
+  }
+
+  private fornecimentoEstaAtivo(fornecimento: FornecimentoPecaResumo): boolean {
+    const valor = this.obterCampo(fornecimento, ['ativo']);
+
+    if (valor === null || valor === undefined || valor === '') return true;
+
+    if (typeof valor === 'boolean') return valor;
+
+    const texto = String(valor).trim().toUpperCase();
+
+    return texto === 'TRUE'
+      || texto === '1'
+      || texto === 'SIM'
+      || texto === 'S'
+      || texto === 'ATIVO';
+  }
+
+  private idPecaObjeto(objeto: any): number | undefined {
+    const valor = this.obterCampo(objeto, ['idPeca', 'id_peca', 'peca.id']);
+
+    if (valor === null || valor === undefined || valor === '') return undefined;
+
+    const numero = Number(valor);
+
+    return Number.isNaN(numero) ? undefined : numero;
+  }
+
+  private idFornecedorObjeto(objeto: any): number | undefined {
+    const valor = this.obterCampo(objeto, ['idFornecedor', 'id_fornecedor', 'fornecedor.id']);
+
+    if (valor === null || valor === undefined || valor === '') return undefined;
+
+    const numero = Number(valor);
+
+    return Number.isNaN(numero) ? undefined : numero;
+  }
+
+  private nomeFornecedorObjeto(objeto: any): string {
+    return this.textoCampo(
+      objeto,
+      [
+        'razaoSocialFornecedor',
+        'razao_social_fornecedor',
+        'fornecedor.razaoSocial',
+        'fornecedor.razao_social',
+        'fornecedor.nomeFantasia',
+        'fornecedor.nome_fantasia'
+      ],
+      ''
+    );
+  }
+
+  private unidadePadraoPeca(peca: PecaResumo): string {
+    return this.textoCampo(
+      peca,
+      ['unidadeMedida', 'unidade_medida', 'unidade'],
+      'UNIDADE'
+    );
+  }
+
+  private unidadePadraoFornecimentoPeca(fornecimento: FornecimentoPecaResumo): string {
+    return this.textoCampo(
+      fornecimento,
+      [
+        'unidadeMedida',
+        'unidade_medida',
+        'unidadeCompra',
+        'unidade_compra',
+        'peca.unidadeMedida',
+        'peca.unidade_medida',
+        'peca.unidade'
+      ],
+      ''
+    );
+  }
+
+  private valorPadraoFornecimentoPeca(fornecimento: FornecimentoPecaResumo): any {
+    const valor = this.valorCampo(
+      fornecimento,
+      [
+        'valorUnitario',
+        'valor_unitario',
+        'valorCusto',
+        'valor_custo',
+        'custoUnitario',
+        'custo_unitario',
+        'precoUnitario',
+        'preco_unitario',
+        'precoCompra',
+        'preco_compra',
+        'valorCompra',
+        'valor_compra',
+        'valorFornecimento',
+        'valor_fornecimento',
+        'custo',
+        'preco',
+        'valor'
+      ],
+      null
+    );
+
+    return valor ?? 0;
+  }
+
+  private valorPadraoServico(servico: ServicoResumo): any {
+    return this.valorCampo(
+      servico,
+      ['valorBase', 'valor_base', 'valor', 'preco'],
+      0
+    );
+  }
+
+  private duracaoServicoEmMinutos(servico: ServicoResumo): number {
+    const duracao = this.moedaParaNumero(
+      this.valorCampo(
+        servico,
+        ['duracaoEstimada', 'duracao_estimada', 'duracao'],
+        60
+      )
+    );
+
+    const unidade = this.normalizar(
+      this.textoCampo(
+        servico,
+        ['unidadeDuracao', 'unidade_duracao'],
+        'MINUTO'
+      )
+    );
+
+    if (unidade.includes('hora')) return duracao * 60;
+    if (unidade.includes('dia')) return duracao * 1440;
+
+    return duracao;
+  }
+
+  private obterCampo(objeto: any, caminhos: string[]): any {
+    if (!objeto) return null;
+
+    for (const caminho of caminhos) {
+      const partes = caminho.split('.');
+      let valor = objeto;
+
+      for (const parte of partes) {
+        if (valor === null || valor === undefined) {
+          valor = null;
+          break;
+        }
+
+        valor = valor[parte];
       }
 
-      if (model.dataHoraInicio && !model.dataHoraFim) {
-        model.dataHoraFim = this.calcularFimPorServico(model.dataHoraInicio, item);
-      }
-    }
-
-    if (this.tipoSelecao === 'responsavel') {
-      model.idResponsavel = item.id;
-      model.nomeResponsavel = item.nome;
-      model.tipoAcessoResponsavel = item.tipo_do_acesso;
-    }
-
-    this.modalSelecao?.hide();
-  }
-
-  private obterModelAtual(): Partial<Agendamento> {
-    return this.modoFormulario === 'cadastro'
-      ? this.novoAgendamento
-      : this.edit;
-  }
-
-  atualizarVeiculosPorCliente(model: Partial<Agendamento>): void {
-    if (!model.idCliente) {
-      this.veiculosFiltradosParaCliente = [...this.veiculos];
-      return;
-    }
-
-    const vinculados = this.veiculos.filter(v => Number(v.idProprietario) === Number(model.idCliente));
-
-    this.veiculosFiltradosParaCliente = vinculados.length > 0
-      ? vinculados
-      : [...this.veiculos];
-  }
-
-  aoAlterarDataInicio(model: Partial<Agendamento>): void {
-    if (!model.dataHoraInicio || model.dataHoraFim || !model.idServico) {
-      return;
-    }
-
-    const servico = this.servicos.find(s => Number(s.id) === Number(model.idServico));
-
-    if (servico) {
-      model.dataHoraFim = this.calcularFimPorServico(model.dataHoraInicio, servico);
-    }
-  }
-
-  private calcularFimPorServico(dataInicio: any, servico: ServicoResumo): string {
-    const inicio = new Date(dataInicio);
-
-    if (Number.isNaN(inicio.getTime())) {
-      return '';
-    }
-
-    const minutos = this.calcularDuracaoServicoMinutos(servico);
-    inicio.setMinutes(inicio.getMinutes() + minutos);
-
-    return this.dateToInputLocal(inicio);
-  }
-
-  private calcularDuracaoServicoMinutos(servico: ServicoResumo): number {
-    const duracao = Number(servico.duracaoEstimada ?? 60);
-    const unidade = (servico.unidadeDuracao || 'MINUTO').toUpperCase();
-
-    if (Number.isNaN(duracao) || duracao <= 0) {
-      return 60;
-    }
-
-    if (unidade === 'HORA') {
-      return Math.round(duracao * 60);
-    }
-
-    if (unidade === 'DIA') {
-      return Math.round(duracao * 1440);
-    }
-
-    return Math.round(duracao);
-  }
-
-  // ======================================================
-  // VALIDAÇÃO / PAYLOAD
-  // ======================================================
-
-  private validarAgendamento(model: Partial<Agendamento>): string | null {
-    if (!model.idCliente) {
-      return 'Selecione o cliente.';
-    }
-
-    if (!model.idVeiculo) {
-      return 'Selecione o veículo.';
-    }
-
-    if (!model.idServico) {
-      return 'Selecione o serviço.';
-    }
-
-    if (!model.dataHoraInicio) {
-      return 'Informe a data/hora de início.';
-    }
-
-    if (model.dataHoraFim) {
-      const inicio = new Date(model.dataHoraInicio);
-      const fim = new Date(model.dataHoraFim);
-
-      if (!Number.isNaN(inicio.getTime()) && !Number.isNaN(fim.getTime()) && fim <= inicio) {
-        return 'A data/hora final deve ser posterior à data/hora inicial.';
-      }
-    }
-
-    if (model.quilometragemAtual !== null && model.quilometragemAtual !== undefined) {
-      if (Number(model.quilometragemAtual) < 0) {
-        return 'A quilometragem não pode ser negativa.';
+      if (valor !== null && valor !== undefined && valor !== '') {
+        return valor;
       }
     }
 
     return null;
   }
 
-  private montarPayload(model: Partial<Agendamento>): AgendamentoRequest {
-    return {
-      idCliente: model.idCliente ?? null,
-      idVeiculo: model.idVeiculo ?? null,
-      idServico: model.idServico ?? null,
-      idFornecedor: model.idFornecedor ?? null,
-      idResponsavel: model.idResponsavel ?? null,
+  private textoCampo(objeto: any, caminhos: string[], padrao = ''): string {
+    const valor = this.obterCampo(objeto, caminhos);
 
-      dataHoraInicio: model.dataHoraInicio ?? '',
-      dataHoraFim: model.dataHoraFim ?? '',
+    if (valor === null || valor === undefined || valor === '') return padrao;
 
-      statusAgendamento: model.statusAgendamento || 'AGENDADO',
-      canalOrigem: model.canalOrigem || 'SISTEMA',
-      prioridade: model.prioridade || 'NORMAL',
-      tipoAtendimento: model.tipoAtendimento || 'PRESENCIAL',
-
-      quilometragemAtual: model.quilometragemAtual === null || model.quilometragemAtual === undefined
-        ? null
-        : Number(model.quilometragemAtual),
-
-      queixaCliente: this.limparOpcional(model.queixaCliente),
-      diagnosticoPrevio: this.limparOpcional(model.diagnosticoPrevio),
-      observacoes: this.limparOpcional(model.observacoes),
-
-      valorEstimado: this.converterMoedaOpcionalParaNumero(model.valorEstimado),
-      valorFinal: this.converterMoedaOpcionalParaNumero(model.valorFinal),
-
-      requerConfirmacao: model.requerConfirmacao === null || model.requerConfirmacao === undefined
-        ? true
-        : Boolean(model.requerConfirmacao),
-
-      confirmado: Boolean(model.confirmado)
-    };
+    return String(valor);
   }
 
-  // ======================================================
-  // FORMATAÇÕES
-  // ======================================================
+  private valorCampo(objeto: any, caminhos: string[], padrao: any = 0): any {
+    const valor = this.obterCampo(objeto, caminhos);
 
-  textoCliente(model: Partial<Agendamento>): string {
-    if (!model.nomeCliente) {
-      return '';
-    }
+    if (valor === null || valor === undefined || valor === '') return padrao;
 
-    const cpf = model.cpfCliente ? ` - CPF ${this.formatarCPF(model.cpfCliente)}` : '';
-    return `${model.nomeCliente}${cpf}`;
+    return valor;
   }
 
-  textoVeiculo(model: Partial<Agendamento>): string {
-    if (!model.placaVeiculo && !model.modeloVeiculo) {
-      return '';
-    }
+  private moedaParaNumero(valor: any): number {
+    if (valor === null || valor === undefined || valor === '') return 0;
 
-    const placa = model.placaVeiculo ? this.formatarPlaca(model.placaVeiculo) : '';
-    const veiculo = `${model.fabricanteVeiculo || ''} ${model.modeloVeiculo || ''}`.trim();
+    if (typeof valor === 'number') return Number.isNaN(valor) ? 0 : valor;
 
-    return placa && veiculo ? `${placa} - ${veiculo}` : placa || veiculo;
-  }
-
-  textoServico(model: Partial<Agendamento>): string {
-    if (!model.nomeServico) {
-      return '';
-    }
-
-    const categoria = model.categoriaServico ? ` - ${model.categoriaServico}` : '';
-    return `${model.nomeServico}${categoria}`;
-  }
-
-  textoResponsavel(model: Partial<Agendamento>): string {
-    if (!model.nomeResponsavel) {
-      return '';
-    }
-
-    return model.nomeResponsavel;
-  }
-
-  tituloSelecao(): string {
-    if (this.tipoSelecao === 'cliente') {
-      return 'Selecionar Cliente';
-    }
-
-    if (this.tipoSelecao === 'veiculo') {
-      return 'Selecionar Veículo';
-    }
-
-    if (this.tipoSelecao === 'servico') {
-      return 'Selecionar Serviço';
-    }
-
-    return 'Selecionar Responsável';
-  }
-
-  placeholderSelecao(): string {
-    if (this.tipoSelecao === 'cliente') {
-      return 'Buscar por nome, CPF, e-mail ou telefone...';
-    }
-
-    if (this.tipoSelecao === 'veiculo') {
-      return 'Buscar por placa, fabricante, modelo ou cor...';
-    }
-
-    if (this.tipoSelecao === 'servico') {
-      return 'Buscar por nome, categoria ou tipo de prestador...';
-    }
-
-    return 'Buscar responsável por nome, CPF, e-mail ou telefone...';
-  }
-
-  textoItemSelecaoPrincipal(item: any): string {
-    if (this.tipoSelecao === 'cliente' || this.tipoSelecao === 'responsavel') {
-      return item.nome || item.nome_social || 'Usuário sem nome';
-    }
-
-    if (this.tipoSelecao === 'veiculo') {
-      return `${this.formatarPlaca(item.placa)} - ${item.fabricante || ''} ${item.modelo || ''}`.trim();
-    }
-
-    return item.nome || 'Serviço sem nome';
-  }
-
-  textoItemSelecaoSecundario(item: any): string {
-    if (this.tipoSelecao === 'cliente' || this.tipoSelecao === 'responsavel') {
-      const cpf = item.cpf ? `CPF: ${this.formatarCPF(item.cpf)}` : '';
-      const email = item.email ? ` | ${item.email}` : '';
-      const tipo = item.tipo_do_acesso ? ` | ${this.formatarTipoAcesso(item.tipo_do_acesso)}` : '';
-
-      return `${cpf}${email}${tipo}`;
-    }
-
-    if (this.tipoSelecao === 'veiculo') {
-      const cor = item.cor ? ` | Cor: ${item.cor}` : '';
-      const ano = item.anoModeloCombustivel ? ` | ${item.anoModeloCombustivel}` : '';
-
-      return `${item.fabricante || ''} ${item.modelo || ''}${cor}${ano}`.trim();
-    }
-
-    const categoria = item.categoria ? `Categoria: ${item.categoria}` : '';
-    const valor = item.valorBase ? ` | Valor: ${this.formatarMoedaBR(item.valorBase)}` : '';
-    const duracao = item.duracaoEstimada ? ` | Duração: ${item.duracaoEstimada} ${this.formatarUnidade(item.unidadeDuracao)}` : '';
-
-    return `${categoria}${valor}${duracao}`;
-  }
-
-  formatarStatus(status?: string): string {
-    if (!status) {
-      return '';
-    }
-
-    const mapa: Record<string, string> = {
-      AGENDADO: 'Agendado',
-      CONFIRMADO: 'Confirmado',
-      EM_ATENDIMENTO: 'Em atendimento',
-      CONCLUIDO: 'Concluído',
-      CANCELADO: 'Cancelado',
-      NAO_COMPARECEU: 'Não compareceu',
-      REAGENDADO: 'Reagendado'
-    };
-
-    return mapa[status] || status;
-  }
-
-  statusBadgeClass(status?: string): string {
-    if (status === 'AGENDADO') {
-      return 'bg-primary';
-    }
-
-    if (status === 'CONFIRMADO') {
-      return 'bg-success';
-    }
-
-    if (status === 'EM_ATENDIMENTO') {
-      return 'bg-warning text-dark';
-    }
-
-    if (status === 'CONCLUIDO') {
-      return 'bg-info text-dark';
-    }
-
-    if (status === 'CANCELADO') {
-      return 'bg-danger';
-    }
-
-    if (status === 'NAO_COMPARECEU') {
-      return 'bg-dark';
-    }
-
-    if (status === 'REAGENDADO') {
-      return 'bg-secondary';
-    }
-
-    return 'bg-secondary';
-  }
-
-  formatarCanal(canal?: string): string {
-    if (!canal) {
-      return '';
-    }
-
-    return canal
-      .replace('_', ' ')
-      .toLowerCase()
-      .replace(/^\w/, c => c.toUpperCase());
-  }
-
-  formatarPrioridade(prioridade?: string): string {
-    if (!prioridade) {
-      return '';
-    }
-
-    return prioridade
-      .toLowerCase()
-      .replace(/^\w/, c => c.toUpperCase());
-  }
-
-  prioridadeBadgeClass(prioridade?: string): string {
-    if (prioridade === 'URGENTE') {
-      return 'bg-danger';
-    }
-
-    if (prioridade === 'ALTA') {
-      return 'bg-warning text-dark';
-    }
-
-    if (prioridade === 'NORMAL') {
-      return 'bg-primary';
-    }
-
-    return 'bg-secondary';
-  }
-
-  formatarTipoAtendimento(tipo?: string): string {
-    if (!tipo) {
-      return '';
-    }
-
-    const mapa: Record<string, string> = {
-      PRESENCIAL: 'Presencial',
-      RETIRADA_ENTREGA: 'Retirada/Entrega',
-      GUINCHO: 'Guincho'
-    };
-
-    return mapa[tipo] || tipo;
-  }
-
-  formatarDataHora(data?: string | null): string {
-    if (!data) {
-      return '';
-    }
-
-    const d = new Date(data);
-
-    if (Number.isNaN(d.getTime())) {
-      return '';
-    }
-
-    return d.toLocaleString('pt-BR');
-  }
-
-  formatarDataCurta(data?: string | null): string {
-    if (!data) {
-      return '';
-    }
-
-    const d = new Date(data);
-
-    if (Number.isNaN(d.getTime())) {
-      return '';
-    }
-
-    return d.toLocaleDateString('pt-BR');
-  }
-
-  formatarHora(data?: string | null): string {
-    if (!data) {
-      return '';
-    }
-
-    const d = new Date(data);
-
-    if (Number.isNaN(d.getTime())) {
-      return '';
-    }
-
-    return d.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  formatarDuracao(minutos?: number | null): string {
-    if (!minutos) {
-      return '';
-    }
-
-    if (minutos < 60) {
-      return `${minutos} min`;
-    }
-
-    const h = Math.floor(minutos / 60);
-    const m = minutos % 60;
-
-    return m > 0 ? `${h}h ${m}min` : `${h}h`;
-  }
-
-  formatarMoedaBR(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '';
-    }
-
-    let numero: number;
-
-    if (typeof valor === 'number') {
-      numero = valor;
-    } else {
-      let texto = valor
-        .toString()
-        .replace('R$', '')
-        .replace(/\s/g, '')
-        .trim();
-
-      if (/^\d+\.\d{1,2}$/.test(texto)) {
-        numero = Number(texto);
-      } else if (texto.includes(',')) {
-        texto = texto.replace(/\./g, '').replace(',', '.');
-        numero = Number(texto);
-      } else {
-        numero = Number(texto);
-      }
-    }
-
-    if (Number.isNaN(numero)) {
-      return '';
-    }
-
-    return numero.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  formatarValorEstimadoCadastro(): void {
-    this.novoAgendamento.valorEstimado = this.formatarMoedaBR(this.novoAgendamento.valorEstimado);
-  }
-
-  formatarValorFinalCadastro(): void {
-    this.novoAgendamento.valorFinal = this.formatarMoedaBR(this.novoAgendamento.valorFinal);
-  }
-
-  formatarValorEstimadoEdicao(): void {
-    this.edit.valorEstimado = this.formatarMoedaBR(this.edit.valorEstimado);
-  }
-
-  formatarValorFinalEdicao(): void {
-    this.edit.valorFinal = this.formatarMoedaBR(this.edit.valorFinal);
-  }
-
-  formatarCPF(cpf: any): string {
-    const d = this.onlyDigits(cpf);
-
-    if (d.length !== 11) {
-      return cpf ?? '';
-    }
-
-    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  }
-
-  formatarPlaca(placa: any): string {
-    const v = (placa ?? '').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-    if (v.length === 7 && /^[A-Z]{3}\d{4}$/.test(v)) {
-      return `${v.substring(0, 3)}-${v.substring(3)}`;
-    }
-
-    return v;
-  }
-
-  formatarTipoAcesso(tipo?: string): string {
-    if (!tipo) {
-      return '';
-    }
-
-    return tipo
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/\b\w/g, c => c.toUpperCase());
-  }
-
-  formatarUnidade(unidade?: string): string {
-    if (!unidade) {
-      return '';
-    }
-
-    return unidade
-      .toLowerCase()
-      .replace(/^\w/, c => c.toUpperCase());
-  }
-
-  voltar(): void {
-    this.location.back();
-  }
-
-  // ======================================================
-  // HELPERS
-  // ======================================================
-
-  private asDateTimeLocal(data: any): string {
-    if (!data) {
-      return '';
-    }
-
-    const d = new Date(data);
-
-    if (Number.isNaN(d.getTime())) {
-      return '';
-    }
-
-    return this.dateToInputLocal(d);
-  }
-
-  private dateToInputLocal(d: Date): string {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-  }
-
-  private converterMoedaOpcionalParaNumero(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '';
-    }
-
-    if (typeof valor === 'number') {
-      return valor.toFixed(2);
-    }
-
-    let texto = valor
-      .toString()
+    let texto = String(valor)
       .replace('R$', '')
       .replace(/\s/g, '')
       .trim();
 
-    if (/^\d+\.\d{1,2}$/.test(texto)) {
-      return Number(texto).toFixed(2);
+    if (/^\d+\.\d{1,4}$/.test(texto)) {
+      return Number(texto);
     }
 
     if (texto.includes(',')) {
       texto = texto.replace(/\./g, '').replace(',', '.');
-      return Number(texto).toFixed(2);
     }
 
     const numero = Number(texto);
 
-    if (Number.isNaN(numero)) {
-      return '';
+    return Number.isNaN(numero) ? 0 : numero;
+  }
+
+  converterMoedaOpcionalParaNumero(valor: any): string {
+    return this.moedaParaNumero(valor).toFixed(2);
+  }
+
+  limparOpcional(valor: any): string {
+    if (valor === null || valor === undefined) return '';
+
+    return String(valor).trim();
+  }
+
+  private agoraInputDateTime(): string {
+    const agora = new Date();
+    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+    return agora.toISOString().slice(0, 16);
+  }
+
+  private paraDatetimeLocal(valor: string): string {
+    if (!valor) return '';
+
+    const data = new Date(valor);
+
+    if (Number.isNaN(data.getTime())) {
+      return valor;
     }
 
-    return numero.toFixed(2);
+    data.setMinutes(data.getMinutes() - data.getTimezoneOffset());
+
+    return data.toISOString().slice(0, 16);
   }
 
-  private limparOpcional(valor: any): string | undefined {
-    if (valor === null || valor === undefined || valor.toString().trim() === '') {
-      return undefined;
-    }
-
-    return valor.toString().trim();
-  }
-
-  private onlyDigits(v: any): string {
-    return (v ?? '').toString().replace(/\D/g, '');
-  }
-
-  private tipoAcessoNormalizado(tipo: any): string {
-    return (tipo ?? '')
-      .toString()
+  private normalizar(valor: any): string {
+    return String(valor ?? '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .trim()
+      .toLowerCase()
+      .trim();
+  }
+
+  private normalizarTipoAcesso(valor: any): string {
+    return String(valor ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .toUpperCase()
       .replace(/-/g, '_')
-      .replace(/\s/g, '_');
+      .replace(/ /g, '_')
+      .trim();
   }
 
-  private extrairMensagemErro(erro: any, mensagemPadrao: string): string {
-    if (typeof erro?.error === 'string') {
-      return erro.error;
-    }
+  private extrairLista<T>(resposta: any): T[] {
+    if (Array.isArray(resposta)) return resposta;
+    if (Array.isArray(resposta?.content)) return resposta.content;
+    if (Array.isArray(resposta?.dados)) return resposta.dados;
+    if (Array.isArray(resposta?.data)) return resposta.data;
 
-    if (typeof erro?.error?.mensagem === 'string') {
-      return erro.error.mensagem;
-    }
+    return [];
+  }
 
-    if (typeof erro?.message === 'string') {
-      return erro.message;
-    }
-
+  extrairMensagemErro(erro: any, mensagemPadrao: string): string {
+    if (typeof erro?.error === 'string') return erro.error;
+    if (typeof erro?.error?.mensagem === 'string') return erro.error.mensagem;
+    if (typeof erro?.message === 'string') return erro.message;
     return mensagemPadrao;
   }
+
+  quilometragemAtualInvalida(): boolean {
+  const valor = this.novoAgendamento.quilometragemAtual;
+
+  if (valor === null || valor === undefined || String(valor).trim() === '') {
+    return true;
+  }
+
+  const numero = Number(valor);
+
+  return Number.isNaN(numero) || numero < 0;
+}
+
+normalizarQuilometragemAtual(): void {
+  const valor = this.novoAgendamento.quilometragemAtual;
+
+  if (valor === null || valor === undefined || String(valor).trim() === '') {
+    this.novoAgendamento.quilometragemAtual = null;
+    return;
+  }
+
+  const numero = Number(valor);
+
+  if (Number.isNaN(numero) || numero < 0) {
+    this.novoAgendamento.quilometragemAtual = null;
+    return;
+  }
+
+  this.novoAgendamento.quilometragemAtual = Math.floor(numero);
+}
+
+private quilometragemAtualParaNumero(): number | null {
+  const valor = this.novoAgendamento.quilometragemAtual;
+
+  if (valor === null || valor === undefined || String(valor).trim() === '') {
+    return null;
+  }
+
+  const numero = Number(valor);
+
+  if (Number.isNaN(numero) || numero < 0) {
+    return null;
+  }
+
+  return Math.floor(numero);
+}
 }
