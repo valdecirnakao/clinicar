@@ -306,3 +306,302 @@
 .form-control.is-invalid {
   background-color: #fffafa;
 }
+
+.table-compact th,
+.table-compact td {
+  padding: .45rem .55rem;
+}
+
+.table-compact td small {
+  font-size: .78rem;
+}
+
+.table-pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  border-top: 1px solid #d0e2f2;
+  background: #f8fbff;
+  padding: .75rem;
+  color: #35689b;
+}
+
+.pagination-info {
+  font-size: .88rem;
+}
+
+.pagination-info strong {
+  font-weight: 800;
+}
+
+.pagination-size {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .86rem;
+}
+
+.pagination-size select {
+  width: 80px;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.pagination-actions .btn {
+  border-radius: 6px;
+  min-width: 34px;
+}
+
+.pagination-actions .btn-primary {
+  background-color: #35689b;
+  border-color: #35689b;
+}
+
+.pagination-actions .btn-outline-primary {
+  color: #35689b;
+  border-color: #8fb4da;
+}
+
+.pagination-actions .btn-outline-primary:hover {
+  background-color: #eef6ff;
+  color: #35689b;
+}
+
+@media (max-width: 768px) {
+  .table-pagination-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pagination-actions {
+    width: 100%;
+  }
+
+  .pagination-actions .btn {
+    flex: 1;
+  }
+}
+
+.toolbar-filters {
+  position: relative;
+  z-index: 30;
+  overflow: visible;
+}
+
+.clinicar-card,
+.clinicar-card .card-body {
+  overflow: visible;
+}
+
+.table-responsive {
+  position: relative;
+  z-index: 1;
+}
+
+.status-filter-column {
+  position: relative;
+  z-index: 60;
+}
+
+.status-filter-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.status-filter-button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #cedde9;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #35689b;
+  padding: .375rem .75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  text-align: left;
+}
+
+.status-filter-button:hover {
+  background: #f7fbff;
+  border-color: #8fb4da;
+}
+
+.status-filter-button.active,
+.status-filter-button:focus {
+  border-color: #8fb4da;
+  box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
+  outline: none;
+}
+
+.status-filter-menu {
+  position: absolute;
+  top: calc(100% + .25rem);
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: #ffffff;
+  border: 1px solid #d0e2f2;
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(0,0,0,.12);
+  padding: .35rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.status-filter-option {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #35689b;
+  padding: .45rem .55rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  text-align: left;
+}
+
+.status-filter-option:hover {
+  background: #eef6ff;
+}
+
+.status-filter-option.selected {
+  background: #eef6ff;
+  font-weight: 700;
+}
+
+.status-filter-option-text {
+  color: #35689b;
+}
+
+.status-filter-option .badge {
+  font-size: .76rem;
+}
+
+.status-filter-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.status-filter-menu::-webkit-scrollbar-track {
+  background: #f2f7fc;
+  border-radius: 10px;
+}
+
+.status-filter-menu::-webkit-scrollbar-thumb {
+  background: #b6cfe8;
+  border-radius: 10px;
+}
+
+.status-filter-menu::-webkit-scrollbar-thumb:hover {
+  background: #8fb4da;
+}
+
+.agendamentos-page {
+  height: calc(100vh - 150px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.agendamentos-page > .row {
+  height: 100%;
+  min-height: 0;
+}
+
+.agendamentos-page > .row > .col-md-12 {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.agendamentos-list-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.agendamentos-list-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.toolbar-filters {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 100;
+}
+
+.agendamento-table-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d0e2f2;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.agendamento-table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.table-sticky-header {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #eef6ff !important;
+  color: #35689b;
+}
+
+.table-sticky-header thead th:first-child {
+  border-top-left-radius: 0;
+}
+
+.table-sticky-header thead th:last-child {
+  border-top-right-radius: 0;
+}
+
+.agendamento-table-scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.agendamento-table-scroll::-webkit-scrollbar-track {
+  background: #f2f7fc;
+}
+
+.agendamento-table-scroll::-webkit-scrollbar-thumb {
+  background: #b6cfe8;
+  border-radius: 10px;
+}
+
+.agendamento-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #8fb4da;
+}

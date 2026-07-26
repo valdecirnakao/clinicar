@@ -1,5 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
 
@@ -45,6 +45,11 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   filtro = '';
   filtroStatus = '';
+  statusFiltroAberto = false;
+
+  paginaAtual = 1;
+  itensPorPagina = 10;
+  opcoesItensPorPagina = [5, 10, 20, 50];
 
   carregando = false;
   mensagemErro = '';
@@ -82,7 +87,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   constructor(
     private service: ExibeAgendamentosService,
     private location: Location
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.carregarTudo();
@@ -119,6 +124,41 @@ export class ExibeAgendamentosComponent implements OnInit {
 
       return statusOk && (!termo || texto.includes(termo));
     });
+  }
+
+  get totalRegistrosFiltrados(): number {
+    return this.agendamentosFiltrados.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(
+      1,
+      Math.ceil(this.totalRegistrosFiltrados / this.itensPorPagina)
+    );
+  }
+
+  get indiceInicialPagina(): number {
+    if (this.totalRegistrosFiltrados === 0) {
+      return 0;
+    }
+
+    return (this.paginaAtual - 1) * this.itensPorPagina + 1;
+  }
+
+  get indiceFinalPagina(): number {
+    return Math.min(
+      this.paginaAtual * this.itensPorPagina,
+      this.totalRegistrosFiltrados
+    );
+  }
+
+  get agendamentosPaginados(): Agendamento[] {
+    this.ajustarPaginaAtual();
+
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+
+    return this.agendamentosFiltrados.slice(inicio, fim);
   }
 
   get totalAgendamentos(): number {
@@ -172,6 +212,7 @@ export class ExibeAgendamentosComponent implements OnInit {
         this.pecas = this.extrairLista<PecaResumo>(resposta.pecas);
         this.fornecimentosPecas = this.extrairLista<FornecimentoPecaResumo>(resposta.fornecimentosPecas);
 
+        this.paginaAtual = 1;
         this.carregando = false;
       },
       error: (erro) => {
@@ -187,6 +228,7 @@ export class ExibeAgendamentosComponent implements OnInit {
     this.service.listar().subscribe({
       next: (lista) => {
         this.agendamentos = this.extrairLista<Agendamento>(lista);
+        this.paginaAtual = 1;
         this.carregando = false;
       },
       error: (erro) => {
@@ -844,88 +886,88 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   clienteInvalido(): boolean {
-  return !this.novoAgendamento.idCliente;
-}
-
-veiculoInvalido(): boolean {
-  return !this.novoAgendamento.idVeiculo;
-}
-
-servicoPrevistoInvalido(): boolean {
-  return !this.novoAgendamento.idServico;
-}
-
-responsavelDisponivelInvalido(): boolean {
-  if (!this.periodoAgendamentoValido()) {
-    return true;
+    return !this.novoAgendamento.idCliente;
   }
 
-  if (!this.novoAgendamento.idResponsavel) {
-    return true;
+  veiculoInvalido(): boolean {
+    return !this.novoAgendamento.idVeiculo;
   }
 
-  const responsavel = this.responsaveis.find(r =>
-    Number(r.id) === Number(this.novoAgendamento.idResponsavel)
-  );
-
-  if (!responsavel) {
-    return true;
+  servicoPrevistoInvalido(): boolean {
+    return !this.novoAgendamento.idServico;
   }
 
-  return !this.responsavelDisponivelNoPeriodo(responsavel);
-}
+  responsavelDisponivelInvalido(): boolean {
+    if (!this.periodoAgendamentoValido()) {
+      return true;
+    }
 
-mensagemResponsavelInvalido(): string {
-  if (!this.periodoAgendamentoValido()) {
-    return 'Informe um período válido antes de selecionar o responsável.';
+    if (!this.novoAgendamento.idResponsavel) {
+      return true;
+    }
+
+    const responsavel = this.responsaveis.find(r =>
+      Number(r.id) === Number(this.novoAgendamento.idResponsavel)
+    );
+
+    if (!responsavel) {
+      return true;
+    }
+
+    return !this.responsavelDisponivelNoPeriodo(responsavel);
   }
 
-  if (this.responsaveisDisponiveis().length === 0) {
-    return 'Nenhum responsável disponível para o período informado.';
-  }
+  mensagemResponsavelInvalido(): string {
+    if (!this.periodoAgendamentoValido()) {
+      return 'Informe um período válido antes de selecionar o responsável.';
+    }
 
-  if (!this.novoAgendamento.idResponsavel) {
-    return 'Selecione um responsável disponível.';
-  }
+    if (this.responsaveisDisponiveis().length === 0) {
+      return 'Nenhum responsável disponível para o período informado.';
+    }
 
-  return 'O responsável selecionado não está disponível neste período.';
-}
+    if (!this.novoAgendamento.idResponsavel) {
+      return 'Selecione um responsável disponível.';
+    }
+
+    return 'O responsável selecionado não está disponível neste período.';
+  }
 
   private validarCamposObrigatoriosAgendamento(): string | null {
-  if (this.clienteInvalido()) {
-    return 'Selecione o cliente.';
-  }
+    if (this.clienteInvalido()) {
+      return 'Selecione o cliente.';
+    }
 
-  if (this.veiculoInvalido()) {
-    return 'Selecione o veículo.';
-  }
+    if (this.veiculoInvalido()) {
+      return 'Selecione o veículo.';
+    }
 
-  if (this.servicoPrevistoInvalido()) {
-    return 'Selecione o serviço previsto para o agendamento.';
-  }
+    if (this.servicoPrevistoInvalido()) {
+      return 'Selecione o serviço previsto para o agendamento.';
+    }
 
-  if (this.quilometragemAtualInvalida()) {
-    return 'Informe a quilometragem atual do veículo para salvar o agendamento.';
-  }
+    if (this.quilometragemAtualInvalida()) {
+      return 'Informe a quilometragem atual do veículo para salvar o agendamento.';
+    }
 
-  if (!this.novoAgendamento.dataHoraInicio) {
-    return 'Informe a data e hora de início do agendamento.';
-  }
+    if (!this.novoAgendamento.dataHoraInicio) {
+      return 'Informe a data e hora de início do agendamento.';
+    }
 
-  if (!this.novoAgendamento.dataHoraFim) {
-    return 'Informe a data e hora de fim do agendamento.';
-  }
+    if (!this.novoAgendamento.dataHoraFim) {
+      return 'Informe a data e hora de fim do agendamento.';
+    }
 
-  if (!this.periodoAgendamentoValido()) {
-    return 'Informe um período válido para o agendamento.';
-  }
+    if (!this.periodoAgendamentoValido()) {
+      return 'Informe um período válido para o agendamento.';
+    }
 
-  if (this.responsavelDisponivelInvalido()) {
-    return this.mensagemResponsavelInvalido();
-  }
+    if (this.responsavelDisponivelInvalido()) {
+      return this.mensagemResponsavelInvalido();
+    }
 
-  return null;
-}
+    return null;
+  }
 
   private montarPayloadAgendamento(): AgendamentoRequest {
     return {
@@ -1525,48 +1567,126 @@ mensagemResponsavelInvalido(): string {
   }
 
   quilometragemAtualInvalida(): boolean {
-  const valor = this.novoAgendamento.quilometragemAtual;
+    const valor = this.novoAgendamento.quilometragemAtual;
 
-  if (valor === null || valor === undefined || String(valor).trim() === '') {
-    return true;
+    if (valor === null || valor === undefined || String(valor).trim() === '') {
+      return true;
+    }
+
+    const numero = Number(valor);
+
+    return Number.isNaN(numero) || numero < 0;
   }
 
-  const numero = Number(valor);
+  normalizarQuilometragemAtual(): void {
+    const valor = this.novoAgendamento.quilometragemAtual;
 
-  return Number.isNaN(numero) || numero < 0;
+    if (valor === null || valor === undefined || String(valor).trim() === '') {
+      this.novoAgendamento.quilometragemAtual = null;
+      return;
+    }
+
+    const numero = Number(valor);
+
+    if (Number.isNaN(numero) || numero < 0) {
+      this.novoAgendamento.quilometragemAtual = null;
+      return;
+    }
+
+    this.novoAgendamento.quilometragemAtual = Math.floor(numero);
+  }
+
+  private quilometragemAtualParaNumero(): number | null {
+    const valor = this.novoAgendamento.quilometragemAtual;
+
+    if (valor === null || valor === undefined || String(valor).trim() === '') {
+      return null;
+    }
+
+    const numero = Number(valor);
+
+    if (Number.isNaN(numero) || numero < 0) {
+      return null;
+    }
+
+    return Math.floor(numero);
+  }
+
+  aoAlterarFiltros(): void {
+    this.paginaAtual = 1;
+  }
+
+  aoAlterarItensPorPagina(): void {
+    this.paginaAtual = 1;
+    this.ajustarPaginaAtual();
+  }
+
+  irParaPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) {
+      return;
+    }
+
+    this.paginaAtual = pagina;
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaAtual > 1) {
+      this.paginaAtual--;
+    }
+  }
+
+  proximaPagina(): void {
+    if (this.paginaAtual < this.totalPaginas) {
+      this.paginaAtual++;
+    }
+  }
+
+  paginasVisiveis(): number[] {
+    const total = this.totalPaginas;
+    const atual = this.paginaAtual;
+    const paginas: number[] = [];
+
+    const inicio = Math.max(1, atual - 2);
+    const fim = Math.min(total, atual + 2);
+
+    for (let i = inicio; i <= fim; i++) {
+      paginas.push(i);
+    }
+
+    return paginas;
+  }
+
+  private ajustarPaginaAtual(): void {
+    if (this.paginaAtual > this.totalPaginas) {
+      this.paginaAtual = this.totalPaginas;
+    }
+
+    if (this.paginaAtual < 1) {
+      this.paginaAtual = 1;
+    }
+  }
+
+  @HostListener('document:click')
+fecharDropdownsAoClicarFora(): void {
+  this.statusFiltroAberto = false;
 }
 
-normalizarQuilometragemAtual(): void {
-  const valor = this.novoAgendamento.quilometragemAtual;
-
-  if (valor === null || valor === undefined || String(valor).trim() === '') {
-    this.novoAgendamento.quilometragemAtual = null;
-    return;
-  }
-
-  const numero = Number(valor);
-
-  if (Number.isNaN(numero) || numero < 0) {
-    this.novoAgendamento.quilometragemAtual = null;
-    return;
-  }
-
-  this.novoAgendamento.quilometragemAtual = Math.floor(numero);
+alternarFiltroStatus(event: Event): void {
+  event.stopPropagation();
+  this.statusFiltroAberto = !this.statusFiltroAberto;
 }
 
-private quilometragemAtualParaNumero(): number | null {
-  const valor = this.novoAgendamento.quilometragemAtual;
+selecionarFiltroStatus(status: string): void {
+  this.filtroStatus = status;
+  this.statusFiltroAberto = false;
+  this.aoAlterarFiltros();
+}
 
-  if (valor === null || valor === undefined || String(valor).trim() === '') {
-    return null;
+rotuloFiltroStatus(): string {
+  if (!this.filtroStatus) {
+    return 'Todos';
   }
 
-  const numero = Number(valor);
-
-  if (Number.isNaN(numero) || numero < 0) {
-    return null;
-  }
-
-  return Math.floor(numero);
+  return this.formatarStatus(this.filtroStatus);
 }
 }

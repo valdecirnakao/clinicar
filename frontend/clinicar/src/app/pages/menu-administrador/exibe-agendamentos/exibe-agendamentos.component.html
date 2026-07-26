@@ -1,8 +1,6 @@
-<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
-
+<div class="container-fluid mt-0 mb-0 agendamentos-page" style="color:#35689b;">
   <div class="row justify-content-center">
     <div class="col-md-12">
-
       <div class="row mt-0">
         <div class="col text-center mb-2">
           <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
@@ -13,7 +11,6 @@
           </div>
         </div>
       </div>
-
       <div class="row g-2 mb-3">
         <div class="col-md-3">
           <div class="summary-card">
@@ -21,21 +18,18 @@
             <strong>{{ totalAgendamentos }}</strong>
           </div>
         </div>
-
         <div class="col-md-3">
           <div class="summary-card">
             <small>Confirmados</small>
             <strong>{{ totalConfirmados }}</strong>
           </div>
         </div>
-
         <div class="col-md-3">
           <div class="summary-card">
             <small>Em atendimento</small>
             <strong>{{ totalEmAtendimento }}</strong>
           </div>
         </div>
-
         <div class="col-md-3">
           <div class="summary-card">
             <small>Concluídos</small>
@@ -43,153 +37,211 @@
           </div>
         </div>
       </div>
-
-      <div class="card clinicar-card">
-        <div class="card-body">
-
-          <div class="row g-2 align-items-end mb-3">
-            <div class="col-md-4">
-              <label class="form-label">Buscar</label>
-              <input class="form-control" placeholder="Cliente, placa, serviço, código..." [(ngModel)]="filtro"
-                style="color:#35689b;" />
+      <div class="card clinicar-card agendamentos-list-card" style="color:#35689b;">
+        <div class="card-body agendamentos-list-body" style="color:#35689b;">
+          <div class="row g-2 align-items-end mb-3 toolbar-filters" style="color:#35689b;">
+            <div class="col-md-4" style="color:#35689b;">
+              <label class="form-label" for="buscar-agendamentos">Buscar</label>
+              <input id="buscar-agendamentos" class="form-control" style="color:#35689b;" placeholder="Cliente, placa, serviço, código..." [(ngModel)]="filtro"
+                (ngModelChange)="aoAlterarFiltros()" style="color:#35689b;" />
             </div>
-
-            <div class="col-md-3">
-              <label class="form-label">Status</label>
-              <select class="form-select" [(ngModel)]="filtroStatus" style="color:#35689b;">
-                <option value="">Todos</option>
-                <option *ngFor="let status of statusAgendamento" [value]="status">
-                  {{ formatarStatus(status) }}
-                </option>
-              </select>
+            <div class="col-md-3 status-filter-column" style="color:#35689b;">
+              <label class="form-label" for="filtro-status">Status</label>
+              <div class="status-filter-dropdown" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" (keyup)="$event.stopPropagation()" (keypress)="$event.stopPropagation()">
+                <button id="filtro-status" type="button" class="status-filter-button" [class.active]="statusFiltroAberto"
+                  (click)="alternarFiltroStatus($event)">
+                  <span>{{ rotuloFiltroStatus() }}</span>
+                  <i class="bi" [class.bi-chevron-up]="statusFiltroAberto"
+                    [class.bi-chevron-down]="!statusFiltroAberto"></i>
+                </button>
+                <div class="status-filter-menu" *ngIf="statusFiltroAberto">
+                  <button type="button" class="status-filter-option" [class.selected]="!filtroStatus"
+                    (click)="selecionarFiltroStatus('')">
+                    <span class="status-filter-option-text">
+                      Todos
+                    </span>
+                    <i class="bi bi-check2" *ngIf="!filtroStatus"></i>
+                  </button>
+                  <button type="button" class="status-filter-option" *ngFor="let status of statusAgendamento"
+                    [class.selected]="filtroStatus === status" (click)="selecionarFiltroStatus(status)">
+                    <span class="badge" [ngClass]="statusBadgeClass(status)">
+                      {{ formatarStatus(status) }}
+                    </span>
+                    <i class="bi bi-check2" *ngIf="filtroStatus === status"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-
             <div class="col-md-5 text-end">
               <button class="btn btn-outline-secondary me-2" type="button" (click)="voltar()">
                 <i class="bi bi-arrow-left me-1"></i>
                 Voltar
               </button>
-
               <button class="btn btn-outline-primary me-2" type="button" (click)="carregarTudo()">
                 <i class="bi bi-arrow-clockwise me-1"></i>
                 Atualizar
               </button>
-
               <button class="btn" type="button" style="background:#35689b;color:white;" (click)="abrirModalCadastro()">
                 <i class="bi bi-plus-circle me-1"></i>
                 Novo Agendamento
               </button>
             </div>
           </div>
-
           <div *ngIf="mensagemErro" class="alert alert-danger">
             {{ mensagemErro }}
           </div>
-
           <div *ngIf="carregando" class="text-center py-4">
-            <div class="spinner-border" role="status"></div>
+            <output class="spinner-border" aria-live="polite" aria-label="Carregando agendamentos"></output>
             <div class="mt-2">Carregando agendamentos...</div>
           </div>
+          <div class="agendamento-table-shell" *ngIf="!carregando">
+            <div class="agendamento-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header">
+                <thead style="background:#eef6ff;color:#35689b;">
+                  <tr>
+                    <th>Código</th>
+                    <th>Cliente</th>
+                    <th>Veículo</th>
+                    <th>Serviço</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th>Valor estimado</th>
+                    <th class="text-center">Ações</th>
+                  </tr>
+                </thead>
 
-          <div class="table-responsive" *ngIf="!carregando">
-            <table class="table table-hover align-middle">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th>Código</th>
-                  <th>Cliente</th>
-                  <th>Veículo</th>
-                  <th>Serviço</th>
-                  <th>Data</th>
-                  <th>Status</th>
-                  <th>Valor estimado</th>
-                  <th class="text-center">Ações</th>
-                </tr>
-              </thead>
+                <tbody>
+                  <tr *ngFor="let item of agendamentosPaginados">
+                    <td>
+                      <div class="fw-semibold">{{ item.codigoAgendamento || '—' }}</div>
+                      <small>{{ item.canalOrigem || '—' }}</small>
+                    </td>
 
-              <tbody>
-                <tr *ngFor="let item of agendamentosFiltrados">
-                  <td>
-                    <div class="fw-semibold">{{ item.codigoAgendamento || '—' }}</div>
-                    <small>{{ item.canalOrigem || '—' }}</small>
-                  </td>
+                    <td>
+                      <div>{{ item.nomeCliente || item.cliente?.nome || '—' }}</div>
+                      <small>{{ item.telefoneCliente || item.cliente?.telefone || '—' }}</small>
+                    </td>
 
-                  <td>
-                    <div>{{ item.nomeCliente || item.cliente?.nome || '—' }}</div>
-                    <small>{{ item.telefoneCliente || item.cliente?.telefone || '—' }}</small>
-                  </td>
+                    <td>
+                      <div class="fw-semibold">
+                        {{ formatarPlaca(item.placaVeiculo || item.veiculo?.placa) }}
+                      </div>
+                      <small>{{ item.modeloVeiculo || item.veiculo?.modelo || '—' }}</small>
+                    </td>
 
-                  <td>
-                    <div class="fw-semibold">
-                      {{ formatarPlaca(item.placaVeiculo || item.veiculo?.placa) }}
-                    </div>
-                    <small>{{ item.modeloVeiculo || item.veiculo?.modelo || '—' }}</small>
-                  </td>
+                    <td>
+                      <div>{{ item.nomeServico || item.servico?.nome || item.servico?.descricao || '—' }}</div>
+                      <small>{{ item.categoriaServico || item.servico?.categoria || '—' }}</small>
+                    </td>
 
-                  <td>
-                    <div>{{ item.nomeServico || item.servico?.nome || item.servico?.descricao || '—' }}</div>
-                    <small>{{ item.categoriaServico || item.servico?.categoria || '—' }}</small>
-                  </td>
+                    <td>
+                      <div>{{ formatarDataHora(item.dataHoraInicio) }}</div>
+                      <small>Fim: {{ formatarDataHora(item.dataHoraFim) }}</small>
+                    </td>
 
-                  <td>
-                    <div>{{ formatarDataHora(item.dataHoraInicio) }}</div>
-                    <small>Fim: {{ formatarDataHora(item.dataHoraFim) }}</small>
-                  </td>
+                    <td>
+                      <span class="badge" [ngClass]="statusBadgeClass(item.statusAgendamento)">
+                        {{ formatarStatus(item.statusAgendamento) }}
+                      </span>
+                    </td>
 
-                  <td>
-                    <span class="badge" [ngClass]="statusBadgeClass(item.statusAgendamento)">
-                      {{ formatarStatus(item.statusAgendamento) }}
-                    </span>
-                  </td>
+                    <td class="fw-semibold">
+                      {{ formatarMoedaBR(item.valorEstimado) }}
+                    </td>
 
-                  <td class="fw-semibold">
-                    {{ formatarMoedaBR(item.valorEstimado) }}
-                  </td>
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm flex-wrap">
+                        <button class="btn btn-outline-info" title="Detalhes" type="button"
+                          (click)="abrirDetalhes(item)">
+                          <i class="bi bi-eye"></i>
+                        </button>
 
-                  <td class="text-center">
-                    <div class="btn-group btn-group-sm flex-wrap">
-                      <button class="btn btn-outline-info" title="Detalhes" type="button" (click)="abrirDetalhes(item)">
-                        <i class="bi bi-eye"></i>
-                      </button>
+                        <button class="btn btn-outline-primary" title="Editar" type="button"
+                          (click)="abrirModalEdicao(item)">
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
 
-                      <button class="btn btn-outline-primary" title="Editar" type="button"
-                        (click)="abrirModalEdicao(item)">
-                        <i class="bi bi-pencil-square"></i>
-                      </button>
+                        <button class="btn btn-outline-success" title="Confirmar" type="button"
+                          [disabled]="!podeConfirmar(item)" (click)="confirmar(item)">
+                          <i class="bi bi-check-circle"></i>
+                        </button>
 
-                      <button class="btn btn-outline-success" title="Confirmar" type="button"
-                        [disabled]="!podeConfirmar(item)" (click)="confirmar(item)">
-                        <i class="bi bi-check-circle"></i>
-                      </button>
+                        <button class="btn btn-outline-primary" title="Iniciar" type="button"
+                          [disabled]="!podeIniciar(item)" (click)="iniciar(item)">
+                          <i class="bi bi-play-circle"></i>
+                        </button>
 
-                      <button class="btn btn-outline-primary" title="Iniciar" type="button"
-                        [disabled]="!podeIniciar(item)" (click)="iniciar(item)">
-                        <i class="bi bi-play-circle"></i>
-                      </button>
+                        <button class="btn btn-outline-success" title="Concluir" type="button"
+                          [disabled]="!podeConcluir(item)" (click)="concluir(item)">
+                          <i class="bi bi-flag"></i>
+                        </button>
 
-                      <button class="btn btn-outline-success" title="Concluir" type="button"
-                        [disabled]="!podeConcluir(item)" (click)="concluir(item)">
-                        <i class="bi bi-flag"></i>
-                      </button>
+                        <button class="btn btn-outline-danger" title="Cancelar" type="button"
+                          [disabled]="!podeCancelar(item)" (click)="abrirCancelamento(item)">
+                          <i class="bi bi-x-circle"></i>
+                        </button>
 
-                      <button class="btn btn-outline-danger" title="Cancelar" type="button"
-                        [disabled]="!podeCancelar(item)" (click)="abrirCancelamento(item)">
-                        <i class="bi bi-x-circle"></i>
-                      </button>
+                        <button class="btn btn-outline-danger" title="Excluir" type="button" (click)="excluir(item)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
 
-                      <button class="btn btn-outline-danger" title="Excluir" type="button" (click)="excluir(item)">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  <tr *ngIf="totalRegistrosFiltrados === 0">
+                    <td colspan="8" class="text-center text-muted py-4">
+                      Nenhum agendamento encontrado.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-                <tr *ngIf="agendamentosFiltrados.length === 0">
-                  <td colspan="8" class="text-center text-muted py-4">
-                    Nenhum agendamento encontrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+              <div class="pagination-info">
+                Mostrando
+                <strong>{{ indiceInicialPagina }}</strong>
+                a
+                <strong>{{ indiceFinalPagina }}</strong>
+                de
+                <strong>{{ totalRegistrosFiltrados }}</strong>
+                registro(s)
+              </div>
+
+              <div class="pagination-size">
+                <label>Exibir</label>
+
+                <select class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()" style="color:#35689b;">
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+
+                <span>por página</span>
+              </div>
+
+              <div class="pagination-actions">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1"
+                  (click)="paginaAnterior()">
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
+
+                <button type="button" class="btn btn-sm" *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina" [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)">
+                  {{ pagina }}
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas"
+                  (click)="proximaPagina()">
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+
           </div>
 
         </div>
