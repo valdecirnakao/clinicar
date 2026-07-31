@@ -1,12 +1,12 @@
 <div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center mfa-page">
   <div class="card mfa-card shadow-sm">
-    <div class="card-body p-4">
-      <div class="text-center mb-4">
+    <div class="card-body p-3">
+      <div class="text-center mb-3">
         <img
           src="assets/img/LogoClinicar.png"
           alt="CliniCar Logo"
-          class="img-fluid mb-3"
-          style="max-width: 190px;"
+          class="img-fluid mb-1"
+          style="max-width: 150px;"
         />
         <h4>Verificação em duas etapas</h4>
         <p class="text-muted mb-0" *ngIf="!mfaPendente?.mfaSetupNecessario">
@@ -24,8 +24,8 @@
         <i class="bi bi-exclamation-triangle-fill me-1"></i>
         {{ mensagemErro }}
       </div>
-      <div *ngIf="mfaPendente?.mfaSetupNecessario" class="setup-box mb-4">
-        <div class="text-center mb-3">
+      <div *ngIf="mfaPendente?.mfaSetupNecessario" class="setup-box mb-2">
+        <div class="text-center mb-2">
           <img
             *ngIf="mfaPendente?.qrCodeDataUrl"
             [src]="mfaPendente?.qrCodeDataUrl"
@@ -34,17 +34,20 @@
           />
         </div>
         <div class="manual-key-box">
-          <div class="small text-muted mb-1">
+          <div class="small text-muted mb-0">
             Caso não consiga escanear o QR Code, cadastre manualmente esta chave:
           </div>
           <code>
             {{ mfaPendente?.chaveManual }}
           </code>
         </div>
-        <div class="alert alert-info mt-3 mb-0">
+        <div class="alert alert-info mt-0 mb-0">
           <i class="bi bi-info-circle me-1"></i>
           Abra o Google Authenticator, Microsoft Authenticator, Authy ou outro app compatível,
           escaneie o QR Code e informe abaixo o código de 6 dígitos.
+          <Strong>Atenção: este QR Code contém uma chave secreta de autenticação.
+          Não tire print, não compartilhe e não armazene esta imagem.
+          Após a confirmação, este QR Code não será exibido novamente.</Strong>
         </div>
       </div>
       <form (ngSubmit)="validarCodigo()" novalidate>
@@ -80,7 +83,7 @@
           </span>
         </button>
       </form>
-      <div class="text-center mt-3">
+      <div class="text-center mt-1">
         <button
           type="button"
           class="btn btn-link text-decoration-none"

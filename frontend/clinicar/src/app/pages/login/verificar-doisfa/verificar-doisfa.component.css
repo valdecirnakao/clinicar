@@ -1,15 +1,56 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+:host * {
+  box-sizing: border-box;
+}
+
 .mfa-page {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: clamp(0.5rem, 2vw, 1.25rem);
+
   background:
     radial-gradient(circle at top left, rgba(53, 104, 155, 0.12), transparent 34%),
     linear-gradient(135deg, #eef6ff 0%, #ffffff 45%, #f8fbff 100%);
+
   color: #35689b;
 }
 
 .mfa-card {
-  max-width: 520px;
-  width: 100%;
-  border-radius: 16px;
+  width: min(100vw, 620px);
+  max-width: 900px;
+  max-height: calc(100dvh - 1rem);
+
+  border-radius: clamp(10px, 1.6vw, 16px);
   border: 1px solid #d0e2f2;
+
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mfa-card .card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: clamp(0.75rem, 2.2vw, 1.5rem);
+  overflow: hidden;
 }
 
 h4,
@@ -18,43 +59,74 @@ h4,
   font-weight: 700;
 }
 
+h4 {
+  font-size: clamp(1rem, 2vw, 1.45rem);
+  margin-bottom: clamp(0.35rem, 1vh, 0.75rem);
+}
+
+p,
+small,
+.form-text,
+.alert {
+  font-size: clamp(0.7rem, 1vw, 0.95rem);
+}
+
 .setup-box {
   background: #f8fbff;
   border: 1px solid #d0e2f2;
-  border-radius: 14px;
-  padding: 1rem;
+  border-radius: clamp(10px, 1.5vw, 14px);
+  padding: clamp(0.55rem, 1.8vw, 1rem);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.4rem, 1.2vh, 0.75rem);
+
+  overflow: hidden;
 }
 
 .qr-code {
-  width: 230px;
-  height: 230px;
-  border: 8px solid #ffffff;
-  border-radius: 12px;
+  width: clamp(200px, 27vmin, 210px);
+  height: clamp(200px, 27vmin, 210px);
+
+  max-width: 100%;
+  object-fit: contain;
+
+  border: clamp(4px, 1vw, 8px) solid #ffffff;
+  border-radius: clamp(8px, 1.4vw, 12px);
   box-shadow: 0 6px 18px rgba(53, 104, 155, 0.12);
 }
 
 .manual-key-box {
+  width: 100%;
+  max-width: 100%;
+
   background: #ffffff;
   border: 1px dashed #d0e2f2;
   border-radius: 10px;
-  padding: 0.75rem;
+
+  padding: clamp(0.45rem, 1.5vw, 0.75rem);
+
   word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .manual-key-box code {
   color: #35689b;
-  font-size: 0.9rem;
+  font-size: clamp(0.68rem, 1.4vw, 0.9rem);
 }
 
 .code-input {
-  letter-spacing: 0.35rem;
-  font-size: 1.5rem;
-  font-weight: 700;
+  letter-spacing: clamp(0.12rem, 1vw, 0.35rem);
+  font-size: clamp(1.05rem, 3.3vw, 1.5rem);
+  font-weight: 650;
   color: #35689b;
+  text-align: left;
 }
 
 .form-control {
   border-color: #d0e2f2;
+  max-width: 100%;
 }
 
 .form-control:focus {
@@ -65,11 +137,136 @@ h4,
 .btn-primary {
   background-color: #35689b;
   border-color: #35689b;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
   background-color: #2f5d8b;
   border-color: #2f5d8b;
+}
+
+button,
+.btn {
+  max-width: 100%;
+  white-space: normal;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+/* Telas médias e pequenas */
+@media (max-width: 768px) {
+  .mfa-card {
+    width: min(96vw, 520px);
+  }
+
+  .mfa-card .card-body {
+    padding: 0.85rem;
+  }
+
+  .setup-box {
+    padding: 0.7rem;
+  }
+}
+
+/* Celulares estreitos */
+@media (max-width: 420px) {
+  .mfa-page {
+    padding: 0.45rem;
+  }
+
+  .mfa-card {
+    width: 100%;
+    max-height: calc(100dvh - 0.9rem);
+    border-radius: 12px;
+  }
+
+  .mfa-card .card-body {
+    padding: 0.65rem;
+  }
+
+  .setup-box {
+    gap: 0.4rem;
+  }
+
+  .manual-key-box {
+    padding: 0.45rem;
+  }
+
+  .code-input {
+    letter-spacing: 0.08rem;
+  }
+}
+
+/* Telas com pouca altura, como notebook pequeno ou navegador reduzido */
+@media (max-height: 700px) {
+  .mfa-page {
+    padding: 0.45rem;
+  }
+
+  .mfa-card {
+    max-height: calc(100dvh - 0.9rem);
+  }
+
+  .mfa-card .card-body {
+    padding: 0.65rem;
+  }
+
+  h4 {
+    font-size: 1.05rem;
+    margin-bottom: 0.35rem;
+  }
+
+  p,
+  small,
+  .form-text,
+  .alert {
+    font-size: 0.78rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .setup-box {
+    padding: 0.55rem;
+    gap: 0.35rem;
+  }
+
+  .qr-code {
+    width: clamp(105px, 23vmin, 165px);
+    height: clamp(105px, 23vmin, 165px);
+  }
+
+  .manual-key-box {
+    padding: 0.4rem;
+  }
+
+  .code-input {
+    font-size: 1.05rem;
+  }
+}
+
+/* Telas muito baixas em modo paisagem */
+@media (max-height: 520px) {
+  .mfa-card .card-body {
+    justify-content: flex-start;
+  }
+
+  .qr-code {
+    width: clamp(90px, 20vmin, 130px);
+    height: clamp(90px, 20vmin, 130px);
+  }
+
+  .setup-box {
+    padding: 0.45rem;
+  }
+
+  h4 {
+    font-size: 1rem;
+  }
+
+  .manual-key-box code {
+    font-size: 0.68rem;
+  }
 }

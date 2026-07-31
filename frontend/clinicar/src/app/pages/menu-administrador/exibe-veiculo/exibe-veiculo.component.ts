@@ -104,7 +104,7 @@ export class ExibeVeiculoComponent implements OnInit {
   // trackBy para *ngFor
   trackByBrand: TrackByFunction<FipeBrand> = (_i, x) => x.code;
   trackByModel: TrackByFunction<FipeModel> = (_i, x) => x.code;
-  trackByYear:  TrackByFunction<FipeYear>  = (_i, x) => x.code;
+  trackByYear: TrackByFunction<FipeYear> = (_i, x) => x.code;
   constructor(
     private readonly http: HttpClient,
     private readonly usuarioService: UsuarioService,
@@ -112,7 +112,7 @@ export class ExibeVeiculoComponent implements OnInit {
     private readonly host: ElementRef,
     private readonly location: Location,
     private readonly whatsappService: WhatsappCloudService
-  ) {}
+  ) { }
   ngOnInit(): void {
     this.carregarUsuarios();
     this.recarregar();
@@ -262,10 +262,18 @@ export class ExibeVeiculoComponent implements OnInit {
     const payload: Partial<Veiculo> = {
       ...this.edit,
       placa: ((this.edit.placa ?? '')).toUpperCase().replaceAll(/\s+-/g, ''),
-      cor: ((this.edit.cor ?? '')).trim()
+      cor: ((this.edit.cor ?? '')).trim(),
+      fabricante: this.formatarFabricante(this.edit.fabricante ?? ''),
+      modelo: this.capitalizar(this.edit.modelo ?? '').trim(),
     };
     if (payload.idProprietario != null) {
       payload.idProprietario = Number(payload.idProprietario);
+    }
+    if (payload.fabricante != null) {
+      payload.fabricante = this.formatarFabricante(payload.fabricante);
+    }
+    if (payload.modelo != null) {
+      payload.modelo = this.capitalizar(payload.modelo);
     }
     this.veiculoService.atualizarVeiculo(id, payload as any).subscribe({
       next: (atualizado) => {
@@ -374,7 +382,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   salvarEdicaoModal(): void {
-    if (!this.editId) {return;}
+    if (!this.editId) { return; }
     const payload: Partial<Veiculo> = {
       ...this.edit,
       placa: (this.edit.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
@@ -413,7 +421,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   abrirModalSelecaoProprietario(modo?: 'edicao' | 'cadastro'): void {
-    if (modo) {this.modoProprietarioModal = modo;}
+    if (modo) { this.modoProprietarioModal = modo; }
     this.cpfFiltroModal = '';
     this.usuariosFiltradosModal = [...this.usuarios];
 
@@ -551,7 +559,7 @@ export class ExibeVeiculoComponent implements OnInit {
 
   // ========= FIPE =========
   async fipeCarregarMarcas(): Promise<void> {
-    if (this.marcas.length > 0) {return;}
+    if (this.marcas.length > 0) { return; }
     this.fipeErro = '';
     this.fipeCarregando.marcas = true;
     try {
@@ -657,7 +665,7 @@ export class ExibeVeiculoComponent implements OnInit {
   async onChangeAnoModeloCombustivel(code: string): Promise<void> {
     this.anoSelCode = code || '';
     this.edit.anoModeloCombustivel = '';
-    if (!this.marcaSelCode || !this.modeloSelCode || !this.anoSelCode) {return;}
+    if (!this.marcaSelCode || !this.modeloSelCode || !this.anoSelCode) { return; }
     this.fipeErro = '';
     this.fipeCarregando.detalhes = true;
     try {
@@ -666,8 +674,8 @@ export class ExibeVeiculoComponent implements OnInit {
           `${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models/${this.modeloSelCode}/years/${this.anoSelCode}`
         )
       );
-      if (det?.brand) {this.edit.fabricante = this.formatarFabricante(det.brand);}
-      if (det?.model) {this.edit.modelo = det.model;}
+      if (det?.brand) { this.edit.fabricante = this.formatarFabricante(det.brand); }
+      if (det?.model) { this.edit.modelo = det.model; }
       const ano = det?.modelYear ?? '';
       const combustivel = det?.fuel ?? '';
       this.edit.anoModeloCombustivel = `${ano} | ${combustivel}`.trim();
@@ -684,7 +692,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
   private encontrarMarcaPorNome(nome?: string): FipeBrand | undefined {
     const alvo = this.normalizarFipeTexto(nome);
-    if (!alvo) {return undefined;}
+    if (!alvo) { return undefined; }
     return this.marcas.find((m) => {
       const nomeOriginal = this.normalizarFipeTexto(m.name);
       const nomeFormatado = this.normalizarFipeTexto(this.formatarFabricante(m.name));
@@ -701,9 +709,9 @@ export class ExibeVeiculoComponent implements OnInit {
 
   private encontrarModeloPorNome(nome?: string): FipeModel | undefined {
     const alvo = this.normalizarFipeTexto(nome);
-    if (!alvo) {return undefined;}
+    if (!alvo) { return undefined; }
     const exato = this.modelos.find((m) => this.normalizarFipeTexto(m.name) === alvo);
-    if (exato) {return exato;}
+    if (exato) { return exato; }
     return this.modelos.find((m) => {
       const nomeModelo = this.normalizarFipeTexto(m.name);
       return nomeModelo.includes(alvo) || alvo.includes(nomeModelo);
@@ -712,32 +720,112 @@ export class ExibeVeiculoComponent implements OnInit {
 
   private encontrarAnoPorDescricao(descricao?: string): FipeYear | undefined {
     const alvo = this.normalizarFipeTexto(descricao);
-    if (!alvo) {return undefined;}
+    if (!alvo) { return undefined; }
     const exato = this.anos.find((a) => this.normalizarFipeTexto(a.name) === alvo);
-    if (exato) {return exato;}
+    if (exato) { return exato; }
     return this.anos.find((a) => {
       const nomeAno = this.normalizarFipeTexto(a.name);
       return nomeAno.includes(alvo) || alvo.includes(nomeAno);
     });
   }
 
-  formatarFabricante(fabricante: string): string {
-    if (!fabricante) { return ''; }
-    const siglas = ['GM', 'VW', 'BMW', 'GWM', 'BYD', 'JAC'];
-    fabricante = fabricante.trim().toUpperCase();
-    for (const sigla of siglas) {
-      if (fabricante.toUpperCase().startsWith(sigla)) {
-        return sigla + ' ' + this.capitalizar(
-          fabricante.substring(sigla.length + 1)
-        );
+  formatarFabricante(fabricante: string | null | undefined): string {
+    const textoOriginal = (fabricante ?? '')
+      .toString()
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!textoOriginal) {
+      return '';
+    }
+
+    const textoComSeparadorNormalizado = textoOriginal.replace(/\s*-\s*/g, ' - ');
+    const textoNormalizado = this.normalizarTexto(textoComSeparadorNormalizado);
+
+    /*
+     * Padronização específica para Volkswagen:
+     * - VW
+     * - VW - VolksWagen
+     * - Volkswagen
+     * - VOLKSWAGEN
+     * Todos serão salvos como: VW - Volkswagen
+     */
+    if (
+      textoNormalizado === 'vw'
+      || textoNormalizado.includes('volkswagen')
+      || textoNormalizado.startsWith('vw ')
+      || textoNormalizado.startsWith('vw -')
+    ) {
+      return 'VW - Volkswagen';
+    }
+
+    const siglasConhecidas = ['GM', 'BMW', 'GWM', 'BYD', 'JAC'];
+
+    const matchComSeparador = textoComSeparadorNormalizado.match(/^([A-Za-z]{2,4})\s*-\s*(.+)$/);
+
+    if (matchComSeparador) {
+      const sigla = matchComSeparador[1].toUpperCase();
+      const nome = this.capitalizar(matchComSeparador[2]);
+
+      if (siglasConhecidas.includes(sigla)) {
+        return nome ? `${sigla} - ${nome}` : sigla;
       }
     }
-    return this.capitalizar(fabricante);
+
+    const textoUpper = textoOriginal.toUpperCase();
+
+    for (const sigla of siglasConhecidas) {
+      if (textoUpper === sigla) {
+        return sigla;
+      }
+
+      if (textoUpper.startsWith(`${sigla} `) || textoUpper.startsWith(`${sigla}-`)) {
+        const restante = textoOriginal
+          .substring(sigla.length)
+          .replace(/^[-\s]+/, '')
+          .trim();
+
+        return restante ? `${sigla} - ${this.capitalizar(restante)}` : sigla;
+      }
+    }
+
+    return this.capitalizar(textoComSeparadorNormalizado);
+  }
+
+  formatarModeloVeiculo(modelo: string | null | undefined): string {
+    return this.capitalizar(modelo ?? '');
   }
 
   capitalizar(s: string): string {
-    if (!s) return '';
-    return s.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+    const texto = (s ?? '')
+      .toString()
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!texto) {
+      return '';
+    }
+
+    return texto
+      .split(' ')
+      .map(parte => {
+        if (!parte) {
+          return '';
+        }
+
+        const minusculo = parte.toLowerCase();
+
+        /*
+         * Mantém algarismos romanos curtos como I, II, III, IV.
+         * Exemplo: "up! move i motion" -> "Up! Move I Motion"
+         */
+        if (/^(i|ii|iii|iv|v|vi|vii|viii|ix|x)$/i.test(parte)) {
+          return parte.toUpperCase();
+        }
+
+        return minusculo.charAt(0).toUpperCase() + minusculo.slice(1);
+      })
+      .join(' ');
   }
 
   formatarTelefone(tel: string | null | undefined): string {
@@ -758,7 +846,7 @@ export class ExibeVeiculoComponent implements OnInit {
       const parte1 = n.slice(0, 4);
       const parte2 = n.slice(4, 8);
       return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
-    } else { return n;}
+    } else { return n; }
   }
 
   async abrirModalCadastroVeiculo(): Promise<void> {
@@ -835,8 +923,8 @@ export class ExibeVeiculoComponent implements OnInit {
     try {
       const lista = await firstValueFrom(
         this.http.get<FipeYear[]>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaCadastroSelCode}/models/${this.modeloCadastroSelCode}/years`)
-    );
-    this.anosCadastro = lista ?? [];
+      );
+      this.anosCadastro = lista ?? [];
     } catch (err) {
       console.error('Erro ao carregar anos FIPE no cadastro:', err);
       this.anosCadastro = [];
@@ -886,8 +974,8 @@ export class ExibeVeiculoComponent implements OnInit {
       anoModeloCombustivel: (this.novoVeiculo.anoModeloCombustivel || '').replace('/', '|').trim(),
       idProprietario: this.novoVeiculo.idProprietario !== null &&
         this.novoVeiculo.idProprietario !== undefined
-          ? Number(this.novoVeiculo.idProprietario)
-          : undefined
+        ? Number(this.novoVeiculo.idProprietario)
+        : undefined
     };
     if (!payload.placa) {
       alert('Informe a placa do veículo.');
@@ -927,7 +1015,9 @@ export class ExibeVeiculoComponent implements OnInit {
         const veiculoParaMensagem: Partial<Veiculo> = {
           ...payload,
           ...veiculoCadastrado,
-          idProprietario: payload.idProprietario
+          idProprietario: payload.idProprietario,
+          fabricante: this.formatarFabricante(payload.fabricante)
+
         };
         this.modalCadastroVeiculo?.hide();
         alert('Veículo cadastrado com sucesso.');
@@ -958,18 +1048,18 @@ export class ExibeVeiculoComponent implements OnInit {
 
   private normalizarTelefoneWhatsapp(telefone?: string): string {
     const digitos = this.onlyDigits(telefone);
-    if (!digitos) { return '';}
+    if (!digitos) { return ''; }
 
     // Se já vier com DDI 55, mantém.
-    if (digitos.startsWith('55')) {return digitos;}
+    if (digitos.startsWith('55')) { return digitos; }
 
     // Se vier com DDD + número, adiciona 55.
-    if (digitos.length === 10 || digitos.length === 11) {return `55${digitos}`;}
+    if (digitos.length === 10 || digitos.length === 11) { return `55${digitos}`; }
 
     // Se vier apenas o número sem DDD, aqui estou assumindo DDD 11.
     // Ajuste se você quiser obrigar o cadastro com DDD.
-    if (digitos.length === 8 || digitos.length === 9) {return `5511${digitos}`;}
-      return digitos;
+    if (digitos.length === 8 || digitos.length === 9) { return `5511${digitos}`; }
+    return digitos;
   }
 
   private montarParametrosTemplateCadastroVeiculo(veiculo: Partial<Veiculo>, proprietario: Usuario): string[] {
@@ -991,7 +1081,7 @@ export class ExibeVeiculoComponent implements OnInit {
     const telefoneWhatsapp = this.normalizarTelefoneWhatsapp(proprietario.telefone);
     if (!telefoneWhatsapp) {
       console.warn('Proprietário sem telefone cadastrado.', proprietario);
-      if (exibirAlertas) {alert('O proprietário selecionado não possui telefone cadastrado.');}
+      if (exibirAlertas) { alert('O proprietário selecionado não possui telefone cadastrado.'); }
       return;
     }
     this.whatsappService.enviarMensagemCadastroVeiculo({

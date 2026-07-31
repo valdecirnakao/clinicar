@@ -386,10 +386,9 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   labelVeiculo(veiculo: VeiculoResumo): string {
     const placa = this.placaDoVeiculo(veiculo);
-    const modelo = this.modeloDoVeiculo(veiculo);
-    const fabricante = this.fabricanteDoVeiculo(veiculo);
+    const modelo = this.capitalizar(this.modeloDoVeiculo(veiculo));
 
-    return `${this.formatarPlaca(placa)} - ${fabricante || 'Fabricante não informado'} ${modelo || ''}`.trim();
+    return `${this.formatarPlaca(placa)} │ ${modelo || ''}`.trim();
   }
 
   selecionarVeiculo(): void {
@@ -1217,7 +1216,7 @@ export class ExibeAgendamentosComponent implements OnInit {
       return `${p.substring(0, 3)}-${p.substring(3)}`;
     }
 
-    return p;
+    return `${p.substring(0, 3)}-${p.substring(3)}`;
   }
 
   private quantidadeInteiraMinima(valor: any): number {
@@ -1689,4 +1688,50 @@ rotuloFiltroStatus(): string {
 
   return this.formatarStatus(this.filtroStatus);
 }
+
+
+
+  formatarTelefone(telefone: string | null | undefined): string {
+    if(!telefone) return '-';
+    const numero = telefone.replaceAll(/\D/g, '');
+    const codigoPais = '55';
+    if(numero.length >= 11) {
+      const ddd = numero.slice(-11, -9);
+      const parte1 = numero.slice(-9, -4);
+      const parte2 = numero.slice(-4);
+      telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
+    }
+    else if (numero.length >= 10) {
+      const ddd = numero.slice(0, 2);
+      const parte1 = numero.slice(2, 6);
+      const parte2 = numero.slice(6, 10);
+      telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
+    }
+    else if (numero.length >= 8) {
+      const ddd = '11';
+      const parte1 = numero.slice(0, -4);
+      const parte2 = numero.slice(-4);
+      telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
+    }
+    return telefone;
+  }
+
+  formatarFabricante(fabricante: string | null | undefined): string {
+    if (!fabricante) { return ''; }
+    const siglas = ['GM', 'VW', 'BMW', 'GWM', 'BYD', 'JAC'];
+    fabricante = fabricante.trim().toUpperCase();
+    for (const sigla of siglas) {
+      if (fabricante.toUpperCase().startsWith(sigla)) {
+        return sigla + ' ' + this.capitalizar(
+          fabricante.substring(sigla.length + 1)
+        );
+      }
+    }
+    return this.capitalizar(fabricante);
+  }
+
+  capitalizar(s: string | null | undefined): string {
+    if (!s) return '';
+    return s.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+  }
 }

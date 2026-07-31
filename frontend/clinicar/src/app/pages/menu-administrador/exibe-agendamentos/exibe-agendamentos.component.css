@@ -72,6 +72,7 @@
   background: #f7fbff;
   padding: .35rem;
   gap: .35rem;
+  justify-content: center;
 }
 
 .clinicar-tabs .nav-link {
@@ -604,4 +605,111 @@
 
 .agendamento-table-scroll::-webkit-scrollbar-thumb:hover {
   background: #8fb4da;
+}
+
+@media (max-width: 992px) {
+  .agendamentos-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .agendamentos-page > .row,
+  .agendamentos-page > .row > .col-md-12,
+  .agendamentos-list-card,
+  .agendamentos-list-body {
+    height: auto;
+    min-height: initial;
+    display: block;
+  }
+
+  .agendamento-table-scroll {
+    max-height: 65vh;
+  }
+}
+
+.agendamento-modal-dialog {
+  max-width: min(1200px, calc(100vw - 2rem));
+}
+
+.agendamento-modal-content {
+  height: calc(100vh - 3rem);
+  max-height: calc(100vh - 3rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.agendamento-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.agendamento-modal-tabs-area {
+  flex: 0 0 auto;
+  position: center;
+  z-index: 30;
+  background: #ffffff;
+  border-bottom: 1px solid #d0e2f2;
+  padding: 1rem 1rem .01rem 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .035);
+}
+
+.agendamento-modal-scroll-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.agendamento-modal-scroll-area::-webkit-scrollbar {
+  width: 9px;
+}
+
+.agendamento-modal-scroll-area::-webkit-scrollbar-track {
+  background: #f2f7fc;
+}
+
+.agendamento-modal-scroll-area::-webkit-scrollbar-thumb {
+  background: #b6cfe8;
+  border-radius: 10px;
+}
+
+.agendamento-modal-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #8fb4da;
+}
+
+@media (max-width: 768px) {
+  .agendamento-modal-dialog {
+    max-width: calc(100vw - 1rem);
+    margin: .5rem auto;
+  }
+
+  .agendamento-modal-content {
+    height: calc(100vh - 1rem);
+    max-height: calc(100vh - 1rem);
+  }
+
+  .agendamento-modal-tabs-area {
+    padding: .75rem;
+  }
+
+  .agendamento-modal-scroll-area {
+    padding: .75rem;
+  }
+
+  .clinicar-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: center;
+  }
+
+  .clinicar-tabs .nav-item {
+    flex: 0 0 auto;
+  }
 }

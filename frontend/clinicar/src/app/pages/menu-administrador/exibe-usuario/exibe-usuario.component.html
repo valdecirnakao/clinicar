@@ -1,523 +1,1510 @@
-<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid mt-0 mb-0 usuarios-page" style="color:#35689b; max-height: 85vh;">
   <div class="row justify-content-center">
     <div class="col-md-12 mt-sm-0">
-      <!-- Título / Cabeçalho -->
-      <div class="row mt-0">
+      <div class="row mt-0 usuarios-header-row">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">
+          <div class="card clinicar-card usuarios-title-card">
+            <div class="card-body py-3" style="color:#35689b;">
               <i class="bi bi-people me-1"></i>
               Gerenciamento de Usuários
             </div>
           </div>
         </div>
       </div>
-      <div class="card clinicar-card" style="border-color:#d0e2f2; border-radius:10px;">
-        <div class="card-body p-2">
-          <!-- Toolbar -->
-          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-            <div class="input-group" style="max-width:42vw; color:#35689b;">
-              <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
-                Buscar
-              </span>
-              <input
-                #q type="search"
-                class="form-control"
-                style="color:#35689b;"
-                placeholder="CPF, CNPJ, Nome, Nome Social ou E-mail"
-                (input)="filtrar(q.value)"
-                style="color:#35689b;"
-              />
-              <div class="text-muted small input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
-                <span style="color:#35689b;">
-                  Total de registros: {{ usuarios.length }}
+
+      <div class="row g-2 mb-2 usuarios-summary-row">
+        <div class="col-md-3 col-sm-6">
+          <div class="summary-card">
+            <div class="summary-icon">
+              <i class="bi bi-people"></i>
+            </div>
+            <div>
+              <div class="summary-label">Total</div>
+              <div class="summary-value">{{ totalUsuarios }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <div class="summary-card">
+            <div class="summary-icon success">
+              <i class="bi bi-person-check"></i>
+            </div>
+            <div>
+              <div class="summary-label">Ativos</div>
+              <div class="summary-value">{{ totalAtivos }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <div class="summary-card">
+            <div class="summary-icon muted">
+              <i class="bi bi-person-dash"></i>
+            </div>
+            <div>
+              <div class="summary-label">Inativos</div>
+              <div class="summary-value">{{ totalInativos }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <div class="summary-card">
+            <div class="summary-icon security">
+              <i class="bi bi-shield-check"></i>
+            </div>
+            <div>
+              <div class="summary-label">2FA ativo</div>
+              <div class="summary-value">{{ totalMfaAtivo }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card clinicar-card usuarios-list-card">
+        <div class="card-body usuarios-list-body p-2">
+          <div class="row g-2 align-items-end mb-2 toolbar-filters">
+            <div class="col-lg-4 col-md-12">
+              <label class="form-label mb-1">Buscar</label>
+              <div class="input-group">
+                <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input type="search" class="form-control" placeholder="CPF, CNPJ, nome, nome social, e-mail ou telefone"
+                  [(ngModel)]="termoBusca" (ngModelChange)="filtrar($event)" style="color:#35689b;" />
+              </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4 status-filter-column">
+              <label class="form-label mb-1">Status</label>
+
+              <div class="filter-dropdown" (click)="$event.stopPropagation()">
+                <button type="button" class="filter-button" [class.active]="statusFiltroAberto || filtroStatus"
+                  (click)="alternarFiltroStatus($event)">
+                  <span>{{ rotuloFiltroStatus() }}</span>
+                  <i class="bi" [class.bi-chevron-up]="statusFiltroAberto"
+                    [class.bi-chevron-down]="!statusFiltroAberto"></i>
+                </button>
+
+                <div class="filter-menu" *ngIf="statusFiltroAberto">
+                  <button type="button" class="filter-option" *ngFor="let status of statusOptions"
+                    [class.selected]="filtroStatus === status.valor" (click)="selecionarFiltroStatus(status.valor)">
+                    <span class="badge"
+                      [ngClass]="status.valor ? statusBadgeClass(status.valor) : 'bg-light text-dark border'">
+                      {{ status.rotulo }}
+                    </span>
+
+                    <i class="bi bi-check2" *ngIf="filtroStatus === status.valor"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4 status-filter-column">
+              <label class="form-label mb-1">Tipo de acesso</label>
+
+              <div class="filter-dropdown" (click)="$event.stopPropagation()">
+                <button type="button" class="filter-button" [class.active]="tipoAcessoFiltroAberto || filtroTipoAcesso"
+                  (click)="alternarFiltroTipoAcesso($event)">
+                  <span>{{ rotuloFiltroTipoAcesso() }}</span>
+                  <i class="bi" [class.bi-chevron-up]="tipoAcessoFiltroAberto"
+                    [class.bi-chevron-down]="!tipoAcessoFiltroAberto"></i>
+                </button>
+
+                <div class="filter-menu" *ngIf="tipoAcessoFiltroAberto">
+                  <button type="button" class="filter-option" *ngFor="let tipo of tipoAcessoOptions"
+                    [class.selected]="filtroTipoAcesso === tipo.valor" (click)="selecionarFiltroTipoAcesso(tipo.valor)">
+                    <span class="badge"
+                      [ngClass]="tipo.valor ? tipoAcessoBadgeClass(tipo.valor) : 'bg-light text-dark border'">
+                      {{ tipo.rotulo }}
+                    </span>
+
+                    <i class="bi bi-check2" *ngIf="filtroTipoAcesso === tipo.valor"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4 col-md-4">
+              <div class="d-flex gap-2 justify-content-lg-end flex-wrap toolbar-actions">
+                <button class="btn btn-sm btn-primary-clinicar" type="button" (click)="abrirModalCadastro()">
+                  <i class="bi bi-person-plus me-1"></i>
+                  Novo Usuário
+                </button>
+
+                <button class="btn btn-outline-primary btn-sm" type="button" (click)="recarregar()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="limparFiltros()"
+                  [disabled]="!possuiFiltrosAplicados"
+                  [title]="possuiFiltrosAplicados ? 'Limpar filtros aplicados' : 'Nenhum filtro aplicado'">
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar
+                </button>
+
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="voltar()">
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="filtros-ativos" *ngIf="possuiFiltrosAplicados">
+            <span class="filtros-ativos-label">
+              <i class="bi bi-funnel me-1"></i>
+              Filtros aplicados:
+            </span>
+
+            <button type="button" class="filtro-chip" *ngFor="let filtro of filtrosAplicados"
+              (click)="removerFiltro(filtro.tipo)" [title]="'Remover filtro: ' + filtro.rotulo">
+              <strong>{{ filtro.rotulo }}:</strong>
+              {{ filtro.valor }}
+              <i class="bi bi-x-lg ms-1"></i>
+            </button>
+          </div>
+
+          <div *ngIf="loading" class="alert alert-info py-2 mb-2">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Carregando usuários…
+          </div>
+
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ errorMsg }}
+          </div>
+
+          <div class="usuarios-table-shell" *ngIf="!loading">
+            <div class="usuarios-table-toolbar">
+              <div>
+                <i class="bi bi-info-circle me-1"></i>
+                <span>
+                  Clique nos cabeçalhos para ordenar. Use os filtros para refinar a consulta.
+                </span>
+              </div>
+
+              <div class="usuarios-table-toolbar-right">
+                <span>
+                  <i class="bi bi-whatsapp text-success me-1"></i>
+                  {{ totalWhatsappValido }} contato(s) com WhatsApp válido
                 </span>
               </div>
             </div>
-            <div class="d-flex gap-2">
-              <button
-                class="btn btn-outline-success btn-sm"
-                type="button"
-                (click)="abrirModalCadastro()">
-                <i class="bi bi-person-plus me-1"></i>
-                Novo Usuário
-              </button>
-              <button
-                class="btn btn-outline-secondary btn-sm"
-                type="button"
-                (click)="voltar()">
-                <i class="bi bi-arrow-left me-1"></i>
-                Voltar
-              </button>
-              <button
-                class="btn btn-outline-primary btn-sm"
-                type="button"
-                (click)="recarregar()">
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                Atualizar
-              </button>
-            </div>
-          </div>
-          <!-- Estados globais -->
-          <div *ngIf="loading" class="alert alert-info py-2">Carregando usuarios…</div>
-          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
-          <!-- Tabela -->
-          <div class="table-responsive">
-            <div class="small text-muted mb-1 right-align">
-              <i class="bi bi-whatsapp text-success"></i> WhatsApp |
-              <i class="bi bi-pencil-square text-primary"></i> Editar |
-              <i class="bi bi-person-dash text-warning"></i> Inativar
-            </div>
-            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th class="text-center">CPF | CNPJ</th>
-                  <th>Nome</th>
-                  <th>E-mail</th>
-                  <th>Telefone | WhatsApp</th>
-                  <th >Status</th>
-                  <th>2FA</th>
-                  <th class="text-center">Tipo do Acesso</th>
-                  <th class="text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let u of usuarios; trackBy: trackByUsuario" [class.table-secondary]="u.status === 'inativo'">
-                <!-- CNPJ/CPF -->
-                  <td class="text-center">{{ formatarCPF(u.cpf) }}</td>
-                  <!-- Nome -->
-                  <td>{{ u.nome }}</td>
-                  <!-- E-mail -->
-                  <td>{{ u.email.toLowerCase() }}</td>
-                  <!-- Telefone/WhatsApp -->
-                  <td>{{ exibirTelefoneFormatado(u.telefone) }}</td>
-                  <!-- Status -->
-                  <td>
-                    <span class="badge" [ngClass]="u.status === 'ativo' ? 'bg-success' : 'bg-secondary'">
-                    {{ capitalizar(u.status) }}</span>
-                  </td>
-                  <!-- 2FA -->
-                  <td>
-                    <span *ngIf="u.mfaAtivo" class="badge bg-success">
-                      Ativo
-                    </span>
-                    <span *ngIf="!u.mfaAtivo" class="badge bg-secondary">
-                      Não configurado
-                    </span>
-                  </td>
-                  <!-- Tipo do Acesso -->
-                  <td class="text-center">
-                    <span class="badge"
-                      [ngClass]="{ 'bg-primary':
-                        u.tipo_do_acesso.toLowerCase() === 'administrador', 'bg-secondary':
-                        u.tipo_do_acesso.toLowerCase() === 'cliente', 'bg-info text-dark':
-                        u.tipo_do_acesso.toLowerCase() === 'colaborador'
-                      }"
-                    >
-                     {{ capitalizar(u.tipo_do_acesso) }}
-                    </span>
-                  </td>
-                  <!-- Ações -->
-                  <td class="text-center">
-                    <button
-                      type="button"
-                      class="btn btn-outline-warning btn-sm me-1"
-                      title="Resetar autenticação em duas etapas"
-                      (click)="confirmarResetarMfa(u)"
-                      [disabled]="!u.mfaAtivo || resetandoMfaId === u.id"
-                    >
-                      <span *ngIf="resetandoMfaId !== u.id">
-                        <i class="bi bi-shield-x"></i>
-                        Resetar 2FA
-                      </span>
 
-                      <span *ngIf="resetandoMfaId === u.id">
-                        <span class="spinner-border spinner-border-sm me-1"></span>
-                        Resetando...
+            <div class="usuarios-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header usuarios-desktop-table">
+                <thead>
+                  <tr>
+                    <th class="text-center">
+                      <button type="button" class="sort-header justify-content-center"
+                        (click)="alternarOrdenacao('cpf')" [title]="tituloOrdenacao('cpf')">
+                        CPF | CNPJ
+                        <i class="bi ms-1" [ngClass]="iconeOrdenacao('cpf')"></i>
+                      </button>
+                    </th>
+
+                    <th>
+                      <button type="button" class="sort-header" (click)="alternarOrdenacao('nome')"
+                        [title]="tituloOrdenacao('nome')">
+                        Nome
+                        <i class="bi ms-1" [ngClass]="iconeOrdenacao('nome')"></i>
+                      </button>
+                    </th>
+
+                    <th>
+                      <button type="button" class="sort-header" (click)="alternarOrdenacao('email')"
+                        [title]="tituloOrdenacao('email')">
+                        E-mail
+                        <i class="bi ms-1" [ngClass]="iconeOrdenacao('email')"></i>
+                      </button>
+                    </th>
+
+                    <th>
+                      <button type="button" class="sort-header" (click)="alternarOrdenacao('telefone')"
+                        [title]="tituloOrdenacao('telefone')">
+                        Telefone | WhatsApp
+                        <i class="bi ms-1" [ngClass]="iconeOrdenacao('telefone')"></i>
+                      </button>
+                    </th>
+
+                    <th>
+                      <button type="button" class="sort-header" (click)="alternarOrdenacao('status')"
+                        [title]="tituloOrdenacao('status')">
+                        Status
+                        <i class="bi ms-1" [ngClass]="iconeOrdenacao('status')"></i>
+                      </button>
+                    </th>
+
+                    <th>
+                      <button type="button" class="sort-header" (click)="alternarOrdenacao('mfa')"
+                        [title]="tituloOrdenacao('mfa')">
+                        2FA
+                        <i class="bi ms-1" [ngClass]="iconeOrdenacao('mfa')"></i>
+                      </button>
+                    </th>
+
+                    <th class="text-center">
+                      <button type="button" class="sort-header justify-content-center"
+                        (click)="alternarOrdenacao('tipo')" [title]="tituloOrdenacao('tipo')">
+                        Tipo de acesso
+                        <i class="bi ms-1" [ngClass]="iconeOrdenacao('tipo')"></i>
+                      </button>
+                    </th>
+
+                    <th class="text-center">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let u of usuariosPaginados; trackBy: trackByUsuario" [ngClass]="classeLinhaUsuario(u)">
+                    <td class="text-center fw-semibold">
+                      {{ formatarCpfCnpj(u.cpf) || '—' }}
+                    </td>
+
+                    <td>
+                      <button type="button" class="usuario-link text-start"
+                        [title]="'Visualizar detalhes de ' + (u.nome || 'usuário')" (click)="abrirDetalhes(u)">
+                        <span class="fw-semibold text-truncate table-main-text">
+                          {{ u.nome || '—' }}
+                        </span>
+                        <small class="text-muted" *ngIf="u.nome_social">
+                          {{ u.nome_social }}
+                        </small>
+                      </button>
+                    </td>
+
+                    <td>
+                      <span class="text-truncate table-email" [title]="u.email">
+                        {{ u.email?.toLowerCase() || '—' }}
                       </span>
+                    </td>
+
+                    <td>
+                      <div>{{ exibirTelefoneFormatado(u.telefone) || '—' }}</div>
+                      <span class="badge whatsapp-badge" [ngClass]="whatsappBadgeClass(u.telefone)">
+                        <i class="bi bi-whatsapp me-1"></i>
+                        {{ whatsappDescricao(u.telefone) }}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span class="badge" [ngClass]="statusBadgeClass(u.status)">
+                        {{ formatarStatus(u.status) }}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span class="badge" [ngClass]="mfaBadgeClass(u)">
+                        {{ mfaDescricao(u) }}
+                      </span>
+                    </td>
+
+                    <td class="text-center">
+                      <span class="badge" [ngClass]="tipoAcessoBadgeClass(u.tipo_do_acesso)">
+                        {{ labelTipoAcesso(u.tipo_do_acesso) }}
+                      </span>
+                    </td>
+
+                    <td class="text-center">
+                      <div class="table-actions">
+                        <button type="button" class="btn btn-sm btn-outline-info" title="Visualizar detalhes"
+                          (click)="abrirDetalhes(u)">
+                          <i class="bi bi-eye"></i>
+                        </button>
+
+                        <button type="button" class="btn btn-sm btn-outline-primary" title="Editar usuário"
+                          (click)="abrirModalEdicao(u)">
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
+
+                        <div class="action-dropdown" (click)="$event.stopPropagation()">
+                          <button type="button" class="btn btn-sm btn-outline-secondary" title="Mais ações"
+                            (click)="alternarMenuAcoes($event, u)">
+                            <i class="bi bi-three-dots-vertical"></i>
+                          </button>
+
+                          <div class="action-menu" *ngIf="acoesDropdownAbertoId === u.id">
+                            <button type="button" class="action-menu-item"
+                              [disabled]="!u.mfaAtivo || resetandoMfaId === u.id"
+                              (click)="abrirConfirmacaoResetarMfa(u)">
+                              <i class="bi bi-shield-x text-warning"></i>
+                              Resetar 2FA
+                            </button>
+
+                            <button type="button" class="action-menu-item" (click)="abrirConfirmacaoAlterarStatus(u)">
+                              <i class="bi"
+                                [ngClass]="u.status === 'inativo' ? 'bi-person-check text-success' : 'bi-person-dash text-warning'"></i>
+                              {{ u.status === 'inativo' ? 'Reativar usuário' : 'Inativar usuário' }}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="totalRegistrosFiltrados === 0">
+                    <td colspan="8" class="text-center text-muted py-4">
+                      <div class="empty-state">
+                        <i class="bi bi-search"></i>
+                        <strong>Nenhum usuário encontrado.</strong>
+                        <span>Revise os filtros aplicados ou cadastre um novo usuário.</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="usuarios-mobile-list">
+                <div class="usuario-mobile-card" *ngFor="let u of usuariosPaginados; trackBy: trackByUsuario"
+                  [ngClass]="classeLinhaUsuario(u)">
+                  <div class="usuario-mobile-header">
+                    <div>
+                      <button type="button" class="usuario-link" (click)="abrirDetalhes(u)">
+                        <strong>{{ u.nome || '—' }}</strong>
+                      </button>
+                      <small>{{ u.email?.toLowerCase() || '—' }}</small>
+                    </div>
+
+                    <span class="badge" [ngClass]="statusBadgeClass(u.status)">
+                      {{ formatarStatus(u.status) }}
+                    </span>
+                  </div>
+
+                  <div class="usuario-mobile-grid">
+                    <div>
+                      <span>CPF | CNPJ</span>
+                      <strong>{{ formatarCpfCnpj(u.cpf) || '—' }}</strong>
+                    </div>
+                    <div>
+                      <span>Telefone</span>
+                      <strong>{{ exibirTelefoneFormatado(u.telefone) || '—' }}</strong>
+                    </div>
+                    <div>
+                      <span>2FA</span>
+                      <strong>{{ mfaDescricao(u) }}</strong>
+                    </div>
+                    <div>
+                      <span>Tipo</span>
+                      <strong>{{ labelTipoAcesso(u.tipo_do_acesso) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="usuario-mobile-actions">
+                    <button type="button" class="btn btn-sm btn-outline-info" (click)="abrirDetalhes(u)">
+                      <i class="bi bi-eye me-1"></i>
+                      Detalhes
                     </button>
-                    <button
-                      class="btn btn-sm btn-outline-success me-1"
-                      title="Enviar WhatsApp"
-                      (click)="enviarWhatsappUsuario(u)"
-                    >
-                      <i class="bi bi-whatsapp"></i>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="abrirModalEdicao(u)">
+                      <i class="bi bi-pencil-square me-1"></i>
+                      Editar
                     </button>
-                    <button class="btn btn-sm btn-outline-primary me-1" title="Editar usuário" (click)="abrirModalEdicao(u)">
-                      <i class="bi bi-pencil-square"></i>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                      (click)="abrirConfirmacaoAlterarStatus(u)">
+                      <i class="bi" [ngClass]="u.status === 'inativo' ? 'bi-person-check' : 'bi-person-dash'"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-warning" (click)="inativar(u.id)" title="Inativar usuário">
-                      <i class="bi bi-person-dash"></i>
-                    </button>
-                  </td>
-                </tr>
-                <!-- Sem dados -->
-                <tr *ngIf="!usuarios || usuarios.length === 0">
-                  <td colspan="15" class="text-center text-muted py-4">
-                    Nenhum usuário encontrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>
+                </div>
+
+                <div class="empty-state mobile-empty" *ngIf="totalRegistrosFiltrados === 0">
+                  <i class="bi bi-search"></i>
+                  <strong>Nenhum usuário encontrado.</strong>
+                  <span>Revise os filtros aplicados ou cadastre um novo usuário.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+              <div class="pagination-info">
+                Mostrando
+                <strong>{{ indiceInicialPagina }}</strong>
+                a
+                <strong>{{ indiceFinalPagina }}</strong>
+                de
+                <strong>{{ totalRegistrosFiltrados }}</strong>
+                registro(s)
+              </div>
+
+              <div class="pagination-size">
+                <label>Exibir</label>
+
+                <select class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()" style="color:#35689b;">
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+
+                <span>por página</span>
+              </div>
+
+              <div class="pagination-actions">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1"
+                  (click)="paginaAnterior()">
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
+
+                <button type="button" class="btn btn-sm" *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina" [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)">
+                  {{ pagina }}
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas"
+                  (click)="proximaPagina()">
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <div class="modal fade" id="modalEdicaoUsuario" tabindex="-1" aria-labelledby="modalEdicaoUsuarioLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+
+  <div class="modal fade" id="modalDetalhesUsuario" tabindex="-1" aria-labelledby="modalDetalhesUsuarioLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered usuario-modal-dialog-sm">
       <div class="modal-content" style="color:#35689b;">
         <div class="modal-header" style="background:#eef6ff;">
-          <h5 class="modal-title" id="modalEdicaoUsuarioLabel">
-            Editar Usuário
+          <h5 class="modal-title" id="modalDetalhesUsuarioLabel">
+            <i class="bi bi-person-lines-fill me-1"></i>
+            Detalhes do Usuário
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        <div class="modal-body">
-          <div class="row lg-1 g-1">
-            <h6 class="modal-section-title">
-              <i class="bi bi-person-vcard me-1"></i> Dados pessoais
-            </h6>
-            <div class="col-md-1">
-              <label for="edit-id" class="form-label">ID</label>
-              <input id="edit-id" class="form-control form-control-sm" [(ngModel)]="edit.id" disabled style="color:#35689b;">
+
+        <div class="modal-body usuario-detalhes-body" *ngIf="usuarioDetalhe">
+          <div class="detalhes-hero">
+            <div class="detalhes-avatar">
+              <i class="bi bi-person"></i>
             </div>
-            <div class="col-md-2">
-              <label class="form-label" for="editCpfCnpj">CPF | CNPJ</label>
-              <input
-                id="editCpfCnpj"
-                class="form-control form-control-sm"
-                [(ngModel)]="edit.cpf"
-                (blur)="edit.cpf = formatarCPF(edit.cpf)"
-                style="color:#35689b;">
+            <div>
+              <h5>{{ usuarioDetalhe.nome || '—' }}</h5>
+              <p>{{ usuarioDetalhe.email?.toLowerCase() || '—' }}</p>
+              <div class="d-flex gap-2 flex-wrap">
+                <span class="badge" [ngClass]="statusBadgeClass(usuarioDetalhe.status)">
+                  {{ formatarStatus(usuarioDetalhe.status) }}
+                </span>
+                <span class="badge" [ngClass]="tipoAcessoBadgeClass(usuarioDetalhe.tipo_do_acesso)">
+                  {{ labelTipoAcesso(usuarioDetalhe.tipo_do_acesso) }}
+                </span>
+                <span class="badge" [ngClass]="mfaBadgeClass(usuarioDetalhe)">
+                  2FA {{ mfaDescricao(usuarioDetalhe) }}
+                </span>
+              </div>
             </div>
-            <div class="col-md-3">
-              <label class="form-label" for="edit-nome">Nome</label>
-              <input id="edit-nome" class="form-control form-control-sm" [(ngModel)]="edit.nome" style="color:#35689b;">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label" for="edit-nome-social">Nome Social</label>
-              <input id="edit-nome-social" class="form-control form-control-sm" [(ngModel)]="edit.nome_social" style="color:#35689b;">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label" for="edit-nascimento">Nascimento</label>
-              <input id="edit-nascimento" type="date" class="form-control form-control-sm" [(ngModel)]="edit.nascimento" style="color:#35689b;">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label" for="edit-status">Status</label>
-              <select
-                id="edit-status"
-                class="form-select form-select-sm"
-                [(ngModel)]="edit.status"
-                style="color:#35689b;"
-                [value]="edit.status"
-              >
-                <option value="ativo" style="color:#35689b;">Ativo</option>
-                <option value="inativo" style="color:#35689b;">Inativo</option>
-              </select>
-            </div>
-            <h6 class="modal-section-title mt-3">
-              <i class="bi bi-telephone me-1"></i> Contato e acesso
-            </h6>
-            <div class="col-md-3">
-              <label class="form-label" for="edit-telefone">Telefone | WhatsApp</label>
-              <input id="edit-telefone"
-                class="form-control form-control-sm"
-                type="tel"
-                style="color:#35689b;"
-                [(ngModel)]="edit.telefone"
-                (blur)="edit.telefone = exibirTelefoneFormatado(edit.telefone ?? '')" >
-            </div>
+          </div>
+
+          <div class="row g-2 mt-2">
             <div class="col-md-6">
-              <label class="form-label" for="edit-email">
-                E-mail
-              </label>
-              <input id="edit-email" class="form-control form-control-sm" [(ngModel)]="edit.email" style="color:#35689b;">
+              <div class="detail-box">
+                <span>CPF | CNPJ</span>
+                <strong>{{ formatarCpfCnpj(usuarioDetalhe.cpf) || '—' }}</strong>
+              </div>
             </div>
-            <div class="col-md-3">
-              <label class="form-label" for="edit-tipo-acesso">Tipo de Acesso</label>
-              <select id="edit-tipo-acesso" class="form-select form-select-sm" [(ngModel)]="edit.tipo_do_acesso" style="color:#35689b;">
-                <option value="administrador" style="color:#35689b;">Administrador</option>
-                <option value="cliente" style="color:#35689b;">Cliente</option>
-                <option value="colaborador" style="color:#35689b;">Colaborador</option>
-              </select>
-            </div>
-            <h6 class="modal-section-title mt-3">
-              <i class="bi bi-geo-alt me-1"></i> Endereço
-            </h6>
-            <div class="col-md-2">
-              <label class="form-label" for="edit-cep">CEP</label>
-              <input
-                id="edit-cep"
-                class="form-control form-control-sm"
-                [(ngModel)]="edit.cep"
-                (blur)="onCepBlurRow(edit)"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-5">
-              <label class="form-label" for="edit-logradouro">Logradouro</label>
-              <input id="edit-logradouro" class="form-control form-control-sm" [(ngModel)]="edit.logradouro" style="color:#35689b;">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label" for="edit-numero-endereco">Número</label>
-              <input id="edit-numero-endereco" class="form-control form-control-sm" [(ngModel)]="edit.numero_endereco" style="color:#35689b;">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label" for="edit-complemento">Complemento</label>
-              <input id="edit-complemento" class="form-control form-control-sm" [(ngModel)]="edit.complemento_endereco" style="color:#35689b;">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label" for="edit-bairro">Bairro</label>
-              <input id="edit-bairro" class="form-control form-control-sm" style="color:#35689b;" [(ngModel)]="edit.bairro">
-            </div>
+
             <div class="col-md-6">
-              <label class="form-label" for="edit-cidade">Cidade</label>
-              <input id="edit-cidade" class="form-control form-control-sm" style="color:#35689b;" [(ngModel)]="edit.cidade">
+              <div class="detail-box">
+                <span>Nome social</span>
+                <strong>{{ usuarioDetalhe.nome_social || '—' }}</strong>
+              </div>
             </div>
-            <div class="col-md-2">
-              <label class="form-label" for="edit-uf">UF</label>
-              <input
-                id="edit-uf"
-                class="form-control form-control-sm text-uppercase"
-                style="color:#35689b;"
-                maxlength="2"
-                [(ngModel)]="edit.estado">
+
+            <div class="col-md-6">
+              <div class="detail-box">
+                <span>Telefone | WhatsApp</span>
+                <strong>{{ exibirTelefoneFormatado(usuarioDetalhe.telefone) || '—' }}</strong>
+                <small [ngClass]="telefoneWhatsappValido(usuarioDetalhe.telefone) ? 'text-success' : 'text-warning'">
+                  {{ whatsappDescricao(usuarioDetalhe.telefone) }}
+                </small>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="detail-box">
+                <span>Nascimento</span>
+                <strong>{{ formatarDataBR(usuarioDetalhe.nascimento) }}</strong>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="detail-box">
+                <span>Endereço</span>
+                <strong>{{ enderecoCompleto(usuarioDetalhe) }}</strong>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="detail-box">
+                <span>Segurança</span>
+                <strong>2FA {{ mfaDescricao(usuarioDetalhe) }}</strong>
+                <small>{{ usuarioDetalhe.mfaTipo || 'Aplicativo autenticador TOTP' }}</small>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="detail-box">
+                <span>Cadastro</span>
+                <strong>Criado: {{ formatarDataBR(usuarioDetalhe.criadoEm) }}</strong>
+                <small>Atualizado: {{ formatarDataBR(usuarioDetalhe.atualizadoEm) }}</small>
+              </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> Cancelar </button>
-          <button type="button" class="btn btn-primary" (click)="salvarEdicaoModal()"> Salvar </button>
+
+        <div class="modal-footer usuario-modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Fechar
+          </button>
+          <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal"
+            (click)="abrirModalEdicao(usuarioDetalhe!)">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar
+          </button>
         </div>
       </div>
     </div>
   </div>
-  <div class="modal fade" id="modalCadastroUsuario" tabindex="-1" aria-labelledby="modalCadastroUsuarioLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content" style="color:#35689b;">
+
+  <div class="modal fade" id="modalConfirmacaoUsuario" tabindex="-1" aria-labelledby="modalConfirmacaoUsuarioLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content confirmacao-modal" style="color:#35689b;">
         <div class="modal-header" style="background:#eef6ff;">
-          <h5 class="modal-title" id="modalCadastroUsuarioLabel">
-            <i class="bi bi-person-plus me-1"></i>
-            Novo Usuário
+          <h5 class="modal-title" id="modalConfirmacaoUsuarioLabel">
+            <i class="bi me-1" [ngClass]="confirmacao?.icone || 'bi-exclamation-triangle'"></i>
+            {{ confirmacao?.titulo || 'Confirmar ação' }}
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"
+            [disabled]="acaoEmExecucao"></button>
         </div>
-        <div class="modal-body">
-          <div class="row g-2">
-            <h6 class="modal-section-title">
-              <i class="bi bi-person-vcard me-1"></i>
-              Dados pessoais
-            </h6>
-            <div class="col-md-2">
-              <label for="cpfCnpj" class="form-label">CPF | CNPJ</label>
-              <input id="cpfCnpj"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.cpf"
-                (blur)="novoUsuario.cpf = formatarCPF(novoUsuario.cpf)"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-4">
-              <label for="nome" class="form-label">Nome</label>
-              <input id="nome" class="form-control form-control-sm" [(ngModel)]="novoUsuario.nome" style="color:#35689b;">
-            </div>
-            <div class="col-md-4">
-              <label for="nomeSocial" class="form-label">Nome Social</label>
-              <input id="nomeSocial" class="form-control form-control-sm" [(ngModel)]="novoUsuario.nome_social" style="color:#35689b;">
-            </div>
-            <div class="col-md-2">
-              <label for="nascimento" class="form-label">Nascimento</label>
-              <input id="nascimento"
-                type="date"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.nascimento"
-                style="color:#35689b;"
-              >
-            </div>
-            <h6 class="modal-section-title mt-3">
-              <i class="bi bi-telephone me-1"></i>
-              Contato e acesso
-            </h6>
-            <div class="col-md-2">
-              <label for="telefone" class="form-label">Telefone | WhatsApp</label>
-              <input id="telefone"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.telefone"
-                (blur)="novoUsuario.telefone = exibirTelefoneFormatado(novoUsuario.telefone ?? '')"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-3">
-              <label for="email" class="form-label">E-mail</label>
-              <input id="email" class="form-control form-control-sm" [(ngModel)]="novoUsuario.email" style="color:#35689b;">
-            </div>
-            <div class="col-md-2">
-              <label for="tipoDoAcesso" class="form-label">Tipo de Acesso</label>
-              <select id="tipoDoAcesso" class="form-select form-select-sm" [(ngModel)]="novoUsuario.tipo_do_acesso" style="color:#35689b;">
-                <option value="administrador">Administrador</option>
-                <option value="cliente">Cliente</option>
-                <option value="colaborador">Colaborador</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label for="senha" class="form-label">Senha</label>
-              <input
-                id="senha"
-                [type]="mostrarSenha ? 'text' : 'password'"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.senha"
-                [class.is-invalid]="camposInvalidos.includes('senha')"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-2">
-              <label for="confirmarSenha" class="form-label">
-                Confirmar <span class="text-danger" aria-hidden="true">*</span>
-              </label>
-              <input
-                id="confirmarSenha"
-                [type]="mostrarSenha ? 'text' : 'password'"
-                class="form-control form-control-sm"
-                name="confirmarSenha"
-                [(ngModel)]="novoUsuario.confirmarSenha"
-                [class.is-invalid]="camposInvalidos.includes('confirmarSenha')"
-                aria-required="true"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-1 d-flex align-items-end">
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-primary w-100 senha-toggle-btn"
-                title="Mostrar/Ocultar senha"
-                (click)="toggleMostrarSenha()"
-              >
-                <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"></i>
-              </button>
-            </div>
-            <h6 class="modal-section-title mt-3">
-              <i class="bi bi-geo-alt me-1"></i>
-              Endereço
-            </h6>
-            <div class="col-md-2">
-              <label class="form-label" for="cep">CEP</label>
-              <input id="cep"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.cep"
-                (blur)="onCepBlurRow(novoUsuario)"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-5">
-              <label class="form-label" for="logradouro">Logradouro</label>
-              <input id="logradouro" class="form-control form-control-sm" [(ngModel)]="novoUsuario.logradouro" style="color:#35689b;">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label" for="numero_endereco">Número</label>
-              <input id="numero_endereco"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.numero_endereco"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-3">
-              <label class="form-label" for="complemento_endereco">Complemento</label>
-              <input id="complemento_endereco"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.complemento_endereco"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-4">
-              <label class="form-label" for="bairro">Bairro</label>
-              <input id="bairro"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.bairro"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="cidade">Cidade</label>
-              <input id="cidade"
-                class="form-control form-control-sm"
-                [(ngModel)]="novoUsuario.cidade"
-                style="color:#35689b;"
-              >
-            </div>
-            <div class="col-md-2">
-              <label class="form-label" for="estado">UF</label>
-              <input id="estado"
-                class="form-control form-control-sm text-uppercase"
-                maxlength="2"
-                [(ngModel)]="novoUsuario.estado"
-                style="color:#35689b;"
-              >
-            </div>
+
+        <div class="modal-body" *ngIf="confirmacao">
+          <p class="mb-2">{{ confirmacao.mensagem }}</p>
+
+          <div class="confirmacao-detalhe" *ngIf="confirmacao.detalhe">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ confirmacao.detalhe }}
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+
+        <div class="modal-footer usuario-modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" [disabled]="acaoEmExecucao">
             Cancelar
           </button>
-          <button type="button" class="btn btn-success" (click)="salvarNovoUsuario()">
+
+          <button type="button" class="btn" [ngClass]="confirmacao?.confirmarClasse || 'btn-primary'"
+            [disabled]="acaoEmExecucao" (click)="executarAcaoConfirmada()">
+            <span class="spinner-border spinner-border-sm me-1" *ngIf="acaoEmExecucao"></span>
+            <i class="bi bi-check-circle me-1" *ngIf="!acaoEmExecucao"></i>
+            {{ confirmacao?.confirmarLabel || 'Confirmar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalEdicaoUsuario" tabindex="-1" aria-labelledby="modalEdicaoUsuarioLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered usuario-modal-dialog">
+      <div class="modal-content usuario-modal-content usuario-edit-modal-content" style="color:#35689b;">
+        <div class="modal-header usuario-edit-header">
+          <div class="usuario-edit-heading">
+            <div class="usuario-edit-title-row">
+              <h5 class="modal-title" id="modalEdicaoUsuarioLabel">
+                <i class="bi bi-pencil-square me-1"></i>
+                Editar Usuário
+              </h5>
+
+              <span class="usuario-id-badge" *ngIf="edit.id">
+                ID #{{ edit.id }}
+              </span>
+            </div>
+
+            <div class="usuario-edit-subtitle">
+              {{ resumoUsuarioEdicao() }}
+            </div>
+
+            <div class="usuario-edit-badges">
+              <span class="badge" [ngClass]="statusBadgeClass(edit.status)">
+                {{ formatarStatus(edit.status) }}
+              </span>
+
+              <span class="badge" [ngClass]="tipoAcessoBadgeClass(edit.tipo_do_acesso)">
+                {{ labelTipoAcesso(edit.tipo_do_acesso) }}
+              </span>
+
+              <span class="badge" [ngClass]="mfaBadgeClass(usuarioEdicaoParaAcao())">
+                2FA {{ mfaDescricao(usuarioEdicaoParaAcao()) }}
+              </span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body usuario-edit-modal-body">
+          <div class="usuario-edit-tabs-area">
+            <div class="alert alert-warning py-2 mb-2" *ngIf="exibirAlertaSegurancaEdicao()">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              Revise com atenção: houve alteração em dado sensível de acesso.
+              <span *ngIf="alterouEmailEdicao()">E-mail alterado. </span>
+              <span *ngIf="alterouTipoAcessoEdicao()">Tipo de acesso alterado. </span>
+              <span *ngIf="alterouStatusEdicao()">Status alterado. </span>
+            </div>
+
+            <ul class="nav nav-pills usuario-modal-tabs">
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaEdicaoUsuario === 'dados'"
+                  (click)="trocarAbaEdicaoUsuario('dados')">
+                  <i class="bi bi-person-vcard me-1"></i>
+                  Dados pessoais
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaEdicaoUsuario === 'contato'"
+                  (click)="trocarAbaEdicaoUsuario('contato')">
+                  <i class="bi bi-telephone me-1"></i>
+                  Contato e acesso
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaEdicaoUsuario === 'endereco'"
+                  (click)="trocarAbaEdicaoUsuario('endereco')">
+                  <i class="bi bi-geo-alt me-1"></i>
+                  Endereço
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaEdicaoUsuario === 'seguranca'"
+                  (click)="trocarAbaEdicaoUsuario('seguranca')">
+                  <i class="bi bi-shield-lock me-1"></i>
+                  Segurança
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="usuario-edit-scroll-area">
+            <div class="usuario-form-section-card" *ngIf="abaEdicaoUsuario === 'dados'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-person-vcard me-1"></i>
+                    Dados pessoais
+                  </h6>
+                  <small>Identificação do usuário e situação cadastral no sistema.</small>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="editCpfCnpj">CPF | CNPJ *</label>
+                  <input id="editCpfCnpj" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('cpf')" [(ngModel)]="edit.cpf"
+                    (blur)="edit.cpf = formatarCpfCnpj(edit.cpf)" style="color:#35689b;" />
+                  <div class="invalid-feedback">Informe CPF com 11 dígitos ou CNPJ com 14 dígitos.</div>
+                </div>
+
+                <div class="col-md-5">
+                  <label class="form-label" for="edit-nome">Nome *</label>
+                  <input id="edit-nome" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('nome')" [(ngModel)]="edit.nome" style="color:#35689b;" />
+                  <div class="invalid-feedback">Informe o nome do usuário.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="edit-nome-social">Nome Social</label>
+                  <input id="edit-nome-social" class="form-control form-control-sm" [(ngModel)]="edit.nome_social"
+                    style="color:#35689b;" />
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="edit-nascimento">Nascimento *</label>
+                  <input id="edit-nascimento" type="date" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('nascimento')" [(ngModel)]="edit.nascimento"
+                    style="color:#35689b;" />
+                  <div class="invalid-feedback">Informe a data de nascimento.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="edit-status">Status *</label>
+                  <select id="edit-status" class="form-select form-select-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('status')" [(ngModel)]="edit.status" style="color:#35689b;">
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                  <div class="form-text">Define se o usuário poderá acessar o sistema.</div>
+                  <div class="invalid-feedback">Selecione o status.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="edit-info-box">
+                    <span>ID do registro</span>
+                    <strong>#{{ edit.id || '—' }}</strong>
+                    <small>Campo gerado automaticamente pelo sistema e não editável.</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="usuario-form-section-card" *ngIf="abaEdicaoUsuario === 'contato'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-telephone me-1"></i>
+                    Contato e acesso
+                  </h6>
+                  <small>Canais de comunicação e perfil de permissões do usuário.</small>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="edit-telefone">Telefone | WhatsApp *</label>
+                  <input id="edit-telefone" class="form-control form-control-sm" type="tel"
+                    [class.is-invalid]="campoEdicaoInvalido('telefone')" style="color:#35689b;"
+                    [(ngModel)]="edit.telefone" (blur)="edit.telefone = exibirTelefoneFormatado(edit.telefone)" />
+                  <div class="form-text">
+                    <span class="badge" [ngClass]="whatsappBadgeClass(edit.telefone)">
+                      <i class="bi bi-whatsapp me-1"></i>
+                      {{ whatsappDescricao(edit.telefone) }}
+                    </span>
+                  </div>
+                  <div class="invalid-feedback">Informe um telefone com DDD válido.</div>
+                </div>
+
+                <div class="col-md-5">
+                  <label class="form-label" for="edit-email">E-mail *</label>
+                  <input id="edit-email" class="form-control form-control-sm" type="email"
+                    [class.is-invalid]="campoEdicaoInvalido('email')" [(ngModel)]="edit.email" style="color:#35689b;" />
+                  <div class="form-text">Usado para login, recuperação de senha e comunicações do sistema.</div>
+                  <div class="invalid-feedback">Informe um e-mail válido.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="edit-tipo-acesso">Tipo de Acesso *</label>
+                  <select id="edit-tipo-acesso" class="form-select form-select-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('tipo_do_acesso')" [(ngModel)]="edit.tipo_do_acesso"
+                    style="color:#35689b;">
+                    <option value="administrador">Administrador</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="colaborador">Colaborador</option>
+                  </select>
+                  <div class="form-text">Controla as permissões disponíveis para este usuário.</div>
+                  <div class="invalid-feedback">Selecione o tipo de acesso.</div>
+                </div>
+              </div>
+
+              <div class="alert alert-info py-2 mt-3 mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                Alterações em e-mail ou tipo de acesso podem impactar login, permissões e comunicações enviadas ao
+                usuário.
+              </div>
+            </div>
+
+            <div class="usuario-form-section-card" *ngIf="abaEdicaoUsuario === 'endereco'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-geo-alt me-1"></i>
+                    Endereço
+                  </h6>
+                  <small>Ao informar o CEP, o sistema tenta preencher automaticamente os dados pelo ViaCEP.</small>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="edit-cep">CEP *</label>
+                  <input id="edit-cep" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('cep')" [(ngModel)]="edit.cep" (blur)="onCepBlurEdicao()"
+                    style="color:#35689b;" />
+                  <div class="invalid-feedback">Informe um CEP com 8 dígitos.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="edit-logradouro">Logradouro *</label>
+                  <input id="edit-logradouro" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('logradouro')" [(ngModel)]="edit.logradouro"
+                    style="color:#35689b;" />
+                  <div class="invalid-feedback">Informe o logradouro.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="edit-numero-endereco">Número *</label>
+                  <input id="edit-numero-endereco" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('numero_endereco')" [(ngModel)]="edit.numero_endereco"
+                    style="color:#35689b;" />
+                  <div class="invalid-feedback">Informe o número.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="edit-complemento">Complemento</label>
+                  <input id="edit-complemento" class="form-control form-control-sm"
+                    [(ngModel)]="edit.complemento_endereco" style="color:#35689b;" />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="edit-bairro">Bairro *</label>
+                  <input id="edit-bairro" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('bairro')" style="color:#35689b;"
+                    [(ngModel)]="edit.bairro" />
+                  <div class="invalid-feedback">Informe o bairro.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="edit-cidade">Cidade *</label>
+                  <input id="edit-cidade" class="form-control form-control-sm"
+                    [class.is-invalid]="campoEdicaoInvalido('cidade')" style="color:#35689b;"
+                    [(ngModel)]="edit.cidade" />
+                  <div class="invalid-feedback">Informe a cidade.</div>
+                </div>
+
+                <div class="col-md-1">
+                  <label class="form-label" for="edit-uf">UF *</label>
+                  <input id="edit-uf" class="form-control form-control-sm text-uppercase"
+                    [class.is-invalid]="campoEdicaoInvalido('estado')" style="color:#35689b;" maxlength="2"
+                    [(ngModel)]="edit.estado" (blur)="normalizarUfEdicao()" />
+                  <div class="invalid-feedback">UF.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="usuario-form-section-card" *ngIf="abaEdicaoUsuario === 'seguranca'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-shield-lock me-1"></i>
+                    Segurança
+                  </h6>
+                  <small>Informações de autenticação, 2FA e ações sensíveis do usuário.</small>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="security-status-card">
+                    <span>Status do 2FA</span>
+                    <strong>
+                      <span class="badge" [ngClass]="mfaBadgeClass(usuarioEdicaoParaAcao())" style="color: white">
+                        {{ mfaDescricao(usuarioEdicaoParaAcao()) }}
+                      </span>
+                    </strong>
+                    <small>O QR Code do 2FA não deve ser exibido novamente após a configuração inicial.</small>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="security-status-card">
+                    <span>Status do usuário</span>
+                    <strong>
+                      <span class="badge" [ngClass]="statusBadgeClass(edit.status)" style="color: white">
+                        {{ formatarStatus(edit.status) }}
+                      </span>
+                    </strong>
+                    <small>Usuário inativo não deve conseguir acessar o sistema.</small>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="security-status-card">
+                    <span>Perfil de acesso</span>
+                    <strong>
+                      <span class="badge" [ngClass]="tipoAcessoBadgeClass(edit.tipo_do_acesso)" style="color: white">
+                        {{ labelTipoAcesso(edit.tipo_do_acesso) }}
+                      </span>
+                    </strong>
+                    <small>Este perfil define as permissões disponíveis na aplicação.</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="alert alert-warning mt-3 mb-3">
+                <i class="bi bi-shield-exclamation me-1"></i>
+                Resetar o 2FA remove a chave atual do autenticador. No próximo login, o usuário deverá configurar um
+                novo QR Code.
+              </div>
+
+              <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-warning" [disabled]="!editId || resetandoMfaId === editId"
+                  (click)="abrirConfirmacaoResetarMfaEdicao()">
+                  <i class="bi bi-shield-x me-1"></i>
+                  Resetar 2FA deste usuário
+                </button>
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer usuario-modal-footer usuario-edit-footer">
+          <div class="usuario-edit-footer-info me-auto">
+            <i class="bi bi-info-circle me-1"></i>
+            Revise os dados antes de salvar alterações cadastrais e de acesso.
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" (click)="cancelarEdicao()">
+            Cancelar
+          </button>
+
+          <button type="button" class="btn btn-primary-clinicar" (click)="salvarEdicaoModal()">
             <i class="bi bi-check-circle me-1"></i>
-            Cadastrar
+            Salvar alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalCadastroUsuario" tabindex="-1" aria-labelledby="modalCadastroUsuarioLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered usuario-modal-dialog usuario-cadastro-modal-dialog">
+      <div class="modal-content usuario-modal-content usuario-cadastro-modal-content" style="color:#35689b;">
+        <div class="modal-header usuario-cadastro-header">
+          <div class="usuario-cadastro-heading">
+            <div class="usuario-edit-title-row">
+              <h5 class="modal-title" id="modalCadastroUsuarioLabel">
+                <i class="bi bi-person-plus me-1"></i>
+                Novo Usuário
+              </h5>
+
+              <span class="usuario-id-badge">
+                <i class="bi bi-stars me-1"></i>
+                Cadastro seguro
+              </span>
+            </div>
+
+            <div class="usuario-edit-subtitle">
+              {{ cadastroNomePreview() }} · {{ cadastroEmailPreview() }}
+            </div>
+
+            <div class="usuario-edit-badges">
+              <span class="badge" [ngClass]="tipoAcessoBadgeClass(novoUsuario.tipo_do_acesso || 'cliente')">
+                {{ cadastroTipoAcessoPreview() }}
+              </span>
+              <span class="badge" [ngClass]="statusBadgeClass(novoUsuario.status || 'ativo')">
+                {{ cadastroStatusPreview() }}
+              </span>
+              <span class="badge" [ngClass]="telefoneCadastroValido() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'">
+                <i class="bi" [ngClass]="telefoneCadastroValido() ? 'bi-whatsapp' : 'bi-telephone'"></i>
+                {{ cadastroWhatsappPreview() }}
+              </span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body usuario-cadastro-modal-body">
+          <div class="usuario-cadastro-tabs-area">
+            <div class="cadastro-progress-card">
+              <div class="cadastro-progress-top">
+                <div>
+                  <strong>Progresso do cadastro</strong>
+                  <small>Preencha as etapas obrigatórias para habilitar o cadastro.</small>
+                </div>
+
+                <span class="badge" [ngClass]="cadastroProntoParaSalvar ? 'bg-success' : 'bg-warning text-dark'">
+                  {{ cadastroProntoParaSalvar ? 'Pronto para cadastrar' : quantidadePendenciasCadastro + ' pendência(s)' }}
+                </span>
+              </div>
+
+              <div class="progress cadastro-progress">
+                <div
+                  class="progress-bar"
+                  role="progressbar"
+                  [style.width.%]="progressoCadastroPercentual"
+                  [attr.aria-valuenow]="progressoCadastroPercentual"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  {{ progressoCadastroPercentual }}%
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="mensagemErroCadastro" class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroCadastro }}
+            </div>
+
+            <ul class="nav nav-pills usuario-modal-tabs usuario-cadastro-tabs mb-0">
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaCadastroUsuario === 'dados'"
+                  (click)="trocarAbaCadastroUsuario('dados')">
+                  <i class="bi bi-person-vcard me-1"></i>
+                  Dados pessoais
+                  <span class="tab-pendencia" *ngIf="pendenciasCadastroAba('dados') > 0">
+                    {{ pendenciasCadastroAba('dados') }}
+                  </span>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaCadastroUsuario === 'contato'"
+                  (click)="trocarAbaCadastroUsuario('contato')">
+                  <i class="bi bi-envelope-at me-1"></i>
+                  Contato e acesso
+                  <span class="tab-pendencia" *ngIf="pendenciasCadastroAba('contato') > 0">
+                    {{ pendenciasCadastroAba('contato') }}
+                  </span>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaCadastroUsuario === 'endereco'"
+                  (click)="trocarAbaCadastroUsuario('endereco')">
+                  <i class="bi bi-geo-alt me-1"></i>
+                  Endereço
+                  <span class="tab-pendencia" *ngIf="pendenciasCadastroAba('endereco') > 0">
+                    {{ pendenciasCadastroAba('endereco') }}
+                  </span>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="abaCadastroUsuario === 'seguranca'"
+                  (click)="trocarAbaCadastroUsuario('seguranca')">
+                  <i class="bi bi-shield-lock me-1"></i>
+                  Segurança
+                  <span class="tab-pendencia" *ngIf="pendenciasCadastroAba('seguranca') > 0">
+                    {{ pendenciasCadastroAba('seguranca') }}
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="usuario-cadastro-scroll-area">
+            <div class="usuario-form-section-card" *ngIf="abaCadastroUsuario === 'dados'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-person-vcard me-1"></i>
+                    Dados pessoais
+                  </h6>
+                  <small>Identificação principal do usuário dentro do CliniCar.</small>
+                </div>
+                <span class="badge bg-light text-dark border">Etapa 1 de 4</span>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label for="cpfCnpj" class="form-label">CPF | CNPJ *</label>
+                  <input
+                    id="cpfCnpj"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('cpf')"
+                    [(ngModel)]="novoUsuario.cpf"
+                    (ngModelChange)="limparCampoCadastroInvalido('cpf')"
+                    (blur)="formatarCpfCnpjCadastro()"
+                    placeholder="000.000.000-00"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe CPF com 11 dígitos ou CNPJ com 14 dígitos.</div>
+                  <small class="text-muted">Utilizado para identificação cadastral.</small>
+                </div>
+
+                <div class="col-md-5">
+                  <label for="nome" class="form-label">Nome *</label>
+                  <input
+                    id="nome"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('nome')"
+                    [(ngModel)]="novoUsuario.nome"
+                    (ngModelChange)="limparCampoCadastroInvalido('nome')"
+                    placeholder="Nome completo"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe o nome.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label for="nomeSocial" class="form-label">Nome social</label>
+                  <input
+                    id="nomeSocial"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="novoUsuario.nome_social"
+                    placeholder="Opcional"
+                    style="color:#35689b;"
+                  />
+                  <small class="text-muted">Será usado em comunicações quando informado.</small>
+                </div>
+
+                <div class="col-md-3">
+                  <label for="nascimento" class="form-label">Nascimento *</label>
+                  <input
+                    id="nascimento"
+                    type="date"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('nascimento')"
+                    [(ngModel)]="novoUsuario.nascimento"
+                    (ngModelChange)="limparCampoCadastroInvalido('nascimento')"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe a data de nascimento.</div>
+                </div>
+
+                <div class="col-md-9">
+                  <div class="cadastro-info-box">
+                    <i class="bi bi-info-circle"></i>
+                    <div>
+                      <strong>Boas práticas de cadastro</strong>
+                      <small>Confirme CPF/CNPJ e e-mail antes de salvar. Esses dados podem ser usados para auditoria, acesso e notificações.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="usuario-form-section-card" *ngIf="abaCadastroUsuario === 'contato'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-envelope-at me-1"></i>
+                    Contato e acesso
+                  </h6>
+                  <small>Dados usados para contato, notificações e definição de permissões.</small>
+                </div>
+                <span class="badge bg-light text-dark border">Etapa 2 de 4</span>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label for="telefone" class="form-label">Telefone | WhatsApp *</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text" style="background:#eef6ff;color:#35689b;border-color:#d0e2f2;">
+                      <i class="bi bi-whatsapp"></i>
+                    </span>
+                    <input
+                      id="telefone"
+                      class="form-control form-control-sm"
+                      [class.is-invalid]="campoCadastroInvalido('telefone')"
+                      [(ngModel)]="novoUsuario.telefone"
+                      (ngModelChange)="limparCampoCadastroInvalido('telefone')"
+                      (blur)="formatarTelefoneCadastro()"
+                      placeholder="+55 (11) 99999-9999"
+                      style="color:#35689b;"
+                    />
+                    <div class="invalid-feedback">Informe telefone com DDD válido.</div>
+                  </div>
+                  <small class="text-muted">Usado para notificações automáticas quando aplicável.</small>
+                </div>
+
+                <div class="col-md-5">
+                  <label for="email" class="form-label">E-mail *</label>
+                  <input
+                    id="email"
+                    type="email"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('email')"
+                    [(ngModel)]="novoUsuario.email"
+                    (ngModelChange)="limparCampoCadastroInvalido('email')"
+                    (blur)="normalizarEmailCadastro()"
+                    placeholder="usuario@exemplo.com"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe um e-mail válido.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label for="tipoDoAcesso" class="form-label">Tipo de acesso *</label>
+                  <select
+                    id="tipoDoAcesso"
+                    class="form-select form-select-sm"
+                    [class.is-invalid]="campoCadastroInvalido('tipo_do_acesso')"
+                    [(ngModel)]="novoUsuario.tipo_do_acesso"
+                    (ngModelChange)="limparCampoCadastroInvalido('tipo_do_acesso')"
+                    style="color:#35689b;"
+                  >
+                    <option value="administrador">Administrador</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="colaborador">Colaborador</option>
+                  </select>
+                  <div class="invalid-feedback">Selecione o tipo de acesso.</div>
+                  <small class="text-muted">Controla as permissões disponíveis.</small>
+                </div>
+
+                <div class="col-md-12">
+                  <div class="cadastro-perfil-grid">
+                    <div class="cadastro-perfil-card">
+                      <span>Cliente</span>
+                      <strong>Acesso ao próprio cadastro, veículos e agendamentos.</strong>
+                    </div>
+                    <div class="cadastro-perfil-card">
+                      <span>Colaborador</span>
+                      <strong>Acesso operacional para atendimento e acompanhamento.</strong>
+                    </div>
+                    <div class="cadastro-perfil-card destaque">
+                      <span>Administrador</span>
+                      <strong>Acesso gerencial. Conceda apenas a usuários autorizados.</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="usuario-form-section-card" *ngIf="abaCadastroUsuario === 'endereco'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-geo-alt me-1"></i>
+                    Endereço
+                  </h6>
+                  <small>Preencha o CEP para buscar o endereço automaticamente.</small>
+                </div>
+                <span class="badge bg-light text-dark border">Etapa 3 de 4</span>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="cep">CEP *</label>
+                  <div class="input-group input-group-sm">
+                    <input
+                      id="cep"
+                      class="form-control form-control-sm"
+                      [class.is-invalid]="campoCadastroInvalido('cep') || !!cepCadastroErro"
+                      [(ngModel)]="novoUsuario.cep"
+                      (ngModelChange)="limparCampoCadastroInvalido('cep'); cepCadastroErro = ''"
+                      (blur)="onCepBlurCadastro()"
+                      placeholder="00000-000"
+                      style="color:#35689b;"
+                    />
+                    <span class="input-group-text" style="background:#eef6ff;color:#35689b;border-color:#d0e2f2;">
+                      <span class="spinner-border spinner-border-sm" *ngIf="cepCadastroCarregando"></span>
+                      <i class="bi bi-search" *ngIf="!cepCadastroCarregando"></i>
+                    </span>
+                    <div class="invalid-feedback">{{ cepCadastroErro || 'Informe o CEP.' }}</div>
+                  </div>
+                  <small class="text-muted">Ao sair do campo, o endereço será consultado no ViaCEP.</small>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="logradouro">Logradouro *</label>
+                  <input
+                    id="logradouro"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('logradouro')"
+                    [(ngModel)]="novoUsuario.logradouro"
+                    (ngModelChange)="limparCampoCadastroInvalido('logradouro')"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe o logradouro.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="numero_endereco">Número *</label>
+                  <input
+                    id="numero_endereco"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('numero_endereco')"
+                    [(ngModel)]="novoUsuario.numero_endereco"
+                    (ngModelChange)="limparCampoCadastroInvalido('numero_endereco')"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe o número.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="complemento_endereco">Complemento</label>
+                  <input
+                    id="complemento_endereco"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="novoUsuario.complemento_endereco"
+                    placeholder="Apartamento, bloco, referência..."
+                    style="color:#35689b;"
+                  />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="bairro">Bairro *</label>
+                  <input
+                    id="bairro"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('bairro')"
+                    [(ngModel)]="novoUsuario.bairro"
+                    (ngModelChange)="limparCampoCadastroInvalido('bairro')"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe o bairro.</div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="cidade">Cidade *</label>
+                  <input
+                    id="cidade"
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('cidade')"
+                    [(ngModel)]="novoUsuario.cidade"
+                    (ngModelChange)="limparCampoCadastroInvalido('cidade')"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">Informe a cidade.</div>
+                </div>
+
+                <div class="col-md-1">
+                  <label class="form-label" for="estado">UF *</label>
+                  <input
+                    id="estado"
+                    class="form-control form-control-sm text-uppercase"
+                    [class.is-invalid]="campoCadastroInvalido('estado')"
+                    maxlength="2"
+                    [(ngModel)]="novoUsuario.estado"
+                    (ngModelChange)="limparCampoCadastroInvalido('estado')"
+                    (blur)="normalizarUfCadastro()"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">UF.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="usuario-form-section-card" *ngIf="abaCadastroUsuario === 'seguranca'">
+              <div class="section-card-header">
+                <div>
+                  <h6>
+                    <i class="bi bi-shield-lock me-1"></i>
+                    Segurança e ativação
+                  </h6>
+                  <small>Defina o status inicial e a senha temporária do usuário.</small>
+                </div>
+                <span class="badge bg-light text-dark border">Etapa 4 de 4</span>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="statusCadastro">Status inicial *</label>
+                  <select
+                    id="statusCadastro"
+                    class="form-select form-select-sm"
+                    [class.is-invalid]="campoCadastroInvalido('status')"
+                    [(ngModel)]="novoUsuario.status"
+                    (ngModelChange)="limparCampoCadastroInvalido('status')"
+                    style="color:#35689b;"
+                  >
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                  <div class="invalid-feedback">Selecione o status inicial.</div>
+                  <small class="text-muted">Usuários inativos não devem conseguir acessar o sistema.</small>
+                </div>
+
+                <div class="col-md-4">
+                  <label for="senha" class="form-label">Senha temporária *</label>
+                  <div class="input-group input-group-sm">
+                    <input
+                      id="senha"
+                      [type]="mostrarSenha ? 'text' : 'password'"
+                      class="form-control form-control-sm"
+                      [(ngModel)]="novoUsuario.senha"
+                      (ngModelChange)="limparCampoCadastroInvalido('senha')"
+                      [class.is-invalid]="campoCadastroInvalido('senha')"
+                      style="color:#35689b;"
+                    />
+                    <button type="button" class="btn btn-sm btn-outline-primary senha-toggle-btn-inline"
+                      title="Mostrar/Ocultar senha" (click)="toggleMostrarSenha()">
+                      <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"></i>
+                    </button>
+                    <div class="invalid-feedback">Informe senha conforme a política mínima.</div>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <label for="confirmarSenha" class="form-label">Confirmar senha *</label>
+                  <input
+                    id="confirmarSenha"
+                    [type]="mostrarSenha ? 'text' : 'password'"
+                    class="form-control form-control-sm"
+                    name="confirmarSenha"
+                    [(ngModel)]="novoUsuario.confirmarSenha"
+                    (ngModelChange)="limparCampoCadastroInvalido('confirmarSenha')"
+                    [class.is-invalid]="campoCadastroInvalido('confirmarSenha') || senhasCadastroDiferentes()"
+                    aria-required="true"
+                    style="color:#35689b;"
+                  />
+                  <div class="invalid-feedback">As senhas devem coincidir.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="senha-strength-card">
+                    <div class="senha-strength-header">
+                      <strong>Força da senha</strong>
+                      <span [ngClass]="senhaForcaClasse()">{{ senhaForcaLabel() }}</span>
+                    </div>
+                    <div class="progress senha-strength-progress">
+                      <div class="progress-bar" [ngClass]="senhaForcaClasse()" [style.width.%]="senhaForcaPercentual()"></div>
+                    </div>
+
+                    <div class="senha-checklist">
+                      <span [class.ok]="senhaTemMinimo()"><i class="bi" [ngClass]="senhaTemMinimo() ? 'bi-check-circle' : 'bi-circle'"></i> 8 caracteres</span>
+                      <span [class.ok]="senhaTemMaiuscula()"><i class="bi" [ngClass]="senhaTemMaiuscula() ? 'bi-check-circle' : 'bi-circle'"></i> Letra maiúscula</span>
+                      <span [class.ok]="senhaTemMinuscula()"><i class="bi" [ngClass]="senhaTemMinuscula() ? 'bi-check-circle' : 'bi-circle'"></i> Letra minúscula</span>
+                      <span [class.ok]="senhaTemNumero()"><i class="bi" [ngClass]="senhaTemNumero() ? 'bi-check-circle' : 'bi-circle'"></i> Número</span>
+                      <span [class.ok]="senhaTemEspecial()"><i class="bi" [ngClass]="senhaTemEspecial() ? 'bi-check-circle' : 'bi-circle'"></i> Caractere especial recomendado</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="cadastro-security-note">
+                    <div class="security-note-icon">
+                      <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                      <strong>Fluxo de segurança recomendado</strong>
+                      <small>
+                        Após o cadastro, o sistema enviará a notificação automática de criação do usuário quando o telefone estiver válido. O QR Code de 2FA não deve ser enviado por WhatsApp; ele deve ser configurado apenas na tela própria de autenticação.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer usuario-modal-footer usuario-cadastro-footer">
+          <div class="usuario-edit-footer-info me-auto">
+            <div *ngIf="mensagemBloqueioCadastro" class="cadastro-footer-warning">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ mensagemBloqueioCadastro }}
+            </div>
+            <div *ngIf="!mensagemBloqueioCadastro" class="cadastro-footer-ok">
+              <i class="bi bi-check-circle me-1"></i>
+              Cadastro pronto para ser salvo.
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <button type="button" class="btn btn-outline-primary" [disabled]="cadastroEhPrimeiraAba()" (click)="cadastroAbaAnterior()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+
+          <button type="button" class="btn btn-outline-primary" *ngIf="!cadastroEhUltimaAba()" (click)="cadastroAbaProxima()">
+            Próximo
+            <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+
+          <button type="button" class="btn btn-primary-clinicar" [disabled]="!cadastroProntoParaSalvar" (click)="salvarNovoUsuario()">
+            <i class="bi bi-check-circle me-1"></i>
+            Cadastrar usuário
           </button>
         </div>
       </div>
     </div>
   </div>
 </div>
-<style>
-  /* Bordas/cores padrão */
-  .table thead th {
-    border-color: #d0e2f2
-    !important;
-  }
-  .table td, .table th {
-    vertical-align: middle;
-    color: #35689b;
-  }
-  .table-hover tbody tr:hover {
-    background-color: #f7fbff;
-  }
-  .table-active {
-    --bs-table-bg: #f1f7ff;
-  }
-  /* Sem quebras e com elipse por padrão (uma linha por registro) */
-  .table.text-nowrap th, .table.text-nowrap td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  /* Linha em edição: mostrar todo o conteúdo (pode quebrar) */
-  .table.text-nowrap tr.editing > th, .table.text-nowrap tr.editing > td {
-    white-space: normal
-    !important;
-    overflow: visible
-    !important;
-    text-overflow: clip
-    !important;
-    word-break: break-word;
-    /* ajuda com textos longos sem espaços */
-  } /* Inputs na linha em edição com largura mínima confortável */
-  .table.text-nowrap tr.editing .form-control {
-    min-width: 220px;
-  }
-  .form-control:focus, .btn:focus {
-    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
-    border-color: #8fb4da;
-  }
-  .senha-toggle-btn {
-    height: 31px;
-    color: #35689b;
-    border: 1px solid #d0e2f2;
-    background: #eef6ff;
-  }
-  .senha-toggle-btn:hover {
-    background: #dbeeff;
-    border-color: #8fb4da;
-    color: #35689b;
-  }
-</style>
