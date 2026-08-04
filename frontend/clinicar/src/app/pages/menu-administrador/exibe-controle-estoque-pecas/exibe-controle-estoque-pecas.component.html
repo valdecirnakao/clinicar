@@ -1,20 +1,20 @@
-<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid mt-0 mb-0 estoque-page" style="color:#35689b; max-height: 82vh;">
   <div class="row justify-content-center">
     <div class="col-md-12 mt-sm-0">
 
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">
+          <div class="card clinicar-title-card">
+            <div class="card-body py-3">
               <i class="bi bi-box-seam me-1"></i>
-              Controle de Estoque de Peças
+              Controle de Estoque de Peças e Insumos
             </div>
           </div>
         </div>
       </div>
 
-      <div class="row g-2 mb-2">
-        <div class="col-md-2">
+      <div class="row g-2 mb-2 summary-row">
+        <div class="col-xl-2 col-md-4 col-6">
           <div class="card resumo-card">
             <div class="card-body py-2">
               <div class="small">Total</div>
@@ -23,7 +23,7 @@
           </div>
         </div>
 
-        <div class="col-md-2">
+        <div class="col-xl-2 col-md-4 col-6">
           <div class="card resumo-card resumo-normal">
             <div class="card-body py-2">
               <div class="small">Normal</div>
@@ -32,7 +32,7 @@
           </div>
         </div>
 
-        <div class="col-md-2">
+        <div class="col-xl-2 col-md-4 col-6">
           <div class="card resumo-card resumo-atencao">
             <div class="card-body py-2">
               <div class="small">Atenção</div>
@@ -41,7 +41,7 @@
           </div>
         </div>
 
-        <div class="col-md-2">
+        <div class="col-xl-2 col-md-4 col-6">
           <div class="card resumo-card resumo-critico">
             <div class="card-body py-2">
               <div class="small">Crítico</div>
@@ -50,7 +50,7 @@
           </div>
         </div>
 
-        <div class="col-md-2">
+        <div class="col-xl-2 col-md-4 col-6">
           <div class="card resumo-card resumo-zerado">
             <div class="card-body py-2">
               <div class="small">Zerado</div>
@@ -59,7 +59,7 @@
           </div>
         </div>
 
-        <div class="col-md-2">
+        <div class="col-xl-2 col-md-4 col-6">
           <div class="card resumo-card resumo-alerta" role="button" (click)="abrirModalAlertas()">
             <div class="card-body py-2">
               <div class="small">Alertas Abertos</div>
@@ -69,226 +69,266 @@
         </div>
       </div>
 
-      <div class="card clinicar-card">
-        <div class="card-body p-2">
+      <div class="card clinicar-card estoque-list-card" style="color:#35689b;">
+        <div class="card-body estoque-list-body">
 
-          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-            <div class="input-group" style="max-width:52vw;color:#35689b;">
-              <label
-                class="input-group-text"
-                for="filtro-estoque"
-                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
-              >
-                Buscar
-              </label>
-
-              <input
-                id="filtro-estoque"
-                type="search"
-                class="form-control"
-                placeholder="Peça, fabricante, modelo, local, localização ou status"
-                [(ngModel)]="filtroTexto"
-                (input)="filtrar(filtroTexto)"
-                style="color:#35689b;"
-              />
-
-              <select
-                class="form-select"
-                style="max-width:180px;color:#35689b;"
-                [(ngModel)]="filtroStatus"
-                (change)="aplicarFiltros()"
-              >
-                <option *ngFor="let s of statusFiltro" [ngValue]="s">
-                  {{ s ? formatarStatus(s) : 'Todos os status' }}
-                </option>
-              </select>
-
-              <div
-                class="text-muted small input-group-text"
-                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
-              >
-                Total: {{ estoques.length }}
+          <div class="row g-2 align-items-end mb-2 toolbar-filters">
+            <div class="col-lg-3 col-md-12">
+              <label class="form-label fw-bold" for="filtro-estoque">Buscar</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input
+                  id="filtro-estoque"
+                  type="search"
+                  class="form-control"
+                  placeholder="Peça, fabricante, modelo, local ou localização..."
+                  [(ngModel)]="filtroTexto"
+                  (ngModelChange)="aoAlterarFiltros()"
+                />
               </div>
             </div>
 
-            <div class="d-flex flex-wrap gap-2">
-              <button
-                class="btn btn-outline-success btn-sm"
-                type="button"
-                (click)="abrirModalCadastro()"
+            <div class="col-lg-1 col-md-4">
+              <label class="form-label fw-bold" for="filtro-status">Status</label>
+              <select
+                id="filtro-status"
+                class="form-select"
+                [(ngModel)]="filtroStatus"
+                (ngModelChange)="aoAlterarFiltros()"
               >
-                <i class="bi bi-plus-circle me-1"></i>
-                Novo Controle
-              </button>
+                <option *ngFor="let s of statusFiltro" [ngValue]="s">
+                  {{ s ? formatarStatus(s) : 'Todos' }}
+                </option>
+              </select>
+            </div>
 
-              <button
-                class="btn btn-outline-info btn-sm"
-                type="button"
-                (click)="abrirModalNovoLocal()"
+            <div class="col-lg-2 col-md-4">
+              <label class="form-label fw-bold" for="filtro-local">Local</label>
+              <select
+                id="filtro-local"
+                class="form-select"
+                [(ngModel)]="filtroLocal"
+                (ngModelChange)="aoAlterarFiltros()"
               >
-                <i class="bi bi-geo-alt me-1"></i>
-                Novo Local
-              </button>
+                <option value="">Todos os locais</option>
+                <option *ngFor="let local of locaisDisponiveisFiltro" [value]="local">
+                  {{ local }}
+                </option>
+              </select>
+            </div>
+            <div class="col-lg-1 col-md-4">
+                              <button class="btn btn-outline-secondary btn-md" type="button" [disabled]="!possuiFiltrosAplicados" (click)="limparFiltros()">
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+            </div>
 
-              <button
-                class="btn btn-outline-warning btn-sm"
-                type="button"
-                (click)="abrirModalAlertas()"
-              >
-                <i class="bi bi-bell me-1"></i>
-                Alertas
-              </button>
+            <div class="col-lg-5 col-md-4">
+              <div class="toolbar-actions">
+                <button class="btn btn-primary btn-md" type="button" (click)="abrirModalCadastro()">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Novo Controle
+                </button>
 
-              <button
-                class="btn btn-outline-secondary btn-sm"
-                type="button"
-                (click)="voltar()"
-              >
-                <i class="bi bi-arrow-left me-1"></i>
-                Voltar
-              </button>
+                <button class="btn btn-outline-primary btn-md" type="button" (click)="abrirModalNovoLocal()">
+                  <i class="bi bi-geo-alt me-1"></i>
+                  Novo Local
+                </button>
 
-              <button
-                class="btn btn-outline-primary btn-sm"
-                type="button"
-                (click)="recarregar()"
-              >
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                Atualizar
-              </button>
+                <button class="btn btn-outline-warning btn-md" type="button" (click)="abrirModalAlertas()">
+                  <i class="bi bi-bell me-1"></i>
+                  Alertas
+                </button>
+
+                <button class="btn btn-outline-primary btn-md" type="button" (click)="recarregar()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+
+                <button class="btn btn-outline-secondary btn-md" type="button" (click)="voltar()">
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar
+                </button>
+              </div>
             </div>
           </div>
 
-          <div *ngIf="loading" class="alert alert-info py-2">
+          <div class="filter-chip-area mb-2" *ngIf="possuiFiltrosAplicados">
+            <span class="filter-chip" *ngIf="filtroTexto">
+              Busca: {{ filtroTexto }}
+              <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroStatus">
+              Status: {{ formatarStatus(filtroStatus) }}
+              <button type="button" (click)="filtroStatus = ''; aoAlterarFiltros()" aria-label="Remover status">×</button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroLocal">
+              Local: {{ filtroLocal }}
+              <button type="button" (click)="filtroLocal = ''; aoAlterarFiltros()" aria-label="Remover local">×</button>
+            </span>
+          </div>
+
+          <div *ngIf="loading" class="alert alert-info py-2 mb-2">
+            <i class="bi bi-hourglass-split me-1"></i>
             Carregando controle de estoque…
           </div>
 
-          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
             {{ errorMsg }}
           </div>
 
-          <div class="table-responsive estoque-table-responsive">
-            <div class="small text-muted mb-1 right-align" style="color:#35689b;">
-              <i class="bi bi-box-arrow-in-down text-success"></i> Entrada |
-              <i class="bi bi-box-arrow-up text-danger"></i> Saída |
-              <i class="bi bi-sliders text-warning"></i> Ajuste |
-              <i class="bi bi-clock-history text-info"></i> Histórico |
-              <i class="bi bi-pencil-square text-primary"></i> Editar
+          <div class="estoque-table-shell" *ngIf="!loading">
+            <div class="estoque-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header">
+                <thead>
+                  <tr>
+                    <th scope="col" class="sortable" (click)="ordenarPor('nomePeca')">
+                      Peça <i class="bi ms-1" [ngClass]="iconeOrdenacao('nomePeca')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('fabricantePeca')">
+                      Fabricante / Modelo <i class="bi ms-1" [ngClass]="iconeOrdenacao('fabricantePeca')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('nomeLocalEstoque')">
+                      Local <i class="bi ms-1" [ngClass]="iconeOrdenacao('nomeLocalEstoque')"></i>
+                    </th>
+                    <th scope="col" class="sortable text-end" (click)="ordenarPor('quantidadeAtual')">
+                      Atual <i class="bi ms-1" [ngClass]="iconeOrdenacao('quantidadeAtual')"></i>
+                    </th>
+                    <th scope="col" class="sortable text-end" (click)="ordenarPor('quantidadeReservada')">
+                      Reservada <i class="bi ms-1" [ngClass]="iconeOrdenacao('quantidadeReservada')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('estoqueMinimo')">
+                      Mín. / Crít. <i class="bi ms-1" [ngClass]="iconeOrdenacao('estoqueMinimo')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('custoMedio')">
+                      Custo Médio <i class="bi ms-1" [ngClass]="iconeOrdenacao('custoMedio')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('statusEstoque')">
+                      Status <i class="bi ms-1" [ngClass]="iconeOrdenacao('statusEstoque')"></i>
+                    </th>
+                    <th scope="col" class="text-center">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let item of estoquesPaginados; trackBy: trackByEstoque" [class.estoque-row-alerta]="item.statusEstoque === 'CRITICO' || item.statusEstoque === 'ZERADO'">
+                    <td>
+                      <div class="fw-semibold">{{ item.nomePeca || '—' }}</div>
+                      <small>{{ item.unidadePeca || 'un.' }}</small>
+                    </td>
+
+                    <td>
+                      <div>{{ item.fabricantePeca || '—' }}</div>
+                      <small>{{ item.modeloPeca || 'Sem modelo informado' }}</small>
+                    </td>
+
+                    <td>
+                      <div>{{ item.nomeLocalEstoque || '—' }}</div>
+                      <small>{{ item.localizacaoFisica || 'Localização não informada' }}</small>
+                    </td>
+
+                    <td class="text-end fw-semibold">
+                      {{ formatarQuantidade(item.quantidadeAtual, item.unidadePeca) }}
+                      <div class="estoque-progress mt-1">
+                        <div class="estoque-progress-bar" [style.width.%]="percentualSaldoMinimo(item)"></div>
+                      </div>
+                    </td>
+
+                    <td class="text-end">
+                      {{ formatarQuantidade(item.quantidadeReservada, item.unidadePeca) }}
+                      <small>Disp.: {{ formatarQuantidade(saldoDisponivel(item), item.unidadePeca) }}</small>
+                    </td>
+
+                    <td>
+                      <div>Mín.: {{ formatarQuantidade(item.estoqueMinimo, item.unidadePeca) }}</div>
+                      <small>Crít.: {{ formatarQuantidade(item.estoqueCritico, item.unidadePeca) }}</small>
+                    </td>
+
+                    <td>{{ formatarMoedaBR(item.custoMedio) || '—' }}</td>
+
+                    <td>
+                      <span class="badge" [ngClass]="statusBadgeClass(item.statusEstoque)">
+                        {{ formatarStatus(item.statusEstoque) }}
+                      </span>
+                      <div>
+                        <small>{{ item.ativo === false ? 'Cadastro inativo' : 'Cadastro ativo' }}</small>
+                      </div>
+                    </td>
+
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm flex-wrap actions-group">
+                        <button class="btn btn-outline-info" type="button" title="Visualizar detalhes" (click)="abrirDetalhes(item)">
+                          <i class="bi bi-eye"></i>
+                        </button>
+
+                        <button class="btn btn-outline-success" type="button" title="Entrada" (click)="abrirModalMovimentacao(item, 'ENTRADA')">
+                          <i class="bi bi-box-arrow-in-down"></i>
+                        </button>
+
+                        <button class="btn btn-outline-danger" type="button" title="Saída" (click)="abrirModalMovimentacao(item, 'SAIDA')">
+                          <i class="bi bi-box-arrow-up"></i>
+                        </button>
+
+                        <button class="btn btn-outline-warning" type="button" title="Ajuste" (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')">
+                          <i class="bi bi-sliders"></i>
+                        </button>
+
+                        <button class="btn btn-outline-secondary" type="button" title="Histórico" (click)="abrirModalMovimentacoes(item)">
+                          <i class="bi bi-clock-history"></i>
+                        </button>
+
+                        <button class="btn btn-outline-primary" type="button" title="Editar" (click)="abrirModalEdicao(item)">
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="totalRegistrosFiltrados === 0">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      Nenhum controle de estoque encontrado.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th style="color:#35689b;">Peça</th>
-                  <th style="color:#35689b;">Fabricante / Modelo</th>
-                  <th style="color:#35689b;">Local</th>
-                  <th style="color:#35689b;">Qtd. Atual</th>
-                  <th style="color:#35689b;">Reservada</th>
-                  <th style="color:#35689b;">Mínimo / Crítico</th>
-                  <th style="color:#35689b;">Custo Médio</th>
-                  <th style="color:#35689b;">Localização</th>
-                  <th style="color:#35689b;">Status</th>
-                  <th class="text-center" style="color:#35689b;">Ações</th>
-                </tr>
-              </thead>
+            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+              <div class="pagination-info">
+                Mostrando <strong>{{ indiceInicialPagina }}</strong> a <strong>{{ indiceFinalPagina }}</strong> de <strong>{{ totalRegistrosFiltrados }}</strong> registro(s)
+              </div>
 
-              <tbody>
-                <tr *ngFor="let item of estoques; trackBy: trackByEstoque">
-                  <td style="color:#35689b;">
-                    <div class="fw-semibold">{{ item.nomePeca }}</div>
-                    <small class="text-muted">{{ item.unidadePeca || 'un.' }}</small>
-                  </td>
+              <div class="pagination-size">
+                <label>Exibir</label>
+                <select class="form-select form-select-sm" [(ngModel)]="itensPorPagina" (ngModelChange)="aoAlterarItensPorPagina()">
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+                <span>por página</span>
+              </div>
 
-                  <td style="color:#35689b;">
-                    {{ item.fabricantePeca || '—' }}
-                    <span *ngIf="item.modeloPeca"> / {{ item.modeloPeca }}</span>
-                  </td>
+              <div class="pagination-actions">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1" (click)="paginaAnterior()">
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
 
-                  <td style="color:#35689b;">
-                    {{ item.nomeLocalEstoque || '—' }}
-                  </td>
+                <button type="button" class="btn btn-sm" *ngFor="let pagina of paginasVisiveis()" [class.btn-primary]="paginaAtual === pagina" [class.btn-outline-primary]="paginaAtual !== pagina" (click)="irParaPagina(pagina)">
+                  {{ pagina }}
+                </button>
 
-                  <td style="color:#35689b;">
-                    {{ formatarQuantidade(item.quantidadeAtual, item.unidadePeca) }}
-                  </td>
-
-                  <td style="color:#35689b;">
-                    {{ formatarQuantidade(item.quantidadeReservada, item.unidadePeca) }}
-                  </td>
-
-                  <td style="color:#35689b;">
-                    <div>Mín.: {{ formatarQuantidade(item.estoqueMinimo, item.unidadePeca) }}</div>
-                    <small>Crít.: {{ formatarQuantidade(item.estoqueCritico, item.unidadePeca) }}</small>
-                  </td>
-
-                  <td style="color:#35689b;">
-                    {{ formatarMoedaBR(item.custoMedio) || '—' }}
-                  </td>
-
-                  <td style="color:#35689b;">
-                    {{ item.localizacaoFisica || '—' }}
-                  </td>
-
-                  <td>
-                    <span
-                      class="badge"
-                      [ngClass]="statusBadgeClass(item.statusEstoque)"
-                    >
-                      {{ formatarStatus(item.statusEstoque) }}
-                    </span>
-                  </td>
-
-                  <td class="text-center">
-                    <button
-                      class="btn btn-sm btn-outline-success me-1"
-                      title="Entrada"
-                      (click)="abrirModalMovimentacao(item, 'ENTRADA')"
-                    >
-                      <i class="bi bi-box-arrow-in-down"></i>
-                    </button>
-
-                    <button
-                      class="btn btn-sm btn-outline-danger me-1"
-                      title="Saída"
-                      (click)="abrirModalMovimentacao(item, 'SAIDA')"
-                    >
-                      <i class="bi bi-box-arrow-up"></i>
-                    </button>
-
-                    <button
-                      class="btn btn-sm btn-outline-warning me-1"
-                      title="Ajustar estoque"
-                      type="button"
-                      (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')"
-                    >
-                      <i class="bi bi-sliders"></i>
-                    </button>
-
-                    <button
-                      class="btn btn-sm btn-outline-info me-1"
-                      title="Histórico"
-                      (click)="abrirModalMovimentacoes(item)"
-                    >
-                      <i class="bi bi-clock-history"></i>
-                    </button>
-
-                    <button
-                      class="btn btn-sm btn-outline-primary"
-                      title="Editar"
-                      (click)="abrirModalEdicao(item)"
-                    >
-                      <i class="bi bi-pencil-square"></i>
-                    </button>
-                  </td>
-                </tr>
-
-                <tr *ngIf="!estoques || estoques.length === 0">
-                  <td colspan="10" class="text-center text-muted py-4">
-                    Nenhum controle de estoque encontrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas" (click)="proximaPagina()">
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -299,867 +339,592 @@
 </div>
 
 <!-- Modal Cadastro -->
-<div
-  class="modal fade"
-  id="modalCadastroEstoquePeca"
-  tabindex="-1"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          Novo Controle de Estoque
-        </h5>
-
+<div class="modal fade" id="modalCadastroEstoquePeca" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered estoque-modal-dialog">
+    <div class="modal-content estoque-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-plus-circle me-1"></i>
+            Novo Controle de Estoque
+          </h5>
+          <small>
+            {{ novoEstoque.nomePeca || 'Peça não selecionada' }} · {{ novoEstoque.nomeLocalEstoque || 'Local não selecionado' }}
+          </small>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
-      <div class="modal-body">
-        <div class="row g-2">
+      <div class="modal-body estoque-modal-body">
+        <div class="estoque-modal-tabs-area">
+          <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ mensagemErroModal }}
+          </div>
 
-          <h6 class="modal-section-title">
-            <i class="bi bi-box-seam me-1"></i>
-            Identificação
-          </h6>
-
-          <div class="col-md-6">
-            <label class="form-label">Peça *</label>
-
-            <div class="position-relative">
-              <input
-                class="form-control form-control-sm pe-5"
-                [value]="pecaTexto(novoEstoque)"
-                readonly
-                placeholder="Selecione uma peça"
-                style="color:#35689b;"
-              />
-
-              <button
-                type="button"
-                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
-                (click)="abrirModalPeca('cadastro')"
-                style="color:#35689b;"
-              >
-                <i class="bi bi-search"></i>
-              </button>
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+            <div class="progress-bar" [style.width.%]="progressoCadastroEstoque">
+              {{ progressoCadastroEstoque }}%
             </div>
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label">Local de Estoque *</label>
-            <select
-              class="form-select form-select-sm"
-              [(ngModel)]="novoEstoque.idLocalEstoque"
-              (change)="atualizarNomeLocalCadastro()"
-              style="color:#35689b;"
-            >
-              <option [ngValue]="undefined">Selecione</option>
-              <option *ngFor="let local of locais; trackBy: trackByLocal" [ngValue]="local.id">
-                {{ local.nome }}
-              </option>
-            </select>
-          </div>
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'identificacao'" (click)="trocarAbaCadastroEstoque('identificacao')">
+                <i class="bi bi-box-seam me-1"></i>
+                Identificação
+                <span class="tab-alert" *ngIf="identificacaoEstoquePendente(novoEstoque, true)">!</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'quantidades'" (click)="trocarAbaCadastroEstoque('quantidades')">
+                <i class="bi bi-123 me-1"></i>
+                Quantidades
+                <span class="tab-alert" *ngIf="quantidadesEstoquePendentes(novoEstoque)">!</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'reposicao'" (click)="trocarAbaCadastroEstoque('reposicao')">
+                <i class="bi bi-graph-up-arrow me-1"></i>
+                Reposição e custo
+                <span class="tab-alert" *ngIf="reposicaoEstoquePendente(novoEstoque)">!</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'revisao'" (click)="trocarAbaCadastroEstoque('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
 
-          <div class="col-md-2 d-flex align-items-end">
-            <button
-              type="button"
-              class="btn btn-outline-info btn-sm w-100"
-              (click)="abrirModalNovoLocal()"
-            >
-              <i class="bi bi-plus-circle me-1"></i>
-              Local
-            </button>
-          </div>
+        <div class="estoque-modal-scroll-area">
+          <ng-container *ngIf="abaCadastroEstoque === 'identificacao'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-box-seam me-1"></i>
+                Peça e local de estoque
+              </div>
 
-          <h6 class="modal-section-title mt-3">
-            <i class="bi bi-123 me-1"></i>
-            Quantidades
-          </h6>
+              <div class="row g-3">
+                <div class="col-md-7">
+                  <label class="form-label">Peça / insumo *</label>
+                  <div class="input-group">
+                    <input class="form-control" [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'idPeca', true)" [value]="pecaTexto(novoEstoque)" readonly placeholder="Selecione uma peça ou insumo" />
+                    <button type="button" class="btn btn-outline-primary" (click)="abrirModalPeca('cadastro')">
+                      <i class="bi bi-search me-1"></i>
+                      Selecionar
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(novoEstoque, 'idPeca', true)">Selecione a peça ou insumo.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Quantidade Atual</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.quantidadeAtual"
-              placeholder="0"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-3">
+                  <label class="form-label">Local de Estoque *</label>
+                  <select class="form-select" [(ngModel)]="novoEstoque.idLocalEstoque" (ngModelChange)="atualizarNomeLocalCadastro()" [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)">
+                    <option [ngValue]="undefined">Selecione...</option>
+                    <option *ngFor="let local of locais; trackBy: trackByLocal" [ngValue]="local.id">
+                      {{ local.nome }}
+                    </option>
+                  </select>
+                  <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)">Selecione o local.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Quantidade Reservada</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.quantidadeReservada"
-              placeholder="0"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <button type="button" class="btn btn-outline-primary w-100" (click)="abrirModalNovoLocal()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Local
+                  </button>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Estoque Mínimo *</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.estoqueMinimo"
-              placeholder="Ex.: 5"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-12">
+                  <div class="preview-card">
+                    <div class="preview-title">Prévia do controle</div>
+                    <div class="preview-main">{{ novoEstoque.nomePeca || 'Peça não selecionada' }}</div>
+                    <div class="preview-sub">
+                      {{ novoEstoque.fabricantePeca || 'Fabricante não informado' }}
+                      <span *ngIf="novoEstoque.modeloPeca"> / {{ novoEstoque.modeloPeca }}</span>
+                      <span *ngIf="novoEstoque.unidadePeca"> · Unidade: {{ novoEstoque.unidadePeca }}</span>
+                      <span *ngIf="novoEstoque.nomeLocalEstoque"> · Local: {{ novoEstoque.nomeLocalEstoque }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
 
-          <div class="col-md-3">
-            <label class="form-label">Estoque Crítico *</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.estoqueCritico"
-              placeholder="Ex.: 2"
-              style="color:#35689b;"
-            />
-          </div>
+          <ng-container *ngIf="abaCadastroEstoque === 'quantidades'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-123 me-1"></i>
+                Quantidades e limites mínimos
+              </div>
 
-          <h6 class="modal-section-title mt-3">
-            <i class="bi bi-graph-up-arrow me-1"></i>
-            Reposição e custo
-          </h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label">Quantidade Atual *</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.quantidadeAtual" [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)" placeholder="0" />
+                  <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)">Informe um valor válido.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Estoque Máximo</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.estoqueMaximo"
-              placeholder="Ex.: 30"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-3">
+                  <label class="form-label">Quantidade Reservada *</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.quantidadeReservada" [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'quantidadeReservada', false)" placeholder="0" />
+                  <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(novoEstoque, 'quantidadeReservada', false)">Informe um valor válido.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Ponto de Reposição</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.pontoReposicao"
-              placeholder="Ex.: 6"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-3">
+                  <label class="form-label">Estoque Mínimo *</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.estoqueMinimo" [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'estoqueMinimo', false)" placeholder="Ex.: 5" />
+                  <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(novoEstoque, 'estoqueMinimo', false)">Informe o mínimo.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Qtd. Reposição Sugerida</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.quantidadeReposicaoSugerida"
-              placeholder="Ex.: 15"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-3">
+                  <label class="form-label">Estoque Crítico *</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.estoqueCritico" [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'estoqueCritico', false)" placeholder="Ex.: 2" />
+                  <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(novoEstoque, 'estoqueCritico', false)">Informe o crítico.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Custo Médio</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.custoMedio"
-              (blur)="formatarCustoMedioCadastro()"
-              placeholder="R$ 0,00"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-12">
+                  <div class="alert alert-light border mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    O status será calculado automaticamente com base na quantidade atual, estoque mínimo e estoque crítico.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
 
-          <div class="col-md-9">
-            <label class="form-label">Localização Física</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoEstoque.localizacaoFisica"
-              placeholder="Ex.: Prateleira A1"
-              style="color:#35689b;"
-            />
-          </div>
+          <ng-container *ngIf="abaCadastroEstoque === 'reposicao'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-graph-up-arrow me-1"></i>
+                Reposição, custo e localização
+              </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Status do Cadastro</label>
-            <select
-              class="form-select form-select-sm"
-              [(ngModel)]="novoEstoque.ativo"
-              style="color:#35689b;"
-            >
-              <option [ngValue]="true">Ativo</option>
-              <option [ngValue]="false">Inativo</option>
-            </select>
-          </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label">Estoque Máximo</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.estoqueMaximo" placeholder="Ex.: 30" />
+                </div>
 
-          <div class="col-12 mt-2">
-            <small class="text-muted">
-              O status do estoque será calculado automaticamente conforme quantidade atual, estoque mínimo e estoque crítico.
-            </small>
-          </div>
+                <div class="col-md-3">
+                  <label class="form-label">Ponto de Reposição</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.pontoReposicao" placeholder="Ex.: 6" />
+                </div>
 
+                <div class="col-md-3">
+                  <label class="form-label">Qtd. Reposição Sugerida</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.quantidadeReposicaoSugerida" placeholder="Ex.: 15" />
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Custo Médio</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.custoMedio" (blur)="formatarCustoMedioCadastro()" placeholder="R$ 0,00" />
+                </div>
+
+                <div class="col-md-9">
+                  <label class="form-label">Localização Física</label>
+                  <input class="form-control" [(ngModel)]="novoEstoque.localizacaoFisica" placeholder="Ex.: Prateleira A1" />
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Status do Cadastro</label>
+                  <select class="form-select" [(ngModel)]="novoEstoque.ativo">
+                    <option [ngValue]="true">Ativo</option>
+                    <option [ngValue]="false">Inativo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="abaCadastroEstoque === 'revisao'">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Identificação</div>
+                  <div class="review-main">{{ novoEstoque.nomePeca || '—' }}</div>
+                  <div class="details-line">Fabricante/modelo: {{ novoEstoque.fabricantePeca || '—' }} <span *ngIf="novoEstoque.modeloPeca">/ {{ novoEstoque.modeloPeca }}</span></div>
+                  <div class="details-line">Local: {{ novoEstoque.nomeLocalEstoque || '—' }}</div>
+                  <div class="details-line">Localização física: {{ novoEstoque.localizacaoFisica || '—' }}</div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Quantidades</div>
+                  <div class="details-line">Atual: {{ formatarQuantidade(novoEstoque.quantidadeAtual, novoEstoque.unidadePeca) }}</div>
+                  <div class="details-line">Reservada: {{ formatarQuantidade(novoEstoque.quantidadeReservada, novoEstoque.unidadePeca) }}</div>
+                  <div class="details-line">Mínimo: {{ formatarQuantidade(novoEstoque.estoqueMinimo, novoEstoque.unidadePeca) }}</div>
+                  <div class="details-line">Crítico: {{ formatarQuantidade(novoEstoque.estoqueCritico, novoEstoque.unidadePeca) }}</div>
+                </div>
+              </div>
+
+              <div class="col-md-12">
+                <div class="review-card">
+                  <div class="review-label">Reposição e custo</div>
+                  <div class="row g-2">
+                    <div class="col-md-3">Máximo: <strong>{{ formatarQuantidade(novoEstoque.estoqueMaximo, novoEstoque.unidadePeca) }}</strong></div>
+                    <div class="col-md-3">Ponto de reposição: <strong>{{ formatarQuantidade(novoEstoque.pontoReposicao, novoEstoque.unidadePeca) }}</strong></div>
+                    <div class="col-md-3">Qtd. sugerida: <strong>{{ formatarQuantidade(novoEstoque.quantidadeReposicaoSugerida, novoEstoque.unidadePeca) }}</strong></div>
+                    <div class="col-md-3">Custo médio: <strong>{{ formatarMoedaBR(novoEstoque.custoMedio) || '—' }}</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
-          Cancelar
-        </button>
+      <div class="modal-footer modal-footer-totais">
+        <div class="me-auto footer-validation-message" [class.footer-ok]="cadastroEstoqueProntoParaSalvar">
+          <i class="bi" [class.bi-info-circle]="!cadastroEstoqueProntoParaSalvar" [class.bi-check-circle]="cadastroEstoqueProntoParaSalvar"></i>
+          {{ mensagemBloqueioCadastro || 'Cadastro pronto para salvar.' }}
+        </div>
 
-        <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarNovoEstoque()">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroEstoque !== 'identificacao'" (click)="voltarAbaCadastroEstoque()">Anterior</button>
+        <button type="button" class="btn btn-primary" *ngIf="abaCadastroEstoque !== 'revisao'" (click)="avancarAbaCadastroEstoque()">Próximo</button>
+        <button type="button" class="btn btn-primary" *ngIf="abaCadastroEstoque === 'revisao'" [disabled]="!cadastroEstoqueProntoParaSalvar" [title]="mensagemBloqueioCadastro || 'Salvar controle'" (click)="salvarNovoEstoque()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar Controle
         </button>
       </div>
-
     </div>
   </div>
 </div>
 
 <!-- Modal Edição -->
-<div
-  class="modal fade"
-  id="modalEdicaoEstoquePeca"
-  tabindex="-1"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          Editar Controle de Estoque
-        </h5>
-
+<div class="modal fade" id="modalEdicaoEstoquePeca" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered estoque-modal-dialog">
+    <div class="modal-content estoque-modal-content estoque-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar Controle de Estoque
+          </h5>
+          <small>
+            ID #{{ editId || '—' }} · {{ edit.nomePeca || 'Peça não informada' }} · {{ edit.nomeLocalEstoque || 'Local não informado' }}
+          </small>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
-      <div class="modal-body">
-        <div class="row g-2">
-
-          <h6 class="modal-section-title">
-            <i class="bi bi-pencil-square me-1"></i>
-            Peça vinculada
-          </h6>
-
-          <div class="col-md-8">
-            <label class="form-label">Peça</label>
-            <input
-              class="form-control form-control-sm"
-              [value]="pecaTexto(edit)"
-              readonly
-              style="color:#35689b;"
-            />
+      <div class="modal-body estoque-modal-body">
+        <div class="estoque-modal-tabs-area">
+          <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ mensagemErroModal }}
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label">Local de Estoque</label>
-            <input
-              class="form-control form-control-sm"
-              [value]="edit.nomeLocalEstoque || ''"
-              readonly
-              style="color:#35689b;"
-            />
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+            <div class="progress-bar" [style.width.%]="progressoEdicaoEstoque">
+              {{ progressoEdicaoEstoque }}%
+            </div>
           </div>
 
-          <h6 class="modal-section-title mt-3">
-            <i class="bi bi-123 me-1"></i>
-            Quantidades e limites
-          </h6>
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item"><button class="nav-link" type="button" [class.active]="abaEdicaoEstoque === 'identificacao'" (click)="trocarAbaEdicaoEstoque('identificacao')"><i class="bi bi-box-seam me-1"></i>Identificação</button></li>
+            <li class="nav-item"><button class="nav-link" type="button" [class.active]="abaEdicaoEstoque === 'quantidades'" (click)="trocarAbaEdicaoEstoque('quantidades')"><i class="bi bi-123 me-1"></i>Quantidades <span class="tab-alert" *ngIf="quantidadesEstoquePendentes(edit)">!</span></button></li>
+            <li class="nav-item"><button class="nav-link" type="button" [class.active]="abaEdicaoEstoque === 'reposicao'" (click)="trocarAbaEdicaoEstoque('reposicao')"><i class="bi bi-graph-up-arrow me-1"></i>Reposição e custo <span class="tab-alert" *ngIf="reposicaoEstoquePendente(edit)">!</span></button></li>
+            <li class="nav-item"><button class="nav-link" type="button" [class.active]="abaEdicaoEstoque === 'revisao'" (click)="trocarAbaEdicaoEstoque('revisao')"><i class="bi bi-clipboard-check me-1"></i>Revisão</button></li>
+          </ul>
+        </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Quantidade Atual</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.quantidadeAtual"
-              style="color:#35689b;"
-            />
-            <small class="text-muted">Ajuste direto apenas para correção administrativa.</small>
-          </div>
+        <div class="estoque-modal-scroll-area">
+          <ng-container *ngIf="abaEdicaoEstoque === 'identificacao'">
+            <div class="section-card">
+              <div class="section-card-title"><i class="bi bi-box-seam me-1"></i>Identificação vinculada</div>
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label">Peça / insumo</label>
+                  <input class="form-control" [value]="pecaTexto(edit)" readonly />
+                  <small class="text-muted">A peça vinculada ao controle não deve ser alterada após a criação. Crie um novo controle caso precise vincular outro item.</small>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Local de Estoque</label>
+                  <input class="form-control" [value]="edit.nomeLocalEstoque || ''" readonly />
+                </div>
+                <div class="col-md-12">
+                  <div class="preview-card">
+                    <div class="preview-title">Prévia</div>
+                    <div class="preview-main">{{ edit.nomePeca || '—' }}</div>
+                    <div class="preview-sub">{{ edit.fabricantePeca || '—' }} <span *ngIf="edit.modeloPeca">/ {{ edit.modeloPeca }}</span> · {{ edit.nomeLocalEstoque || 'Sem local' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
 
-          <div class="col-md-3">
-            <label class="form-label">Quantidade Reservada</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.quantidadeReservada"
-              style="color:#35689b;"
-            />
-          </div>
+          <ng-container *ngIf="abaEdicaoEstoque === 'quantidades'">
+            <div class="section-card">
+              <div class="section-card-title"><i class="bi bi-123 me-1"></i>Quantidades e limites</div>
+              <div class="row g-3">
+                <div class="col-md-3"><label class="form-label">Quantidade Atual *</label><input class="form-control" [(ngModel)]="edit.quantidadeAtual" [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeAtual', false)" /><div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(edit, 'quantidadeAtual', false)">Informe um valor válido.</div><small class="text-muted">Use movimentação para entrada/saída normal.</small></div>
+                <div class="col-md-3"><label class="form-label">Quantidade Reservada *</label><input class="form-control" [(ngModel)]="edit.quantidadeReservada" [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeReservada', false)" /><div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(edit, 'quantidadeReservada', false)">Informe um valor válido.</div></div>
+                <div class="col-md-3"><label class="form-label">Estoque Mínimo *</label><input class="form-control" [(ngModel)]="edit.estoqueMinimo" [class.is-invalid]="estoqueCampoInvalido(edit, 'estoqueMinimo', false)" /><div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(edit, 'estoqueMinimo', false)">Informe o mínimo.</div></div>
+                <div class="col-md-3"><label class="form-label">Estoque Crítico *</label><input class="form-control" [(ngModel)]="edit.estoqueCritico" [class.is-invalid]="estoqueCampoInvalido(edit, 'estoqueCritico', false)" /><div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(edit, 'estoqueCritico', false)">Informe o crítico.</div></div>
+              </div>
+            </div>
+          </ng-container>
 
-          <div class="col-md-3">
-            <label class="form-label">Estoque Mínimo *</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.estoqueMinimo"
-              style="color:#35689b;"
-            />
-          </div>
+          <ng-container *ngIf="abaEdicaoEstoque === 'reposicao'">
+            <div class="section-card">
+              <div class="section-card-title"><i class="bi bi-graph-up-arrow me-1"></i>Reposição, custo e localização</div>
+              <div class="row g-3">
+                <div class="col-md-3"><label class="form-label">Estoque Máximo</label><input class="form-control" [(ngModel)]="edit.estoqueMaximo" /></div>
+                <div class="col-md-3"><label class="form-label">Ponto de Reposição</label><input class="form-control" [(ngModel)]="edit.pontoReposicao" /></div>
+                <div class="col-md-3"><label class="form-label">Qtd. Reposição Sugerida</label><input class="form-control" [(ngModel)]="edit.quantidadeReposicaoSugerida" /></div>
+                <div class="col-md-3"><label class="form-label">Custo Médio</label><input class="form-control" [(ngModel)]="edit.custoMedio" (blur)="formatarCustoMedioEdicao()" /></div>
+                <div class="col-md-9"><label class="form-label">Localização Física</label><input class="form-control" [(ngModel)]="edit.localizacaoFisica" /></div>
+                <div class="col-md-3"><label class="form-label">Status do Cadastro</label><select class="form-select" [(ngModel)]="edit.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option></select></div>
+              </div>
+            </div>
+          </ng-container>
 
-          <div class="col-md-3">
-            <label class="form-label">Estoque Crítico *</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.estoqueCritico"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <h6 class="modal-section-title mt-3">
-            <i class="bi bi-graph-up-arrow me-1"></i>
-            Reposição e custo
-          </h6>
-
-          <div class="col-md-3">
-            <label class="form-label">Estoque Máximo</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.estoqueMaximo"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label">Ponto de Reposição</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.pontoReposicao"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label">Qtd. Reposição Sugerida</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.quantidadeReposicaoSugerida"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label">Custo Médio</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.custoMedio"
-              (blur)="formatarCustoMedioEdicao()"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-9">
-            <label class="form-label">Localização Física</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.localizacaoFisica"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label">Status do Cadastro</label>
-            <select
-              class="form-select form-select-sm"
-              [(ngModel)]="edit.ativo"
-              style="color:#35689b;"
-            >
-              <option [ngValue]="true">Ativo</option>
-              <option [ngValue]="false">Inativo</option>
-            </select>
-          </div>
-
+          <ng-container *ngIf="abaEdicaoEstoque === 'revisao'">
+            <div class="row g-3">
+              <div class="col-md-6"><div class="review-card h-100"><div class="review-label">Controle</div><div class="review-main">{{ edit.nomePeca || '—' }}</div><div class="details-line">Local: {{ edit.nomeLocalEstoque || '—' }}</div><div class="details-line">Localização: {{ edit.localizacaoFisica || '—' }}</div><div class="details-line">Cadastro: {{ edit.ativo === false ? 'Inativo' : 'Ativo' }}</div></div></div>
+              <div class="col-md-6"><div class="review-card h-100"><div class="review-label">Saldo</div><div class="details-line">Atual: {{ formatarQuantidade(edit.quantidadeAtual, edit.unidadePeca) }}</div><div class="details-line">Reservada: {{ formatarQuantidade(edit.quantidadeReservada, edit.unidadePeca) }}</div><div class="details-line">Disponível: {{ formatarQuantidade(saldoDisponivel(edit), edit.unidadePeca) }}</div><div class="details-line">Custo médio: {{ formatarMoedaBR(edit.custoMedio) || '—' }}</div></div></div>
+            </div>
+          </ng-container>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
-          Cancelar
-        </button>
-
-        <button type="button" class="btn btn-outline-primary btn-sm" (click)="salvarEdicao()">
-          <i class="bi bi-check-circle me-1"></i>
-          Salvar Alterações
-        </button>
+      <div class="modal-footer modal-footer-totais">
+        <div class="me-auto footer-validation-message" [class.footer-ok]="edicaoEstoqueProntaParaSalvar">
+          <i class="bi" [class.bi-info-circle]="!edicaoEstoqueProntaParaSalvar" [class.bi-check-circle]="edicaoEstoqueProntaParaSalvar"></i>
+          {{ mensagemBloqueioEdicao || 'Alterações prontas para salvar.' }}
+        </div>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoEstoque !== 'identificacao'" (click)="voltarAbaEdicaoEstoque()">Anterior</button>
+        <button type="button" class="btn btn-primary" *ngIf="abaEdicaoEstoque !== 'revisao'" (click)="avancarAbaEdicaoEstoque()">Próximo</button>
+        <button type="button" class="btn btn-primary" *ngIf="abaEdicaoEstoque === 'revisao'" [disabled]="!edicaoEstoqueProntaParaSalvar" [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicao()"><i class="bi bi-check-circle me-1"></i>Salvar Alterações</button>
       </div>
+    </div>
+  </div>
+</div>
 
+<!-- Modal Detalhes -->
+<div class="modal fade" id="modalDetalhesEstoquePeca" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title"><i class="bi bi-eye me-1"></i>Detalhes do Estoque</h5>
+          <small>{{ estoqueDetalhes?.nomePeca || '—' }}</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3" *ngIf="estoqueDetalhes">
+          <div class="col-md-6"><div class="details-card h-100"><div class="details-title">Peça / insumo</div><div class="details-line"><strong>Nome:</strong> {{ estoqueDetalhes.nomePeca || '—' }}</div><div class="details-line"><strong>Fabricante:</strong> {{ estoqueDetalhes.fabricantePeca || '—' }}</div><div class="details-line"><strong>Modelo:</strong> {{ estoqueDetalhes.modeloPeca || '—' }}</div><div class="details-line"><strong>Unidade:</strong> {{ estoqueDetalhes.unidadePeca || 'un.' }}</div></div></div>
+          <div class="col-md-6"><div class="details-card h-100"><div class="details-title">Localização</div><div class="details-line"><strong>Local:</strong> {{ estoqueDetalhes.nomeLocalEstoque || '—' }}</div><div class="details-line"><strong>Localização física:</strong> {{ estoqueDetalhes.localizacaoFisica || '—' }}</div><div class="details-line"><strong>Status:</strong> <span class="badge" [ngClass]="statusBadgeClass(estoqueDetalhes.statusEstoque)">{{ formatarStatus(estoqueDetalhes.statusEstoque) }}</span></div></div></div>
+          <div class="col-md-12"><div class="details-card"><div class="details-title">Quantidades</div><div class="row g-2"><div class="col-md-3">Atual:<br><strong>{{ formatarQuantidade(estoqueDetalhes.quantidadeAtual, estoqueDetalhes.unidadePeca) }}</strong></div><div class="col-md-3">Reservada:<br><strong>{{ formatarQuantidade(estoqueDetalhes.quantidadeReservada, estoqueDetalhes.unidadePeca) }}</strong></div><div class="col-md-3">Disponível:<br><strong>{{ formatarQuantidade(saldoDisponivel(estoqueDetalhes), estoqueDetalhes.unidadePeca) }}</strong></div><div class="col-md-3">Custo médio:<br><strong>{{ formatarMoedaBR(estoqueDetalhes.custoMedio) || '—' }}</strong></div></div></div></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button></div>
     </div>
   </div>
 </div>
 
 <!-- Modal Selecionar Peça -->
-<div
-  class="modal fade"
-  id="modalSelecionarPecaEstoque"
-  tabindex="-1"
-  aria-hidden="true"
->
+<div class="modal fade" id="modalSelecionarPecaEstoque" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          Selecionar Peça
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-content peca-selection-modal">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title"><i class="bi bi-search me-1"></i>Selecionar Peça / Insumo</h5>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="fecharModalPeca(true)"></button>
       </div>
-
       <div class="modal-body">
-        <input
-          type="search"
-          class="form-control mb-3"
-          placeholder="Buscar peça por nome, fabricante, modelo, tipo ou especificação..."
-          [(ngModel)]="filtroPeca"
-          (input)="aplicarFiltroPeca()"
-          style="color:#35689b;"
-        />
-
-        <div class="selection-lista">
-          <button
-            type="button"
-            class="list-group-item list-group-item-action"
-            *ngFor="let peca of pecasFiltradas; trackBy: trackByPeca"
-            (click)="selecionarPeca(peca)"
-          >
-            <div class="fw-semibold" style="color:#35689b;">
-              {{ peca.nome }}
-            </div>
-
-            <small class="text-muted">
-              {{ peca.fabricante }}
-              <span *ngIf="peca.modelo"> / {{ peca.modelo }}</span>
-              <span *ngIf="peca.unidade"> | Unidade: {{ peca.unidade }}</span>
-            </small>
+        <input type="search" class="form-control mb-3" placeholder="Buscar peça por nome, fabricante, modelo, tipo ou especificação..." [(ngModel)]="filtroPeca" (input)="aplicarFiltroPeca()" />
+        <div class="selection-lista selection-lista-table">
+          <button type="button" class="list-group-item list-group-item-action" *ngFor="let peca of pecasFiltradas; trackBy: trackByPeca" (click)="selecionarPeca(peca)">
+            <div class="fw-semibold">{{ peca.nome }}</div>
+            <small>{{ peca.fabricante }} <span *ngIf="peca.modelo">/ {{ peca.modelo }}</span> <span *ngIf="peca.tipo">· {{ peca.tipo }}</span> <span *ngIf="peca.unidade">· Unidade: {{ peca.unidade }}</span></small>
           </button>
-
-          <div *ngIf="pecasFiltradas.length === 0" class="text-center text-muted py-3">
-            Nenhuma peça encontrada.
-          </div>
+          <div *ngIf="pecasFiltradas.length === 0" class="text-center text-muted py-3">Nenhuma peça encontrada.</div>
         </div>
       </div>
-
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharModalPeca(true)">Cancelar</button></div>
     </div>
   </div>
 </div>
 
 <!-- Modal Movimentação -->
-
-<!-- Modal Movimentação -->
-<div
-  class="modal fade"
-  id="modalMovimentacaoEstoque"
-  tabindex="-1"
-  aria-hidden="true"
->
+<div class="modal fade" id="modalMovimentacaoEstoque" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          {{ tituloMovimentacao() }}
-        </h5>
-
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">{{ tituloMovimentacao() }}</h5>
+          <small>{{ descricaoMovimentacao() }}</small>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
       <div class="modal-body">
-
-        <div [ngClass]="classePainelMovimentacao()">
-          <div class="fw-semibold mb-1">
-            {{ descricaoMovimentacao() }}
-          </div>
-
-          <small>
-            {{ textoAjudaTipoMovimentacao() }}
-          </small>
-        </div>
-
-        <div
-          class="ajuste-switch-card mt-3 mb-3"
-          *ngIf="isMovimentacaoAjuste()"
-          [ngClass]="ajusteSaidaSelecionado ? 'ajuste-saida' : 'ajuste-entrada'"
-        >
+        <div [ngClass]="classePainelMovimentacao()"><div class="fw-semibold mb-1">{{ descricaoMovimentacao() }}</div><small>{{ textoAjudaTipoMovimentacao() }}</small></div>
+        <div class="ajuste-switch-card mt-3 mb-3" *ngIf="isMovimentacaoAjuste()" [ngClass]="ajusteSaidaSelecionado ? 'ajuste-saida' : 'ajuste-entrada'">
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <div>
-              <div class="fw-semibold">
-                Tipo de ajuste
-              </div>
-
-              <small class="text-muted">
-                Escolha se a correção irá adicionar ou retirar saldo do estoque.
-              </small>
-            </div>
-
-            <div class="form-check form-switch m-0">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                id="switchTipoAjuste"
-                [(ngModel)]="ajusteSaidaSelecionado"
-                (change)="alternarTipoAjuste()"
-              />
-
-              <label class="form-check-label fw-semibold" for="switchTipoAjuste">
-                {{ ajusteSaidaSelecionado ? 'Ajuste de saída' : 'Ajuste de entrada' }}
-              </label>
-            </div>
+            <div><div class="fw-semibold">Tipo de ajuste</div><small class="text-muted">Escolha se a correção irá adicionar ou retirar saldo do estoque.</small></div>
+            <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="switchTipoAjuste" [(ngModel)]="ajusteSaidaSelecionado" (change)="alternarTipoAjuste()" /><label class="form-check-label fw-semibold" for="switchTipoAjuste">{{ ajusteSaidaSelecionado ? 'Ajuste de saída' : 'Ajuste de entrada' }}</label></div>
           </div>
         </div>
-
-        <div class="row g-2">
-
-  <div class="col-12 col-md-4">
-    <label class="form-label">
-      {{ rotuloQuantidadeMovimentacao() }}
-    </label>
-
-    <input
-      class="form-control form-control-sm"
-      [(ngModel)]="movimento.quantidade"
-      [placeholder]="placeholderQuantidadeMovimentacao()"
-      style="color:#35689b;"
-    />
-  </div>
-
-  <div class="col-12 col-md-4" *ngIf="exibirCampoValorUnitario()">
-    <label class="form-label">
-      Valor Unitário
-    </label>
-
-    <input
-      class="form-control form-control-sm"
-      [(ngModel)]="movimento.valorUnitario"
-      (blur)="formatarValorUnitarioMovimento()"
-      placeholder="R$ 0,00"
-      style="color:#35689b;"
-    />
-
-    <small class="text-muted">
-      Utilizado para registrar custo da entrada.
-    </small>
-  </div>
-
-  <div
-    class="col-12"
-    [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-8'"
-  >
-    <label class="form-label">
-      Origem
-    </label>
-
-    <input
-      class="form-control form-control-sm"
-      [(ngModel)]="movimento.origem"
-      placeholder="MANUAL, COMPRA, OS, AJUSTE..."
-      style="color:#35689b;"
-    />
-  </div>
-
-  <div
-    class="col-12"
-    [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-12'"
-  >
-    <label class="form-label">
-      Documento / Referência
-    </label>
-
-    <input
-      class="form-control form-control-sm"
-      [(ngModel)]="movimento.documentoReferencia"
-      placeholder="NF, OS, ajuste interno..."
-      style="color:#35689b;"
-    />
-  </div>
-
-  <div
-    class="col-12"
-    [ngClass]="exibirCampoValorUnitario() ? 'col-md-8' : 'col-md-12'"
-  >
-    <label class="form-label">
-      Motivo
-    </label>
-
-    <input
-      class="form-control form-control-sm"
-      [(ngModel)]="movimento.motivo"
-      placeholder="Motivo da movimentação"
-      style="color:#35689b;"
-    />
-  </div>
-
-  <div class="col-md-12">
-    <label class="form-label">
-      Observações
-    </label>
-
-    <textarea
-      class="form-control form-control-sm"
-      rows="2"
-      [(ngModel)]="movimento.observacoes"
-      placeholder="Detalhe a justificativa da movimentação, se necessário."
-      style="color:#35689b;"
-    ></textarea>
-  </div>
-
-  <div class="col-md-12" *ngIf="isMovimentacaoAjuste()">
-    <div class="alert alert-warning py-2 mb-0">
-      <i class="bi bi-exclamation-triangle me-1"></i>
-      Ajustes devem ser usados apenas para correções administrativas de saldo.
-      Para compras ou consumo normal, utilize os botões de entrada ou saída.
-    </div>
-  </div>
-
-</div>
+        <div class="row g-3">
+          <div class="col-12 col-md-4"><label class="form-label">{{ rotuloQuantidadeMovimentacao() }}</label><input class="form-control" [(ngModel)]="movimento.quantidade" [placeholder]="placeholderQuantidadeMovimentacao()" /></div>
+          <div class="col-12 col-md-4" *ngIf="exibirCampoValorUnitario()"><label class="form-label">Valor Unitário</label><input class="form-control" [(ngModel)]="movimento.valorUnitario" (blur)="formatarValorUnitarioMovimento()" placeholder="R$ 0,00" /><small class="text-muted">Utilizado para registrar custo da entrada.</small></div>
+          <div class="col-12" [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-8'"><label class="form-label">Origem</label><input class="form-control" [(ngModel)]="movimento.origem" placeholder="MANUAL, COMPRA, OS, AJUSTE..." /></div>
+          <div class="col-12" [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-12'"><label class="form-label">Documento / Referência</label><input class="form-control" [(ngModel)]="movimento.documentoReferencia" placeholder="NF, OS, ajuste interno..." /></div>
+          <div class="col-12" [ngClass]="exibirCampoValorUnitario() ? 'col-md-8' : 'col-md-12'"><label class="form-label">Motivo</label><input class="form-control" [(ngModel)]="movimento.motivo" placeholder="Motivo da movimentação" /></div>
+          <div class="col-md-12"><label class="form-label">Observações</label><textarea class="form-control" rows="2" [(ngModel)]="movimento.observacoes" placeholder="Detalhe a justificativa da movimentação, se necessário."></textarea></div>
+          <div class="col-md-12" *ngIf="isMovimentacaoAjuste()"><div class="alert alert-warning py-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Ajustes devem ser usados apenas para correções administrativas de saldo.</div></div>
+        </div>
       </div>
-
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          data-bs-dismiss="modal"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-outline-success btn-sm"
-          (click)="salvarMovimentacao()"
-        >
-          <i class="bi bi-check-circle me-1"></i>
-          Confirmar Movimentação
-        </button>
-      </div>
-
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" (click)="salvarMovimentacao()"><i class="bi bi-check-circle me-1"></i>Confirmar Movimentação</button></div>
     </div>
   </div>
 </div>
 
 <!-- Modal Histórico -->
-<div
-  class="modal fade"
-  id="modalHistoricoMovimentacoes"
-  tabindex="-1"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          Histórico de Movimentações
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="alert alert-light border py-2" style="color:#35689b;" *ngIf="estoqueSelecionado">
-          {{ estoqueSelecionado.nomePeca }} |
-          Local: {{ estoqueSelecionado.nomeLocalEstoque }} |
-          Saldo atual: {{ formatarQuantidade(estoqueSelecionado.quantidadeAtual, estoqueSelecionado.unidadePeca) }}
+<div class="modal fade" id="modalHistoricoMovimentacoes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered historico-modal-dialog">
+    <div class="modal-content modal-table-content historico-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-clock-history me-1"></i>
+            Histórico de Movimentações
+          </h5>
+          <small>{{ estoqueSelecionado?.nomePeca || '—' }}</small>
         </div>
 
-        <div class="table-responsive estoque-table-responsive">
-          <table class="table table-hover align-middle text-nowrap">
-            <thead style="background:#eef6ff;color:#35689b;">
-              <tr>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Quantidade</th>
-                <th>Saldo Anterior</th>
-                <th>Saldo Posterior</th>
-                <th>Valor Unitário</th>
-                <th>Valor Total</th>
-                <th>Origem</th>
-                <th>Documento</th>
-                <th>Motivo</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr *ngFor="let mov of movimentacoes; trackBy: trackByMovimentacao">
-                <td>{{ formatarDataHora(mov.criadoEm) }}</td>
-                <td>
-                  <span class="badge" [ngClass]="movimentoBadgeClass(mov.tipoMovimento)">
-                    {{ formatarTipoMovimento(mov.tipoMovimento) }}
-                  </span>
-                </td>
-                <td>{{ formatarQuantidadeSemUnidade(mov.quantidade) }}</td>
-                <td>{{ formatarQuantidadeSemUnidade(mov.saldoAnterior) }}</td>
-                <td>{{ formatarQuantidadeSemUnidade(mov.saldoPosterior) }}</td>
-                <td>{{ formatarMoedaBR(mov.valorUnitario) || '—' }}</td>
-                <td>{{ formatarMoedaBR(mov.valorTotal) || '—' }}</td>
-                <td>{{ mov.origem || '—' }}</td>
-                <td>{{ mov.documentoReferencia || '—' }}</td>
-                <td>{{ mov.motivo || '—' }}</td>
-              </tr>
-
-              <tr *ngIf="movimentacoes.length === 0">
-                <td colspan="10" class="text-center text-muted py-4">
-                  Nenhuma movimentação encontrada.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
+      <div class="modal-body historico-modal-body">
+        <div class="historico-resumo-card" *ngIf="estoqueSelecionado">
+          <div>
+            <span class="historico-resumo-label">Local</span>
+            <strong>{{ estoqueSelecionado.nomeLocalEstoque || '—' }}</strong>
+          </div>
+
+          <div>
+            <span class="historico-resumo-label">Saldo atual</span>
+            <strong>{{ formatarQuantidade(estoqueSelecionado.quantidadeAtual, estoqueSelecionado.unidadePeca) }}</strong>
+          </div>
+        </div>
+
+        <div class="historico-table-shell">
+          <div class="historico-table-scroll">
+            <table class="table table-hover align-middle table-compact table-sticky-header historico-movimentacoes-table">
+              <thead>
+                <tr>
+                  <th class="hist-col-data">Data</th>
+                  <th class="hist-col-tipo">Tipo</th>
+                  <th class="hist-col-qtd text-end">Qtd.</th>
+                  <th class="hist-col-saldo text-end">Saldo</th>
+                  <th class="hist-col-valores text-end">Valores</th>
+                  <th class="hist-col-origem">Origem / Documento</th>
+                  <th class="hist-col-motivo">Motivo</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr *ngFor="let mov of movimentacoes; trackBy: trackByMovimentacao">
+                  <td class="hist-cell-data">
+                    <div class="hist-cell-main">{{ formatarDataHora(mov.criadoEm) }}</div>
+                  </td>
+
+                  <td>
+                    <span class="badge movimento-badge" [ngClass]="movimentoBadgeClass(mov.tipoMovimento)">
+                      {{ formatarTipoMovimento(mov.tipoMovimento) }}
+                    </span>
+                  </td>
+
+                  <td class="text-end">
+                    <strong>{{ formatarQuantidadeSemUnidade(mov.quantidade) }}</strong>
+                  </td>
+
+                  <td class="text-end">
+                    <div class="hist-stacked-value">
+                      <small>Antes</small>
+                      <strong>{{ formatarQuantidadeSemUnidade(mov.saldoAnterior) }}</strong>
+                    </div>
+
+                    <div class="hist-stacked-value mt-1">
+                      <small>Depois</small>
+                      <strong>{{ formatarQuantidadeSemUnidade(mov.saldoPosterior) }}</strong>
+                    </div>
+                  </td>
+
+                  <td class="text-end">
+                    <div class="hist-stacked-value">
+                      <small>Unit.</small>
+                      <strong>{{ formatarMoedaBR(mov.valorUnitario) || '—' }}</strong>
+                    </div>
+
+                    <div class="hist-stacked-value mt-1">
+                      <small>Total</small>
+                      <strong>{{ formatarMoedaBR(mov.valorTotal) || '—' }}</strong>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="hist-cell-main text-truncate" [title]="mov.origem || '—'">
+                      {{ mov.origem || '—' }}
+                    </div>
+
+                    <small class="hist-cell-muted text-truncate" [title]="mov.documentoReferencia || 'Sem documento'">
+                      {{ mov.documentoReferencia || 'Sem documento' }}
+                    </small>
+                  </td>
+
+                  <td>
+                    <div class="hist-motivo" [title]="mov.motivo || '—'">
+                      {{ mov.motivo || '—' }}
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="movimentacoes.length === 0">
+                  <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox me-1"></i>
+                    Nenhuma movimentação encontrada.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- Modal Alertas -->
-<div
-  class="modal fade"
-  id="modalAlertasEstoque"
-  tabindex="-1"
-  aria-hidden="true"
->
+<div class="modal fade" id="modalAlertasEstoque" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          Alertas Abertos de Estoque
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
+    <div class="modal-content modal-table-content">
+      <div class="modal-header modal-header-clinicar"><div><h5 class="modal-title"><i class="bi bi-bell me-1"></i>Alertas Abertos de Estoque</h5><small>{{ alertasAbertos.length }} alerta(s) em acompanhamento</small></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle text-nowrap">
-            <thead style="background:#eef6ff;color:#35689b;">
-              <tr>
-                <th>Data</th>
-                <th>Peça</th>
-                <th>Local</th>
-                <th>Nível</th>
-                <th>Qtd. Atual</th>
-                <th>Mínimo</th>
-                <th>Crítico</th>
-                <th>WhatsApp</th>
-                <th>Último Erro</th>
-                <th class="text-center">Ações</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr *ngFor="let alerta of alertasAbertos; trackBy: trackByAlerta">
-                <td>{{ formatarDataHora(alerta.criadoEm) }}</td>
-                <td>{{ alerta.nomePeca }}</td>
-                <td>{{ alerta.nomeLocalEstoque || '—' }}</td>
-                <td>
-                  <span class="badge" [ngClass]="statusBadgeClass(alerta.nivelAlerta)">
-                    {{ formatarStatus(alerta.nivelAlerta) }}
-                  </span>
-                </td>
-                <td>{{ formatarQuantidadeSemUnidade(alerta.quantidadeAtual) }}</td>
-                <td>{{ formatarQuantidadeSemUnidade(alerta.estoqueMinimo) }}</td>
-                <td>{{ formatarQuantidadeSemUnidade(alerta.estoqueCritico) }}</td>
-                <td>
-                  <span
-                    class="badge"
-                    [ngClass]="alerta.whatsappEnviado ? 'bg-success' : 'bg-secondary'"
-                  >
-                    {{ alerta.whatsappEnviado ? 'Enviado' : 'Não enviado' }}
-                  </span>
-                </td>
-                <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;">
-                  {{ alerta.ultimoErro || '—' }}
-                </td>
-                <td class="text-center">
-                  <button
-                    class="btn btn-sm btn-outline-success me-1"
-                    title="Resolver alerta"
-                    (click)="resolverAlerta(alerta)"
-                  >
-                    <i class="bi bi-check2-circle"></i>
-                  </button>
-
-                  <button
-                    class="btn btn-sm btn-outline-primary"
-                    title="Reenviar WhatsApp"
-                    (click)="reenviarWhatsapp(alerta)"
-                  >
-                    <i class="bi bi-whatsapp"></i>
-                  </button>
-                </td>
-              </tr>
-
-              <tr *ngIf="alertasAbertos.length === 0">
-                <td colspan="10" class="text-center text-muted py-4">
-                  Nenhum alerta aberto.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="modal-table-scroll">
+          <table class="table table-hover align-middle text-nowrap table-sticky-header"><thead><tr><th>Data</th><th>Peça</th><th>Local</th><th>Nível</th><th>Qtd. Atual</th><th>Mínimo</th><th>Crítico</th><th>WhatsApp</th><th>Último Erro</th><th class="text-center">Ações</th></tr></thead><tbody><tr *ngFor="let alerta of alertasAbertos; trackBy: trackByAlerta"><td>{{ formatarDataHora(alerta.criadoEm) }}</td><td>{{ alerta.nomePeca }}</td><td>{{ alerta.nomeLocalEstoque || '—' }}</td><td><span class="badge" [ngClass]="statusBadgeClass(alerta.nivelAlerta)">{{ formatarStatus(alerta.nivelAlerta) }}</span></td><td>{{ formatarQuantidadeSemUnidade(alerta.quantidadeAtual) }}</td><td>{{ formatarQuantidadeSemUnidade(alerta.estoqueMinimo) }}</td><td>{{ formatarQuantidadeSemUnidade(alerta.estoqueCritico) }}</td><td><span class="badge" [ngClass]="alerta.whatsappEnviado ? 'bg-success' : 'bg-secondary'">{{ alerta.whatsappEnviado ? 'Enviado' : 'Não enviado' }}</span></td><td class="text-truncate-cell">{{ alerta.ultimoErro || '—' }}</td><td class="text-center"><button class="btn btn-sm btn-outline-success me-1" title="Resolver alerta" (click)="resolverAlerta(alerta)"><i class="bi bi-check2-circle"></i></button><button class="btn btn-sm btn-outline-primary" title="Reenviar WhatsApp" (click)="reenviarWhatsapp(alerta)"><i class="bi bi-whatsapp"></i></button></td></tr><tr *ngIf="alertasAbertos.length === 0"><td colspan="10" class="text-center text-muted py-4">Nenhum alerta aberto.</td></tr></tbody></table>
         </div>
       </div>
-
     </div>
   </div>
 </div>
 
 <!-- Modal Novo Local -->
-<div
-  class="modal fade"
-  id="modalNovoLocalEstoque"
-  tabindex="-1"
-  aria-hidden="true"
->
+<div class="modal fade" id="modalNovoLocalEstoque" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-md modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          Novo Local de Estoque
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="row g-2">
-          <div class="col-md-12">
-            <label class="form-label">Nome *</label>
-            <input
-              class="form-control form-control-sm"
-              [(ngModel)]="novoLocal.nome"
-              placeholder="Ex.: Almoxarifado Principal"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-12">
-            <label class="form-label">Descrição</label>
-            <textarea
-              class="form-control form-control-sm"
-              rows="2"
-              [(ngModel)]="novoLocal.descricao"
-              style="color:#35689b;"
-            ></textarea>
-          </div>
-
-          <div class="col-md-12">
-            <label class="form-label">Status</label>
-            <select
-              class="form-select form-select-sm"
-              [(ngModel)]="novoLocal.ativo"
-              style="color:#35689b;"
-            >
-              <option [ngValue]="true">Ativo</option>
-              <option [ngValue]="false">Inativo</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
-          Cancelar
-        </button>
-
-        <button type="button" class="btn btn-outline-success btn-sm" (click)="salvarNovoLocal()">
-          <i class="bi bi-check-circle me-1"></i>
-          Salvar Local
-        </button>
-      </div>
-
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar"><h5 class="modal-title"><i class="bi bi-geo-alt me-1"></i>Novo Local de Estoque</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><div class="row g-3"><div class="col-md-12"><label class="form-label">Nome *</label><input class="form-control" [(ngModel)]="novoLocal.nome" placeholder="Ex.: Almoxarifado Principal" /></div><div class="col-md-12"><label class="form-label">Descrição</label><textarea class="form-control" rows="2" [(ngModel)]="novoLocal.descricao" placeholder="Descrição ou observações do local"></textarea></div><div class="col-md-12"><label class="form-label">Status</label><select class="form-select" [(ngModel)]="novoLocal.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option></select></div></div></div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" (click)="salvarNovoLocal()"><i class="bi bi-check-circle me-1"></i>Salvar Local</button></div>
     </div>
   </div>
 </div>

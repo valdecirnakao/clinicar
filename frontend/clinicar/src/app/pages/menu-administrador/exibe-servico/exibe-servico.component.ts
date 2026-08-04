@@ -15,7 +15,31 @@ import {
 
 declare var bootstrap: any;
 
+type AbaServico = 'dados' | 'cobranca' | 'fornecedor' | 'revisao';
 type ModoSelecaoFornecedor = 'cadastro' | 'edicao';
+type DirecaoOrdenacao = 'asc' | 'desc';
+type TipoAcaoConfirmacao = 'ativar' | 'inativar' | 'excluir';
+
+type ColunaOrdenacaoServico =
+  | 'nome'
+  | 'categoria'
+  | 'tipoDoPrestador'
+  | 'duracaoEstimada'
+  | 'valorBase'
+  | 'garantiaDias'
+  | 'necessitaPecas'
+  | 'ativo'
+  | 'razaoSocialFornecedor';
+
+type CampoObrigatorioServico =
+  | 'nome'
+  | 'categoria'
+  | 'tipoDoPrestador'
+  | 'duracaoEstimada'
+  | 'unidadeDuracao'
+  | 'valorBase'
+  | 'unidadeCobranca'
+  | 'garantiaDias';
 
 @Component({
   selector: 'app-exibe-servico',
@@ -32,18 +56,41 @@ export class ExibeServicoComponent implements OnInit {
   novoServico: Partial<Servico> = {};
   edit: Partial<Servico> = {};
   editId: number | null = null;
+  servicoDetalhe: Servico | null = null;
 
   modalCadastro: any;
   modalEdicao: any;
+  modalDetalhes: any;
   modalFornecedor: any;
+  modalConfirmacao: any;
 
   loading = false;
   errorMsg = '';
-  camposInvalidos: string[] = [];
+  mensagemErroCadastro = '';
+  mensagemErroEdicao = '';
+  camposInvalidos: CampoObrigatorioServico[] = [];
 
   fornecedores: Fornecedor[] = [];
   fornecedoresFiltrados: Fornecedor[] = [];
   fornecedorFiltro = '';
+
+  filtroTexto = '';
+  filtroStatus = '';
+  filtroCategoria = '';
+  filtroFornecedor = '';
+
+  paginaAtual = 1;
+  itensPorPagina = 10;
+  readonly opcoesItensPorPagina = [5, 10, 20, 50];
+
+  colunaOrdenacao: ColunaOrdenacaoServico = 'nome';
+  direcaoOrdenacao: DirecaoOrdenacao = 'asc';
+
+  abaCadastroServico: AbaServico = 'dados';
+  abaEdicaoServico: AbaServico = 'dados';
+
+  acaoConfirmacao: TipoAcaoConfirmacao | null = null;
+  servicoConfirmacao: Servico | null = null;
 
   private modoSelecaoFornecedor: ModoSelecaoFornecedor = 'cadastro';
 
@@ -70,6 +117,10 @@ export class ExibeServicoComponent implements OnInit {
     'Diagnóstico',
     'Pneus',
     'Funilaria',
+    'Alinhamento e Balanceamento',
+    'Troca de Óleo',
+    'Arrefecimento',
+    'Higienização',
     'Outro'
   ];
 
@@ -78,9 +129,22 @@ export class ExibeServicoComponent implements OnInit {
     'Eletricista Automotivo',
     'Funileiro',
     'Borracheiro',
+    'Centro Automotivo',
     'Fornecedor Externo',
     'Técnico Especializado',
+    'Terceirizado',
     'Outro'
+  ];
+
+  private readonly camposObrigatorios: CampoObrigatorioServico[] = [
+    'nome',
+    'categoria',
+    'tipoDoPrestador',
+    'duracaoEstimada',
+    'unidadeDuracao',
+    'valorBase',
+    'unidadeCobranca',
+    'garantiaDias'
   ];
 
   constructor(
@@ -102,52 +166,266 @@ export class ExibeServicoComponent implements OnInit {
       next: (lista) => {
         this.todos = lista ?? [];
         this.servicos = [...this.todos];
-
         this.loading = false;
         this.cancelarEdicao();
+        this.ajustarPaginaAtual();
       },
       error: (erro) => {
         console.error('Erro ao carregar serviços:', erro);
-
         this.loading = false;
-        this.errorMsg = this.extrairMensagemErro(
-          erro,
-          'Falha ao carregar serviços.'
-        );
+        this.errorMsg = this.extrairMensagemErro(erro, 'Falha ao carregar serviços.');
       }
     });
   }
 
-  filtrar(term: string): void {
-    const t = (term || '').trim().toLowerCase();
-
-    if (!t) {
-      this.servicos = [...this.todos];
-      return;
-    }
-
-    this.servicos = this.todos.filter(servico => {
-      const status = servico.ativo ? 'ativo' : 'inativo';
-      const necessitaPecas = servico.necessitaPecas ? 'necessita peças sim' : 'não necessita peças';
-
-      return (
-        (servico.nome || '').toLowerCase().includes(t) ||
-        (servico.descricao || '').toLowerCase().includes(t) ||
-        (servico.categoria || '').toLowerCase().includes(t) ||
-        (servico.tipoDoPrestador || '').toLowerCase().includes(t) ||
-        (servico.unidadeDuracao || '').toLowerCase().includes(t) ||
-        (servico.unidadeCobranca || '').toLowerCase().includes(t) ||
-        (servico.razaoSocialFornecedor || '').toLowerCase().includes(t) ||
-        status.includes(t) ||
-        necessitaPecas.includes(t)
-      );
-    });
+  voltar(): void {
+    this.location.back();
   }
 
   trackByServico = (_: number, servico: Servico) => servico.id ?? servico.nome;
+  trackByFornecedor = (_: number, fornecedor: Fornecedor) => fornecedor.id ?? fornecedor.razaoSocial;
+
+  get totalServicos(): number {
+    return this.todos.length;
+  }
+
+  get totalAtivos(): number {
+    return this.todos.filter(servico => servico.ativo).length;
+  }
+
+  get totalInativos(): number {
+    return this.todos.filter(servico => !servico.ativo).length;
+  }
+
+  get totalNecessitaPecas(): number {
+    return this.todos.filter(servico => servico.necessitaPecas).length;
+  }
+
+  get valorMedioBase(): string {
+    if (!this.todos.length) {
+      return this.formatarMoedaBR(0);
+    }
+
+    const total = this.todos.reduce((acc, servico) => acc + this.moedaParaNumero(servico.valorBase), 0);
+    return this.formatarMoedaBR(total / this.todos.length);
+  }
+
+  get categoriasDisponiveis(): string[] {
+    const categoriasDoCadastro = this.todos
+      .map(servico => (servico.categoria || '').trim())
+      .filter(Boolean);
+
+    return Array.from(new Set([...this.categoriasSugeridas, ...categoriasDoCadastro]))
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  get fornecedoresDisponiveisFiltro(): Fornecedor[] {
+    const idsUtilizados = new Set(
+      this.todos
+        .map(servico => Number(servico.idFornecedor))
+        .filter(id => !Number.isNaN(id) && id > 0)
+    );
+
+    return this.fornecedores
+      .filter(fornecedor => fornecedor.id && idsUtilizados.has(Number(fornecedor.id)))
+      .sort((a, b) => (a.razaoSocial || '').localeCompare(b.razaoSocial || '', 'pt-BR'));
+  }
+
+  get possuiFiltrosAplicados(): boolean {
+    return !!(
+      this.filtroTexto.trim() ||
+      this.filtroStatus.trim() ||
+      this.filtroCategoria.trim() ||
+      this.filtroFornecedor.trim()
+    );
+  }
+
+  get servicosFiltrados(): Servico[] {
+    const texto = this.normalizarTexto(this.filtroTexto);
+    const status = this.filtroStatus;
+    const categoria = this.normalizarTexto(this.filtroCategoria);
+    const fornecedor = Number(this.filtroFornecedor);
+
+    const filtrados = this.todos.filter(servico => {
+      const statusTexto = servico.ativo ? 'ativo' : 'inativo';
+      const pecasTexto = servico.necessitaPecas ? 'necessita peças sim' : 'não necessita peças';
+      const fornecedorTexto = servico.razaoSocialFornecedor || '';
+
+      const atendeTexto = !texto ||
+        this.normalizarTexto(servico.nome).includes(texto) ||
+        this.normalizarTexto(servico.descricao).includes(texto) ||
+        this.normalizarTexto(servico.categoria).includes(texto) ||
+        this.normalizarTexto(servico.tipoDoPrestador).includes(texto) ||
+        this.normalizarTexto(servico.unidadeDuracao).includes(texto) ||
+        this.normalizarTexto(servico.unidadeCobranca).includes(texto) ||
+        this.normalizarTexto(fornecedorTexto).includes(texto) ||
+        this.normalizarTexto(statusTexto).includes(texto) ||
+        this.normalizarTexto(pecasTexto).includes(texto);
+
+      const atendeStatus = !status ||
+        (status === 'ATIVO' && servico.ativo) ||
+        (status === 'INATIVO' && !servico.ativo) ||
+        (status === 'PECAS' && servico.necessitaPecas);
+
+      const atendeCategoria = !categoria || this.normalizarTexto(servico.categoria) === categoria;
+      const atendeFornecedor = !fornecedor || Number(servico.idFornecedor) === fornecedor;
+
+      return atendeTexto && atendeStatus && atendeCategoria && atendeFornecedor;
+    });
+
+    return this.ordenarServicos(filtrados);
+  }
+
+  get totalRegistrosFiltrados(): number {
+    return this.servicosFiltrados.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalRegistrosFiltrados / this.itensPorPagina));
+  }
+
+  get indiceInicialPagina(): number {
+    if (this.totalRegistrosFiltrados === 0) {
+      return 0;
+    }
+
+    return (this.paginaAtual - 1) * this.itensPorPagina + 1;
+  }
+
+  get indiceFinalPagina(): number {
+    return Math.min(this.paginaAtual * this.itensPorPagina, this.totalRegistrosFiltrados);
+  }
+
+  get servicosPaginados(): Servico[] {
+    this.ajustarPaginaAtual();
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    return this.servicosFiltrados.slice(inicio, inicio + this.itensPorPagina);
+  }
+
+  aoAlterarFiltros(): void {
+    this.paginaAtual = 1;
+  }
+
+  limparFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroStatus = '';
+    this.filtroCategoria = '';
+    this.filtroFornecedor = '';
+    this.paginaAtual = 1;
+  }
+
+  aoAlterarItensPorPagina(): void {
+    this.paginaAtual = 1;
+    this.ajustarPaginaAtual();
+  }
+
+  irParaPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) {
+      return;
+    }
+
+    this.paginaAtual = pagina;
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaAtual > 1) {
+      this.paginaAtual--;
+    }
+  }
+
+  proximaPagina(): void {
+    if (this.paginaAtual < this.totalPaginas) {
+      this.paginaAtual++;
+    }
+  }
+
+  paginasVisiveis(): number[] {
+    const total = this.totalPaginas;
+    const atual = this.paginaAtual;
+    const paginas: number[] = [];
+    const inicio = Math.max(1, atual - 2);
+    const fim = Math.min(total, atual + 2);
+
+    for (let i = inicio; i <= fim; i++) {
+      paginas.push(i);
+    }
+
+    return paginas;
+  }
+
+  ordenarPor(coluna: ColunaOrdenacaoServico): void {
+    if (this.colunaOrdenacao === coluna) {
+      this.direcaoOrdenacao = this.direcaoOrdenacao === 'asc' ? 'desc' : 'asc';
+      return;
+    }
+
+    this.colunaOrdenacao = coluna;
+    this.direcaoOrdenacao = 'asc';
+  }
+
+  iconeOrdenacao(coluna: ColunaOrdenacaoServico): string {
+    if (this.colunaOrdenacao !== coluna) {
+      return 'bi-arrow-down-up';
+    }
+
+    return this.direcaoOrdenacao === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
+  }
+
+  private ordenarServicos(lista: Servico[]): Servico[] {
+    return [...lista].sort((a, b) => {
+      const va = this.valorOrdenacao(a, this.colunaOrdenacao);
+      const vb = this.valorOrdenacao(b, this.colunaOrdenacao);
+
+      let resultado = 0;
+
+      if (typeof va === 'number' && typeof vb === 'number') {
+        resultado = va - vb;
+      } else {
+        resultado = String(va).localeCompare(String(vb), 'pt-BR', { numeric: true });
+      }
+
+      return this.direcaoOrdenacao === 'asc' ? resultado : resultado * -1;
+    });
+  }
+
+  private valorOrdenacao(servico: Servico, coluna: ColunaOrdenacaoServico): string | number {
+    if (coluna === 'duracaoEstimada') {
+      return Number(this.converterDecimalParaBackend(servico.duracaoEstimada)) || 0;
+    }
+
+    if (coluna === 'valorBase') {
+      return this.moedaParaNumero(servico.valorBase);
+    }
+
+    if (coluna === 'garantiaDias') {
+      return Number(servico.garantiaDias || 0);
+    }
+
+    if (coluna === 'necessitaPecas') {
+      return servico.necessitaPecas ? 1 : 0;
+    }
+
+    if (coluna === 'ativo') {
+      return servico.ativo ? 1 : 0;
+    }
+
+    return this.normalizarTexto((servico as any)[coluna]);
+  }
+
+  private ajustarPaginaAtual(): void {
+    if (this.paginaAtual > this.totalPaginas) {
+      this.paginaAtual = this.totalPaginas;
+    }
+
+    if (this.paginaAtual < 1) {
+      this.paginaAtual = 1;
+    }
+  }
 
   abrirModalCadastro(): void {
     this.camposInvalidos = [];
+    this.mensagemErroCadastro = '';
+    this.abaCadastroServico = 'dados';
 
     this.novoServico = {
       nome: '',
@@ -178,13 +456,14 @@ export class ExibeServicoComponent implements OnInit {
   }
 
   salvarNovoServico(): void {
-    const erroValidacao = this.validarServico(this.novoServico);
+    const erroValidacao = this.validarServico(this.novoServico, true);
 
     if (erroValidacao) {
-      alert(erroValidacao);
+      this.mensagemErroCadastro = erroValidacao;
       return;
     }
 
+    this.mensagemErroCadastro = '';
     const payload = this.montarPayload(this.novoServico);
 
     this.servicoService.cadastrarServico(payload).subscribe({
@@ -195,19 +474,15 @@ export class ExibeServicoComponent implements OnInit {
       },
       error: (erro) => {
         console.error('Erro ao cadastrar serviço:', erro);
-
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao cadastrar serviço.'
-          )
-        );
+        this.mensagemErroCadastro = this.extrairMensagemErro(erro, 'Erro ao cadastrar serviço.');
       }
     });
   }
 
   abrirModalEdicao(servico: Servico): void {
     this.camposInvalidos = [];
+    this.mensagemErroEdicao = '';
+    this.abaEdicaoServico = 'dados';
     this.editId = servico.id ?? null;
 
     this.edit = {
@@ -234,13 +509,14 @@ export class ExibeServicoComponent implements OnInit {
       return;
     }
 
-    const erroValidacao = this.validarServico(this.edit);
+    const erroValidacao = this.validarServico(this.edit, true);
 
     if (erroValidacao) {
-      alert(erroValidacao);
+      this.mensagemErroEdicao = erroValidacao;
       return;
     }
 
+    this.mensagemErroEdicao = '';
     const payload = this.montarPayload(this.edit);
 
     this.servicoService.atualizarServico(this.editId, payload).subscribe({
@@ -252,13 +528,7 @@ export class ExibeServicoComponent implements OnInit {
       },
       error: (erro) => {
         console.error('Erro ao atualizar serviço:', erro);
-
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao atualizar serviço.'
-          )
-        );
+        this.mensagemErroEdicao = this.extrairMensagemErro(erro, 'Erro ao atualizar serviço.');
       }
     });
   }
@@ -269,90 +539,372 @@ export class ExibeServicoComponent implements OnInit {
     this.fornecedorFiltro = '';
   }
 
-  inativar(id?: number): void {
-    if (!id) {
+  abrirDetalhes(servico: Servico): void {
+    this.servicoDetalhe = servico;
+
+    const el = document.getElementById('modalDetalhesServico');
+
+    if (!el) {
+      console.error('Modal modalDetalhesServico não encontrado.');
       return;
     }
 
-    if (!confirm('Confirma inativar este serviço?')) {
-      return;
-    }
-
-    this.servicoService.inativarServico(id).subscribe({
-      next: () => {
-        alert('Serviço inativado com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        console.error('Erro ao inativar serviço:', erro);
-
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao inativar serviço.'
-          )
-        );
-      }
-    });
+    this.modalDetalhes = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalDetalhes.show();
   }
 
-  ativar(id?: number): void {
-    if (!id) {
+  abrirConfirmacao(servico: Servico, acao: TipoAcaoConfirmacao): void {
+    this.servicoConfirmacao = servico;
+    this.acaoConfirmacao = acao;
+
+    const el = document.getElementById('modalConfirmacaoServico');
+
+    if (!el) {
+      console.error('Modal modalConfirmacaoServico não encontrado.');
       return;
     }
 
-    this.servicoService.ativarServico(id).subscribe({
-      next: () => {
-        alert('Serviço ativado com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        console.error('Erro ao ativar serviço:', erro);
-
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao ativar serviço.'
-          )
-        );
-      }
-    });
+    this.modalConfirmacao = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalConfirmacao.show();
   }
 
-  excluir(id?: number): void {
-    if (!id) {
+  executarAcaoConfirmada(): void {
+    if (!this.servicoConfirmacao?.id || !this.acaoConfirmacao) {
       return;
     }
 
-    if (!confirm('Confirma a exclusão lógica deste serviço? Ele será marcado como inativo.')) {
+    const id = this.servicoConfirmacao.id;
+
+    if (this.acaoConfirmacao === 'ativar') {
+      this.servicoService.ativarServico(id).subscribe({
+        next: () => this.acaoExecutadaComSucesso('Serviço ativado com sucesso.'),
+        error: (erro) => this.tratarErroAcao(erro, 'Erro ao ativar serviço.')
+      });
+      return;
+    }
+
+    if (this.acaoConfirmacao === 'inativar') {
+      this.servicoService.inativarServico(id).subscribe({
+        next: () => this.acaoExecutadaComSucesso('Serviço inativado com sucesso.'),
+        error: (erro) => this.tratarErroAcao(erro, 'Erro ao inativar serviço.')
+      });
       return;
     }
 
     this.servicoService.removerServico(id).subscribe({
-      next: () => {
-        alert('Serviço inativado com sucesso.');
-        this.recarregar();
-      },
-      error: (erro) => {
-        console.error('Erro ao remover serviço:', erro);
-
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao remover serviço.'
-          )
-        );
-      }
+      next: () => this.acaoExecutadaComSucesso('Serviço inativado com sucesso.'),
+      error: (erro) => this.tratarErroAcao(erro, 'Erro ao remover serviço.')
     });
   }
 
-  voltar(): void {
-    this.location.back();
+  private acaoExecutadaComSucesso(mensagem: string): void {
+    this.modalConfirmacao?.hide();
+    alert(mensagem);
+    this.servicoConfirmacao = null;
+    this.acaoConfirmacao = null;
+    this.recarregar();
   }
 
-  // ======================================================
-  // FORNECEDORES
-  // ======================================================
+  private tratarErroAcao(erro: any, mensagemPadrao: string): void {
+    console.error(mensagemPadrao, erro);
+    alert(this.extrairMensagemErro(erro, mensagemPadrao));
+  }
+
+  tituloConfirmacao(): string {
+    if (this.acaoConfirmacao === 'ativar') {
+      return 'Ativar serviço';
+    }
+
+    if (this.acaoConfirmacao === 'inativar') {
+      return 'Inativar serviço';
+    }
+
+    return 'Excluir serviço';
+  }
+
+  mensagemConfirmacao(): string {
+    const nome = this.servicoConfirmacao?.nome || 'este serviço';
+
+    if (this.acaoConfirmacao === 'ativar') {
+      return `Confirma a reativação de ${nome}?`;
+    }
+
+    if (this.acaoConfirmacao === 'inativar') {
+      return `Confirma a inativação de ${nome}?`;
+    }
+
+    return `Confirma a exclusão lógica de ${nome}? O serviço será marcado como inativo.`;
+  }
+
+  classeBotaoConfirmacao(): string {
+    if (this.acaoConfirmacao === 'ativar') {
+      return 'btn btn-success';
+    }
+
+    if (this.acaoConfirmacao === 'inativar') {
+      return 'btn btn-warning';
+    }
+
+    return 'btn btn-danger';
+  }
+
+  iconeBotaoConfirmacao(): string {
+    if (this.acaoConfirmacao === 'ativar') {
+      return 'bi bi-toggle-on';
+    }
+
+    if (this.acaoConfirmacao === 'inativar') {
+      return 'bi bi-toggle-off';
+    }
+
+    return 'bi bi-trash';
+  }
+
+  textoBotaoConfirmacao(): string {
+    if (this.acaoConfirmacao === 'ativar') {
+      return 'Ativar';
+    }
+
+    if (this.acaoConfirmacao === 'inativar') {
+      return 'Inativar';
+    }
+
+    return 'Excluir';
+  }
+
+  trocarAbaCadastroServico(aba: AbaServico): void {
+    this.abaCadastroServico = aba;
+  }
+
+  trocarAbaEdicaoServico(aba: AbaServico): void {
+    this.abaEdicaoServico = aba;
+  }
+
+  cadastroAbaAnterior(): void {
+    const ordem: AbaServico[] = ['dados', 'cobranca', 'fornecedor', 'revisao'];
+    const indice = ordem.indexOf(this.abaCadastroServico);
+
+    if (indice > 0) {
+      this.abaCadastroServico = ordem[indice - 1];
+    }
+  }
+
+  cadastroAbaProxima(): void {
+    const ordem: AbaServico[] = ['dados', 'cobranca', 'fornecedor', 'revisao'];
+    const indice = ordem.indexOf(this.abaCadastroServico);
+
+    if (indice >= 0 && indice < ordem.length - 1) {
+      this.abaCadastroServico = ordem[indice + 1];
+    }
+  }
+
+  cadastroEhPrimeiraAba(): boolean {
+    return this.abaCadastroServico === 'dados';
+  }
+
+  cadastroEhUltimaAba(): boolean {
+    return this.abaCadastroServico === 'revisao';
+  }
+
+  edicaoAbaAnterior(): void {
+    const ordem: AbaServico[] = ['dados', 'cobranca', 'fornecedor', 'revisao'];
+    const indice = ordem.indexOf(this.abaEdicaoServico);
+
+    if (indice > 0) {
+      this.abaEdicaoServico = ordem[indice - 1];
+    }
+  }
+
+  edicaoAbaProxima(): void {
+    const ordem: AbaServico[] = ['dados', 'cobranca', 'fornecedor', 'revisao'];
+    const indice = ordem.indexOf(this.abaEdicaoServico);
+
+    if (indice >= 0 && indice < ordem.length - 1) {
+      this.abaEdicaoServico = ordem[indice + 1];
+    }
+  }
+
+  edicaoEhPrimeiraAba(): boolean {
+    return this.abaEdicaoServico === 'dados';
+  }
+
+  edicaoEhUltimaAba(): boolean {
+    return this.abaEdicaoServico === 'revisao';
+  }
+
+  get cadastroServicoProntoParaSalvar(): boolean {
+    return this.validarServico(this.novoServico, false) === null;
+  }
+
+  get edicaoServicoProntoParaSalvar(): boolean {
+    return this.validarServico(this.edit, false) === null;
+  }
+
+  get mensagemBloqueioCadastro(): string {
+    return this.validarServico(this.novoServico, false) || '';
+  }
+
+  get mensagemBloqueioEdicao(): string {
+    return this.validarServico(this.edit, false) || '';
+  }
+
+  get progressoCadastroServico(): number {
+    return this.calcularProgresso(this.novoServico);
+  }
+
+  get progressoEdicaoServico(): number {
+    return this.calcularProgresso(this.edit);
+  }
+
+  pendenciasCadastroAba(aba: AbaServico): number {
+    return this.pendenciasAba(this.novoServico, aba);
+  }
+
+  pendenciasEdicaoAba(aba: AbaServico): number {
+    return this.pendenciasAba(this.edit, aba);
+  }
+
+  campoMarcadoInvalido(model: Partial<Servico>, campo: CampoObrigatorioServico): boolean {
+    const campoInvalido = this.campoInvalido(model, campo);
+    return this.camposInvalidos.includes(campo) && campoInvalido;
+  }
+
+  limparCampoInvalido(campo: CampoObrigatorioServico): void {
+    if (!this.camposInvalidos.includes(campo)) {
+      return;
+    }
+
+    this.camposInvalidos = this.camposInvalidos.filter(item => item !== campo);
+    this.mensagemErroCadastro = '';
+    this.mensagemErroEdicao = '';
+  }
+
+  dadosServicoPendentes(model: Partial<Servico>): boolean {
+    return this.campoInvalido(model, 'nome') ||
+      this.campoInvalido(model, 'categoria') ||
+      this.campoInvalido(model, 'tipoDoPrestador');
+  }
+
+  cobrancaServicoPendente(model: Partial<Servico>): boolean {
+    return this.campoInvalido(model, 'duracaoEstimada') ||
+      this.campoInvalido(model, 'unidadeDuracao') ||
+      this.campoInvalido(model, 'valorBase') ||
+      this.campoInvalido(model, 'unidadeCobranca') ||
+      this.campoInvalido(model, 'garantiaDias');
+  }
+
+  private calcularProgresso(model: Partial<Servico>): number {
+    const preenchidos = this.camposObrigatorios.filter(campo => !this.campoInvalido(model, campo)).length;
+    const percentual = Math.round((preenchidos / this.camposObrigatorios.length) * 100);
+    return Math.max(0, Math.min(100, percentual));
+  }
+
+  private pendenciasAba(model: Partial<Servico>, aba: AbaServico): number {
+    const camposPorAba: Record<AbaServico, CampoObrigatorioServico[]> = {
+      dados: ['nome', 'categoria', 'tipoDoPrestador'],
+      cobranca: ['duracaoEstimada', 'unidadeDuracao', 'valorBase', 'unidadeCobranca', 'garantiaDias'],
+      fornecedor: [],
+      revisao: []
+    };
+
+    return camposPorAba[aba].filter(campo => this.campoInvalido(model, campo)).length;
+  }
+
+  private campoInvalido(model: Partial<Servico>, campo: CampoObrigatorioServico): boolean {
+    if (campo === 'duracaoEstimada') {
+      const valor = Number(this.converterDecimalParaBackend(model.duracaoEstimada));
+      return !String(model.duracaoEstimada ?? '').trim() || Number.isNaN(valor) || valor <= 0;
+    }
+
+    if (campo === 'valorBase') {
+      const valor = this.moedaParaNumero(model.valorBase);
+      return !String(model.valorBase ?? '').trim() || Number.isNaN(valor) || valor < 0;
+    }
+
+    if (campo === 'garantiaDias') {
+      const valor = Number(model.garantiaDias ?? 0);
+      return Number.isNaN(valor) || valor < 0;
+    }
+
+    return !String((model as any)[campo] ?? '').trim();
+  }
+
+  private validarServico(model: Partial<Servico>, marcarInvalidos: boolean): string | null {
+    const faltando = this.camposObrigatorios.filter(campo => this.campoInvalido(model, campo));
+
+    if (faltando.length) {
+      if (marcarInvalidos) {
+        this.camposInvalidos = [...faltando];
+        this.abaPorCampo(faltando[0], model === this.novoServico ? 'cadastro' : 'edicao');
+      }
+
+      const primeiroCampo = faltando[0];
+
+      if (primeiroCampo === 'nome') {
+        return 'Informe o nome do serviço.';
+      }
+
+      if (primeiroCampo === 'categoria') {
+        return 'Informe a categoria do serviço.';
+      }
+
+      if (primeiroCampo === 'tipoDoPrestador') {
+        return 'Informe o tipo do prestador.';
+      }
+
+      if (primeiroCampo === 'duracaoEstimada') {
+        return 'Informe uma duração estimada maior que zero.';
+      }
+
+      if (primeiroCampo === 'valorBase') {
+        return 'Informe um valor base válido.';
+      }
+
+      if (primeiroCampo === 'garantiaDias') {
+        return 'A garantia em dias não pode ser negativa.';
+      }
+
+      return 'Preencha todos os campos obrigatórios antes de salvar o serviço.';
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = [];
+    }
+
+    return null;
+  }
+
+  private abaPorCampo(campo: CampoObrigatorioServico, contexto: 'cadastro' | 'edicao'): void {
+    let aba: AbaServico = 'dados';
+
+    if (['duracaoEstimada', 'unidadeDuracao', 'valorBase', 'unidadeCobranca', 'garantiaDias'].includes(campo)) {
+      aba = 'cobranca';
+    }
+
+    if (contexto === 'cadastro') {
+      this.abaCadastroServico = aba;
+    } else {
+      this.abaEdicaoServico = aba;
+    }
+  }
+
+  private montarPayload(model: Partial<Servico>): ServicoRequest {
+    return {
+      nome: this.capitalizar(model.nome),
+      descricao: this.limparOpcional(model.descricao),
+      categoria: this.capitalizar(model.categoria),
+      tipoDoPrestador: this.capitalizar(model.tipoDoPrestador),
+      duracaoEstimada: this.converterDecimalParaBackend(model.duracaoEstimada),
+      unidadeDuracao: (model.unidadeDuracao || '').toString().toUpperCase(),
+      valorBase: this.converterMoedaParaNumero(model.valorBase),
+      unidadeCobranca: (model.unidadeCobranca || '').toString().toUpperCase(),
+      garantiaDias: Math.floor(Number(model.garantiaDias ?? 0)),
+      necessitaPecas: Boolean(model.necessitaPecas),
+      ativo: model.ativo === null || model.ativo === undefined ? true : Boolean(model.ativo),
+      observacoes: this.limparOpcional(model.observacoes),
+      idFornecedor: model.idFornecedor ?? null
+    };
+  }
 
   private carregarFornecedores(): void {
     this.fornecedorService.listarTodos().subscribe({
@@ -371,6 +923,12 @@ export class ExibeServicoComponent implements OnInit {
     this.fornecedorFiltro = '';
     this.aplicarFiltroFornecedor();
 
+    if (modo === 'cadastro') {
+      this.modalCadastro?.hide();
+    } else {
+      this.modalEdicao?.hide();
+    }
+
     const el = document.getElementById('modalFornecedorServico');
 
     if (!el) {
@@ -378,29 +936,37 @@ export class ExibeServicoComponent implements OnInit {
       return;
     }
 
-    this.modalFornecedor = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalFornecedor = bootstrap.Modal.getOrCreateInstance(el, {
+      backdrop: 'static',
+      keyboard: false
+    });
     this.modalFornecedor.show();
   }
 
-  aplicarFiltroFornecedor(): void {
-    const t = this.fornecedorFiltro.trim().toLowerCase();
-    const tNum = this.onlyDigits(t);
+  cancelarSelecaoFornecedor(): void {
+    this.modalFornecedor?.hide();
+    this.restaurarModalOrigemFornecedor();
+  }
 
-    if (!t) {
+  aplicarFiltroFornecedor(): void {
+    const t = this.normalizarTexto(this.fornecedorFiltro);
+    const tNum = this.onlyDigits(this.fornecedorFiltro);
+
+    if (!t && !tNum) {
       this.fornecedoresFiltrados = [...this.fornecedores];
       return;
     }
 
     this.fornecedoresFiltrados = this.fornecedores.filter(fornecedor => {
-      const razao = (fornecedor.razaoSocial || '').toLowerCase();
-      const fantasia = (fornecedor.nomeFantasia || '').toLowerCase();
-      const cnpj = this.onlyDigits(fornecedor.cnpj);
+      const razao = this.normalizarTexto(fornecedor.razaoSocial);
+      const fantasia = this.normalizarTexto((fornecedor as any).nomeFantasia);
+      const cnpj = this.onlyDigits((fornecedor as any).cnpj);
+      const item = this.normalizarTexto((fornecedor as any).itemFornecido);
 
-      return (
-        razao.includes(t) ||
+      return razao.includes(t) ||
         fantasia.includes(t) ||
-        cnpj.includes(tNum)
-      );
+        item.includes(t) ||
+        (!!tNum && cnpj.includes(tNum));
     });
   }
 
@@ -418,6 +984,26 @@ export class ExibeServicoComponent implements OnInit {
     }
 
     this.modalFornecedor?.hide();
+    this.restaurarModalOrigemFornecedor();
+  }
+
+  private restaurarModalOrigemFornecedor(): void {
+    setTimeout(() => {
+      if (this.modoSelecaoFornecedor === 'cadastro') {
+        const elCadastro = document.getElementById('modalCadastroServico');
+        if (elCadastro) {
+          this.modalCadastro = bootstrap.Modal.getOrCreateInstance(elCadastro);
+          this.modalCadastro.show();
+        }
+        return;
+      }
+
+      const elEdicao = document.getElementById('modalEdicaoServico');
+      if (elEdicao) {
+        this.modalEdicao = bootstrap.Modal.getOrCreateInstance(elEdicao);
+        this.modalEdicao.show();
+      }
+    }, 180);
   }
 
   removerFornecedorSelecionado(model: Partial<Servico>): void {
@@ -429,20 +1015,52 @@ export class ExibeServicoComponent implements OnInit {
     return model.razaoSocialFornecedor || '';
   }
 
-  // ======================================================
-  // FORMATAÇÕES
-  // ======================================================
-
   formatarValorBaseCadastro(): void {
-    this.novoServico.valorBase = this.formatarMoedaBR(
-      this.novoServico.valorBase
-    );
+    this.novoServico.valorBase = this.formatarMoedaBR(this.novoServico.valorBase);
   }
 
   formatarValorBaseEdicao(): void {
-    this.edit.valorBase = this.formatarMoedaBR(
-      this.edit.valorBase
-    );
+    this.edit.valorBase = this.formatarMoedaBR(this.edit.valorBase);
+  }
+
+  normalizarGarantia(model: Partial<Servico>): void {
+    const valor = Number(model.garantiaDias ?? 0);
+    model.garantiaDias = Number.isNaN(valor) || valor < 0 ? 0 : Math.floor(valor);
+  }
+
+  formatarDuracao(servico: Partial<Servico>): string {
+    const duracao = this.normalizarDecimalParaExibicao(servico.duracaoEstimada);
+    const unidade = servico.unidadeDuracao || '';
+
+    if (!duracao) {
+      return '—';
+    }
+
+    return `${duracao} ${this.formatarUnidade(unidade)}`;
+  }
+
+  formatarUnidade(unidade: string | null | undefined): string {
+    if (!unidade) {
+      return '';
+    }
+
+    const u = unidade.toUpperCase();
+
+    const mapa: Record<string, string> = {
+      MINUTO: 'minuto(s)',
+      HORA: 'hora(s)',
+      DIA: 'dia(s)',
+      SERVICO: 'serviço',
+      DIARIA: 'diária',
+      PACOTE: 'pacote',
+      UNIDADE: 'unidade'
+    };
+
+    return mapa[u] || unidade;
+  }
+
+  formatarValorServico(valor: any): string {
+    return this.formatarMoedaBR(valor) || 'R$ 0,00';
   }
 
   formatarMoedaBR(valor: any): string {
@@ -450,26 +1068,7 @@ export class ExibeServicoComponent implements OnInit {
       return '';
     }
 
-    let numero: number;
-
-    if (typeof valor === 'number') {
-      numero = valor;
-    } else {
-      let texto = valor
-        .toString()
-        .replace('R$', '')
-        .replace(/\s/g, '')
-        .trim();
-
-      if (/^\d+\.\d{1,2}$/.test(texto)) {
-        numero = Number(texto);
-      } else if (texto.includes(',')) {
-        texto = texto.replace(/\./g, '').replace(',', '.');
-        numero = Number(texto);
-      } else {
-        numero = Number(texto);
-      }
-    }
+    const numero = this.moedaParaNumero(valor);
 
     if (Number.isNaN(numero)) {
       return '';
@@ -484,203 +1083,34 @@ export class ExibeServicoComponent implements OnInit {
   }
 
   converterMoedaParaNumero(valor: any): string {
+    const numero = this.moedaParaNumero(valor);
+    return Number.isNaN(numero) ? '0.00' : numero.toFixed(2);
+  }
+
+  moedaParaNumero(valor: any): number {
     if (valor === null || valor === undefined || valor === '') {
-      return '0';
+      return 0;
     }
 
     if (typeof valor === 'number') {
-      return valor.toFixed(2);
+      return Number.isNaN(valor) ? 0 : valor;
     }
 
-    let texto = valor
-      .toString()
+    let texto = String(valor)
       .replace('R$', '')
       .replace(/\s/g, '')
       .trim();
 
-    if (/^\d+\.\d{1,2}$/.test(texto)) {
-      return Number(texto).toFixed(2);
+    if (/^\d+\.\d{1,4}$/.test(texto)) {
+      return Number(texto);
     }
 
     if (texto.includes(',')) {
       texto = texto.replace(/\./g, '').replace(',', '.');
-      return Number(texto).toFixed(2);
     }
 
     const numero = Number(texto);
-
-    if (Number.isNaN(numero)) {
-      return '0';
-    }
-
-    return numero.toFixed(2);
-  }
-
-  formatarDuracao(servico: Servico): string {
-    const duracao = this.normalizarDecimalParaExibicao(servico.duracaoEstimada);
-    const unidade = servico.unidadeDuracao || '';
-
-    if (!duracao) {
-      return '';
-    }
-
-    return `${duracao} ${this.formatarUnidade(unidade)}`;
-  }
-
-  formatarUnidade(unidade: string | null | undefined): string {
-    if (!unidade) {
-      return '';
-    }
-
-    const u = unidade.toUpperCase();
-
-    if (u === 'MINUTO') {
-      return 'minuto(s)';
-    }
-
-    if (u === 'HORA') {
-      return 'hora(s)';
-    }
-
-    if (u === 'DIA') {
-      return 'dia(s)';
-    }
-
-    if (u === 'SERVICO') {
-      return 'serviço';
-    }
-
-    if (u === 'DIARIA') {
-      return 'diária';
-    }
-
-    if (u === 'PACOTE') {
-      return 'pacote';
-    }
-
-    if (u === 'UNIDADE') {
-      return 'unidade';
-    }
-
-    return unidade;
-  }
-
-  capitalizar(texto: string | null | undefined): string {
-    if (!texto) {
-      return '';
-    }
-
-    return texto
-      .trim()
-      .split(' ')
-      .filter(parte => parte.length > 0)
-      .map(parte => parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase())
-      .join(' ');
-  }
-
-  formatarCNPJ(cnpj?: string): string {
-    const d = this.onlyDigits(cnpj);
-
-    if (d.length !== 14) {
-      return cnpj ?? '';
-    }
-
-    return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12, 14)}`;
-  }
-
-  formatarDataBr(data: string | Date | null | undefined): string {
-    if (!data) {
-      return '';
-    }
-
-    const d = new Date(data);
-
-    if (Number.isNaN(d.getTime())) {
-      return '';
-    }
-
-    return d.toLocaleDateString('pt-BR');
-  }
-
-  // ======================================================
-  // PAYLOAD E VALIDAÇÃO
-  // ======================================================
-
-  private validarServico(model: Partial<Servico>): string | null {
-    if (!String(model.nome ?? '').trim()) {
-      return 'Informe o nome do serviço.';
-    }
-
-    if (!String(model.categoria ?? '').trim()) {
-      return 'Informe a categoria do serviço.';
-    }
-
-    if (!String(model.tipoDoPrestador ?? '').trim()) {
-      return 'Informe o tipo do prestador.';
-    }
-
-    if (!String(model.duracaoEstimada ?? '').trim()) {
-      return 'Informe a duração estimada.';
-    }
-
-    const duracao = Number(
-      this.converterDecimalParaBackend(model.duracaoEstimada)
-    );
-
-    if (Number.isNaN(duracao) || duracao <= 0) {
-      return 'A duração estimada deve ser maior que zero.';
-    }
-
-    if (!String(model.unidadeDuracao ?? '').trim()) {
-      return 'Informe a unidade de duração.';
-    }
-
-    if (!String(model.valorBase ?? '').trim()) {
-      return 'Informe o valor base.';
-    }
-
-    const valorBase = Number(this.converterMoedaParaNumero(model.valorBase));
-
-    if (Number.isNaN(valorBase) || valorBase < 0) {
-      return 'O valor base não pode ser negativo.';
-    }
-
-    if (!String(model.unidadeCobranca ?? '').trim()) {
-      return 'Informe a unidade de cobrança.';
-    }
-
-    const garantia = Number(model.garantiaDias ?? 0);
-
-    if (Number.isNaN(garantia) || garantia < 0) {
-      return 'A garantia em dias não pode ser negativa.';
-    }
-
-    return null;
-  }
-
-  private montarPayload(model: Partial<Servico>): ServicoRequest {
-    return {
-      nome: this.capitalizar(model.nome),
-      descricao: this.limparOpcional(model.descricao),
-      categoria: this.capitalizar(model.categoria),
-      tipoDoPrestador: this.capitalizar(model.tipoDoPrestador),
-
-      duracaoEstimada: this.converterDecimalParaBackend(model.duracaoEstimada),
-      unidadeDuracao: (model.unidadeDuracao || '').toString().toUpperCase(),
-
-      valorBase: this.converterMoedaParaNumero(model.valorBase),
-      unidadeCobranca: (model.unidadeCobranca || '').toString().toUpperCase(),
-
-      garantiaDias: Number(model.garantiaDias ?? 0),
-      necessitaPecas: Boolean(model.necessitaPecas),
-      ativo: model.ativo === null || model.ativo === undefined
-        ? true
-        : Boolean(model.ativo),
-
-      observacoes: this.limparOpcional(model.observacoes),
-
-      idFornecedor: model.idFornecedor ?? null
-    };
+    return Number.isNaN(numero) ? 0 : numero;
   }
 
   private converterDecimalParaBackend(valor: any): string {
@@ -704,7 +1134,7 @@ export class ExibeServicoComponent implements OnInit {
     return texto;
   }
 
-  private normalizarDecimalParaExibicao(valor: any): string {
+  normalizarDecimalParaExibicao(valor: any): string {
     if (valor === null || valor === undefined || valor === '') {
       return '';
     }
@@ -723,6 +1153,96 @@ export class ExibeServicoComponent implements OnInit {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  formatarCNPJ(cnpj?: string): string {
+    const d = this.onlyDigits(cnpj);
+
+    if (d.length !== 14) {
+      return cnpj ?? '';
+    }
+
+    return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12, 14)}`;
+  }
+
+  formatarDataBr(data: string | Date | null | undefined): string {
+    if (!data) {
+      return '—';
+    }
+
+    const texto = String(data);
+    const matchIso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+    if (matchIso) {
+      return `${matchIso[3]}/${matchIso[2]}/${matchIso[1]}`;
+    }
+
+    const d = new Date(data);
+
+    if (Number.isNaN(d.getTime())) {
+      return '—';
+    }
+
+    return d.toLocaleDateString('pt-BR');
+  }
+
+  capitalizar(texto: string | null | undefined): string {
+    if (!texto) {
+      return '';
+    }
+
+    const minusculas = ['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'para'];
+
+    return texto
+      .toString()
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(' ')
+      .map((parte, indice) => {
+        const p = parte.toLowerCase();
+
+        if (indice > 0 && minusculas.includes(p)) {
+          return p;
+        }
+
+        return p.charAt(0).toUpperCase() + p.slice(1);
+      })
+      .join(' ');
+  }
+
+  statusBadgeClass(servico: Partial<Servico>): string {
+    return servico.ativo ? 'badge bg-success' : 'badge bg-secondary';
+  }
+
+  pecasBadgeClass(servico: Partial<Servico>): string {
+    return servico.necessitaPecas ? 'badge bg-warning text-dark' : 'badge bg-info text-dark';
+  }
+
+  statusTexto(servico: Partial<Servico>): string {
+    return servico.ativo ? 'Ativo' : 'Inativo';
+  }
+
+  necessitaPecasTexto(servico: Partial<Servico>): string {
+    return servico.necessitaPecas ? 'Necessita peças' : 'Não necessita peças';
+  }
+
+  descricaoCurta(servico: Partial<Servico>): string {
+    const descricao = String(servico.descricao || '').trim();
+
+    if (!descricao) {
+      return 'Sem descrição cadastrada.';
+    }
+
+    return descricao.length > 100 ? `${descricao.substring(0, 100)}...` : descricao;
+  }
+
+  private normalizarTexto(valor: any): string {
+    return (valor ?? '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   private limparOpcional(valor: string | null | undefined): string | undefined {

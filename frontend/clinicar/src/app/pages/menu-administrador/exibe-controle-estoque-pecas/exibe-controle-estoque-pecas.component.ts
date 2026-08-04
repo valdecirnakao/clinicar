@@ -18,6 +18,19 @@ declare var bootstrap: any;
 
 type ModoSelecaoPeca = 'cadastro' | 'edicao';
 type TipoMovimentacaoTela = 'ENTRADA' | 'SAIDA' | 'AJUSTE_ENTRADA' | 'AJUSTE_SAIDA';
+type AbaEstoque = 'identificacao' | 'quantidades' | 'reposicao' | 'revisao';
+type DirecaoOrdenacao = 'asc' | 'desc';
+type ColunaOrdenacaoEstoque =
+  | 'nomePeca'
+  | 'fabricantePeca'
+  | 'nomeLocalEstoque'
+  | 'quantidadeAtual'
+  | 'quantidadeReservada'
+  | 'estoqueMinimo'
+  | 'custoMedio'
+  | 'localizacaoFisica'
+  | 'statusEstoque';
+type OrigemModalPeca = 'cadastro' | 'edicao' | null;
 
 @Component({
   selector: 'app-exibe-controle-estoque-pecas',
@@ -59,6 +72,21 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
   filtroTexto = '';
   filtroStatus = '';
+  filtroLocal = '';
+
+  paginaAtual = 1;
+  itensPorPagina = 10;
+  opcoesItensPorPagina = [5, 10, 20, 50];
+
+  colunaOrdenacao: ColunaOrdenacaoEstoque = 'nomePeca';
+  direcaoOrdenacao: DirecaoOrdenacao = 'asc';
+
+  abaCadastroEstoque: AbaEstoque = 'identificacao';
+  abaEdicaoEstoque: AbaEstoque = 'quantidades';
+
+  mensagemErroModal = '';
+  estoqueDetalhes: EstoquePeca | null = null;
+  private origemModalPeca: OrigemModalPeca = null;
 
   modalCadastro: any;
   modalEdicao: any;
@@ -67,6 +95,7 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   modalMovimentacoes: any;
   modalAlertas: any;
   modalNovoLocal: any;
+  modalDetalhes: any;
 
   resumo = {
     total: 0,
@@ -169,30 +198,31 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   }
 
   aplicarFiltros(): void {
-    const t = this.filtroTexto.trim().toLowerCase();
+    const texto = this.normalizarTexto(this.filtroTexto);
+    const textoNumerico = this.onlyDigits(this.filtroTexto);
+    const statusSelecionado = (this.filtroStatus || '').toUpperCase().trim();
+    const localSelecionado = this.normalizarTexto(this.filtroLocal);
 
-    this.estoques = this.todos.filter(item => {
+    const filtrados = this.todos.filter(item => {
       const status = (item.statusEstoque || '').toUpperCase();
 
-      const passaStatus = !this.filtroStatus || status === this.filtroStatus;
+      const atendeStatus = !statusSelecionado || status === statusSelecionado;
+      const atendeLocal = !localSelecionado || this.normalizarTexto(item.nomeLocalEstoque) === localSelecionado;
 
-      if (!passaStatus) {
-        return false;
-      }
+      const atendeTexto = !texto ||
+        this.normalizarTexto(item.nomePeca).includes(texto) ||
+        this.normalizarTexto(item.fabricantePeca).includes(texto) ||
+        this.normalizarTexto(item.modeloPeca).includes(texto) ||
+        this.normalizarTexto(item.nomeLocalEstoque).includes(texto) ||
+        this.normalizarTexto(item.localizacaoFisica).includes(texto) ||
+        this.normalizarTexto(item.statusEstoque).includes(texto) ||
+        this.onlyDigits(item.idPeca).includes(textoNumerico);
 
-      if (!t) {
-        return true;
-      }
-
-      return (
-        (item.nomePeca || '').toLowerCase().includes(t) ||
-        (item.fabricantePeca || '').toLowerCase().includes(t) ||
-        (item.modeloPeca || '').toLowerCase().includes(t) ||
-        (item.nomeLocalEstoque || '').toLowerCase().includes(t) ||
-        (item.localizacaoFisica || '').toLowerCase().includes(t) ||
-        status.toLowerCase().includes(t)
-      );
+      return atendeStatus && atendeLocal && atendeTexto;
     });
+
+    this.estoques = this.ordenarEstoques(filtrados);
+    this.ajustarPaginaAtual();
   }
 
   private atualizarResumo(): void {
@@ -203,6 +233,317 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
     this.resumo.zerado = this.todos.filter(e => e.statusEstoque === 'ZERADO').length;
     this.resumo.alertasAbertos = this.alertasAbertos.length;
   }
+
+  get locaisDisponiveisFiltro(): string[] {
+    return Array.from(
+      new Set(
+        this.todos
+          .map(item => (item.nomeLocalEstoque || '').trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  get possuiFiltrosAplicados(): boolean {
+    return !!(
+      this.filtroTexto.trim() ||
+      this.filtroStatus.trim() ||
+      this.filtroLocal.trim()
+    );
+  }
+
+  get totalRegistrosFiltrados(): number {
+    return this.estoques.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalRegistrosFiltrados / this.itensPorPagina));
+  }
+
+  get indiceInicialPagina(): number {
+    if (this.totalRegistrosFiltrados === 0) {
+      return 0;
+    }
+
+    return (this.paginaAtual - 1) * this.itensPorPagina + 1;
+  }
+
+  get indiceFinalPagina(): number {
+    return Math.min(this.paginaAtual * this.itensPorPagina, this.totalRegistrosFiltrados);
+  }
+
+  get estoquesPaginados(): EstoquePeca[] {
+    this.ajustarPaginaAtual();
+
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+
+    return this.estoques.slice(inicio, fim);
+  }
+
+  get cadastroEstoqueProntoParaSalvar(): boolean {
+    return this.validarEstoque(this.novoEstoque, true) === null;
+  }
+
+  get edicaoEstoqueProntaParaSalvar(): boolean {
+    return this.validarEstoque(this.edit, false) === null;
+  }
+
+  get mensagemBloqueioCadastro(): string {
+    return this.validarEstoque(this.novoEstoque, true) || '';
+  }
+
+  get mensagemBloqueioEdicao(): string {
+    return this.validarEstoque(this.edit, false) || '';
+  }
+
+  get progressoCadastroEstoque(): number {
+    return this.calcularProgressoEstoque(this.novoEstoque, true);
+  }
+
+  get progressoEdicaoEstoque(): number {
+    return this.calcularProgressoEstoque(this.edit, false);
+  }
+
+  aoAlterarFiltros(): void {
+    this.paginaAtual = 1;
+    this.aplicarFiltros();
+  }
+
+  limparFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroStatus = '';
+    this.filtroLocal = '';
+    this.paginaAtual = 1;
+    this.aplicarFiltros();
+  }
+
+  aoAlterarItensPorPagina(): void {
+    this.paginaAtual = 1;
+    this.ajustarPaginaAtual();
+  }
+
+  irParaPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) {
+      return;
+    }
+
+    this.paginaAtual = pagina;
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaAtual > 1) {
+      this.paginaAtual--;
+    }
+  }
+
+  proximaPagina(): void {
+    if (this.paginaAtual < this.totalPaginas) {
+      this.paginaAtual++;
+    }
+  }
+
+  paginasVisiveis(): number[] {
+    const paginas: number[] = [];
+    const inicio = Math.max(1, this.paginaAtual - 2);
+    const fim = Math.min(this.totalPaginas, this.paginaAtual + 2);
+
+    for (let pagina = inicio; pagina <= fim; pagina++) {
+      paginas.push(pagina);
+    }
+
+    return paginas;
+  }
+
+  ordenarPor(coluna: ColunaOrdenacaoEstoque): void {
+    if (this.colunaOrdenacao === coluna) {
+      this.direcaoOrdenacao = this.direcaoOrdenacao === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.colunaOrdenacao = coluna;
+      this.direcaoOrdenacao = 'asc';
+    }
+
+    this.aplicarFiltros();
+  }
+
+  iconeOrdenacao(coluna: ColunaOrdenacaoEstoque): string {
+    if (this.colunaOrdenacao !== coluna) {
+      return 'bi-arrow-down-up';
+    }
+
+    return this.direcaoOrdenacao === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
+  }
+
+  trocarAbaCadastroEstoque(aba: AbaEstoque): void {
+    this.abaCadastroEstoque = aba;
+  }
+
+  trocarAbaEdicaoEstoque(aba: AbaEstoque): void {
+    this.abaEdicaoEstoque = aba;
+  }
+
+  avancarAbaCadastroEstoque(): void {
+    const ordem: AbaEstoque[] = ['identificacao', 'quantidades', 'reposicao', 'revisao'];
+    const atual = ordem.indexOf(this.abaCadastroEstoque);
+
+    if (atual < ordem.length - 1) {
+      this.abaCadastroEstoque = ordem[atual + 1];
+    }
+  }
+
+  voltarAbaCadastroEstoque(): void {
+    const ordem: AbaEstoque[] = ['identificacao', 'quantidades', 'reposicao', 'revisao'];
+    const atual = ordem.indexOf(this.abaCadastroEstoque);
+
+    if (atual > 0) {
+      this.abaCadastroEstoque = ordem[atual - 1];
+    }
+  }
+
+  avancarAbaEdicaoEstoque(): void {
+    const ordem: AbaEstoque[] = ['identificacao', 'quantidades', 'reposicao', 'revisao'];
+    const atual = ordem.indexOf(this.abaEdicaoEstoque);
+
+    if (atual < ordem.length - 1) {
+      this.abaEdicaoEstoque = ordem[atual + 1];
+    }
+  }
+
+  voltarAbaEdicaoEstoque(): void {
+    const ordem: AbaEstoque[] = ['identificacao', 'quantidades', 'reposicao', 'revisao'];
+    const atual = ordem.indexOf(this.abaEdicaoEstoque);
+
+    if (atual > 0) {
+      this.abaEdicaoEstoque = ordem[atual - 1];
+    }
+  }
+
+  abrirDetalhes(item: EstoquePeca): void {
+    this.estoqueDetalhes = item;
+
+    const el = document.getElementById('modalDetalhesEstoquePeca');
+
+    if (!el) {
+      console.error('Modal modalDetalhesEstoquePeca não encontrado.');
+      return;
+    }
+
+    this.modalDetalhes = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalDetalhes.show();
+  }
+
+  saldoDisponivel(item: Partial<EstoquePeca>): number {
+    const atual = Number(this.converterQuantidadeParaBackend(item.quantidadeAtual));
+    const reservada = Number(this.converterQuantidadeParaBackend(item.quantidadeReservada));
+
+    return Math.max(0, atual - reservada);
+  }
+
+  percentualSaldoMinimo(item: Partial<EstoquePeca>): number {
+    const atual = Number(this.converterQuantidadeParaBackend(item.quantidadeAtual));
+    const minimo = Number(this.converterQuantidadeParaBackend(item.estoqueMinimo));
+
+    if (!minimo || minimo <= 0 || Number.isNaN(atual) || Number.isNaN(minimo)) {
+      return 100;
+    }
+
+    return Math.max(0, Math.min(100, Math.round((atual / minimo) * 100)));
+  }
+
+  estoqueCampoInvalido(model: Partial<EstoquePeca>, campo: string, validarPecaELocal = true): boolean {
+    if (campo === 'idPeca') {
+      return validarPecaELocal && !model.idPeca;
+    }
+
+    if (campo === 'idLocalEstoque') {
+      return validarPecaELocal && !model.idLocalEstoque;
+    }
+
+    if (campo === 'quantidadeAtual') {
+      return this.quantidadeObrigatoriaInvalida(model.quantidadeAtual, true);
+    }
+
+    if (campo === 'quantidadeReservada') {
+      return this.quantidadeObrigatoriaInvalida(model.quantidadeReservada, true);
+    }
+
+    if (campo === 'estoqueMinimo') {
+      return this.quantidadeObrigatoriaInvalida(model.estoqueMinimo, true);
+    }
+
+    if (campo === 'estoqueCritico') {
+      return this.quantidadeObrigatoriaInvalida(model.estoqueCritico, true);
+    }
+
+    return false;
+  }
+
+  identificacaoEstoquePendente(model: Partial<EstoquePeca>, validarPecaELocal = true): boolean {
+    return this.estoqueCampoInvalido(model, 'idPeca', validarPecaELocal) ||
+      this.estoqueCampoInvalido(model, 'idLocalEstoque', validarPecaELocal);
+  }
+
+  quantidadesEstoquePendentes(model: Partial<EstoquePeca>): boolean {
+    return this.estoqueCampoInvalido(model, 'quantidadeAtual', false) ||
+      this.estoqueCampoInvalido(model, 'quantidadeReservada', false) ||
+      this.estoqueCampoInvalido(model, 'estoqueMinimo', false) ||
+      this.estoqueCampoInvalido(model, 'estoqueCritico', false) ||
+      this.validarRegrasNumericasEstoque(model) !== null;
+  }
+
+  reposicaoEstoquePendente(model: Partial<EstoquePeca>): boolean {
+    return this.validarReposicaoEstoque(model) !== null;
+  }
+
+  private ajustarPaginaAtual(): void {
+    if (this.paginaAtual > this.totalPaginas) {
+      this.paginaAtual = this.totalPaginas;
+    }
+
+    if (this.paginaAtual < 1) {
+      this.paginaAtual = 1;
+    }
+  }
+
+  private ordenarEstoques(lista: EstoquePeca[]): EstoquePeca[] {
+    return [...lista].sort((a, b) => {
+      const valorA = this.valorOrdenacao(a, this.colunaOrdenacao);
+      const valorB = this.valorOrdenacao(b, this.colunaOrdenacao);
+      const multiplicador = this.direcaoOrdenacao === 'asc' ? 1 : -1;
+
+      if (typeof valorA === 'number' && typeof valorB === 'number') {
+        return (valorA - valorB) * multiplicador;
+      }
+
+      return String(valorA).localeCompare(String(valorB), 'pt-BR') * multiplicador;
+    });
+  }
+
+  private valorOrdenacao(item: EstoquePeca, coluna: ColunaOrdenacaoEstoque): string | number {
+    if (coluna === 'quantidadeAtual' || coluna === 'quantidadeReservada' || coluna === 'estoqueMinimo' || coluna === 'custoMedio') {
+      return Number(this.converterQuantidadeParaBackend((item as any)[coluna])) || 0;
+    }
+
+    return this.normalizarTexto((item as any)[coluna]);
+  }
+
+  private calcularProgressoEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean): number {
+    const verificacoes = [
+      !this.estoqueCampoInvalido(model, 'idPeca', validarPecaELocal),
+      !this.estoqueCampoInvalido(model, 'idLocalEstoque', validarPecaELocal),
+      !this.estoqueCampoInvalido(model, 'quantidadeAtual', false),
+      !this.estoqueCampoInvalido(model, 'quantidadeReservada', false),
+      !this.estoqueCampoInvalido(model, 'estoqueMinimo', false),
+      !this.estoqueCampoInvalido(model, 'estoqueCritico', false),
+      !this.validarRegrasNumericasEstoque(model),
+      !this.validarReposicaoEstoque(model)
+    ];
+
+    const concluidos = verificacoes.filter(Boolean).length;
+
+    return Math.round((concluidos / verificacoes.length) * 100);
+  }
+
 
   trackByEstoque = (_: number, item: EstoquePeca) => item.id ?? item.idPeca ?? _;
   trackByPeca = (_: number, item: PecaResumo) => item.id ?? item.nome;
@@ -215,6 +556,9 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   // ======================================================
 
   abrirModalCadastro(): void {
+    this.abaCadastroEstoque = 'identificacao';
+    this.mensagemErroModal = '';
+
     this.novoEstoque = {
       idPeca: undefined,
       nomePeca: '',
@@ -256,7 +600,8 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
     const erroValidacao = this.validarEstoque(this.novoEstoque, true);
 
     if (erroValidacao) {
-      alert(erroValidacao);
+      this.mensagemErroModal = erroValidacao;
+      this.direcionarAbaErroEstoque(this.novoEstoque, true, 'cadastro');
       return;
     }
 
@@ -271,17 +616,17 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
       error: (erro) => {
         console.error('Erro ao cadastrar controle de estoque:', erro);
 
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao cadastrar controle de estoque.'
-          )
+        this.mensagemErroModal = this.extrairMensagemErro(
+          erro,
+          'Erro ao cadastrar controle de estoque.'
         );
       }
     });
   }
 
   abrirModalEdicao(item: EstoquePeca): void {
+    this.abaEdicaoEstoque = 'quantidades';
+    this.mensagemErroModal = '';
     this.editId = item.id ?? null;
 
     this.edit = {
@@ -315,7 +660,8 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
     const erroValidacao = this.validarEstoque(this.edit, false);
 
     if (erroValidacao) {
-      alert(erroValidacao);
+      this.mensagemErroModal = erroValidacao;
+      this.direcionarAbaErroEstoque(this.edit, false, 'edicao');
       return;
     }
 
@@ -330,11 +676,9 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
       error: (erro) => {
         console.error('Erro ao atualizar controle de estoque:', erro);
 
-        alert(
-          this.extrairMensagemErro(
-            erro,
-            'Erro ao atualizar controle de estoque.'
-          )
+        this.mensagemErroModal = this.extrairMensagemErro(
+          erro,
+          'Erro ao atualizar controle de estoque.'
         );
       }
     });
@@ -342,13 +686,45 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
   private validarEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean): string | null {
     if (validarPecaELocal && !model.idPeca) {
-      return 'Selecione uma peça.';
+      return 'Selecione uma peça ou insumo para controlar o estoque.';
     }
 
     if (validarPecaELocal && !model.idLocalEstoque) {
-      return 'Selecione um local de estoque.';
+      return 'Selecione o local de estoque.';
     }
 
+    if (this.quantidadeObrigatoriaInvalida(model.quantidadeAtual, true)) {
+      return 'Informe a quantidade atual com valor igual ou maior que zero.';
+    }
+
+    if (this.quantidadeObrigatoriaInvalida(model.quantidadeReservada, true)) {
+      return 'Informe a quantidade reservada com valor igual ou maior que zero.';
+    }
+
+    if (this.quantidadeObrigatoriaInvalida(model.estoqueMinimo, true)) {
+      return 'Informe o estoque mínimo com valor igual ou maior que zero.';
+    }
+
+    if (this.quantidadeObrigatoriaInvalida(model.estoqueCritico, true)) {
+      return 'Informe o estoque crítico com valor igual ou maior que zero.';
+    }
+
+    const erroNumerico = this.validarRegrasNumericasEstoque(model);
+
+    if (erroNumerico) {
+      return erroNumerico;
+    }
+
+    const erroReposicao = this.validarReposicaoEstoque(model);
+
+    if (erroReposicao) {
+      return erroReposicao;
+    }
+
+    return null;
+  }
+
+  private validarRegrasNumericasEstoque(model: Partial<EstoquePeca>): string | null {
     const atual = Number(this.converterQuantidadeParaBackend(model.quantidadeAtual));
     const reservada = Number(this.converterQuantidadeParaBackend(model.quantidadeReservada));
     const minimo = Number(this.converterQuantidadeParaBackend(model.estoqueMinimo));
@@ -360,6 +736,10 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
     if (Number.isNaN(reservada) || reservada < 0) {
       return 'A quantidade reservada não pode ser negativa.';
+    }
+
+    if (reservada > atual) {
+      return 'A quantidade reservada não pode ser maior que a quantidade atual.';
     }
 
     if (Number.isNaN(minimo) || minimo < 0) {
@@ -374,6 +754,12 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
       return 'O estoque crítico não pode ser maior que o estoque mínimo.';
     }
 
+    return null;
+  }
+
+  private validarReposicaoEstoque(model: Partial<EstoquePeca>): string | null {
+    const minimo = Number(this.converterQuantidadeParaBackend(model.estoqueMinimo));
+
     if (model.estoqueMaximo !== null && model.estoqueMaximo !== undefined && String(model.estoqueMaximo).trim() !== '') {
       const maximo = Number(this.converterQuantidadeParaBackend(model.estoqueMaximo));
 
@@ -382,7 +768,55 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
       }
     }
 
+    if (model.pontoReposicao !== null && model.pontoReposicao !== undefined && String(model.pontoReposicao).trim() !== '') {
+      const pontoReposicao = Number(this.converterQuantidadeParaBackend(model.pontoReposicao));
+
+      if (Number.isNaN(pontoReposicao) || pontoReposicao < 0) {
+        return 'O ponto de reposição não pode ser negativo.';
+      }
+    }
+
+    if (model.quantidadeReposicaoSugerida !== null && model.quantidadeReposicaoSugerida !== undefined && String(model.quantidadeReposicaoSugerida).trim() !== '') {
+      const reposicao = Number(this.converterQuantidadeParaBackend(model.quantidadeReposicaoSugerida));
+
+      if (Number.isNaN(reposicao) || reposicao < 0) {
+        return 'A quantidade de reposição sugerida não pode ser negativa.';
+      }
+    }
+
     return null;
+  }
+
+  private quantidadeObrigatoriaInvalida(valor: any, permitirZero: boolean): boolean {
+    if (valor === null || valor === undefined || String(valor).trim() === '') {
+      return true;
+    }
+
+    const numero = Number(this.converterQuantidadeParaBackend(valor));
+
+    if (Number.isNaN(numero)) {
+      return true;
+    }
+
+    return permitirZero ? numero < 0 : numero <= 0;
+  }
+
+  private direcionarAbaErroEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean, modo: 'cadastro' | 'edicao'): void {
+    let aba: AbaEstoque = 'identificacao';
+
+    if (this.identificacaoEstoquePendente(model, validarPecaELocal)) {
+      aba = 'identificacao';
+    } else if (this.quantidadesEstoquePendentes(model)) {
+      aba = 'quantidades';
+    } else if (this.reposicaoEstoquePendente(model)) {
+      aba = 'reposicao';
+    }
+
+    if (modo === 'cadastro') {
+      this.abaCadastroEstoque = aba;
+    } else {
+      this.abaEdicaoEstoque = aba;
+    }
   }
 
   private montarPayloadEstoque(model: Partial<EstoquePeca>): EstoquePecaRequest {
@@ -415,18 +849,30 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
   abrirModalPeca(modo: ModoSelecaoPeca): void {
     this.modoSelecaoPeca = modo;
+    this.origemModalPeca = modo;
     this.filtroPeca = '';
     this.aplicarFiltroPeca();
 
-    const el = document.getElementById('modalSelecionarPecaEstoque');
-
-    if (!el) {
-      console.error('Modal modalSelecionarPecaEstoque não encontrado.');
-      return;
+    if (modo === 'cadastro') {
+      this.modalCadastro?.hide();
+    } else {
+      this.modalEdicao?.hide();
     }
 
-    this.modalPeca = bootstrap.Modal.getOrCreateInstance(el);
-    this.modalPeca.show();
+    setTimeout(() => {
+      const el = document.getElementById('modalSelecionarPecaEstoque');
+
+      if (!el) {
+        console.error('Modal modalSelecionarPecaEstoque não encontrado.');
+        return;
+      }
+
+      this.modalPeca = bootstrap.Modal.getOrCreateInstance(el, {
+        backdrop: 'static',
+        keyboard: false
+      });
+      this.modalPeca.show();
+    }, 250);
   }
 
   aplicarFiltroPeca(): void {
@@ -463,7 +909,41 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
     target.modeloPeca = peca.modelo;
     target.unidadePeca = peca.unidade;
 
+    this.fecharModalPeca(true);
+  }
+
+  fecharModalPeca(reabrirOrigem = true): void {
     this.modalPeca?.hide();
+
+    if (!reabrirOrigem || !this.origemModalPeca) {
+      this.origemModalPeca = null;
+      return;
+    }
+
+    const origem = this.origemModalPeca;
+    this.origemModalPeca = null;
+
+    setTimeout(() => {
+      const modalId = origem === 'cadastro'
+        ? 'modalCadastroEstoquePeca'
+        : 'modalEdicaoEstoquePeca';
+
+      const el = document.getElementById(modalId);
+
+      if (!el) {
+        return;
+      }
+
+      const modal = bootstrap.Modal.getOrCreateInstance(el);
+
+      if (origem === 'cadastro') {
+        this.modalCadastro = modal;
+      } else {
+        this.modalEdicao = modal;
+      }
+
+      modal.show();
+    }, 250);
   }
 
   pecaTexto(model: Partial<EstoquePeca>): string {
@@ -535,6 +1015,11 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   atualizarNomeLocalCadastro(): void {
     const local = this.locais.find(l => l.id === Number(this.novoEstoque.idLocalEstoque));
     this.novoEstoque.nomeLocalEstoque = local?.nome ?? '';
+  }
+
+  atualizarNomeLocalEdicao(): void {
+    const local = this.locais.find(l => l.id === Number(this.edit.idLocalEstoque));
+    this.edit.nomeLocalEstoque = local?.nome ?? this.edit.nomeLocalEstoque ?? '';
   }
 
   // ======================================================
@@ -1109,6 +1594,20 @@ motivoPadraoMovimentacao(): string {
       .map(parte => parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase())
       .join(' ');
   }
+
+  normalizarTexto(valor: any): string {
+    return (valor ?? '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private onlyDigits(valor: any): string {
+    return (valor ?? '').toString().replace(/\D/g, '');
+  }
+
 
   voltar(): void {
     this.location.back();

@@ -53,13 +53,13 @@ export class ExibeFornecimentoPecasService {
   }
 
   listarTodosFornecimentos(): Observable<FornecimentoPeca[]> {
-    return this.http.get<any[]>(
+    return this.http.get<any>(
       this.baseUrl,
       {
         withCredentials: true
       }
     ).pipe(
-      map(lista => (lista || []).map(item => this.fromApi(item))),
+      map(resposta => this.extrairLista(resposta).map(item => this.fromApi(item))),
       catchError(err => {
         console.error('Falha ao listar fornecimentos de peças:', err);
         return throwError(() => err);
@@ -140,40 +140,74 @@ export class ExibeFornecimentoPecasService {
       id: d.id,
 
       fornecedor: {
-        id: fornecedorApi.id ?? d.idFornecedor ?? d.id_fornecedor ?? 0,
+        id: fornecedorApi.id ?? d.idFornecedor ?? d.id_fornecedor ?? d.fornecedorId ?? d.fornecedor_id ?? 0,
         razaoSocial:
           fornecedorApi.razaoSocial ??
+          fornecedorApi.razao_social ??
           d.razaoSocialFornecedor ??
+          d.razao_social_fornecedor ??
           d.fornecedorRazaoSocial ??
           '',
         cnpj:
           fornecedorApi.cnpj ??
           d.cnpjFornecedor ??
+          d.cnpj_fornecedor ??
           ''
       },
 
       peca: {
-        id: pecaApi.id ?? d.idPeca ?? d.id_peca ?? 0,
+        id: pecaApi.id ?? d.idPeca ?? d.id_peca ?? d.pecaId ?? d.peca_id ?? 0,
         nome:
           pecaApi.nome ??
           d.nomePeca ??
+          d.nome_peca ??
           d.pecaNome ??
           '',
         fabricante:
           pecaApi.fabricante ??
           d.fabricantePeca ??
+          d.fabricante_peca ??
           '',
         modelo:
           pecaApi.modelo ??
           d.modeloPeca ??
+          d.modelo_peca ??
           ''
       },
 
-      valorCusto: d.valorCusto ?? d.valor_custo ?? '',
-      prazoEntregaDias: d.prazoEntregaDias ?? d.prazo_entrega_dias ?? '',
-      quantidadeMinima: d.quantidadeMinima ?? d.quantidade_minima ?? '',
+      valorCusto:
+        d.valorCusto ??
+        d.valor_custo ??
+        d.valorUnitario ??
+        d.valor_unitario ??
+        d.custoUnitario ??
+        d.custo_unitario ??
+        d.precoUnitario ??
+        d.preco_unitario ??
+        '',
+
+      prazoEntregaDias:
+        d.prazoEntregaDias ??
+        d.prazo_entrega_dias ??
+        d.prazoDias ??
+        d.prazo_dias ??
+        '',
+
+      quantidadeMinima:
+        d.quantidadeMinima ??
+        d.quantidade_minima ??
+        d.qtdMinima ??
+        d.qtd_minima ??
+        '',
+
       ativo: this.normalizarAtivo(d.ativo),
-      dataCadastro: d.dataCadastro ?? d.data_cadastro ?? ''
+
+      dataCadastro:
+        d.dataCadastro ??
+        d.data_cadastro ??
+        d.criadoEm ??
+        d.criado_em ??
+        ''
     };
   }
 
@@ -209,12 +243,32 @@ export class ExibeFornecimentoPecasService {
     }
 
     Object.keys(out).forEach(key => {
-      if (out[key] === undefined) {
+      if (out[key] === undefined || out[key] === null || out[key] === '') {
         delete out[key];
       }
     });
 
     return out;
+  }
+
+  private extrairLista(resposta: any): any[] {
+    if (Array.isArray(resposta)) {
+      return resposta;
+    }
+
+    if (Array.isArray(resposta?.content)) {
+      return resposta.content;
+    }
+
+    if (Array.isArray(resposta?.dados)) {
+      return resposta.dados;
+    }
+
+    if (Array.isArray(resposta?.data)) {
+      return resposta.data;
+    }
+
+    return [];
   }
 
   private normalizarAtivo(valor: any): boolean {

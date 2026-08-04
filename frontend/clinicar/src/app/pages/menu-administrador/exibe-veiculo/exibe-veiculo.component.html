@@ -1,700 +1,1127 @@
-<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid mt-0 mb-0 veiculos-page" style="color:#35689b; max-height: 82vh;">
   <div class="row justify-content-center">
     <div class="col-md-12 mt-sm-0">
-      <!-- Título / Cabeçalho -->
+
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">
+          <div class="card page-title-card">
+            <div class="card-body">
               <i class="bi bi-car-front me-1"></i>
               Gerenciamento de Veículos
             </div>
           </div>
         </div>
       </div>
-      <div class="card clinicar-card" style="border-color:#d0e2f2; border-radius:10px;">
-        <div class="card-body p-2">
-          <!-- Toolbar -->
-          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-            <div class="input-group" style="max-width:42vw; color:#35689b;">
-              <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
-                Buscar
-              </span>
-              <label for="filtro-veiculos" class="visually-hidden">Buscar veículos</label>
-              <input #q
-                id="filtro-veiculos"
-                type="search"
-                class="form-control"
-                style="color:#35689b;"
-                placeholder="Placa, Montadora, Modelo, Cor"
-                (input)="filtrar(q.value)"
-              />
-              <div class="text-muted small input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
-                <span style="color:#35689b;">
-                  Total de registros: {{ veiculos.length }}
-                </span>
-              </div>
-            </div>
-            <div class="d-flex gap-2">
-              <button
-                class="btn btn-outline-success btn-sm"
-                type="button"
-                (click)="abrirModalCadastroVeiculo()">
-                <i class="bi-plus-lg"></i>
-                Novo Veículo
-              </button>
-              <button class="btn btn-outline-secondary btn-sm" type="button" (click)="voltar()">
-                <i class="bi bi-arrow-left me-1"></i>
-                Voltar
-              </button>
-              <button class="btn btn-outline-primary btn-sm" type="button" (click)="recarregar()">
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                Atualizar
-              </button>
+
+      <div class="row g-2 mb-2 summary-row">
+        <div class="col-md-3">
+          <div class="summary-card">
+            <div class="summary-icon summary-icon-primary"><i class="bi bi-car-front"></i></div>
+            <div>
+              <div class="summary-label">Total</div>
+              <div class="summary-value">{{ totalVeiculos }}</div>
             </div>
           </div>
-          <!-- Estados globais -->
-          <div *ngIf="loading" class="alert alert-info py-2">Carregando veículos…</div>
-          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
-          <!-- Tabela -->
-          <div class="table-responsive">
-            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th>Placa</th>
-                  <th>Fabricante</th>
-                  <th>Modelo</th>
-                  <th>Cor</th>
-                  <th>Ano-modelo | Combustível</th>
-                  <th>CPF Proprietário</th>
-                  <th>Nome Proprietário</th>
-                  <th class="text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let v of veiculos; trackBy: trackByVeiculo">
-                  <td>{{ formatarPlaca(v.placa) }}</td>
-                  <td>{{ formatarFabricante(v.fabricante) }}</td>
-                  <td>{{ capitalizar(v.modelo) }}</td>
-                  <td>{{ v.cor }}</td>
-                  <td>{{ v.anoModeloCombustivel }}</td>
-                  <td>{{ proprietarioCpf(v) }}</td>
-                  <td>{{ proprietarioNome(v) }}</td>
-                  <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary me-1"
-                      type="button"
-                      title="Editar veículo"
-                      (click)="abrirModalEdicao(v)"
-                    >
-                      <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button
-                      class="btn btn-sm btn-outline-warning"
-                      type="button"
-                      title="Excluir veículo"
-                      (click)="excluir(v.id)"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                <!-- Sem dados -->
-                <tr *ngIf="!veiculos || veiculos.length === 0">
-                  <td colspan="7" class="text-center text-muted py-4">
-                    Nenhum veículo encontrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        </div>
+
+        <div class="col-md-3">
+          <div class="summary-card">
+            <div class="summary-icon summary-icon-success"><i class="bi bi-person-check"></i></div>
+            <div>
+              <div class="summary-label">Com proprietário</div>
+              <div class="summary-value">{{ totalComProprietario }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="summary-card">
+            <div class="summary-icon summary-icon-secondary"><i class="bi bi-person-dash"></i></div>
+            <div>
+              <div class="summary-label">Sem proprietário</div>
+              <div class="summary-value">{{ totalSemProprietario }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="summary-card">
+            <div class="summary-icon summary-icon-whatsapp"><i class="bi bi-whatsapp"></i></div>
+            <div>
+              <div class="summary-label">WhatsApp válido</div>
+              <div class="summary-value">{{ totalWhatsappValido }}</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-  <!-- Modal de edição do veículo -->
-  <div class="modal fade" id="modalEdicaoVeiculo" tabindex="-1" aria-labelledby="modalEdicaoVeiculoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content" style="color:#35689b;">
-        <div class="modal-header" style="background:#eef6ff;">
-          <h5 class="modal-title" id="modalEdicaoVeiculoLabel">
-            <i class="bi bi-car-front me-1"></i>
-            Editar Veículo
-          </h5>
-          <button type="button"class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-2">
-            <h6 class="modal-section-title">
-              <i class="bi bi-car-front me-1"></i>
-              Dados do veículo
-            </h6>
-            <!-- Placa -->
-            <div class="col-md-1">
-              <label for="edit-placa" class="form-label">Placa</label>
-              <input id="edit-placa"
-                name="edit-placa"
-                class="form-control form-control-sm"
-                [(ngModel)]="edit.placa"
-                (blur)="formatarPlaca(edit.placa)"
-                style="color:#35689b;"
-                autocomplete="off"
-              />
-            </div>
-            <!-- Montadora / Fabricante -->
-            <div class="col-md-2">
-              <label for="edit-fabricante" class="form-label">Fabricante</label>
-              <select id="edit-fabricante"
-                name="edit-fabricante"
-                class="form-select form-select-sm"
-                [(ngModel)]="marcaSelCode"
-                (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
-                (ngModelChange)="onChangeMarca($event)"
-                style="color:#35689b;"
-              >
-                <option value="">
-                  {{ edit.fabricante ? formatarFabricante(edit.fabricante) : 'Selecione um fabricante...' }}
-                </option>
-                <option
-                  *ngFor="let m of marcas; trackBy: trackByBrand"
-                  [ngValue]="m.code"
-                  style="color:#35689b;"
-                >
-                  {{ formatarFabricante(m.name) }}
-                </option>
-              </select>
-            </div>
-            <!-- Modelo -->
-            <div class="col-md-4">
-              <label for="edit-modelo" class="form-label">Modelo</label>
-              <select id="edit-modelo"
-                name="edit-modelo"
-                class="form-select form-select-sm"
-                [(ngModel)]="modeloSelCode"
-                (ngModelChange)="onChangeModelo($event)"
-                [disabled]="!marcaSelCode || fipeCarregando.modelos"
-                style="color:#35689b;"
-              >
-                <option value="">
-                  {{ edit.modelo ? capitalizar(edit.modelo) : 'Selecione um modelo...' }}
-                </option>
-                <option
-                  *ngFor="let modelo of modelos; trackBy: trackByModel"
-                  [value]="modelo.code"
-                  style="color:#35689b;"
-                >
-                  {{ capitalizar(modelo.name) }}
-                </option>
-              </select>
-              <div class="text-muted small mt-1" *ngIf="fipeCarregando.modelos">
-                Carregando modelos da montadora...
-              </div>
-            </div>
-            <!-- Cor -->
-            <div class="col-md-2">
-              <label for="edit-cor" class="form-label">Cor</label>
-              <input id="edit-cor"
-                name="edit-cor"
-                class="form-control form-control-sm"
-                [(ngModel)]="edit.cor"
-                style="color:#35689b;"
-                autocomplete="off"
-              />
-            </div>
-            <!-- Ano / Modelo / Combustível -->
-            <div class="col-md-3">
-              <label for="edit-ano-modelo-combustivel" class="form-label">
-                Ano-modelo | Combustível
-              </label>
-              <select id="edit-ano-modelo-combustivel"
-                name="edit-ano-modelo-combustivel"
-                class="form-select form-select-sm"
-                [(ngModel)]="anoSelCode"
-                (ngModelChange)="onChangeAnoModeloCombustivel($event)"
-                [disabled]="!modeloSelCode || fipeCarregando.anos"
-                style="color:#35689b;"
-              >
-                <option
-                  *ngFor="let ano of anos; trackBy: trackByYear"
-                  [value]="ano.code.replace(' ', ' | ')"
-                  style="color:#35689b;"
-                >
-                  {{ ano.name.replace(' ', ' | ') }}
-                </option>
-              </select>
-              <div class="text-muted small mt-1" *ngIf="fipeCarregando.anos">
-                Carregando anos-modelo | combustíveis...
-              </div>
-            </div>
-            <h6 class="modal-section-title">
-              <i class="bi bi-person-vcard me-1"></i>
-              Proprietário
-            </h6>
-            <!-- CPF do proprietário -->
-            <div class="col-md-2">
-              <label class="form-label" for="cpfProprietario">CPF do proprietário</label>
-              <div class="input-group input-group-sm">
+
+      <div class="card clinicar-card veiculos-list-card">
+        <div class="card-body veiculos-list-body">
+
+          <div class="row g-2 align-items-end mb-2 toolbar-filters">
+            <div class="col-lg-3 col-md-12">
+              <label class="form-label fw-semibold">Buscar</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input
-                  id="cpfProprietario"
+                  type="search"
                   class="form-control"
-                  [value]="cpfProprietarioSelecionadoModal()"
-                  placeholder="Selecione um proprietário"
-                  readonly
-                  style="color:#35689b; cursor:pointer;"
-                  (click)="abrirModalSelecaoProprietario()"
+                  placeholder="Placa, fabricante, modelo, cor, proprietário..."
+                  [(ngModel)]="filtro"
+                  (ngModelChange)="aoAlterarFiltros()"
+                  autocomplete="off"
                 />
-                <button
+              </div>
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+              <label class="form-label fw-semibold">Fabricante</label>
+              <select
+                class="form-select"
+                [(ngModel)]="filtroFabricante"
+                (ngModelChange)="aoAlterarFiltros()"
+              >
+                <option value="">Todos</option>
+                <option *ngFor="let fabricante of fabricantesFiltro" [value]="fabricante">
+                  {{ fabricante }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+              <label class="form-label fw-semibold">Proprietário</label>
+              <select
+                class="form-select"
+                [(ngModel)]="filtroProprietario"
+                (ngModelChange)="aoAlterarFiltros()"
+              >
+                <option value="">Todos</option>
+                <option value="com">Com proprietário</option>
+                <option value="sem">Sem proprietário</option>
+                <option value="whatsapp">WhatsApp válido</option>
+              </select>
+            </div>
+            <div class="col-lg-1 col-md-6">
+                              <button
+                  class="btn btn-outline-secondary"
                   type="button"
-                  class="btn btn-outline-primary d-flex align-items-center justify-content-center"
-                  style="border-color:#d0e2f2;color:#35689b;"
-                  title="Selecionar proprietário"
-                  (click)="abrirModalSelecaoProprietario()"
+                  [disabled]="!possuiFiltrosAplicados()"
+                  (click)="limparFiltros()"
                 >
-                  <i class="bi bi-search"></i>
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+            </div>
+
+
+
+            <div class="col-lg-4 col-md-12">
+              <div class="toolbar-actions">
+                <button class="btn btn-primary" type="button" (click)="abrirModalCadastroVeiculo()">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Novo Veículo
+                </button>
+
+                <button class="btn btn-outline-primary" type="button" (click)="recarregar()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+
+                <button class="btn btn-outline-secondary" type="button" (click)="voltar()">
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar
                 </button>
               </div>
             </div>
-            <!-- Nome do proprietário -->
-            <div class="col-md-10">
-              <div class="alert alert-primary py-2 mb-0 " style = "border:1px solid #d0e2f2;background:#eef6ff; color:#35689b;">
-                <div class="d-flex justify-content-between align-items-center" style = "color:#35689b;">
-                  <div>
-                    <strong style = "color:#35689b;">{{ nomeProprietarioSelecionadoModal() }}</strong><br>
-                    <small style = "color:#35689b;">
-                      CPF: {{ formatarCPF(proprietarioSelecionadoModal()?.cpf) }}
-                      <span style = "color:#35689b;">
-                        | E-mail: {{ emailProprietarioSelecionadoModal() }}
+          </div>
+
+          <div class="filter-chips" *ngIf="possuiFiltrosAplicados()">
+            <span class="filter-chip" *ngIf="filtro">
+              Busca: {{ filtro }}
+              <button type="button" (click)="filtro = ''; aoAlterarFiltros()"><i class="bi bi-x"></i></button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroFabricante">
+              Fabricante: {{ filtroFabricante }}
+              <button type="button" (click)="filtroFabricante = ''; aoAlterarFiltros()"><i class="bi bi-x"></i></button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroProprietario">
+              Proprietário:
+              {{ filtroProprietario === 'com' ? 'Com proprietário' : filtroProprietario === 'sem' ? 'Sem proprietário' : 'WhatsApp válido' }}
+              <button type="button" (click)="filtroProprietario = ''; aoAlterarFiltros()"><i class="bi bi-x"></i></button>
+            </span>
+          </div>
+
+          <div *ngIf="loading" class="alert alert-info py-2 mb-2">
+            <i class="bi bi-hourglass-split me-1"></i>
+            Carregando veículos...
+          </div>
+
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ errorMsg }}
+          </div>
+
+          <div *ngIf="!loading && mensagemSucesso" class="alert alert-success py-2 mb-2">
+            <i class="bi bi-check-circle me-1"></i>
+            {{ mensagemSucesso }}
+          </div>
+
+          <div class="table-helper" *ngIf="!loading">
+            <span>
+              <i class="bi bi-info-circle me-1"></i>
+              Clique nos cabeçalhos para ordenar. Use os filtros para refinar a consulta.
+            </span>
+            <span>
+              <i class="bi bi-whatsapp me-1"></i>
+              {{ totalWhatsappValido }} proprietário(s) com WhatsApp válido
+            </span>
+          </div>
+
+          <div class="veiculo-table-shell" *ngIf="!loading">
+            <div class="veiculo-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header">
+                <thead>
+                  <tr>
+                    <th scope="col" class="sortable" (click)="ordenarPor('placa')">
+                      Placa <i class="bi ms-1" [ngClass]="iconeOrdenacao('placa')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('fabricante')">
+                      Fabricante <i class="bi ms-1" [ngClass]="iconeOrdenacao('fabricante')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('modelo')">
+                      Modelo <i class="bi ms-1" [ngClass]="iconeOrdenacao('modelo')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('cor')">
+                      Cor <i class="bi ms-1" [ngClass]="iconeOrdenacao('cor')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('anoModeloCombustivel')">
+                      Ano-modelo | Combustível <i class="bi ms-1" [ngClass]="iconeOrdenacao('anoModeloCombustivel')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('proprietario')">
+                      Proprietário <i class="bi ms-1" [ngClass]="iconeOrdenacao('proprietario')"></i>
+                    </th>
+                    <th scope="col">Contato</th>
+                    <th scope="col" class="text-center">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let v of veiculosPaginados; trackBy: trackByVeiculo">
+                    <td>
+                      <div class="fw-semibold">{{ formatarPlaca(v.placa) }}</div>
+                      <small>ID: {{ v.id || '—' }}</small>
+                    </td>
+
+                    <td>{{ formatarFabricante(v.fabricante) }}</td>
+
+                    <td>
+                      <div class="fw-semibold">{{ formatarModeloVeiculo(v.modelo) }}</div>
+                      <small>{{ formatarAnoCombustivel(v.anoModeloCombustivel) || 'Ano/combustível não informado' }}</small>
+                    </td>
+
+                    <td>{{ capitalizar(v.cor) || '—' }}</td>
+
+                    <td>{{ formatarAnoCombustivel(v.anoModeloCombustivel) || '—' }}</td>
+
+                    <td>
+                      <div class="fw-semibold">{{ proprietarioNome(v) }}</div>
+                      <small>{{ proprietarioCpf(v) }}</small>
+                    </td>
+
+                    <td>
+                      <div>{{ proprietarioTelefone(v) }}</div>
+                      <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(v)">
+                        <i class="bi bi-whatsapp me-1"></i>
+                        WhatsApp válido
                       </span>
-                      <span *ngIf="telefoneProprietarioSelecionadoModal" style = "color:#35689b;">
-                        | WhatsApp: {{ formatarTelefone(telefoneProprietarioSelecionadoModal()) }}
+                      <span class="badge badge-soft-secondary" *ngIf="!whatsappValidoDoProprietario(v)">
+                        Sem WhatsApp válido
                       </span>
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary"
-                    (click)="abrirModalSelecaoProprietario('edicao')"
-                    style = "color:#35689b;"
-                  >
-                    <i class="bi bi-person-gear me-1" style = "color:#35689b;"></i>
-                    Trocar
-                  </button>
-                </div>
+                    </td>
+
+                    <td class="text-center">
+                      <div class="table-actions">
+                        <button class="btn btn-sm btn-outline-info" type="button" title="Visualizar" (click)="abrirDetalhes(v)">
+                          <i class="bi bi-eye"></i>
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-primary" type="button" title="Editar veículo" (click)="abrirModalEdicao(v)">
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-danger" type="button" title="Excluir veículo" (click)="abrirConfirmacaoExclusao(v)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="totalRegistrosFiltrados === 0">
+                    <td colspan="8" class="text-center text-muted py-4">
+                      Nenhum veículo encontrado.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+              <div class="pagination-info">
+                Mostrando
+                <strong>{{ indiceInicialPagina }}</strong>
+                a
+                <strong>{{ indiceFinalPagina }}</strong>
+                de
+                <strong>{{ totalRegistrosFiltrados }}</strong>
+                registro(s)
+              </div>
+
+              <div class="pagination-size">
+                <label>Exibir</label>
+                <select
+                  class="form-select form-select-sm"
+                  [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()"
+                >
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+                <span>por página</span>
+              </div>
+
+              <div class="pagination-actions">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1" (click)="paginaAnterior()">
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina"
+                  [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)"
+                >
+                  {{ pagina }}
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas" (click)="proximaPagina()">
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
               </div>
             </div>
           </div>
+
+          <div class="mobile-cards" *ngIf="!loading">
+            <div class="vehicle-mobile-card" *ngFor="let v of veiculosPaginados; trackBy: trackByVeiculo">
+              <div class="d-flex justify-content-between gap-2">
+                <div>
+                  <div class="fw-bold">{{ formatarPlaca(v.placa) }}</div>
+                  <div>{{ formatarModeloVeiculo(v.modelo) }}</div>
+                  <small>{{ formatarFabricante(v.fabricante) }} · {{ capitalizar(v.cor) }}</small>
+                </div>
+                <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(v)">WhatsApp</span>
+              </div>
+
+              <div class="mobile-card-info">
+                <span><strong>Proprietário:</strong> {{ proprietarioNome(v) }}</span>
+                <span><strong>Contato:</strong> {{ proprietarioTelefone(v) }}</span>
+              </div>
+
+              <div class="table-actions mt-2">
+                <button class="btn btn-sm btn-outline-info" type="button" (click)="abrirDetalhes(v)">
+                  <i class="bi bi-eye me-1"></i> Visualizar
+                </button>
+                <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirModalEdicao(v)">
+                  <i class="bi bi-pencil-square me-1"></i> Editar
+                </button>
+                <button class="btn btn-sm btn-outline-danger" type="button" (click)="abrirConfirmacaoExclusao(v)">
+                  <i class="bi bi-trash me-1"></i> Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancelar
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de cadastro de novo veículo -->
+  <div class="modal fade" id="modalCadastroVeiculo" tabindex="-1" aria-labelledby="modalCadastroVeiculoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered veiculo-modal-dialog">
+      <div class="modal-content veiculo-modal-content veiculo-modal-content-auto">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title" id="modalCadastroVeiculoLabel">
+              <i class="bi bi-plus-circle me-1"></i>
+              Novo Veículo
+            </h5>
+            <small>
+              {{ novoVeiculo.modelo || 'Selecione fabricante, modelo e proprietário para concluir o cadastro.' }}
+            </small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body veiculo-modal-body">
+          <div class="veiculo-modal-tabs-area">
+            <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+
+            <div *ngIf="fipeErro" class="alert alert-warning py-2 mb-2">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              {{ fipeErro }}
+            </div>
+
+            <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+              <div class="progress-bar" [style.width.%]="progressoCadastroVeiculo">
+                {{ progressoCadastroVeiculo }}%
+              </div>
+            </div>
+
+            <ul class="nav nav-pills clinicar-tabs">
+              <li class="nav-item">
+                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'veiculo'" (click)="trocarAbaCadastroVeiculo('veiculo')">
+                  <i class="bi bi-car-front me-1"></i>
+                  Dados do veículo
+                  <span class="tab-alert" *ngIf="dadosVeiculoCadastroPendentes()">!</span>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'proprietario'" (click)="trocarAbaCadastroVeiculo('proprietario')">
+                  <i class="bi bi-person-vcard me-1"></i>
+                  Proprietário
+                  <span class="tab-alert" *ngIf="proprietarioCadastroInvalido() || whatsappProprietarioCadastroInvalido()">!</span>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'revisao'" (click)="trocarAbaCadastroVeiculo('revisao')">
+                  <i class="bi bi-clipboard-check me-1"></i>
+                  Revisão
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="veiculo-modal-scroll-area">
+            <ng-container *ngIf="abaCadastroVeiculo === 'veiculo'">
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-car-front me-1"></i>
+                  Identificação e FIPE
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-2">
+                    <label class="form-label">Placa *</label>
+                    <input
+                      class="form-control"
+                      [(ngModel)]="novoVeiculo.placa"
+                      (input)="novoVeiculo.placa = normalizarPlaca(novoVeiculo.placa)"
+                      (blur)="aplicarMascaraPlacaCadastro()"
+                      [class.is-invalid]="placaCadastroInvalida()"
+                      maxlength="8"
+                      placeholder="ABC-1D23"
+                      autocomplete="off"
+                    />
+                    <div class="invalid-feedback d-block" *ngIf="placaCadastroInvalida()">Informe uma placa válida.</div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Fabricante *</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="marcaCadastroSelCode"
+                      (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
+                      (ngModelChange)="onChangeMarcaCadastro($event)"
+                      [class.is-invalid]="fabricanteCadastroInvalido()"
+                    >
+                      <option value="">Selecione...</option>
+                      <option *ngFor="let m of marcas; trackBy: trackByBrand" [value]="m.code">
+                        {{ formatarFabricante(m.name) }}
+                      </option>
+                    </select>
+                    <div class="invalid-feedback d-block" *ngIf="fabricanteCadastroInvalido()">Selecione o fabricante.</div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">Modelo *</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="modeloCadastroSelCode"
+                      (ngModelChange)="onChangeModeloCadastro($event)"
+                      [disabled]="!marcaCadastroSelCode || fipeCarregando.modelos"
+                      [class.is-invalid]="modeloCadastroInvalido()"
+                    >
+                      <option value="">
+                        {{ novoVeiculo.fabricante ? 'Selecione um modelo...' : 'Selecione primeiro o fabricante' }}
+                      </option>
+                      <option *ngFor="let modelo of modelosCadastro; trackBy: trackByModel" [value]="modelo.code">
+                        {{ formatarModeloVeiculo(modelo.name) }}
+                      </option>
+                    </select>
+                    <small class="text-muted" *ngIf="fipeCarregando.modelos">Carregando modelos...</small>
+                    <div class="invalid-feedback d-block" *ngIf="modeloCadastroInvalido()">Selecione o modelo.</div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Ano-modelo | Combustível *</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="anoCadastroSelCode"
+                      (ngModelChange)="onChangeAnoModeloCombustivelCadastro($event)"
+                      [disabled]="!modeloCadastroSelCode || fipeCarregando.anos"
+                      [class.is-invalid]="anoCadastroInvalido()"
+                    >
+                      <option value="">
+                        {{ novoVeiculo.modelo ? 'Selecione...' : 'Selecione primeiro o modelo' }}
+                      </option>
+                      <option *ngFor="let ano of anosCadastro; trackBy: trackByYear" [value]="ano.code">
+                        {{ ano.name.replace(' ', ' | ') }}
+                      </option>
+                    </select>
+                    <small class="text-muted" *ngIf="fipeCarregando.anos">Carregando anos-modelo...</small>
+                    <div class="invalid-feedback d-block" *ngIf="anoCadastroInvalido()">Selecione ano-modelo e combustível.</div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Cor *</label>
+                    <input
+                      class="form-control"
+                      [(ngModel)]="novoVeiculo.cor"
+                      (blur)="normalizarCorCadastro()"
+                      [class.is-invalid]="corCadastroInvalida()"
+                      placeholder="Ex.: Branco"
+                      autocomplete="off"
+                    />
+                    <div class="invalid-feedback d-block" *ngIf="corCadastroInvalida()">Informe a cor.</div>
+                  </div>
+
+                  <div class="col-md-9">
+                    <div class="preview-card">
+                      <div class="preview-title">Prévia do veículo</div>
+                      <div class="preview-main">
+                        {{ formatarPlaca(novoVeiculo.placa) || 'Placa não informada' }} ·
+                        {{ novoVeiculo.fabricante || 'Fabricante não selecionado' }}
+                      </div>
+                      <div class="preview-sub">
+                        {{ novoVeiculo.modelo || 'Modelo não selecionado' }}
+                        <span *ngIf="novoVeiculo.anoModeloCombustivel"> · {{ novoVeiculo.anoModeloCombustivel }}</span>
+                        <span *ngIf="novoVeiculo.cor"> · {{ capitalizar(novoVeiculo.cor) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="abaCadastroVeiculo === 'proprietario'">
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-person-vcard me-1"></i>
+                  Proprietário do veículo
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">CPF do proprietário *</label>
+                    <div class="input-group">
+                      <input
+                        class="form-control"
+                        [value]="cpfProprietarioSelecionadoCadastro()"
+                        placeholder="Selecione um proprietário"
+                        readonly
+                        [class.is-invalid]="proprietarioCadastroInvalido()"
+                        (click)="abrirModalSelecaoProprietario('cadastro')"
+                      />
+                      <button type="button" class="btn btn-outline-primary" (click)="abrirModalSelecaoProprietario('cadastro')">
+                        <i class="bi bi-search"></i>
+                      </button>
+                    </div>
+                    <div class="invalid-feedback d-block" *ngIf="proprietarioCadastroInvalido()">Selecione o proprietário.</div>
+                  </div>
+
+                  <div class="col-md-8">
+                    <div class="owner-card" [class.owner-card-empty]="!proprietarioSelecionadoCadastro()">
+                      <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                        <div>
+                          <div class="owner-name">{{ nomeProprietarioSelecionadoCadastro() || 'Nenhum proprietário selecionado' }}</div>
+                          <div class="owner-meta">
+                            CPF: {{ cpfProprietarioSelecionadoCadastro() || '—' }} ·
+                            E-mail: {{ emailProprietarioSelecionadoCadastro() || '—' }} ·
+                            WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ? formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirModalSelecaoProprietario('cadastro')">
+                          <i class="bi bi-person-gear me-1"></i>
+                          {{ proprietarioSelecionadoCadastro() ? 'Trocar' : 'Selecionar' }}
+                        </button>
+                      </div>
+
+                      <div class="alert alert-warning py-2 mt-2 mb-0" *ngIf="whatsappProprietarioCadastroInvalido()">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        O proprietário selecionado não possui telefone válido para envio da notificação por WhatsApp.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="abaCadastroVeiculo === 'revisao'">
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-clipboard-check me-1"></i>
+                  Revisão antes de salvar
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="review-card">
+                      <div class="review-label">Veículo</div>
+                      <div class="review-main">{{ formatarPlaca(novoVeiculo.placa) || '—' }}</div>
+                      <div>{{ novoVeiculo.fabricante || '—' }}</div>
+                      <div>{{ novoVeiculo.modelo || '—' }}</div>
+                      <div>{{ novoVeiculo.anoModeloCombustivel || '—' }}</div>
+                      <div>Cor: {{ capitalizar(novoVeiculo.cor) || '—' }}</div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="review-card">
+                      <div class="review-label">Proprietário</div>
+                      <div class="review-main">{{ nomeProprietarioSelecionadoCadastro() || '—' }}</div>
+                      <div>CPF: {{ cpfProprietarioSelecionadoCadastro() || '—' }}</div>
+                      <div>E-mail: {{ emailProprietarioSelecionadoCadastro() || '—' }}</div>
+                      <div>WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ? formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <div class="modal-footer modal-footer-totais">
+          <div class="footer-status me-auto">
+            <span class="footer-ok" *ngIf="cadastroVeiculoProntoParaSalvar">
+              <i class="bi bi-check-circle me-1"></i>
+              Cadastro pronto para salvar.
+            </span>
+            <span class="footer-warning" *ngIf="!cadastroVeiculoProntoParaSalvar">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ mensagemBloqueioCadastro }}
+            </span>
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary" *ngIf="abaCadastroVeiculo !== 'veiculo'" (click)="abaAnteriorCadastroVeiculo()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
           </button>
-          <button type="button" class="btn btn-primary" (click)="salvarEdicaoModal()">
-            Salvar
+
+          <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroVeiculo !== 'revisao'" (click)="proximaAbaCadastroVeiculo()">
+            Próximo
+            <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!cadastroVeiculoProntoParaSalvar"
+            [title]="mensagemBloqueioCadastro || 'Salvar veículo'"
+            (click)="salvarCadastroVeiculo()"
+          >
+            <i class="bi bi-check-circle me-1"></i>
+            Salvar veículo
           </button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Modal de edição do veículo -->
+  <div class="modal fade" id="modalEdicaoVeiculo" tabindex="-1" aria-labelledby="modalEdicaoVeiculoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered veiculo-modal-dialog">
+      <div class="modal-content veiculo-modal-content veiculo-modal-content-auto">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title" id="modalEdicaoVeiculoLabel">
+              <i class="bi bi-pencil-square me-1"></i>
+              Editar Veículo
+            </h5>
+            <small>
+              ID #{{ editId || '—' }} · {{ formatarPlaca(edit.placa) || 'Placa não informada' }} · {{ edit.modelo || 'Modelo não informado' }}
+            </small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body veiculo-modal-body">
+          <div class="veiculo-modal-tabs-area">
+            <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+
+            <div *ngIf="fipeErro" class="alert alert-warning py-2 mb-2">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              {{ fipeErro }}
+            </div>
+
+            <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+              <div class="progress-bar" [style.width.%]="progressoEdicaoVeiculo">
+                {{ progressoEdicaoVeiculo }}%
+              </div>
+            </div>
+
+            <ul class="nav nav-pills clinicar-tabs">
+              <li class="nav-item">
+                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'veiculo'" (click)="trocarAbaEdicaoVeiculo('veiculo')">
+                  <i class="bi bi-car-front me-1"></i>
+                  Dados do veículo
+                  <span class="tab-alert" *ngIf="dadosVeiculoEdicaoPendentes()">!</span>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'proprietario'" (click)="trocarAbaEdicaoVeiculo('proprietario')">
+                  <i class="bi bi-person-vcard me-1"></i>
+                  Proprietário
+                  <span class="tab-alert" *ngIf="proprietarioEdicaoInvalido() || whatsappProprietarioEdicaoInvalido()">!</span>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'revisao'" (click)="trocarAbaEdicaoVeiculo('revisao')">
+                  <i class="bi bi-clipboard-check me-1"></i>
+                  Revisão
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="veiculo-modal-scroll-area">
+            <ng-container *ngIf="abaEdicaoVeiculo === 'veiculo'">
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-car-front me-1"></i>
+                  Dados do veículo
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-2">
+                    <label class="form-label">Placa *</label>
+                    <input
+                      class="form-control"
+                      [(ngModel)]="edit.placa"
+                      (input)="edit.placa = normalizarPlaca(edit.placa)"
+                      (blur)="aplicarMascaraPlacaEdicao()"
+                      [class.is-invalid]="placaEdicaoInvalida()"
+                      maxlength="8"
+                      autocomplete="off"
+                    />
+                    <div class="invalid-feedback d-block" *ngIf="placaEdicaoInvalida()">Informe uma placa válida.</div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Fabricante *</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="marcaSelCode"
+                      (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
+                      (ngModelChange)="onChangeMarca($event)"
+                      [class.is-invalid]="fabricanteEdicaoInvalido()"
+                    >
+                      <option value="">{{ edit.fabricante ? formatarFabricante(edit.fabricante) : 'Selecione...' }}</option>
+                      <option *ngFor="let m of marcas; trackBy: trackByBrand" [value]="m.code">
+                        {{ formatarFabricante(m.name) }}
+                      </option>
+                    </select>
+                    <div class="invalid-feedback d-block" *ngIf="fabricanteEdicaoInvalido()">Selecione o fabricante.</div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">Modelo *</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="modeloSelCode"
+                      (ngModelChange)="onChangeModelo($event)"
+                      [disabled]="!marcaSelCode || fipeCarregando.modelos"
+                      [class.is-invalid]="modeloEdicaoInvalido()"
+                    >
+                      <option value="">{{ edit.modelo ? formatarModeloVeiculo(edit.modelo) : 'Selecione um modelo...' }}</option>
+                      <option *ngFor="let modelo of modelos; trackBy: trackByModel" [value]="modelo.code">
+                        {{ formatarModeloVeiculo(modelo.name) }}
+                      </option>
+                    </select>
+                    <small class="text-muted" *ngIf="fipeCarregando.modelos">Carregando modelos...</small>
+                    <div class="invalid-feedback d-block" *ngIf="modeloEdicaoInvalido()">Selecione o modelo.</div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Ano-modelo | Combustível *</label>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="anoSelCode"
+                      (ngModelChange)="onChangeAnoModeloCombustivel($event)"
+                      [disabled]="!modeloSelCode || fipeCarregando.anos"
+                      [class.is-invalid]="anoEdicaoInvalido()"
+                    >
+                      <option value="">{{ edit.anoModeloCombustivel || 'Selecione...' }}</option>
+                      <option *ngFor="let ano of anos; trackBy: trackByYear" [value]="ano.code">
+                        {{ ano.name.replace(' ', ' | ') }}
+                      </option>
+                    </select>
+                    <small class="text-muted" *ngIf="fipeCarregando.anos">Carregando anos-modelo...</small>
+                    <div class="invalid-feedback d-block" *ngIf="anoEdicaoInvalido()">Selecione ano-modelo e combustível.</div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Cor *</label>
+                    <input
+                      class="form-control"
+                      [(ngModel)]="edit.cor"
+                      (blur)="normalizarCorEdicao()"
+                      [class.is-invalid]="corEdicaoInvalida()"
+                      autocomplete="off"
+                    />
+                    <div class="invalid-feedback d-block" *ngIf="corEdicaoInvalida()">Informe a cor.</div>
+                  </div>
+
+                  <div class="col-md-9">
+                    <div class="preview-card">
+                      <div class="preview-title">Prévia do veículo</div>
+                      <div class="preview-main">
+                        {{ formatarPlaca(edit.placa) || 'Placa não informada' }} ·
+                        {{ edit.fabricante || 'Fabricante não selecionado' }}
+                      </div>
+                      <div class="preview-sub">
+                        {{ edit.modelo || 'Modelo não selecionado' }}
+                        <span *ngIf="edit.anoModeloCombustivel"> · {{ edit.anoModeloCombustivel }}</span>
+                        <span *ngIf="edit.cor"> · {{ capitalizar(edit.cor) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="abaEdicaoVeiculo === 'proprietario'">
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-person-vcard me-1"></i>
+                  Proprietário
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">CPF do proprietário *</label>
+                    <div class="input-group">
+                      <input
+                        class="form-control"
+                        [value]="cpfProprietarioSelecionadoModal()"
+                        placeholder="Selecione um proprietário"
+                        readonly
+                        [class.is-invalid]="proprietarioEdicaoInvalido()"
+                        (click)="abrirModalSelecaoProprietario('edicao')"
+                      />
+                      <button type="button" class="btn btn-outline-primary" (click)="abrirModalSelecaoProprietario('edicao')">
+                        <i class="bi bi-search"></i>
+                      </button>
+                    </div>
+                    <div class="invalid-feedback d-block" *ngIf="proprietarioEdicaoInvalido()">Selecione o proprietário.</div>
+                  </div>
+
+                  <div class="col-md-8">
+                    <div class="owner-card" [class.owner-card-empty]="!proprietarioSelecionadoModal()">
+                      <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                        <div>
+                          <div class="owner-name">{{ nomeProprietarioSelecionadoModal() || 'Nenhum proprietário selecionado' }}</div>
+                          <div class="owner-meta">
+                            CPF: {{ cpfProprietarioSelecionadoModal() || '—' }} ·
+                            E-mail: {{ emailProprietarioSelecionadoModal() || '—' }} ·
+                            WhatsApp: {{ telefoneProprietarioSelecionadoModal() ? formatarTelefone(telefoneProprietarioSelecionadoModal()) : '—' }}
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirModalSelecaoProprietario('edicao')">
+                          <i class="bi bi-person-gear me-1"></i>
+                          {{ proprietarioSelecionadoModal() ? 'Trocar' : 'Selecionar' }}
+                        </button>
+                      </div>
+
+                      <div class="alert alert-warning py-2 mt-2 mb-0" *ngIf="whatsappProprietarioEdicaoInvalido()">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        O proprietário selecionado não possui telefone válido para envio da notificação por WhatsApp.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="abaEdicaoVeiculo === 'revisao'">
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-clipboard-check me-1"></i>
+                  Revisão das alterações
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="review-card">
+                      <div class="review-label">Veículo</div>
+                      <div class="review-main">{{ formatarPlaca(edit.placa) || '—' }}</div>
+                      <div>{{ edit.fabricante || '—' }}</div>
+                      <div>{{ edit.modelo || '—' }}</div>
+                      <div>{{ edit.anoModeloCombustivel || '—' }}</div>
+                      <div>Cor: {{ capitalizar(edit.cor) || '—' }}</div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="review-card">
+                      <div class="review-label">Proprietário</div>
+                      <div class="review-main">{{ nomeProprietarioSelecionadoModal() || '—' }}</div>
+                      <div>CPF: {{ cpfProprietarioSelecionadoModal() || '—' }}</div>
+                      <div>E-mail: {{ emailProprietarioSelecionadoModal() || '—' }}</div>
+                      <div>WhatsApp: {{ telefoneProprietarioSelecionadoModal() ? formatarTelefone(telefoneProprietarioSelecionadoModal()) : '—' }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <div class="modal-footer modal-footer-totais">
+          <div class="footer-status me-auto">
+            <span class="footer-ok" *ngIf="edicaoVeiculoProntaParaSalvar">
+              <i class="bi bi-check-circle me-1"></i>
+              Edição pronta para salvar.
+            </span>
+            <span class="footer-warning" *ngIf="!edicaoVeiculoProntaParaSalvar">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ mensagemBloqueioEdicao }}
+            </span>
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary" *ngIf="abaEdicaoVeiculo !== 'veiculo'" (click)="abaAnteriorEdicaoVeiculo()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+
+          <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoVeiculo !== 'revisao'" (click)="proximaAbaEdicaoVeiculo()">
+            Próximo
+            <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!edicaoVeiculoProntaParaSalvar"
+            [title]="mensagemBloqueioEdicao || 'Salvar alterações'"
+            (click)="salvarEdicaoModal()"
+          >
+            <i class="bi bi-check-circle me-1"></i>
+            Salvar alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de detalhes -->
+  <div class="modal fade" id="modalDetalhesVeiculo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content details-modal-content">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title">
+              <i class="bi bi-eye me-1"></i>
+              Detalhes do Veículo
+            </h5>
+            <small>{{ formatarPlaca(veiculoDetalhe?.placa) }} · {{ veiculoDetalhe?.modelo || 'Modelo não informado' }}</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="details-card">
+                <div class="details-title"><i class="bi bi-car-front me-1"></i>Veículo</div>
+                <div class="details-line"><strong>Placa:</strong> {{ formatarPlaca(veiculoDetalhe?.placa) || '—' }}</div>
+                <div class="details-line"><strong>Fabricante:</strong> {{ formatarFabricante(veiculoDetalhe?.fabricante) || '—' }}</div>
+                <div class="details-line"><strong>Modelo:</strong> {{ formatarModeloVeiculo(veiculoDetalhe?.modelo) || '—' }}</div>
+                <div class="details-line"><strong>Cor:</strong> {{ capitalizar(veiculoDetalhe?.cor) || '—' }}</div>
+                <div class="details-line"><strong>Ano/combustível:</strong> {{ formatarAnoCombustivel(veiculoDetalhe?.anoModeloCombustivel) || '—' }}</div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="details-card">
+                <div class="details-title"><i class="bi bi-person-vcard me-1"></i>Proprietário</div>
+                <div class="details-line"><strong>Nome:</strong> {{ proprietarioNome(veiculoDetalhe) }}</div>
+                <div class="details-line"><strong>CPF:</strong> {{ proprietarioCpf(veiculoDetalhe!) }}</div>
+                <div class="details-line"><strong>E-mail:</strong> {{ proprietarioEmail(veiculoDetalhe) }}</div>
+                <div class="details-line"><strong>WhatsApp:</strong> {{ proprietarioTelefone(veiculoDetalhe) }}</div>
+                <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(veiculoDetalhe)">WhatsApp válido</span>
+                <span class="badge badge-soft-secondary" *ngIf="!whatsappValidoDoProprietario(veiculoDetalhe)">Sem WhatsApp válido</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button type="button" class="btn btn-primary" *ngIf="veiculoDetalhe" (click)="modalDetalhes?.hide(); abrirModalEdicao(veiculoDetalhe)">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de seleção do proprietário -->
-  <div class="modal fade" id="modalSelecionarProprietario" tabindex="-1" aria-labelledby="modalSelecionarProprietarioLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content" style="color:#35689b;">
-        <div class="modal-header" style="background:#eef6ff;">
-          <h5 class="modal-title" id="modalSelecionarProprietarioLabel">
-            <i class="bi bi-search me-1"></i>
-            Selecionar Proprietário
+  <div class="modal fade" id="modalSelecionarProprietario" tabindex="-1" aria-labelledby="modalSelecionarProprietarioLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered proprietario-modal-dialog">
+      <div class="modal-content proprietario-modal-content">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title" id="modalSelecionarProprietarioLabel">
+              <i class="bi bi-search me-1"></i>
+              Selecionar Proprietário
+            </h5>
+            <small>Busque por CPF, nome, e-mail ou telefone.</small>
+          </div>
+          <button type="button" class="btn-close" aria-label="Fechar" (click)="cancelarSelecaoProprietario()"></button>
+        </div>
+
+        <div class="modal-body proprietario-modal-body">
+          <div class="row g-2 align-items-end mb-2">
+            <div class="col-md-9">
+              <label class="form-label">Buscar proprietário</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input
+                  type="search"
+                  class="form-control"
+                  placeholder="CPF, nome, e-mail ou telefone"
+                  name="cpfFiltroModal"
+                  [(ngModel)]="cpfFiltroModal"
+                  (ngModelChange)="filtrarProprietariosModal($event)"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+            <div class="col-md-3 text-md-end">
+              <span class="badge badge-soft-primary">
+                {{ usuariosFiltradosModal.length }} resultado(s)
+              </span>
+            </div>
+          </div>
+
+          <div class="owner-table-shell">
+            <div class="owner-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header">
+                <thead>
+                  <tr>
+                    <th>CPF</th>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Status</th>
+                    <th class="text-center">Selecionar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let u of usuariosFiltradosModal; trackBy: trackByUsuario">
+                    <td>{{ formatarCPF(u.cpf) }}</td>
+                    <td>{{ u.nome || '—' }}</td>
+                    <td>{{ u.email || '—' }}</td>
+                    <td>{{ formatarTelefone(u.telefone) || '—' }}</td>
+                    <td>
+                      <span
+                        class="badge"
+                        [class.bg-success]="!u.status || u.status === 'ativo' || u.status === 'ATIVO' || u.status === 'Ativo'"
+                        [class.bg-secondary]="u.status && u.status !== 'ativo' && u.status !== 'ATIVO' && u.status !== 'Ativo'"
+                      >
+                        {{ u.status ? (u.status | titlecase) : 'Ativo' }}
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <button type="button" class="btn btn-sm btn-outline-primary" (click)="selecionarProprietarioModal(u)">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Selecionar
+                      </button>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="!usuariosFiltradosModal || usuariosFiltradosModal.length === 0">
+                    <td colspan="6" class="text-center text-muted py-3">Nenhum usuário encontrado.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelarSelecaoProprietario()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmação -->
+  <div class="modal fade" id="modalConfirmacaoVeiculo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content confirm-modal-content">
+        <div class="modal-header modal-header-warning">
+          <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Confirmar exclusão
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        <div class="modal-body" style="color:#35689b;">
-          <!-- Campo de busca -->
-          <label for="pesquisaProprietarioInput" class="form-label">Buscar Proprietário</label>
-          <div class="input-group mb-3" style="color:#35689b;">
-            <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
-              <i class="bi bi-search" style="color:#35689b;"></i>
-            </span>
-            <input
-              id="pesquisaProprietarioInput"
-              type="search"
-              class="form-control"
-              placeholder="Buscar por CPF, nome, e-mail ou telefone"
-              name="cpfFiltroModal"
-              [(ngModel)]="cpfFiltroModal"
-              (ngModelChange)="filtrarProprietariosModal($event)"
-              autocomplete="off"
-              style="color:#35689b;"
-              aria-label="Buscar proprietário por CPF, nome, e-mail ou telefone"
-            />
+
+        <div class="modal-body">
+          <p class="mb-2">Deseja excluir este veículo?</p>
+          <div class="confirm-box" *ngIf="veiculoAcao">
+            <strong>{{ formatarPlaca(veiculoAcao.placa) }}</strong><br />
+            <span>{{ veiculoAcao.fabricante }} · {{ veiculoAcao.modelo }}</span><br />
+            <small>Proprietário: {{ proprietarioNome(veiculoAcao) }}</small>
           </div>
-          <!-- Tabela de proprietários -->
-          <div class="table-responsive">
-            <table class="table table-hover align-middle text-nowrap" style="color:#35689b;">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th style="color:#35689b;">CPF</th>
-                  <th style="color:#35689b;">Nome</th>
-                  <th style="color:#35689b;">E-mail</th>
-                  <th style="color:#35689b;">Telefone</th>
-                  <th style="color:#35689b;">Status</th>
-                  <th class="text-center" style="color:#35689b;">Selecionar</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let u of usuariosFiltradosModal; trackBy: trackByUsuario">
-                  <td style="color:#35689b;">
-                    {{ formatarCPF(u.cpf) }}
-                  </td>
-                  <td style="color:#35689b;">
-                    {{ u.nome || '—' }}
-                  </td>
-                  <td style="color:#35689b;">
-                    {{ u.email || '—' }}
-                  </td>
-                  <td style="color:#35689b;">
-                    {{ formatarTelefone(u.telefone) || '—' }}
-                  </td>
-                  <td>
-                    <span
-                      class="badge"
-                      [class.bg-success]="!u.status || u.status === 'ativo' || u.status === 'ATIVO'"
-                      [class.bg-secondary]="u.status && u.status !== 'ativo' && u.status !== 'ATIVO'"
-                    >
-                      {{ u.status ? (u.status | titlecase) : 'Ativo' }}
-                    </span>
-                  </td>
-                  <td class="text-center">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-primary"
-                      (click)="selecionarProprietarioModal(u)"
-                    >
-                      <i class="bi bi-check-circle me-1"></i>
-                      Selecionar
-                    </button>
-                  </td>
-                </tr>
-                <tr *ngIf="!usuariosFiltradosModal || usuariosFiltradosModal.length === 0">
-                  <td colspan="6" class="text-center text-muted py-3">
-                    Nenhum usuário encontrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="alert alert-warning py-2 mt-3 mb-0">
+            Esta ação remove o cadastro do veículo e pode impactar agendamentos ou atendimentos relacionados, dependendo das regras do backend.
           </div>
         </div>
+
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancelar
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" [disabled]="executandoAcao">Cancelar</button>
+          <button type="button" class="btn btn-danger" (click)="confirmarExclusao()" [disabled]="executandoAcao">
+            <span class="spinner-border spinner-border-sm me-1" *ngIf="executandoAcao"></span>
+            Confirmar exclusão
           </button>
         </div>
       </div>
     </div>
   </div>
-
-
-
-
-  <!-- Modal de cadastro de novo veículo -->
-<div
-  class="modal fade"
-  id="modalCadastroVeiculo"
-  tabindex="-1"
-  aria-labelledby="modalCadastroVeiculoLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title" id="modalCadastroVeiculoLabel">
-          <i class="bi bi-car-front me-1"></i>
-          Cadastrar Veículo
-        </h5>
-
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-          aria-label="Fechar"
-        ></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="row g-2">
-
-          <h6 class="modal-section-title">
-            <i class="bi bi-car-front me-1"></i>
-            Dados do veículo
-          </h6>
-
-          <!-- Placa -->
-          <div class="col-md-1">
-            <label for="cadastro-placa" class="form-label">Placa</label>
-            <input
-              id="cadastro-placa"
-              name="cadastro-placa"
-              class="form-control form-control-sm"
-              [(ngModel)]="novoVeiculo.placa"
-              (blur)="novoVeiculo.placa = formatarPlaca(novoVeiculo.placa)"
-              (input) = "novoVeiculo.placa = novoVeiculo.placa?.toUpperCase()"
-              style="color:#35689b;"
-              autocomplete="off"
-            />
-          </div>
-
-          <!-- Fabricante -->
-          <div class="col-md-2">
-            <label for="cadastro-fabricante" class="form-label">Fabricante</label>
-            <select
-              id="cadastro-fabricante"
-              name="cadastro-fabricante"
-              class="form-select form-select-sm"
-              [(ngModel)]="marcaCadastroSelCode"
-              (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
-              (ngModelChange)="onChangeMarcaCadastro($event)"
-              style="color:#35689b;"
-            >
-              <option value="">
-                Selecione...
-              </option>
-
-              <option
-                *ngFor="let m of marcas; trackBy: trackByBrand"
-                [value]="m.code"
-                style="color:#35689b;"
-              >
-                {{ formatarFabricante(m.name) }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Modelo -->
-          <div class="col-md-4">
-            <label for="cadastro-modelo" class="form-label">Modelo</label>
-            <select
-              id="cadastro-modelo"
-              name="cadastro-modelo"
-              class="form-select form-select-sm"
-              [(ngModel)]="modeloCadastroSelCode"
-              (ngModelChange)="onChangeModeloCadastro($event)"
-              style="color:#35689b;"
-            >
-              <option value="">
-                {{ novoVeiculo.fabricante ? 'Selecione um modelo...' : 'Selecione um fabricante...' }}
-              </option>
-
-              <option
-                *ngFor="let modelo of modelosCadastro; trackBy: trackByModel"
-                [value]="modelo.code"
-                style="color:#35689b;"
-              >
-                {{ capitalizar(modelo.name) }}
-              </option>
-            </select>
-
-            <div class="text-muted small mt-1" *ngIf="fipeCarregando.modelos">
-              Carregando modelos da montadora...
-            </div>
-          </div>
-
-          <!-- Cor -->
-          <div class="col-md-2">
-            <label for="cadastro-cor" class="form-label">Cor</label>
-            <input
-              id="cadastro-cor"
-              name="cadastro-cor"
-              class="form-control form-control-sm"
-              [(ngModel)]="novoVeiculo.cor"
-              style="color:#35689b;"
-              autocomplete="off"
-              [value]="capitalizar(novoVeiculo.cor || '')"
-            />
-          </div>
-
-          <!-- Ano / Modelo / Combustível -->
-          <div class="col-md-3">
-            <label for="cadastro-ano-modelo-combustivel" class="form-label">
-              Ano-modelo | Combustível
-            </label>
-            <select
-              id="cadastro-ano-modelo-combustivel"
-              name="cadastro-ano-modelo-combustivel"
-              class="form-select form-select-sm"
-              [(ngModel)]="anoCadastroSelCode"
-              (ngModelChange)="onChangeAnoModeloCombustivelCadastro($event)"
-              style="color:#35689b;"
-            >
-              <option value="">
-                {{ novoVeiculo.fabricante ? novoVeiculo.modelo ? 'Selecione um ano-modelo...' : 'Selecione um modelo...' : 'Selecione um fabricante...' }}
-              </option>
-
-              <option
-                *ngFor="let ano of anosCadastro; trackBy: trackByYear"
-                [value]="ano.code"
-                style="color:#35689b;"
-              >
-                {{ ano.name.replace(' ', ' | ') }}
-              </option>
-            </select>
-
-            <div class="text-muted small mt-1" *ngIf="fipeCarregando.anos">
-              Carregando anos-modelo | combustíveis...
-            </div>
-          </div>
-
-          <h6 class="modal-section-title mt-3">
-            <i class="bi bi-person-vcard me-1"></i>
-            Proprietário
-          </h6>
-
-          <!-- CPF do proprietário -->
-          <div class="col-md-3">
-            <label class="form-label" for="cpfProprietarioCadastro">
-              CPF do proprietário
-            </label>
-
-            <div class="input-group input-group-sm">
-              <input
-                id="cpfProprietarioCadastro"
-                class="form-control"
-                [value]="cpfProprietarioSelecionadoCadastro()"
-                placeholder="Selecione um proprietário"
-                readonly
-                style="color:#35689b; cursor:pointer;"
-                (click)="abrirModalSelecaoProprietario('cadastro')"
-              />
-              <button
-                type="button"
-                class="btn btn-outline-primary d-flex align-items-center justify-content-center"
-                style="border-color:#d0e2f2;color:#35689b;"
-                title="Selecionar proprietário"
-                (click)="abrirModalSelecaoProprietario('cadastro')"
-              >
-                <i class="bi bi-search"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Dados do proprietário -->
-          <div class="col-md-9">
-            <div
-              class="alert alert-primary py-2 mb-0"
-              style="border:1px solid #d0e2f2;background:#eef6ff;color:#35689b;"
-              [class.d-none]="!proprietarioSelecionadoCadastro()"
-            >
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <strong style="color:#35689b;">
-                    {{ nomeProprietarioSelecionadoCadastro() || 'Nenhum proprietário selecionado' }}
-                  </strong>
-                  <br>
-
-                  <small style="color:#35689b;">
-                    CPF: {{ cpfProprietarioSelecionadoCadastro() || '—' }}
-
-                    <span style="color:#35689b;">
-                      | E-mail: {{ emailProprietarioSelecionadoCadastro() || '—' }}
-                    </span>
-
-                    <span style="color:#35689b;">
-                      | WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ? formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}
-                    </span>
-                  </small>
-                </div>
-
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  (click)="abrirModalSelecaoProprietario('cadastro')"
-                  style="color:#35689b;"
-                >
-                  <i class="bi bi-person-gear me-1" style="color:#35689b;"></i>
-                  Trocar
-                </button>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-bs-dismiss="modal"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-primary"
-          (click)="salvarCadastroVeiculo()"
-        >
-          Salvar
-        </button>
-      </div>
-
-    </div>
-  </div>
 </div>
-
-
-
-</div>
-<style>
-  /* Bordas/cores padrão */
-  .table thead th {
-    border-color: #d0e2f2 !important;
-  }
-
-  .table td,
-  .table th {
-    vertical-align: middle;
-    color: #35689b;
-  }
-
-  .table-hover tbody tr:hover {
-    background-color: #f7fbff;
-  }
-
-  .table-active {
-    --bs-table-bg: #f1f7ff;
-  }
-
-  /* Sem quebras e com elipse por padrão */
-  .table.text-nowrap th,
-  .table.text-nowrap td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .form-control:focus,
-  .form-select:focus,
-  .btn:focus {
-    box-shadow: 0 0 0 .2rem rgba(53,104,155,.15);
-    border-color: #8fb4da;
-  }
-
-  .modal-section-title {
-    color: #35689b;
-    font-weight: 600;
-    border-bottom: 1px solid #d0e2f2;
-    padding-bottom: .35rem;
-    margin-bottom: .5rem;
-  }
-
-  .list-group-item {
-    color: #35689b;
-    border-color: #d0e2f2;
-  }
-
-  .list-group-item:hover {
-    background-color: #f7fbff;
-  }
-
-  .input-group-sm .btn {
-    min-width: 38px;
-  }
-</style>

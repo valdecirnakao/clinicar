@@ -1,145 +1,370 @@
-<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid mt-0 mb-0 peca-page" style="color:#35689b; max-height: 82vh;">
   <div class="row justify-content-center">
     <div class="col-md-12 mt-sm-0">
 
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">
+          <div class="card page-title-card">
+            <div class="card-body py-3">
               <i class="bi bi-gear me-1"></i>
-              Gerenciamento de Peças
+              Gerenciamento de Peças e Insumos
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card clinicar-card" style="border-color:#d0e2f2; border-radius:10px;">
-        <div class="card-body p-2">
+      <div class="row g-2 mb-2 summary-row">
+        <div class="col-md-3 col-6">
+          <div class="summary-card">
+            <div class="summary-icon"><i class="bi bi-box-seam"></i></div>
+            <div>
+              <div class="summary-label">Total cadastrado</div>
+              <div class="summary-value">{{ totalPecas }}</div>
+            </div>
+          </div>
+        </div>
 
-          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-            <div class="input-group" style="max-width:42vw; color:#35689b;">
-              <label
-                class="input-group-text"
-                for="filtro-pecas"
-                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
-              >
-                Buscar
-              </label>
+        <div class="col-md-3 col-6">
+          <div class="summary-card">
+            <div class="summary-icon"><i class="bi bi-tags"></i></div>
+            <div>
+              <div class="summary-label">Tipos</div>
+              <div class="summary-value">{{ totalTipos }}</div>
+            </div>
+          </div>
+        </div>
 
-              <input
-                id="filtro-pecas"
-                #q
-                type="search"
-                class="form-control"
-                placeholder="Nome, tipo, especificação, fabricante, modelo, norma ou unidade"
-                (input)="filtrar(q.value)"
-                style="color:#35689b;"
-              />
+        <div class="col-md-3 col-6">
+          <div class="summary-card">
+            <div class="summary-icon"><i class="bi bi-buildings"></i></div>
+            <div>
+              <div class="summary-label">Fabricantes</div>
+              <div class="summary-value">{{ totalFabricantes }}</div>
+            </div>
+          </div>
+        </div>
 
-              <div
-                class="text-muted small input-group-text"
-                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
-              >
-                <span style="color:#35689b;">
-                  Total de registros: {{ pecas.length }}
+        <div class="col-md-3 col-6">
+          <div class="summary-card">
+            <div class="summary-icon"><i class="bi bi-patch-check"></i></div>
+            <div>
+              <div class="summary-label">Com norma</div>
+              <div class="summary-value">{{ totalComNorma }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card clinicar-card peca-list-card">
+        <div class="card-body peca-list-body">
+
+          <div class="row g-2 align-items-end mb-2 toolbar-filters">
+            <div class="col-lg-3 col-md-5">
+              <label class="form-label fw-bold" for="filtro-pecas">Buscar</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="bi bi-search"></i>
                 </span>
+                <input
+                  id="filtro-pecas"
+                  type="search"
+                  class="form-control"
+                  placeholder="Nome, tipo, especificação, fabricante, modelo"
+                  [(ngModel)]="filtroTexto"
+                  (ngModelChange)="aoAlterarFiltros()"
+                  autocomplete="off"
+                />
               </div>
             </div>
 
-            <div class="d-flex gap-2">
-              <button
-                class="btn btn-outline-success btn-sm"
-                type="button"
-                (click)="abrirModalCadastro()"
+            <div class="col-lg-2 col-md-3">
+              <label class="form-label fw-bold" for="filtro-tipo">Tipo</label>
+              <select
+                id="filtro-tipo"
+                class="form-select"
+                [(ngModel)]="filtroTipo"
+                (ngModelChange)="aoAlterarFiltros()"
               >
-                <i class="bi bi-plus-circle me-1"></i>
-                Nova Peça
-              </button>
+                <option value="">Todos</option>
+                <option *ngFor="let tipo of tiposParaFiltro" [value]="tipo">
+                  {{ tipo }}
+                </option>
+              </select>
+            </div>
 
-              <button
-                class="btn btn-outline-secondary btn-sm"
-                type="button"
-                (click)="voltar()"
+            <div class="col-lg-1 col-md-3">
+              <label class="form-label fw-bold" for="filtro-unidade">Unidade</label>
+              <select
+                id="filtro-unidade"
+                class="form-select"
+                [(ngModel)]="filtroUnidade"
+                (ngModelChange)="aoAlterarFiltros()"
               >
-                <i class="bi bi-arrow-left me-1"></i>
-                Voltar
-              </button>
+                <option value="">Todas</option>
+                <option *ngFor="let unidade of unidadesParaFiltro" [value]="unidade">
+                  {{ unidade }}
+                </option>
+              </select>
+            </div>
+            <div class="col-lg-1 col-md-3">
+                              <button
+                  class="btn btn-outline-secondary btn-md"
+                  type="button"
+                  (click)="limparFiltros()"
+                  [disabled]="!possuiFiltrosAplicados"
+                >
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+            </div>
 
-              <button
-                class="btn btn-outline-primary btn-sm"
-                type="button"
-                (click)="recarregar()"
-              >
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                Atualizar
-              </button>
+            <div class="col-lg-5 col-md-12">
+              <div class="toolbar-actions">
+                <button
+                  class="btn btn-primary btn-md"
+                  type="button"
+                  (click)="abrirModalCadastro()"
+                >
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Nova Peça
+                </button>
+
+                <button
+                  class="btn btn-outline-primary btn-md"
+                  type="button"
+                  (click)="recarregar()"
+                >
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+                <button
+                  class="btn btn-outline-secondary btn-md"
+                  type="button"
+                  (click)="voltar()"
+                >
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar
+                </button>
+              </div>
             </div>
           </div>
 
-          <div *ngIf="loading" class="alert alert-info py-2">
+          <div class="filter-chip-row" *ngIf="possuiFiltrosAplicados">
+            <span class="filter-chip" *ngIf="filtroTexto">
+              Busca: {{ filtroTexto }}
+              <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroTipo">
+              Tipo: {{ filtroTipo }}
+              <button type="button" (click)="filtroTipo = ''; aoAlterarFiltros()" aria-label="Remover tipo">×</button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroUnidade">
+              Unidade: {{ filtroUnidade }}
+              <button type="button" (click)="filtroUnidade = ''; aoAlterarFiltros()" aria-label="Remover unidade">×</button>
+            </span>
+          </div>
+
+          <div *ngIf="loading" class="alert alert-info py-2 mb-2">
+            <i class="bi bi-hourglass-split me-1"></i>
             Carregando peças…
           </div>
 
-          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
             {{ errorMsg }}
           </div>
 
-          <div class="table-responsive" style="color:#35689b;">
-            <div class="small text-muted mb-1 right-align" style="color:#35689b;">
-              <i class="bi bi-pencil-square text-primary"></i> Editar |
-              <i class="bi bi-trash text-danger"></i> Excluir
+          <div class="peca-table-shell d-none d-md-flex" *ngIf="!loading">
+            <div class="peca-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header">
+                <thead>
+                  <tr>
+                    <th scope="col" class="sortable" (click)="ordenarPor('nome')">
+                      Nome <i class="bi ms-1" [ngClass]="iconeOrdenacao('nome')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('tipo')">
+                      Tipo <i class="bi ms-1" [ngClass]="iconeOrdenacao('tipo')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('especificacao')">
+                      Especificação <i class="bi ms-1" [ngClass]="iconeOrdenacao('especificacao')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('fabricante')">
+                      Fabricante <i class="bi ms-1" [ngClass]="iconeOrdenacao('fabricante')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('modelo')">
+                      Modelo <i class="bi ms-1" [ngClass]="iconeOrdenacao('modelo')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('norma')">
+                      Norma <i class="bi ms-1" [ngClass]="iconeOrdenacao('norma')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('unidade')">
+                      Unidade <i class="bi ms-1" [ngClass]="iconeOrdenacao('unidade')"></i>
+                    </th>
+                    <th scope="col" class="text-center">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let p of pecasPaginadas; trackBy: trackByPeca">
+                    <td>
+                      <div class="fw-semibold">{{ exibirCapitalizado(p.nome) }}</div>
+                      <small>{{ p.fabricante || 'Fabricante não informado' }}</small>
+                    </td>
+                    <td>
+                      <span class="badge tipo-badge" [ngClass]="tipoBadgeClass(p.tipo)">
+                        {{ p.tipo || 'Sem tipo' }}
+                      </span>
+                    </td>
+                    <td>{{ exibirCaixaAlta(p.especificacao) }}</td>
+                    <td>{{ exibirCapitalizado(p.fabricante) }}</td>
+                    <td>{{ exibirCapitalizado(p.modelo) }}</td>
+                    <td>
+                      <span class="badge norma-badge" *ngIf="p.norma; else semNorma">
+                        {{ exibirCaixaAlta(p.norma) }}
+                      </span>
+                      <ng-template #semNorma>—</ng-template>
+                    </td>
+                    <td>
+                      <span class="badge unidade-badge">{{ exibirCapitalizado(p.unidade) }}</span>
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group btn-group-sm">
+                        <button
+                          class="btn btn-outline-info"
+                          type="button"
+                          title="Visualizar detalhes"
+                          (click)="abrirDetalhes(p)"
+                        >
+                          <i class="bi bi-eye"></i>
+                        </button>
+
+                        <button
+                          class="btn btn-outline-primary"
+                          type="button"
+                          title="Editar peça"
+                          (click)="abrirModalEdicao(p)"
+                        >
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
+
+                        <button
+                          class="btn btn-outline-danger"
+                          type="button"
+                          title="Excluir peça"
+                          (click)="abrirConfirmacaoExclusao(p)"
+                        >
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="totalRegistrosFiltrados === 0">
+                    <td colspan="8" class="text-center text-muted py-4">
+                      Nenhuma peça encontrada.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th style="color:#35689b;">Nome</th>
-                  <th style="color:#35689b;">Tipo</th>
-                  <th style="color:#35689b;">Especificação</th>
-                  <th style="color:#35689b;">Fabricante</th>
-                  <th style="color:#35689b;">Modelo</th>
-                  <th style="color:#35689b;">Norma</th>
-                  <th style="color:#35689b;">Unidade</th>
-                  <th class="text-center" style="color:#35689b;">Ações</th>
-                </tr>
-              </thead>
+            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+              <div class="pagination-info">
+                Mostrando
+                <strong>{{ indiceInicialPagina }}</strong>
+                a
+                <strong>{{ indiceFinalPagina }}</strong>
+                de
+                <strong>{{ totalRegistrosFiltrados }}</strong>
+                registro(s)
+              </div>
 
-              <tbody>
-                <tr *ngFor="let p of pecas; trackBy: trackByPeca">
-                  <td style="color:#35689b;">{{ exibirCapitalizado(p.nome) }}</td>
-                  <td style="color:#35689b;">{{ exibirCapitalizado(p.tipo) }}</td>
-                  <td style="color:#35689b;">{{ exibirCaixaAlta(p.especificacao) }}</td>
-                  <td style="color:#35689b;">{{ exibirCapitalizado(p.fabricante) }}</td>
-                  <td style="color:#35689b;">{{ exibirCapitalizado(p.modelo) }}</td>
-                  <td style="color:#35689b;">{{ exibirCaixaAlta(p.norma) }}</td>
-                  <td style="color:#35689b;">{{ exibirCapitalizado(p.unidade) }}</td>
+              <div class="pagination-size">
+                <label for="itensPorPagina">Exibir</label>
+                <select
+                  id="itensPorPagina"
+                  class="form-select form-select-sm"
+                  [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()"
+                >
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+                <span>por página</span>
+              </div>
 
-                  <td class="text-center">
-                    <button
-                      class="btn btn-sm btn-outline-primary me-1"
-                      title="Editar peça"
-                      (click)="abrirModalEdicao(p)"
-                    >
-                      <i class="bi bi-pencil-square"></i>
-                    </button>
+              <div class="pagination-actions">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  [disabled]="paginaAtual === 1"
+                  (click)="paginaAnterior()"
+                >
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
 
-                    <button
-                      class="btn btn-sm btn-outline-danger"
-                      title="Excluir peça"
-                      (click)="excluir(p.id)"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina"
+                  [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)"
+                >
+                  {{ pagina }}
+                </button>
 
-                <tr *ngIf="!pecas || pecas.length === 0">
-                  <td colspan="8" class="text-center text-muted py-4">
-                    Nenhuma peça encontrada.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  [disabled]="paginaAtual === totalPaginas"
+                  (click)="proximaPagina()"
+                >
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mobile-card-list d-md-none" *ngIf="!loading">
+            <div class="mobile-record-card" *ngFor="let p of pecasPaginadas; trackBy: trackByPeca">
+              <div class="mobile-record-header">
+                <div>
+                  <div class="mobile-record-title">{{ exibirCapitalizado(p.nome) }}</div>
+                  <div class="mobile-record-subtitle">{{ p.fabricante || 'Fabricante não informado' }}</div>
+                </div>
+                <span class="badge tipo-badge" [ngClass]="tipoBadgeClass(p.tipo)">{{ p.tipo || 'Sem tipo' }}</span>
+              </div>
+
+              <div class="mobile-record-line"><strong>Modelo:</strong> {{ exibirCapitalizado(p.modelo) }}</div>
+              <div class="mobile-record-line"><strong>Especificação:</strong> {{ exibirCaixaAlta(p.especificacao) }}</div>
+              <div class="mobile-record-line"><strong>Norma:</strong> {{ exibirCaixaAlta(p.norma) }}</div>
+              <div class="mobile-record-line"><strong>Unidade:</strong> {{ exibirCapitalizado(p.unidade) }}</div>
+
+              <div class="mobile-record-actions">
+                <button class="btn btn-sm btn-outline-info" type="button" (click)="abrirDetalhes(p)">
+                  <i class="bi bi-eye me-1"></i>
+                  Visualizar
+                </button>
+                <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirModalEdicao(p)">
+                  <i class="bi bi-pencil-square me-1"></i>
+                  Editar
+                </button>
+                <button class="btn btn-sm btn-outline-danger" type="button" (click)="abrirConfirmacaoExclusao(p)">
+                  <i class="bi bi-trash me-1"></i>
+                  Excluir
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="totalRegistrosFiltrados === 0" class="text-center text-muted py-4">
+              Nenhuma peça encontrada.
+            </div>
           </div>
 
         </div>
@@ -150,273 +375,546 @@
 </div>
 
 <!-- Modal Cadastro -->
-<div
-  class="modal fade"
-  id="modalCadastroPeca"
-  tabindex="-1"
-  aria-labelledby="modalCadastroPecaLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title" id="modalCadastroPecaLabel">
-          Nova Peça
-        </h5>
-
+<div class="modal fade" id="modalCadastroPeca" tabindex="-1" aria-labelledby="modalCadastroPecaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered peca-modal-dialog">
+    <div class="modal-content peca-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalCadastroPecaLabel">
+            <i class="bi bi-plus-circle me-1"></i>
+            Nova Peça / Insumo
+          </h5>
+          <small>
+            {{ novaPeca.nome || 'Nome não informado' }} · {{ novaPeca.fabricante || 'Fabricante não informado' }}
+          </small>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
-      <div class="modal-body">
-        <div class="row g-2">
-
-          <h6 class="modal-section-title">
-            <i class="bi bi-gear me-1"></i>
-            Dados da peça
-          </h6>
-
-          <div class="col-md-6">
-            <label class="form-label" for="nomePecaCadastro">Nome *</label>
-            <input
-              id="nomePecaCadastro"
-              class="form-control form-control-sm"
-              [(ngModel)]="novaPeca.nome"
-              (blur)="aoSairCampoCapitalizar(novaPeca, 'nome')"
-              style="color:#35689b;"
-            />
+      <div class="modal-body peca-modal-body">
+        <div class="peca-modal-tabs-area">
+          <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ mensagemErroModal }}
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label" for="tipoPecaCadastro">Tipo</label>
-            <input
-              id="tipoPecaCadastro"
-              class="form-control form-control-sm"
-              [(ngModel)]="novaPeca.tipo"
-              (blur)="aoSairCampoCapitalizar(novaPeca, 'tipo')"
-              style="color:#35689b;"
-            />
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+            <div class="progress-bar" [style.width.%]="progressoCadastroPeca">
+              {{ progressoCadastroPeca }}%
+            </div>
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label" for="fabricantePecaCadastro">Fabricante *</label>
-            <input
-              id="fabricantePecaCadastro"
-              class="form-control form-control-sm"
-              [(ngModel)]="novaPeca.fabricante"
-              (blur)="aoSairCampoCapitalizar(novaPeca, 'fabricante')"
-              style="color:#35689b;"
-            />
-          </div>
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'dados'" (click)="trocarAbaCadastroPeca('dados')">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+                <span class="tab-alert" *ngIf="dadosPecaPendentes(novaPeca)">!</span>
+              </button>
+            </li>
 
-          <div class="col-md-6">
-            <label class="form-label" for="modeloPecaCadastro">Modelo</label>
-            <input
-              id="modeloPecaCadastro"
-              class="form-control form-control-sm"
-              [(ngModel)]="novaPeca.modelo"
-              (blur)="aoSairCampoCapitalizar(novaPeca, 'modelo')"
-              style="color:#35689b;"
-            />
-          </div>
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'classificacao'" (click)="trocarAbaCadastroPeca('classificacao')">
+                <i class="bi bi-tags me-1"></i>
+                Classificação
+              </button>
+            </li>
 
-          <div class="col-md-5">
-            <label class="form-label" for="especificacaoPecaCadastro">Especificação</label>
-            <input
-              id="especificacaoPecaCadastro"
-              class="form-control form-control-sm"
-              [(ngModel)]="novaPeca.especificacao"
-              (blur)="aoSairCampoCaixaAlta(novaPeca, 'especificacao')"
-              style="color:#35689b;"
-            />
-          </div>
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'revisao'" (click)="trocarAbaCadastroPeca('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
 
-          <div class="col-md-3">
-            <label class="form-label" for="normaPecaCadastro">Norma</label>
-            <input
-              id="normaPecaCadastro"
-              class="form-control form-control-sm"
-              [(ngModel)]="novaPeca.norma"
-              (blur)="aoSairCampoCaixaAlta(novaPeca, 'norma')"
-              style="color:#35689b;"
-            />
-          </div>
+        <div class="peca-modal-scroll-area">
+          <ng-container *ngIf="abaCadastroPeca === 'dados'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+              </div>
 
-          <div class="col-md-4">
-            <label class="form-label" for="unidadePecaCadastro">Unidade *</label>
-            <input
-              id="unidadePecaCadastro"
-              class="form-control form-control-sm"
-              [(ngModel)]="novaPeca.unidade"
-              (blur)="aoSairCampoCapitalizar(novaPeca, 'unidade')"
-              style="color:#35689b;"
-            />
-          </div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="nomePecaCadastro">Nome *</label>
+                  <input
+                    id="nomePecaCadastro"
+                    class="form-control"
+                    [(ngModel)]="novaPeca.nome"
+                    (blur)="normalizarCampoCapitalizado(novaPeca, 'nome')"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'nome')"
+                    autocomplete="off"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'nome')">Informe o nome da peça ou insumo.</div>
+                </div>
 
-          <div class="col-12 mt-2">
-            <small class="text-muted">
-              Campos marcados com * são obrigatórios.
-            </small>
-          </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="fabricantePecaCadastro">Fabricante *</label>
+                  <input
+                    id="fabricantePecaCadastro"
+                    class="form-control"
+                    [(ngModel)]="novaPeca.fabricante"
+                    (blur)="normalizarCampoCapitalizado(novaPeca, 'fabricante')"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'fabricante')"
+                    autocomplete="off"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'fabricante')">Informe o fabricante.</div>
+                </div>
 
+                <div class="col-md-4">
+                  <label class="form-label" for="unidadePecaCadastro">Unidade *</label>
+                  <select
+                    id="unidadePecaCadastro"
+                    class="form-select"
+                    [(ngModel)]="novaPeca.unidade"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'unidade')"
+                  >
+                    <option value="">Selecione...</option>
+                    <option *ngFor="let unidade of unidadesMedida" [ngValue]="unidade">{{ unidade }}</option>
+                  </select>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'unidade')">Selecione a unidade de medida.</div>
+                </div>
+
+                <div class="col-md-8">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Prévia</div>
+                    <div class="preview-main">{{ novaPeca.nome || 'Nome da peça ou insumo' }}</div>
+                    <div class="preview-sub">
+                      {{ novaPeca.fabricante || 'Fabricante' }}
+                      <span *ngIf="novaPeca.modelo"> · {{ novaPeca.modelo }}</span>
+                      <span *ngIf="novaPeca.unidade"> · {{ novaPeca.unidade }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="info-card h-100">
+                    <div class="preview-title">Orientação</div>
+                    <div class="details-line">
+                      Use este cadastro para peças instaladas no veículo e também para insumos controlados em estoque, como óleos, fluidos e consumíveis.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="abaCadastroPeca === 'classificacao'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-tags me-1"></i>
+                Classificação e especificações
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="tipoPecaCadastro">Tipo</label>
+                  <select id="tipoPecaCadastro" class="form-select" [(ngModel)]="novaPeca.tipo">
+                    <option value="">Selecione...</option>
+                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">{{ tipo }}</option>
+                  </select>
+                  <small class="text-muted">Classifique o item como peça, lubrificante, fluido ou consumível.</small>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="modeloPecaCadastro">Modelo</label>
+                  <input
+                    id="modeloPecaCadastro"
+                    class="form-control"
+                    [(ngModel)]="novaPeca.modelo"
+                    (blur)="normalizarCampoCapitalizado(novaPeca, 'modelo')"
+                    autocomplete="off"
+                  />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="normaPecaCadastro">Norma</label>
+                  <input
+                    id="normaPecaCadastro"
+                    class="form-control"
+                    [(ngModel)]="novaPeca.norma"
+                    (blur)="normalizarCampoCaixaAlta(novaPeca, 'norma')"
+                    placeholder="Ex.: SAE 5W30, DOT 4, NBR"
+                    autocomplete="off"
+                  />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label" for="especificacaoPecaCadastro">Especificação</label>
+                  <input
+                    id="especificacaoPecaCadastro"
+                    class="form-control"
+                    [(ngModel)]="novaPeca.especificacao"
+                    (blur)="normalizarCampoCaixaAlta(novaPeca, 'especificacao')"
+                    placeholder="Ex.: 1.0 FLEX, 5W30 SINTÉTICO, DOT 4"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="abaCadastroPeca === 'revisao'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão antes de salvar
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Dados principais</div>
+                    <div class="review-main">{{ novaPeca.nome || '—' }}</div>
+                    <div class="details-line">Fabricante: {{ novaPeca.fabricante || '—' }}</div>
+                    <div class="details-line">Unidade: {{ novaPeca.unidade || '—' }}</div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Classificação</div>
+                    <div class="details-line">Tipo: {{ novaPeca.tipo || '—' }}</div>
+                    <div class="details-line">Modelo: {{ novaPeca.modelo || '—' }}</div>
+                    <div class="details-line">Norma: {{ novaPeca.norma || '—' }}</div>
+                    <div class="details-line">Especificação: {{ novaPeca.especificacao || '—' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          data-bs-dismiss="modal"
-        >
-          Cancelar
+      <div class="modal-footer modal-footer-totais">
+        <div class="totais-footer me-auto">
+          <div class="pendencia-salvar" *ngIf="mensagemBloqueioCadastro">
+            <i class="bi bi-info-circle me-1"></i>
+            {{ mensagemBloqueioCadastro }}
+          </div>
+          <div class="cadastro-pronto" *ngIf="!mensagemBloqueioCadastro">
+            <i class="bi bi-check-circle me-1"></i>
+            Cadastro pronto para salvar.
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroPeca !== 'dados'" (click)="abaAnteriorCadastro()">
+          <i class="bi bi-chevron-left me-1"></i>
+          Anterior
+        </button>
+
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroPeca !== 'revisao'" (click)="proximaAbaCadastro()">
+          Próximo
+          <i class="bi bi-chevron-right ms-1"></i>
         </button>
 
         <button
           type="button"
-          class="btn btn-outline-success btn-sm"
+          class="btn btn-primary"
+          [disabled]="!cadastroPecaProntoParaSalvar"
+          [title]="mensagemBloqueioCadastro || 'Salvar peça'"
           (click)="salvarNovaPeca()"
         >
           <i class="bi bi-check-circle me-1"></i>
-          Salvar Peça
+          Salvar peça
         </button>
       </div>
-
     </div>
   </div>
 </div>
 
 <!-- Modal Edição -->
-<div
-  class="modal fade"
-  id="modalEdicaoPeca"
-  tabindex="-1"
-  aria-labelledby="modalEdicaoPecaLabel"
-  aria-hidden="true"
->
+<div class="modal fade" id="modalEdicaoPeca" tabindex="-1" aria-labelledby="modalEdicaoPecaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered peca-modal-dialog">
+    <div class="modal-content peca-modal-content peca-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalEdicaoPecaLabel">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar Peça / Insumo
+          </h5>
+          <small>
+            ID #{{ editId || '—' }} · {{ edit.nome || 'Nome não informado' }} · {{ edit.fabricante || 'Fabricante não informado' }}
+          </small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body peca-modal-body">
+        <div class="peca-modal-tabs-area">
+          <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ mensagemErroModal }}
+          </div>
+
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+            <div class="progress-bar" [style.width.%]="progressoEdicaoPeca">
+              {{ progressoEdicaoPeca }}%
+            </div>
+          </div>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'dados'" (click)="trocarAbaEdicaoPeca('dados')">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+                <span class="tab-alert" *ngIf="dadosPecaPendentes(edit)">!</span>
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'classificacao'" (click)="trocarAbaEdicaoPeca('classificacao')">
+                <i class="bi bi-tags me-1"></i>
+                Classificação
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'revisao'" (click)="trocarAbaEdicaoPeca('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="peca-modal-scroll-area">
+          <ng-container *ngIf="abaEdicaoPeca === 'dados'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="nomePecaEdicao">Nome *</label>
+                  <input id="nomePecaEdicao" class="form-control" [(ngModel)]="edit.nome" (blur)="normalizarCampoCapitalizado(edit, 'nome')" [class.is-invalid]="campoMarcadoInvalido(edit, 'nome')" autocomplete="off" />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'nome')">Informe o nome da peça ou insumo.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="fabricantePecaEdicao">Fabricante *</label>
+                  <input id="fabricantePecaEdicao" class="form-control" [(ngModel)]="edit.fabricante" (blur)="normalizarCampoCapitalizado(edit, 'fabricante')" [class.is-invalid]="campoMarcadoInvalido(edit, 'fabricante')" autocomplete="off" />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'fabricante')">Informe o fabricante.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="unidadePecaEdicao">Unidade *</label>
+                  <select id="unidadePecaEdicao" class="form-select" [(ngModel)]="edit.unidade" [class.is-invalid]="campoMarcadoInvalido(edit, 'unidade')">
+                    <option value="">Selecione...</option>
+                    <option *ngIf="unidadeForaDaLista(edit.unidade)" [ngValue]="edit.unidade">{{ edit.unidade }}</option>
+                    <option *ngFor="let unidade of unidadesMedida" [ngValue]="unidade">{{ unidade }}</option>
+                  </select>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'unidade')">Selecione a unidade de medida.</div>
+                </div>
+
+                <div class="col-12">
+                  <div class="preview-card">
+                    <div class="preview-title">Prévia do item</div>
+                    <div class="preview-main">{{ edit.nome || 'Nome da peça ou insumo' }}</div>
+                    <div class="preview-sub">
+                      {{ edit.fabricante || 'Fabricante' }}
+                      <span *ngIf="edit.modelo"> · {{ edit.modelo }}</span>
+                      <span *ngIf="edit.unidade"> · {{ edit.unidade }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="abaEdicaoPeca === 'classificacao'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-tags me-1"></i>
+                Classificação e especificações
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="tipoPecaEdicao">Tipo</label>
+                  <select id="tipoPecaEdicao" class="form-select" [(ngModel)]="edit.tipo">
+                    <option value="">Selecione...</option>
+                    <option *ngIf="tipoForaDaLista(edit.tipo)" [ngValue]="edit.tipo">{{ edit.tipo }}</option>
+                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">{{ tipo }}</option>
+                  </select>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="modeloPecaEdicao">Modelo</label>
+                  <input id="modeloPecaEdicao" class="form-control" [(ngModel)]="edit.modelo" (blur)="normalizarCampoCapitalizado(edit, 'modelo')" autocomplete="off" />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="normaPecaEdicao">Norma</label>
+                  <input id="normaPecaEdicao" class="form-control" [(ngModel)]="edit.norma" (blur)="normalizarCampoCaixaAlta(edit, 'norma')" autocomplete="off" />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label" for="especificacaoPecaEdicao">Especificação</label>
+                  <input id="especificacaoPecaEdicao" class="form-control" [(ngModel)]="edit.especificacao" (blur)="normalizarCampoCaixaAlta(edit, 'especificacao')" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="abaEdicaoPeca === 'revisao'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão das alterações
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Dados principais</div>
+                    <div class="review-main">{{ edit.nome || '—' }}</div>
+                    <div class="details-line">Fabricante: {{ edit.fabricante || '—' }}</div>
+                    <div class="details-line">Unidade: {{ edit.unidade || '—' }}</div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Classificação</div>
+                    <div class="details-line">Tipo: {{ edit.tipo || '—' }}</div>
+                    <div class="details-line">Modelo: {{ edit.modelo || '—' }}</div>
+                    <div class="details-line">Norma: {{ edit.norma || '—' }}</div>
+                    <div class="details-line">Especificação: {{ edit.especificacao || '—' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-totais">
+        <div class="totais-footer me-auto">
+          <div class="pendencia-salvar" *ngIf="mensagemBloqueioEdicao">
+            <i class="bi bi-info-circle me-1"></i>
+            {{ mensagemBloqueioEdicao }}
+          </div>
+          <div class="cadastro-pronto" *ngIf="!mensagemBloqueioEdicao">
+            <i class="bi bi-check-circle me-1"></i>
+            Edição pronta para salvar.
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoPeca !== 'dados'" (click)="abaAnteriorEdicao()">
+          <i class="bi bi-chevron-left me-1"></i>
+          Anterior
+        </button>
+
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoPeca !== 'revisao'" (click)="proximaAbaEdicao()">
+          Próximo
+          <i class="bi bi-chevron-right ms-1"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!edicaoPecaProntaParaSalvar"
+          [title]="mensagemBloqueioEdicao || 'Salvar alterações'"
+          (click)="salvarEdicaoModal()"
+        >
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar alterações
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="modalDetalhesPeca" tabindex="-1" aria-labelledby="modalDetalhesPecaLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title" id="modalEdicaoPecaLabel">
-          Editar Peça
-        </h5>
-
+    <div class="modal-content details-modal-content" *ngIf="pecaSelecionada">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalDetalhesPecaLabel">
+            <i class="bi bi-eye me-1"></i>
+            Detalhes da peça / insumo
+          </h5>
+          <small>ID #{{ pecaSelecionada.id || '—' }} · {{ pecaSelecionada.nome }}</small>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
       <div class="modal-body">
-        <div class="row g-2">
-
-          <h6 class="modal-section-title">
-            <i class="bi bi-pencil-square me-1"></i>
-            Dados da peça
-          </h6>
-
+        <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label" for="nomePecaEdicao">Nome *</label>
-            <input
-              id="nomePecaEdicao"
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.nome"
-              (blur)="aoSairCampoCapitalizar(edit, 'nome')"
-              style="color:#35689b;"
-            />
+            <div class="details-card h-100">
+              <div class="details-title">Dados principais</div>
+              <div class="details-line"><strong>Nome:</strong> {{ pecaSelecionada.nome || '—' }}</div>
+              <div class="details-line"><strong>Fabricante:</strong> {{ pecaSelecionada.fabricante || '—' }}</div>
+              <div class="details-line"><strong>Unidade:</strong> {{ pecaSelecionada.unidade || '—' }}</div>
+            </div>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label" for="tipoPecaEdicao">Tipo</label>
-            <input
-              id="tipoPecaEdicao"
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.tipo"
-              (blur)="aoSairCampoCapitalizar(edit, 'tipo')"
-              style="color:#35689b;"
-            />
+            <div class="details-card h-100">
+              <div class="details-title">Classificação</div>
+              <div class="details-line"><strong>Tipo:</strong> {{ pecaSelecionada.tipo || '—' }}</div>
+              <div class="details-line"><strong>Modelo:</strong> {{ pecaSelecionada.modelo || '—' }}</div>
+              <div class="details-line"><strong>Norma:</strong> {{ pecaSelecionada.norma || '—' }}</div>
+              <div class="details-line"><strong>Especificação:</strong> {{ pecaSelecionada.especificacao || '—' }}</div>
+            </div>
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label" for="fabricantePecaEdicao">Fabricante *</label>
-            <input
-              id="fabricantePecaEdicao"
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.fabricante"
-              (blur)="aoSairCampoCapitalizar(edit, 'fabricante')"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label" for="modeloPecaEdicao">Modelo</label>
-            <input
-              id="modeloPecaEdicao"
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.modelo"
-              (blur)="aoSairCampoCapitalizar(edit, 'modelo')"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-5">
-            <label class="form-label" for="especificacaoPecaEdicao">Especificação</label>
-            <input
-              id="especificacaoPecaEdicao"
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.especificacao"
-              (blur)="aoSairCampoCaixaAlta(edit, 'especificacao')"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label" for="normaPecaEdicao">Norma</label>
-            <input
-              id="normaPecaEdicao"
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.norma"
-              (blur)="aoSairCampoCaixaAlta(edit, 'norma')"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label" for="unidadePecaEdicao">Unidade *</label>
-            <input
-              id="unidadePecaEdicao"
-              class="form-control form-control-sm"
-              [(ngModel)]="edit.unidade"
-              (blur)="aoSairCampoCapitalizar(edit, 'unidade')"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-12 mt-2">
-            <small class="text-muted">
-              Campos marcados com * são obrigatórios.
-            </small>
-          </div>
-
         </div>
       </div>
 
       <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm"
-          data-bs-dismiss="modal"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-outline-primary btn-sm"
-          (click)="salvarEdicaoModal()"
-        >
-          <i class="bi bi-check-circle me-1"></i>
-          Salvar Alterações
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" (click)="abrirModalEdicao(pecaSelecionada)">
+          <i class="bi bi-pencil-square me-1"></i>
+          Editar
         </button>
       </div>
+    </div>
+  </div>
+</div>
 
+<!-- Modal Confirmação Exclusão -->
+<div class="modal fade" id="modalConfirmacaoExclusaoPeca" tabindex="-1" aria-labelledby="modalConfirmacaoExclusaoPecaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" *ngIf="pecaParaExcluir">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title" id="modalConfirmacaoExclusaoPecaLabel">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Confirmar exclusão
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="confirm-box">
+          <div class="fw-bold mb-2">Deseja excluir esta peça / insumo?</div>
+          <div>{{ pecaParaExcluir.nome }}</div>
+          <small>{{ pecaParaExcluir.fabricante || 'Fabricante não informado' }} · {{ pecaParaExcluir.unidade || 'Unidade não informada' }}</small>
+          <div class="alert alert-warning py-2 mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Esta ação não poderá ser desfeita.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="confirmarExclusao()">
+          <i class="bi bi-trash me-1"></i>
+          Excluir
+        </button>
+      </div>
     </div>
   </div>
 </div>

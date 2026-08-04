@@ -1,0 +1,839 @@
+:host {
+  display: block;
+}
+
+:host * {
+  box-sizing: border-box;
+}
+
+.veiculos-page {
+  height: calc(100vh - 105px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.veiculos-page > .row {
+  height: 100%;
+  min-height: 0;
+}
+
+.veiculos-page > .row > .col-md-12 {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-title-card,
+.clinicar-card,
+.summary-card {
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  color: #35689b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .04);
+}
+
+.page-title-card {
+  background: #eef6ff;
+}
+
+.page-title-card .card-body {
+  color: #35689b;
+  padding: .75rem;
+}
+
+.summary-row {
+  flex: 0 0 auto;
+}
+
+.summary-card {
+  min-height: 72px;
+  padding: .75rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  background: #ffffff;
+}
+
+.summary-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.summary-icon-primary {
+  color: #35689b;
+  background: #eef6ff;
+}
+
+.summary-icon-success {
+  color: #198754;
+  background: #e8f7ef;
+}
+
+.summary-icon-secondary {
+  color: #6c757d;
+  background: #f1f3f5;
+}
+
+.summary-icon-whatsapp {
+  color: #128c7e;
+  background: #e8f7f3;
+}
+
+.summary-label {
+  color: #5c7fa4;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.summary-value {
+  color: #35689b;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.veiculos-list-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.veiculos-list-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: .55rem;
+}
+
+.toolbar-filters {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 30;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .45rem;
+  flex-wrap: wrap;
+}
+
+.form-label {
+  color: #35689b;
+  font-size: .9rem;
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+  border-color: #d0e2f2;
+  color: #35689b;
+}
+
+.input-group-text {
+  background: #eef6ff;
+}
+
+.form-control:focus,
+.form-select:focus,
+.btn:focus {
+  border-color: #8fb4da;
+  box-shadow: 0 0 0 .2rem rgba(53, 104, 155, .15);
+}
+
+.btn-primary {
+  background-color: #35689b;
+  border-color: #35689b;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #2f5d8b;
+  border-color: #2f5d8b;
+}
+
+.btn-outline-primary {
+  color: #35689b;
+  border-color: #8fb4da;
+}
+
+.btn-outline-primary:hover {
+  color: #35689b;
+  background: #eef6ff;
+  border-color: #35689b;
+}
+
+.filter-chips {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin-bottom: .45rem;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: #eef6ff;
+  color: #35689b;
+  border: 1px solid #d0e2f2;
+  border-radius: 999px;
+  padding: .25rem .55rem;
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.filter-chip button {
+  border: 0;
+  background: transparent;
+  color: #35689b;
+  padding: 0;
+  line-height: 1;
+}
+
+.table-helper {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  background: #f8fbff;
+  border: 1px solid #d0e2f2;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  color: #35689b;
+  font-size: .83rem;
+  padding: .45rem .65rem;
+}
+
+.veiculo-table-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d0e2f2;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.veiculo-table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.table {
+  color: #35689b;
+}
+
+.table thead th {
+  border-color: #d0e2f2 !important;
+  white-space: nowrap;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+  color: #35689b;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f7fbff;
+}
+
+.table-compact th,
+.table-compact td {
+  padding: .45rem .55rem;
+}
+
+.table-compact td small {
+  display: block;
+  font-size: .77rem;
+  color: #35689b;
+}
+
+.table-sticky-header {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-sticky-header thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #eef6ff !important;
+  color: #35689b;
+  box-shadow: 0 2px 0 #d0e2f2;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background: #e4f1ff !important;
+}
+
+.table-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  flex-wrap: wrap;
+}
+
+.badge-soft-success,
+.badge-soft-secondary,
+.badge-soft-primary {
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+.badge-soft-success {
+  color: #0f6848;
+  background: #e8f7ef;
+  border-color: #c7ebd8;
+}
+
+.badge-soft-secondary {
+  color: #5f6b73;
+  background: #f1f3f5;
+  border-color: #dde2e6;
+}
+
+.badge-soft-primary {
+  color: #35689b;
+  background: #eef6ff;
+  border-color: #d0e2f2;
+}
+
+.table-pagination-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  border-top: 1px solid #d0e2f2;
+  background: #f8fbff;
+  padding: .65rem .75rem;
+  color: #35689b;
+}
+
+.pagination-info {
+  font-size: .88rem;
+}
+
+.pagination-info strong {
+  font-weight: 800;
+}
+
+.pagination-size {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .86rem;
+}
+
+.pagination-size select {
+  width: 82px;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.pagination-actions .btn {
+  border-radius: 6px;
+  min-width: 34px;
+}
+
+.pagination-actions .btn-primary {
+  background-color: #35689b;
+  border-color: #35689b;
+}
+
+.mobile-cards {
+  display: none;
+}
+
+.vehicle-mobile-card {
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: .75rem;
+  color: #35689b;
+  margin-bottom: .6rem;
+}
+
+.mobile-card-info {
+  display: grid;
+  gap: .15rem;
+  margin-top: .45rem;
+  font-size: .88rem;
+}
+
+.veiculo-table-scroll::-webkit-scrollbar,
+.owner-table-scroll::-webkit-scrollbar,
+.veiculo-modal-scroll-area::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.veiculo-table-scroll::-webkit-scrollbar-track,
+.owner-table-scroll::-webkit-scrollbar-track,
+.veiculo-modal-scroll-area::-webkit-scrollbar-track {
+  background: #f2f7fc;
+}
+
+.veiculo-table-scroll::-webkit-scrollbar-thumb,
+.owner-table-scroll::-webkit-scrollbar-thumb,
+.veiculo-modal-scroll-area::-webkit-scrollbar-thumb {
+  background: #b6cfe8;
+  border-radius: 10px;
+}
+
+.veiculo-table-scroll::-webkit-scrollbar-thumb:hover,
+.owner-table-scroll::-webkit-scrollbar-thumb:hover,
+.veiculo-modal-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #8fb4da;
+}
+
+/* Modais */
+.modal-content {
+  color: #35689b;
+  border: 1px solid #d0e2f2;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.modal-header-clinicar {
+  background: #eef6ff;
+  color: #35689b;
+  border-bottom: 1px solid #d0e2f2;
+}
+
+.modal-header-clinicar small {
+  display: block;
+  color: #5c7fa4;
+  font-size: .82rem;
+  margin-top: .15rem;
+}
+
+.veiculo-modal-dialog {
+  max-width: min(1180px, calc(100vw - 2rem));
+}
+
+.veiculo-modal-content {
+  height: calc(100vh - 3rem);
+  max-height: calc(100vh - 3rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.veiculo-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.veiculo-modal-tabs-area {
+  flex: 0 0 auto;
+  background: #ffffff;
+  border-bottom: 1px solid #d0e2f2;
+  padding: .85rem 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .035);
+  position: relative;
+  z-index: 20;
+}
+
+.veiculo-modal-scroll-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.clinicar-tabs {
+  gap: .35rem;
+}
+
+.clinicar-tabs .nav-link {
+  color: #35689b;
+  border: 1px solid #d0e2f2;
+  background: #f8fbff;
+  font-weight: 700;
+  position: relative;
+}
+
+.clinicar-tabs .nav-link.active {
+  background: #35689b;
+  color: #ffffff;
+  border-color: #35689b;
+}
+
+.tab-alert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dc3545;
+  color: #ffffff;
+  font-size: .72rem;
+  margin-left: .35rem;
+}
+
+.cadastro-progress {
+  height: 16px;
+  border-radius: 999px;
+  background: #eef6ff;
+  border: 1px solid #d0e2f2;
+}
+
+.cadastro-progress .progress-bar {
+  background-color: #35689b;
+  font-size: .7rem;
+  font-weight: 700;
+}
+
+.section-card,
+.preview-card,
+.owner-card,
+.review-card,
+.details-card,
+.confirm-box {
+  border: 1px solid #d0e2f2;
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #35689b;
+}
+
+.section-card {
+  padding: 1rem;
+}
+
+.section-card-title,
+.details-title {
+  color: #35689b;
+  font-weight: 800;
+  border-bottom: 1px solid #d0e2f2;
+  padding-bottom: .4rem;
+  margin-bottom: .75rem;
+}
+
+.preview-card,
+.owner-card,
+.review-card,
+.details-card,
+.confirm-box {
+  padding: .85rem;
+}
+
+.preview-title,
+.review-label {
+  color: #5c7fa4;
+  font-size: .82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .02rem;
+}
+
+.preview-main,
+.review-main,
+.owner-name {
+  color: #35689b;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.preview-sub,
+.owner-meta,
+.details-line {
+  color: #35689b;
+  font-size: .9rem;
+}
+
+.owner-card-empty {
+  background: #ffffff;
+  border-style: dashed;
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: #dc3545;
+  background-color: #fffafa;
+}
+
+.form-control.is-invalid:focus,
+.form-select.is-invalid:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .15);
+}
+
+.invalid-feedback {
+  font-size: .78rem;
+}
+
+.modal-footer-totais {
+  flex: 0 0 auto;
+  background: #f8fbff;
+  border-top: 1px solid #d0e2f2;
+  align-items: center;
+}
+
+.footer-status {
+  color: #35689b;
+  font-size: .86rem;
+}
+
+.footer-ok {
+  color: #0f6848;
+  font-weight: 700;
+}
+
+.footer-warning {
+  color: #856404;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  padding: .35rem .55rem;
+  display: inline-block;
+}
+
+.modal-footer .btn:disabled,
+.btn:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.proprietario-modal-dialog {
+  max-width: min(1080px, calc(100vw - 2rem));
+}
+
+.proprietario-modal-content {
+  height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.proprietario-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.owner-table-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.owner-table-scroll {
+  height: 100%;
+  overflow: auto;
+}
+
+.details-modal-content,
+.confirm-modal-content {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+}
+
+.modal-header-warning {
+  background: #fff3cd;
+  border-bottom: 1px solid #ffeeba;
+  color: #856404;
+}
+
+@media (max-width: 992px) {
+  .veiculos-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .veiculos-page > .row,
+  .veiculos-page > .row > .col-md-12,
+  .veiculos-list-card,
+  .veiculos-list-body {
+    height: auto;
+    min-height: initial;
+    display: block;
+  }
+
+  .veiculo-table-shell {
+    display: none;
+  }
+
+  .mobile-cards {
+    display: block;
+  }
+
+  .table-helper {
+    border-radius: 10px;
+    border-bottom: 1px solid #d0e2f2;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .veiculo-modal-content,
+  .proprietario-modal-content {
+    height: calc(100vh - 1rem);
+    max-height: calc(100vh - 1rem);
+  }
+
+  .clinicar-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .clinicar-tabs .nav-item {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-card {
+    min-height: 60px;
+  }
+
+  .toolbar-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .table-pagination-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pagination-actions {
+    width: 100%;
+  }
+
+  .pagination-actions .btn {
+    flex: 1;
+  }
+
+  .veiculo-modal-dialog,
+  .proprietario-modal-dialog {
+    max-width: calc(100vw - 1rem);
+    margin: .5rem auto;
+  }
+
+  .veiculo-modal-tabs-area,
+  .veiculo-modal-scroll-area {
+    padding: .75rem;
+  }
+
+  .modal-footer-totais {
+    align-items: stretch;
+  }
+
+  .modal-footer-totais .btn {
+    width: 100%;
+  }
+}
+
+/* Ajuste específico para o modal de edição do veículo.
+   Remove a altura fixa excessiva e mantém rolagem apenas quando necessário. */
+.veiculo-modal-content-auto {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 2rem) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.veiculo-modal-content-auto .modal-header-clinicar {
+  flex: 0 0 auto;
+}
+
+.veiculo-modal-content-auto .veiculo-modal-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: calc(100dvh - 9.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.veiculo-modal-content-auto .veiculo-modal-tabs-area {
+  flex: 0 0 auto;
+}
+
+.veiculo-modal-content-auto .veiculo-modal-scroll-area {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: clamp(240px, 48dvh, 520px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.veiculo-modal-content-auto .modal-footer,
+.veiculo-modal-content-auto .modal-footer-totais {
+  flex: 0 0 auto;
+}
+
+/* Compactação leve para reduzir ainda mais o espaço do modal de edição */
+.veiculo-modal-content-auto .section-card {
+  padding: .9rem;
+}
+
+.veiculo-modal-content-auto .section-card-title {
+  margin-bottom: .65rem;
+  padding-bottom: .35rem;
+}
+
+.veiculo-modal-content-auto .preview-card,
+.veiculo-modal-content-auto .owner-card,
+.veiculo-modal-content-auto .review-card {
+  padding: .75rem;
+}
+
+/* Telas menores: mantém o modal utilizável sem voltar a ocupar altura excessiva */
+@media (max-width: 768px) {
+  .veiculo-modal-content-auto {
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .veiculo-modal-content-auto .veiculo-modal-body {
+    max-height: calc(100dvh - 8rem);
+  }
+
+  .veiculo-modal-content-auto .veiculo-modal-scroll-area {
+    max-height: 58dvh;
+  }
+}

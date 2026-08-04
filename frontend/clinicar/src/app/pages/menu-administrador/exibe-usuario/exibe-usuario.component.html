@@ -76,7 +76,7 @@
               </div>
             </div>
 
-            <div class="col-lg-2 col-md-4 status-filter-column">
+            <div class="col-lg-1 col-md-4 status-filter-column">
               <label class="form-label mb-1">Status</label>
 
               <div class="filter-dropdown" (click)="$event.stopPropagation()">
@@ -101,7 +101,7 @@
               </div>
             </div>
 
-            <div class="col-lg-2 col-md-4 status-filter-column">
+            <div class="col-lg-1 col-md-4 status-filter-column">
               <label class="form-label mb-1">Tipo de acesso</label>
 
               <div class="filter-dropdown" (click)="$event.stopPropagation()">
@@ -125,10 +125,17 @@
                 </div>
               </div>
             </div>
-
-            <div class="col-lg-4 col-md-4">
+             <div class="col-lg-1 col-md-4 status-filter-column">
+                <button class="btn btn-outline-secondary btn-md" type="button" (click)="limparFiltros()"
+                  [disabled]="!possuiFiltrosAplicados"
+                  [title]="possuiFiltrosAplicados ? 'Limpar filtros aplicados' : 'Nenhum filtro aplicado'">
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+             </div>
+            <div class="col-lg-5 col-md-4">
               <div class="d-flex gap-2 justify-content-lg-end flex-wrap toolbar-actions">
-                <button class="btn btn-sm btn-primary-clinicar" type="button" (click)="abrirModalCadastro()">
+                <button class="btn btn-md btn-primary-clinicar" type="button" (click)="abrirModalCadastro()">
                   <i class="bi bi-person-plus me-1"></i>
                   Novo Usuário
                 </button>
@@ -136,13 +143,6 @@
                 <button class="btn btn-outline-primary btn-sm" type="button" (click)="recarregar()">
                   <i class="bi bi-arrow-clockwise me-1"></i>
                   Atualizar
-                </button>
-
-                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="limparFiltros()"
-                  [disabled]="!possuiFiltrosAplicados"
-                  [title]="possuiFiltrosAplicados ? 'Limpar filtros aplicados' : 'Nenhum filtro aplicado'">
-                  <i class="bi bi-eraser me-1"></i>
-                  Limpar
                 </button>
 
                 <button class="btn btn-outline-secondary btn-sm" type="button" (click)="voltar()">

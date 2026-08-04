@@ -1,174 +1,349 @@
-<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid mt-0 mb-0 fornecimento-page" style="color:#35689b; max-height: 82vh;">
   <div class="row justify-content-center">
-    <div class="col-md-12 mt-sm-0">
-
+    <div class="col-lg-12 col-md-12 mt-sm-0">
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">
+          <div class="card title-card">
+            <div class="card-body">
               <i class="bi bi-box-seam me-2"></i>
-              Gerenciamento do Fornecimento de Peças
+              Gerenciamento do Fornecimento de Peças e Insumos
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card clinicar-card" style="color:#35689b; border:1px solid #d0e2f2;border-radius:10px;">
-        <div class="card-body p-2" style="color:#35689b;">
+      <div class="summary-grid mb-2">
+        <div class="summary-card">
+          <span>Total</span>
+          <strong>{{ totalRegistrosFiltrados || 0 }}</strong>
+        </div>
 
-          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2" style="color:#35689b;">
-            <div class="input-group" style="max-width:42vw; color:#35689b;">
-              <label
-                class="input-group-text"
-                for="filtro-fornecimentos"
-                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
-              >
-                Buscar
-              </label>
+        <div class="summary-card success">
+          <span>Ativos</span>
+          <strong>{{ totalAtivos }}</strong>
+        </div>
 
-              <input
-                id="filtro-fornecimentos"
-                #q
-                type="search"
-                class="form-control"
-                placeholder="Fornecedor, CNPJ, peça, fabricante, modelo ou status"
-                (input)="filtrar(q.value)"
-                style="color:#35689b;"
-              />
+        <div class="summary-card muted">
+          <span>Inativos</span>
+          <strong>{{ (totalRegistrosFiltrados || 0) > (totalAtivos || 0) ? (totalRegistrosFiltrados || 0) - (totalAtivos || 0) : 0 }}</strong>
+        </div>
 
-              <div
-                class="d-flex flex-wrap gap-2 small text-muted input-group-text"
-                style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;"
-              >
-                <span style="color:#35689b;">Total de registros:</span>
-                <strong style="color:#35689b;">{{ fornecimentosPeca.length }}</strong>
+        <div class="summary-card info">
+          <span>Fornecedores</span>
+          <strong>{{ fornecedoresFiltroDisponiveis?.length || 0 }}</strong>
+        </div>
+
+        <div class="summary-card info">
+          <span>Peças/Insumos</span>
+          <strong>{{ totalPecasVinculadas }}</strong>
+        </div>
+
+        <div class="summary-card money">
+          <span>Valor médio</span>
+          <strong>{{ formatarMoedaBR(valorMedioFornecimento) || 'R$ 0,00' }}</strong>
+        </div>
+      </div>
+
+      <div class="card clinicar-card fornecimento-list-card">
+        <div class="card-body fornecimento-list-body">
+
+          <div class="toolbar-filters mb-2">
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold" for="filtro-fornecimentos">Buscar</label>
+                <div class="input-group">
+                  <span class="input-group-text input-icon">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input
+                    id="filtro-fornecimentos"
+                    type="search"
+                    class="form-control"
+                    placeholder="Fornecedor, CNPJ, Valor e Prazo..."
+                    [(ngModel)]="filtroTexto"
+                    (ngModelChange)="aoAlterarFiltros()"
+                  />
+                </div>
+              </div>
+
+              <div class="col-lg-1 col-md-3">
+                <label class="form-label fw-bold" for="filtro-status">Status</label>
+                <select
+                  id="filtro-status"
+                  class="form-select"
+                  [(ngModel)]="filtroStatus"
+                  (ngModelChange)="aoAlterarFiltros()"
+                >
+                  <option value="">Todos</option>
+                  <option value="ativo">Ativos</option>
+                  <option value="inativo">Inativos</option>
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-3">
+                <label class="form-label fw-bold" for="filtro-fornecedor">Fornecedor</label>
+                <select
+                  id="filtro-fornecedor"
+                  class="form-select"
+                  [(ngModel)]="filtroFornecedor"
+                  (ngModelChange)="aoAlterarFiltros()"
+                >
+                  <option value="">Todos</option>
+                  <option
+                    *ngFor="let fornecedor of fornecedoresFiltroDisponiveis"
+                    [value]="fornecedor.id"
+                  >
+                    {{ fornecedor.razaoSocial }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-6 ">
+                <label class="form-label fw-bold" for="filtro-peca">Peça/Insumo</label>
+                <select
+                  id="filtro-peca"
+                  class="form-select"
+                  [(ngModel)]="filtroPeca"
+                  (ngModelChange)="aoAlterarFiltros()"
+                >
+                  <option value="">Todas</option>
+                  <option
+                    *ngFor="let peca of pecasFiltroDisponiveis"
+                    [value]="peca.id"
+                  >
+                    {{ peca.nome }}
+                  </option>
+                </select>
+              </div>
+            <div class="col-lg-4 col-md-6 mt-2 ">
+              <div class="filter-chips" *ngIf="possuiFiltrosAplicados">
+                <span class="filter-chip" *ngIf="filtroTexto">
+                  Busca: {{ filtroTexto }}
+                  <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+                </span>
+
+                <span class="filter-chip" *ngIf="filtroStatus">
+                  Status: {{ filtroStatus === 'ativo' ? 'Ativos' : 'Inativos' }}
+                  <button type="button" (click)="filtroStatus = ''; aoAlterarFiltros()" aria-label="Remover status">×</button>
+                </span>
+
+                <span class="filter-chip" *ngIf="filtroFornecedor">
+                  Fornecedor selecionado
+                  <button type="button" (click)="filtroFornecedor = ''; aoAlterarFiltros()" aria-label="Remover fornecedor">×</button>
+                </span>
+
+                <span class="filter-chip" *ngIf="filtroPeca">
+                  Peça/Insumo selecionado
+                  <button type="button" (click)="filtroPeca = ''; aoAlterarFiltros()" aria-label="Remover peça">×</button>
+                </span>
+              </div>
+              <div class="d-flex flex-wrap gap-2 ms-auto">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-md"
+                  title="Limpar Filtros"
+                  [disabled]="!possuiFiltrosAplicados"
+                  (click)="limparFiltros()"
+                >
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+
+              <div class="d-flex flex-none gap-2 ms-auto">
+                <button
+                  type="button"
+                  class="btn btn-md btn-clinicar-primary"
+                  (click)="abrirModalCadastro()"
+                >
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Novo Fornecimento
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-md"
+                  (click)="recarregarFornecimentos()"
+                >
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-md"
+                  (click)="voltar()"
+                >
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar
+                </button>
+              </div>
               </div>
             </div>
-
-            <div class="d-flex gap-2">
-              <button
-                class="btn btn-outline-success btn-sm"
-                type="button"
-                (click)="abrirModalCadastro()"
-              >
-                <i class="bi bi-plus-circle me-1"></i>
-                Novo Fornecimento
-              </button>
-
-              <button
-                class="btn btn-outline-secondary btn-sm"
-                type="button"
-                (click)="voltar()"
-              >
-                <i class="bi bi-arrow-left me-1"></i>
-                Voltar
-              </button>
-
-              <button
-                class="btn btn-outline-primary btn-sm"
-                type="button"
-                (click)="recarregarFornecimentos()"
-              >
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                Atualizar
-              </button>
-            </div>
+          </div>
           </div>
 
-          <div *ngIf="loading" class="alert alert-info py-2">
+          <div *ngIf="loading" class="alert alert-info py-2 mb-2">
+            <i class="bi bi-hourglass-split me-1"></i>
             Carregando fornecimentos…
           </div>
 
-          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2">
+          <div *ngIf="!loading && errorMsg" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
             {{ errorMsg }}
           </div>
 
-          <div class="table-responsive">
-            <div class="small text-muted mb-1 right-align" style="color:#35689b;">
-              <i class="bi bi-pencil-square text-primary"></i> Editar |
-              <i class="bi bi-trash text-danger"></i> Excluir
+          <div class="fornecimento-table-shell" *ngIf="!loading">
+            <div class="fornecimento-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header">
+                <thead>
+                  <tr>
+                    <th scope="col" class="sortable" (click)="ordenarPor('fornecedor')">
+                      Fornecedor <i class="bi ms-1" [ngClass]="iconeOrdenacao('fornecedor')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('peca')">
+                      Peça/Insumo <i class="bi ms-1" [ngClass]="iconeOrdenacao('peca')"></i>
+                    </th>
+                    <th scope="col" class="text-end sortable" (click)="ordenarPor('valorCusto')">
+                      Valor <i class="bi ms-1" [ngClass]="iconeOrdenacao('valorCusto')"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable" (click)="ordenarPor('prazoEntregaDias')">
+                      Prazo <i class="bi ms-1" [ngClass]="iconeOrdenacao('prazoEntregaDias')"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable" (click)="ordenarPor('quantidadeMinima')">
+                      Qtd. mín. <i class="bi ms-1" [ngClass]="iconeOrdenacao('quantidadeMinima')"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable" (click)="ordenarPor('dataCadastro')">
+                      Cadastro <i class="bi ms-1" [ngClass]="iconeOrdenacao('dataCadastro')"></i>
+                    </th>
+                    <th scope="col" class="text-center sortable" (click)="ordenarPor('ativo')">
+                      Status <i class="bi ms-1" [ngClass]="iconeOrdenacao('ativo')"></i>
+                    </th>
+                    <th scope="col" class="text-center actions-column">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let f of fornecimentosPaginados; trackBy: trackByFornecimento">
+                    <td>
+                      <div class="fw-semibold">{{ fornecedorRazaoSocial(f) }}</div>
+                      <small>{{ formatarCNPJ(f.fornecedor?.cnpj) || 'CNPJ não informado' }}</small>
+                    </td>
+
+                    <td>
+                      <div class="fw-semibold">{{ descricaoPeca(f) }}</div>
+                      <small>
+                        {{ capitalizar(f.peca?.fabricante) || 'Fabricante não informado' }}
+                        <span *ngIf="f.peca?.modelo"> · {{ capitalizar(f.peca?.modelo) }}</span>
+                      </small>
+                    </td>
+
+                    <td class="text-end fw-semibold">{{ formatarMoedaBR(f.valorCusto) || '—' }}</td>
+                    <td class="text-center">{{ prazoTexto(f) }}</td>
+                    <td class="text-center">{{ quantidadeMinimaTexto(f) }}</td>
+                    <td class="text-center">{{ formatarDataBr(f.dataCadastro) || '—' }}</td>
+                    <td class="text-center">
+                      <span class="badge rounded-pill" [ngClass]="statusBadgeClass(f)">
+                        {{ statusTexto(f) }}
+                      </span>
+                    </td>
+                    <td class="text-center actions-cell">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-info me-1"
+                        title="Visualizar"
+                        (click)="abrirDetalhes(f)"
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary me-1"
+                        title="Editar"
+                        (click)="abrirModalEdicao(f)"
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        title="Excluir"
+                        (click)="solicitarExclusao(f)"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="totalRegistrosFiltrados === 0">
+                    <td colspan="8" class="text-center py-4 text-muted">
+                      <i class="bi bi-inbox me-1"></i>
+                      Nenhum fornecimento encontrado.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <table class="table align-middle table-hover text-nowrap" style="border-color:#d0e2f2;">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th style="color:#35689b;">Fornecedor</th>
-                  <th style="color:#35689b;">Peça</th>
-                  <th style="color:#35689b;">Fabricante | Modelo</th>
-                  <th style="color:#35689b;">Custo Unitário</th>
-                  <th style="color:#35689b;">Prazo Entrega</th>
-                  <th style="color:#35689b;">Quantidade Mínima</th>
-                  <th style="color:#35689b;">Status</th>
-                  <th style="color:#35689b;">Data Cadastro</th>
-                  <th class="text-center" style="color:#35689b;">Ações</th>
-                </tr>
-              </thead>
+            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+              <div class="pagination-info">
+                Mostrando
+                <strong>{{ indiceInicialPagina }}</strong>
+                a
+                <strong>{{ indiceFinalPagina }}</strong>
+                de
+                <strong>{{ totalRegistrosFiltrados }}</strong>
+                registro(s)
+              </div>
 
-              <tbody>
-                <tr *ngFor="let fornecimento of fornecimentosPeca; trackBy: trackByFornecimento">
-                  <td style="color:#35689b;">
-                    {{ fornecedorRazaoSocial(fornecimento) }}
-                  </td>
+              <div class="pagination-size">
+                <label>Exibir</label>
+                <select
+                  class="form-select form-select-sm"
+                  [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()"
+                >
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+                <span>por página</span>
+              </div>
 
-                  <td style="color:#35689b;">
-                    {{ descricaoPeca(fornecimento) }}
-                  </td>
+              <div class="pagination-actions">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  [disabled]="paginaAtual === 1"
+                  (click)="paginaAnterior()"
+                >
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
 
-                  <td style="color:#35689b;">
-                    {{ capitalizar(fornecimento.peca.fabricante) }}
-                    <span *ngIf="fornecimento.peca.modelo">
-                      | {{ capitalizar(fornecimento.peca.modelo) }}
-                    </span>
-                  </td>
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina"
+                  [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)"
+                >
+                  {{ pagina }}
+                </button>
 
-                  <td style="color:#35689b;">
-                    {{ formatarMoedaBR(fornecimento.valorCusto) }}
-                  </td>
-
-                  <td style="color:#35689b;">
-                    {{ fornecimento.prazoEntregaDias }} dias
-                  </td>
-
-                  <td style="color:#35689b;">
-                    {{ fornecimento.quantidadeMinima }}
-                  </td>
-
-                  <td>
-                    <span class="badge" [ngClass]="fornecimento.ativo ? 'bg-success' : 'bg-secondary'">
-                      {{ fornecimento.ativo ? 'Ativo' : 'Inativo' }}
-                    </span>
-                  </td>
-
-                  <td style="color:#35689b;">
-                    {{ formatarDataBr(fornecimento.dataCadastro) }}
-                  </td>
-
-                  <td class="text-center">
-                    <button
-                      class="btn btn-sm btn-outline-primary me-1"
-                      title="Editar fornecimento"
-                      (click)="abrirModalEdicao(fornecimento)"
-                    >
-                      <i class="bi bi-pencil-square"></i>
-                    </button>
-
-                    <button
-                      class="btn btn-sm btn-outline-danger"
-                      title="Excluir fornecimento"
-                      (click)="excluir(fornecimento.id)"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-
-                <tr *ngIf="!fornecimentosPeca || fornecimentosPeca.length === 0">
-                  <td colspan="9" class="text-center text-muted py-4">
-                    Nenhum fornecimento de peça encontrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  [disabled]="paginaAtual === totalPaginas"
+                  (click)="proximaPagina()"
+                >
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -179,431 +354,779 @@
 </div>
 
 <!-- MODAL CADASTRO FORNECIMENTO -->
-<div class="modal fade" id="modalCadastroFornecimento" tabindex="-1" aria-hidden="true" style="color:#35689b;">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
+<div class="modal fade" id="modalCadastroFornecimento" tabindex="-1" aria-labelledby="modalCadastroFornecimentoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered fornecimento-modal-dialog">
+    <div class="modal-content fornecimento-modal-content fornecimento-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalCadastroFornecimentoLabel">
+            <i class="bi bi-plus-circle me-1"></i>
+            Novo Fornecimento
+          </h5>
+          <small>{{ resumoFornecimento(novoFornecimento) }}</small>
+        </div>
 
-      <div class="modal-header" style="background:#eef6ff;color:#35689b;">
-        <h5 class="modal-title">
-          Novo Fornecimento
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
-      <div class="modal-body">
-        <div class="row g-3" style="color:#35689b;">
+      <div class="modal-body fornecimento-modal-body">
+        <div class="fornecimento-modal-tabs-area">
+          <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ mensagemErroModal }}
+          </div>
 
-          <h6 class="modal-section-title">
-            <i class="bi bi-box-seam me-1"></i>
-            Dados do fornecimento
-          </h6>
-
-          <div class="col-md-6">
-            <label for="fornecedorCadastroInput" class="form-label">Fornecedor *</label>
-
-            <div class="position-relative">
-              <input
-                id="fornecedorCadastroInput"
-                type="text"
-                class="form-control pe-5"
-                [value]="fornecedorTexto(novoFornecimento)"
-                readonly
-                placeholder="Selecione um fornecedor"
-                style="color:#35689b;"
-              />
-
-              <button
-                type="button"
-                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
-                (click)="abrirModalFornecedor('cadastro')"
-                style="color:#35689b;"
-              >
-                <i class="bi bi-search" style="color:#35689b;"></i>
-              </button>
+          <div class="progress fornecimento-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+            <div class="progress-bar" [style.width.%]="progressoCadastroFornecimento">
+              {{ progressoCadastroFornecimento }}%
             </div>
           </div>
 
-          <div class="col-md-6">
-            <label for="pecaCadastroInput" class="form-label">Peça *</label>
-
-            <div class="position-relative" style="color:#35689b;">
-              <input
-                id="pecaCadastroInput"
-                type="text"
-                class="form-control pe-5"
-                [value]="pecaTexto(novoFornecimento)"
-                readonly
-                placeholder="Selecione uma peça"
-                style="color:#35689b;"
-              />
-
-              <button
-                type="button"
-                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
-                (click)="abrirModalPeca('cadastro')"
-                style="color:#35689b;"
-              >
-                <i class="bi bi-search" style="color:#35689b;"></i>
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroFornecimento === 'vinculo'" (click)="trocarAbaCadastroFornecimento('vinculo')">
+                <i class="bi bi-link-45deg me-1"></i>
+                Vínculo
+                <span class="tab-alert" *ngIf="vinculoPendente(novoFornecimento)">!</span>
               </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroFornecimento === 'condicoes'" (click)="trocarAbaCadastroFornecimento('condicoes')">
+                <i class="bi bi-currency-dollar me-1"></i>
+                Condições
+                <span class="tab-alert" *ngIf="condicoesPendentes(novoFornecimento)">!</span>
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaCadastroFornecimento === 'revisao'" (click)="trocarAbaCadastroFornecimento('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="fornecimento-modal-scroll-area">
+          <ng-container *ngIf="abaCadastroFornecimento === 'vinculo'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-link-45deg me-1"></i>
+                Fornecedor e peça/insumo
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="fornecedorCadastroInput" class="form-label">Fornecedor *</label>
+                  <div class="select-card" [class.is-invalid-box]="campoMarcadoInvalido('fornecedor')">
+                    <div>
+                      <div class="select-card-title">{{ fornecedorTexto(novoFornecimento) || 'Fornecedor não selecionado' }}</div>
+                      <small>{{ formatarCNPJ(novoFornecimento.fornecedor?.cnpj) || 'Selecione o fornecedor responsável pelo fornecimento.' }}</small>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalFornecedor('cadastro')">
+                      <i class="bi bi-search me-1"></i>
+                      Selecionar
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('fornecedor')">Selecione um fornecedor.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="pecaCadastroInput" class="form-label">Peça/Insumo *</label>
+                  <div class="select-card" [class.is-invalid-box]="campoMarcadoInvalido('peca')">
+                    <div>
+                      <div class="select-card-title">{{ pecaTexto(novoFornecimento) || 'Peça/Insumo não selecionado' }}</div>
+                      <small>Selecione o item que será fornecido.</small>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalPeca('cadastro')">
+                      <i class="bi bi-search me-1"></i>
+                      Selecionar
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('peca')">Selecione uma peça ou insumo.</div>
+                </div>
+
+                <div class="col-12">
+                  <div class="preview-card">
+                    <div class="preview-title">Prévia do vínculo</div>
+                    <div class="preview-main">{{ resumoFornecimento(novoFornecimento) }}</div>
+                    <div class="preview-sub">
+                      Esse cadastro define as condições comerciais da peça/insumo para o fornecedor selecionado.
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </ng-container>
 
-          <div class="col-md-3">
-            <label class="form-label" for="valorUnitarioCadastro">Valor Unitário *</label>
+          <ng-container *ngIf="abaCadastroFornecimento === 'condicoes'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-currency-dollar me-1"></i>
+                Condições comerciais
+              </div>
 
-            <input
-              id="valorUnitarioCadastro"
-              class="form-control"
-              [(ngModel)]="novoFornecimento.valorCusto"
-              type="text"
-              style="color:#35689b;"
-              (blur)="formatarValorCustoCadastro()"
-              placeholder="R$ 0,00"
-            />
-          </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="valorUnitarioCadastro">Valor unitário *</label>
+                  <input
+                    id="valorUnitarioCadastro"
+                    class="form-control"
+                    [(ngModel)]="novoFornecimento.valorCusto"
+                    type="text"
+                    (blur)="formatarValorCustoCadastro()"
+                    (input)="limparCampoInvalido('valorCusto')"
+                    [class.is-invalid]="campoMarcadoInvalido('valorCusto')"
+                    placeholder="R$ 0,00"
+                    autocomplete="off"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('valorCusto')">Informe um valor maior que zero.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label" for="prazoEntregaCadastro">Prazo Entrega *</label>
+                <div class="col-md-3">
+                  <label class="form-label" for="prazoEntregaCadastro">Prazo entrega *</label>
+                  <input
+                    id="prazoEntregaCadastro"
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="1"
+                    [(ngModel)]="novoFornecimento.prazoEntregaDias"
+                    (blur)="normalizarPrazoEntregaCadastro()"
+                    [class.is-invalid]="campoMarcadoInvalido('prazoEntregaDias')"
+                  />
+                  <small class="text-muted">Use 0 para pronta entrega.</small>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('prazoEntregaDias')">Informe o prazo em dias.</div>
+                </div>
 
-            <input
-              id="prazoEntregaCadastro"
-              class="form-control"
-              type="number"
-              min="0"
-              [(ngModel)]="novoFornecimento.prazoEntregaDias"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="quantidadeMinimaCadastro">Quantidade mínima *</label>
+                  <input
+                    id="quantidadeMinimaCadastro"
+                    class="form-control"
+                    type="number"
+                    min="1"
+                    step="1"
+                    [(ngModel)]="novoFornecimento.quantidadeMinima"
+                    (blur)="normalizarQuantidadeMinimaCadastro()"
+                    [class.is-invalid]="campoMarcadoInvalido('quantidadeMinima')"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('quantidadeMinima')">Informe uma quantidade maior que zero.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label" for="quantidadeMinimaCadastro">Quantidade Mínima *</label>
+                <div class="col-md-3">
+                  <label class="form-label" for="statusAtivoCadastro">Status</label>
+                  <select id="statusAtivoCadastro" class="form-select" [(ngModel)]="novoFornecimento.ativo">
+                    <option [ngValue]="true">Ativo</option>
+                    <option [ngValue]="false">Inativo</option>
+                  </select>
+                </div>
 
-            <input
-              id="quantidadeMinimaCadastro"
-              class="form-control"
-              type="number"
-              min="0"
-              [(ngModel)]="novoFornecimento.quantidadeMinima"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="dataCadastroFornecimento">Data cadastro *</label>
+                  <input
+                    id="dataCadastroFornecimento"
+                    type="date"
+                    class="form-control"
+                    [(ngModel)]="novoFornecimento.dataCadastro"
+                    (change)="limparCampoInvalido('dataCadastro')"
+                    [class.is-invalid]="campoMarcadoInvalido('dataCadastro')"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('dataCadastro')">Informe a data de cadastro.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label" for="statusAtivoCadastro">Status</label>
+                <div class="col-md-8">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Resumo financeiro</div>
+                    <div class="preview-main">{{ formatarMoedaBR(novoFornecimento.valorCusto) || 'R$ 0,00' }}</div>
+                    <div class="preview-sub">
+                      Prazo: {{ prazoTexto(novoFornecimento) }} · Quantidade mínima: {{ quantidadeMinimaTexto(novoFornecimento) }} · {{ statusTexto(novoFornecimento) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
 
-            <select
-              id="statusAtivoCadastro"
-              class="form-select"
-              [(ngModel)]="novoFornecimento.ativo"
-              style="color:#35689b;"
-            >
-              <option [ngValue]="true" style="color:#35689b;">Ativo</option>
-              <option [ngValue]="false" style="color:#35689b;">Inativo</option>
-            </select>
-          </div>
+          <ng-container *ngIf="abaCadastroFornecimento === 'revisao'">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Vínculo</div>
+                  <div class="review-main">{{ pecaTexto(novoFornecimento) || '—' }}</div>
+                  <div class="details-line">Fornecedor: {{ fornecedorTexto(novoFornecimento) || '—' }}</div>
+                  <div class="details-line">CNPJ: {{ formatarCNPJ(novoFornecimento.fornecedor?.cnpj) || '—' }}</div>
+                </div>
+              </div>
 
-          <div class="col-md-4" style="color:#35689b;">
-            <label class="form-label" for="dataCadastroFornecimento" style="color:#35689b;">
-              Data Cadastro *
-            </label>
-
-            <input
-              id="dataCadastroFornecimento"
-              type="date"
-              class="form-control"
-              [(ngModel)]="novoFornecimento.dataCadastro"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-12">
-            <small class="text-muted">
-              Campos marcados com * são obrigatórios.
-            </small>
-          </div>
-
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Condições</div>
+                  <div class="review-main">{{ formatarMoedaBR(novoFornecimento.valorCusto) || 'R$ 0,00' }}</div>
+                  <div class="details-line">Prazo: {{ prazoTexto(novoFornecimento) }}</div>
+                  <div class="details-line">Quantidade mínima: {{ quantidadeMinimaTexto(novoFornecimento) }}</div>
+                  <div class="details-line">Data cadastro: {{ formatarDataBr(novoFornecimento.dataCadastro) || '—' }}</div>
+                  <div class="details-line">Status: {{ statusTexto(novoFornecimento) }}</div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
 
-      <div class="modal-footer" style="color:#35689b;">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+      <div class="modal-footer modal-footer-totais">
+        <div class="totais-footer me-auto">
+          <span>Valor unitário: <strong>{{ formatarMoedaBR(novoFornecimento.valorCusto) || 'R$ 0,00' }}</strong></span>
+          <span>Prazo: <strong>{{ prazoTexto(novoFornecimento) }}</strong></span>
+
+          <div class="pendencia-salvar" *ngIf="mensagemBloqueioCadastro">
+            <i class="bi bi-info-circle me-1"></i>
+            {{ mensagemBloqueioCadastro }}
+          </div>
+
+          <div class="pronto-salvar" *ngIf="!mensagemBloqueioCadastro">
+            <i class="bi bi-check-circle me-1"></i>
+            Cadastro pronto para salvar.
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary" [disabled]="cadastroEhPrimeiraAba()" (click)="cadastroAbaAnterior()">
+          <i class="bi bi-chevron-left me-1"></i>
+          Anterior
+        </button>
+
+        <button type="button" class="btn btn-outline-primary" *ngIf="!cadastroEhUltimaAba()" (click)="cadastroAbaProxima()">
+          Próximo
+          <i class="bi bi-chevron-right ms-1"></i>
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
           Cancelar
         </button>
 
-        <button class="btn btn-outline-success btn-sm" (click)="salvarNovoFornecimento()">
+        <button
+          type="button"
+          class="btn btn-clinicar-primary"
+          [disabled]="!cadastroProntoParaSalvar"
+          [title]="mensagemBloqueioCadastro || 'Salvar fornecimento'"
+          (click)="salvarNovoFornecimento()"
+        >
           <i class="bi bi-check-circle me-1"></i>
           Salvar Fornecimento
         </button>
       </div>
-
     </div>
   </div>
 </div>
 
 <!-- MODAL EDIÇÃO FORNECIMENTO -->
-<div class="modal fade" id="modalEdicaoFornecimento" tabindex="-1" aria-hidden="true" style="color:#35689b;">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
+<div class="modal fade" id="modalEdicaoFornecimento" tabindex="-1" aria-labelledby="modalEdicaoFornecimentoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered fornecimento-modal-dialog">
+    <div class="modal-content fornecimento-modal-content fornecimento-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalEdicaoFornecimentoLabel">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar Fornecimento
+          </h5>
+          <small>ID #{{ editId || '—' }} · {{ resumoFornecimento(edit) }}</small>
+        </div>
 
-      <div class="modal-header" style="background:#eef6ff;color:#35689b;">
-        <h5 class="modal-title">
-          Editar Fornecimento
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
 
-      <div class="modal-body">
-        <div class="row g-3" style="color:#35689b;">
+      <div class="modal-body fornecimento-modal-body">
+        <div class="fornecimento-modal-tabs-area">
+          <div *ngIf="mensagemErroModal" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ mensagemErroModal }}
+          </div>
 
-          <h6 class="modal-section-title">
-            <i class="bi bi-pencil-square me-1"></i>
-            Dados do fornecimento
-          </h6>
-
-          <div class="col-md-6">
-            <label for="fornecedorEdicaoInput" class="form-label">Fornecedor *</label>
-
-            <div class="position-relative">
-              <input
-                id="fornecedorEdicaoInput"
-                type="text"
-                class="form-control pe-5"
-                [value]="fornecedorTexto(edit)"
-                readonly
-                placeholder="Selecione um fornecedor"
-                style="color:#35689b;"
-              />
-
-              <button
-                type="button"
-                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
-                (click)="abrirModalFornecedor('edicao')"
-                style="color:#35689b;"
-              >
-                <i class="bi bi-search" style="color:#35689b;"></i>
-              </button>
+          <div class="progress fornecimento-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+            <div class="progress-bar" [style.width.%]="progressoEdicaoFornecimento">
+              {{ progressoEdicaoFornecimento }}%
             </div>
           </div>
 
-          <div class="col-md-6">
-            <label for="pecaEdicaoInput" class="form-label">Peça *</label>
-
-            <div class="position-relative" style="color:#35689b;">
-              <input
-                id="pecaEdicaoInput"
-                type="text"
-                class="form-control pe-5"
-                [value]="pecaTexto(edit)"
-                readonly
-                placeholder="Selecione uma peça"
-                style="color:#35689b;"
-              />
-
-              <button
-                type="button"
-                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
-                (click)="abrirModalPeca('edicao')"
-                style="color:#35689b;"
-              >
-                <i class="bi bi-search" style="color:#35689b;"></i>
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoFornecimento === 'vinculo'" (click)="trocarAbaEdicaoFornecimento('vinculo')">
+                <i class="bi bi-link-45deg me-1"></i>
+                Vínculo
+                <span class="tab-alert" *ngIf="vinculoPendente(edit)">!</span>
               </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoFornecimento === 'condicoes'" (click)="trocarAbaEdicaoFornecimento('condicoes')">
+                <i class="bi bi-currency-dollar me-1"></i>
+                Condições
+                <span class="tab-alert" *ngIf="condicoesPendentes(edit)">!</span>
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoFornecimento === 'revisao'" (click)="trocarAbaEdicaoFornecimento('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="fornecimento-modal-scroll-area">
+          <ng-container *ngIf="abaEdicaoFornecimento === 'vinculo'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-link-45deg me-1"></i>
+                Fornecedor e peça/insumo
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="fornecedorEdicaoInput" class="form-label">Fornecedor *</label>
+                  <div class="select-card" [class.is-invalid-box]="campoMarcadoInvalido('fornecedor')">
+                    <div>
+                      <div class="select-card-title">{{ fornecedorTexto(edit) || 'Fornecedor não selecionado' }}</div>
+                      <small>{{ formatarCNPJ(edit.fornecedor?.cnpj) || 'Selecione o fornecedor responsável pelo fornecimento.' }}</small>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalFornecedor('edicao')">
+                      <i class="bi bi-search me-1"></i>
+                      Selecionar
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('fornecedor')">Selecione um fornecedor.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="pecaEdicaoInput" class="form-label">Peça/Insumo *</label>
+                  <div class="select-card" [class.is-invalid-box]="campoMarcadoInvalido('peca')">
+                    <div>
+                      <div class="select-card-title">{{ pecaTexto(edit) || 'Peça/Insumo não selecionado' }}</div>
+                      <small>Selecione o item que será fornecido.</small>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalPeca('edicao')">
+                      <i class="bi bi-search me-1"></i>
+                      Selecionar
+                    </button>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('peca')">Selecione uma peça ou insumo.</div>
+                </div>
+              </div>
             </div>
-          </div>
+          </ng-container>
 
-          <div class="col-md-3">
-            <label class="form-label" for="valorUnitarioEdicao">Valor Unitário *</label>
+          <ng-container *ngIf="abaEdicaoFornecimento === 'condicoes'">
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-currency-dollar me-1"></i>
+                Condições comerciais
+              </div>
 
-            <input
-              id="valorUnitarioEdicao"
-              class="form-control"
-              [(ngModel)]="edit.valorCusto"
-              type="text"
-              style="color:#35689b;"
-              (blur)="formatarValorCustoEdicao()"
-              placeholder="R$ 0,00"
-            />
-          </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="valorUnitarioEdicao">Valor unitário *</label>
+                  <input
+                    id="valorUnitarioEdicao"
+                    class="form-control"
+                    [(ngModel)]="edit.valorCusto"
+                    type="text"
+                    (blur)="formatarValorCustoEdicao()"
+                    (input)="limparCampoInvalido('valorCusto')"
+                    [class.is-invalid]="campoMarcadoInvalido('valorCusto')"
+                    placeholder="R$ 0,00"
+                    autocomplete="off"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('valorCusto')">Informe um valor maior que zero.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label" for="prazoEntregaEdicao">Prazo Entrega *</label>
+                <div class="col-md-3">
+                  <label class="form-label" for="prazoEntregaEdicao">Prazo entrega *</label>
+                  <input
+                    id="prazoEntregaEdicao"
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="1"
+                    [(ngModel)]="edit.prazoEntregaDias"
+                    (blur)="normalizarPrazoEntregaEdicao()"
+                    [class.is-invalid]="campoMarcadoInvalido('prazoEntregaDias')"
+                  />
+                  <small class="text-muted">Use 0 para pronta entrega.</small>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('prazoEntregaDias')">Informe o prazo em dias.</div>
+                </div>
 
-            <input
-              id="prazoEntregaEdicao"
-              class="form-control"
-              type="number"
-              min="0"
-              [(ngModel)]="edit.prazoEntregaDias"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="quantidadeMinimaEdicao">Quantidade mínima *</label>
+                  <input
+                    id="quantidadeMinimaEdicao"
+                    class="form-control"
+                    type="number"
+                    min="1"
+                    step="1"
+                    [(ngModel)]="edit.quantidadeMinima"
+                    (blur)="normalizarQuantidadeMinimaEdicao()"
+                    [class.is-invalid]="campoMarcadoInvalido('quantidadeMinima')"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('quantidadeMinima')">Informe uma quantidade maior que zero.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label" for="quantidadeMinimaEdicao">
-              Quantidade Mínima *
-            </label>
+                <div class="col-md-3">
+                  <label class="form-label" for="statusAtivoEdicao">Status</label>
+                  <select id="statusAtivoEdicao" class="form-select" [(ngModel)]="edit.ativo">
+                    <option [ngValue]="true">Ativo</option>
+                    <option [ngValue]="false">Inativo</option>
+                  </select>
+                </div>
 
-            <input
-              id="quantidadeMinimaEdicao"
-              class="form-control"
-              type="number"
-              min="0"
-              [(ngModel)]="edit.quantidadeMinima"
-              style="color:#35689b;"
-            />
-          </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="dataCadastroEdicao">Data cadastro *</label>
+                  <input
+                    id="dataCadastroEdicao"
+                    type="date"
+                    class="form-control"
+                    [(ngModel)]="edit.dataCadastro"
+                    (change)="limparCampoInvalido('dataCadastro')"
+                    [class.is-invalid]="campoMarcadoInvalido('dataCadastro')"
+                  />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido('dataCadastro')">Informe a data de cadastro.</div>
+                </div>
 
-          <div class="col-md-3">
-            <label class="form-label" for="statusAtivoEdicao">Status</label>
+                <div class="col-md-8">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Resumo financeiro</div>
+                    <div class="preview-main">{{ formatarMoedaBR(edit.valorCusto) || 'R$ 0,00' }}</div>
+                    <div class="preview-sub">
+                      Prazo: {{ prazoTexto(edit) }} · Quantidade mínima: {{ quantidadeMinimaTexto(edit) }} · {{ statusTexto(edit) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
 
-            <select
-              id="statusAtivoEdicao"
-              class="form-select"
-              [(ngModel)]="edit.ativo"
-              style="color:#35689b;"
-            >
-              <option [ngValue]="true" style="color:#35689b;">Ativo</option>
-              <option [ngValue]="false" style="color:#35689b;">Inativo</option>
-            </select>
-          </div>
+          <ng-container *ngIf="abaEdicaoFornecimento === 'revisao'">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Vínculo</div>
+                  <div class="review-main">{{ pecaTexto(edit) || '—' }}</div>
+                  <div class="details-line">Fornecedor: {{ fornecedorTexto(edit) || '—' }}</div>
+                  <div class="details-line">CNPJ: {{ formatarCNPJ(edit.fornecedor?.cnpj) || '—' }}</div>
+                </div>
+              </div>
 
-          <div class="col-md-4" style="color:#35689b;">
-            <label class="form-label" for="dataCadastroEdicao" style="color:#35689b;">
-              Data Cadastro *
-            </label>
-
-            <input
-              id="dataCadastroEdicao"
-              type="date"
-              class="form-control"
-              [(ngModel)]="edit.dataCadastro"
-              style="color:#35689b;"
-            />
-          </div>
-
-          <div class="col-12">
-            <small class="text-muted">
-              Campos marcados com * são obrigatórios.
-            </small>
-          </div>
-
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Condições</div>
+                  <div class="review-main">{{ formatarMoedaBR(edit.valorCusto) || 'R$ 0,00' }}</div>
+                  <div class="details-line">Prazo: {{ prazoTexto(edit) }}</div>
+                  <div class="details-line">Quantidade mínima: {{ quantidadeMinimaTexto(edit) }}</div>
+                  <div class="details-line">Data cadastro: {{ formatarDataBr(edit.dataCadastro) || '—' }}</div>
+                  <div class="details-line">Status: {{ statusTexto(edit) }}</div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
 
-      <div class="modal-footer" style="color:#35689b;">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+      <div class="modal-footer modal-footer-totais">
+        <div class="totais-footer me-auto">
+          <span>Valor unitário: <strong>{{ formatarMoedaBR(edit.valorCusto) || 'R$ 0,00' }}</strong></span>
+          <span>Prazo: <strong>{{ prazoTexto(edit) }}</strong></span>
+
+          <div class="pendencia-salvar" *ngIf="mensagemBloqueioEdicao">
+            <i class="bi bi-info-circle me-1"></i>
+            {{ mensagemBloqueioEdicao }}
+          </div>
+
+          <div class="pronto-salvar" *ngIf="!mensagemBloqueioEdicao">
+            <i class="bi bi-check-circle me-1"></i>
+            Edição pronta para salvar.
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary" [disabled]="edicaoEhPrimeiraAba()" (click)="edicaoAbaAnterior()">
+          <i class="bi bi-chevron-left me-1"></i>
+          Anterior
+        </button>
+
+        <button type="button" class="btn btn-outline-primary" *ngIf="!edicaoEhUltimaAba()" (click)="edicaoAbaProxima()">
+          Próximo
+          <i class="bi bi-chevron-right ms-1"></i>
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
           Cancelar
         </button>
 
-        <button class="btn btn-outline-primary btn-sm" (click)="salvarEdicaoModal()">
+        <button
+          type="button"
+          class="btn btn-clinicar-primary"
+          [disabled]="!edicaoProntaParaSalvar"
+          [title]="mensagemBloqueioEdicao || 'Salvar alterações'"
+          (click)="salvarEdicaoModal()"
+        >
           <i class="bi bi-check-circle me-1"></i>
-          Salvar Alterações
+          Salvar alterações
         </button>
       </div>
+    </div>
+  </div>
+</div>
 
+<!-- MODAL DETALHES -->
+<div class="modal fade" id="modalDetalhesFornecimento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content details-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-eye me-1"></i>
+            Detalhes do Fornecimento
+          </h5>
+          <small>{{ resumoFornecimento(fornecimentoDetalhe || {}) }}</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body" *ngIf="fornecimentoDetalhe">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="details-card h-100">
+              <div class="details-title">Fornecedor</div>
+              <div class="details-line"><strong>Razão social:</strong> {{ fornecedorTexto(fornecimentoDetalhe) || '—' }}</div>
+              <div class="details-line"><strong>CNPJ:</strong> {{ formatarCNPJ(fornecimentoDetalhe.fornecedor?.cnpj) || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="details-card h-100">
+              <div class="details-title">Peça/Insumo</div>
+              <div class="details-line"><strong>Descrição:</strong> {{ descricaoPeca(fornecimentoDetalhe) }}</div>
+              <div class="details-line"><strong>Fabricante:</strong> {{ capitalizar(fornecimentoDetalhe.peca?.fabricante) || '—' }}</div>
+              <div class="details-line"><strong>Modelo:</strong> {{ capitalizar(fornecimentoDetalhe.peca?.modelo) || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-12">
+            <div class="details-card">
+              <div class="details-title">Condições comerciais</div>
+              <div class="details-grid">
+                <div>
+                  <span>Valor unitário</span>
+                  <strong>{{ formatarMoedaBR(fornecimentoDetalhe.valorCusto) || '—' }}</strong>
+                </div>
+
+                <div>
+                  <span>Prazo de entrega</span>
+                  <strong>{{ prazoTexto(fornecimentoDetalhe) }}</strong>
+                </div>
+
+                <div>
+                  <span>Qtd. mínima</span>
+                  <strong>{{ quantidadeMinimaTexto(fornecimentoDetalhe) }}</strong>
+                </div>
+
+                <div>
+                  <span>Data cadastro</span>
+                  <strong>{{ formatarDataBr(fornecimentoDetalhe.dataCadastro) || '—' }}</strong>
+                </div>
+
+                <div>
+                  <span>Status</span>
+                  <strong>{{ statusTexto(fornecimentoDetalhe) }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- MODAL FORNECEDOR -->
-<div class="modal fade" id="modalFornecedor" tabindex="-1" aria-hidden="true" style="color:#35689b;">
-  <div class="modal-dialog modal-lg modal-dialog-centered" style="color:#35689b;">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff;color:#35689b;">
-        <h5 class="modal-title">
-          Selecionar Fornecedor
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="modalFornecedor" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg modal-dialog-centered selection-modal-dialog">
+    <div class="modal-content selection-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-building me-1"></i>
+            Selecionar Fornecedor
+          </h5>
+          <small>Escolha o fornecedor que será vinculado ao fornecimento.</small>
+        </div>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="fecharModalFornecedor()"></button>
       </div>
 
-      <div class="modal-body">
-        <input
-          type="search"
-          class="form-control mb-3"
-          placeholder="Buscar fornecedor por razão social, nome fantasia ou CNPJ..."
-          [(ngModel)]="razaoSocialFiltroEdit"
-          (input)="aplicarFiltroFornecedorEdit()"
-          style="color:#35689b;"
-        />
+      <div class="modal-body selection-modal-body">
+        <div class="input-group mb-2">
+          <span class="input-group-text input-icon">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Buscar fornecedor por razão social, nome fantasia, CNPJ ou item fornecido..."
+            [(ngModel)]="razaoSocialFiltroEdit"
+            (input)="aplicarFiltroFornecedorEdit()"
+          />
+        </div>
 
-        <div class="selection-lista">
-          <button
-            type="button"
-            class="list-group-item list-group-item-action"
-            *ngFor="let f of fornecedoresFiltrados"
-            (click)="selecionarFornecedorModal(f)"
-          >
-            <div class="fw-semibold" style="color:#35689b;">
-              {{ f.razaoSocial }}
-            </div>
+        <div class="selection-table-scroll">
+          <table class="table table-hover align-middle table-compact table-sticky-header">
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th>CNPJ</th>
+                <th>Item fornecido</th>
+                <th class="text-center">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of fornecedoresFiltrados; trackBy: trackByFornecedor">
+                <td>
+                  <div class="fw-semibold">{{ f.razaoSocial }}</div>
+                  <small>{{ f.nomeFantasia }}</small>
+                </td>
+                <td>{{ formatarCNPJ(f.cnpj) }}</td>
+                <td><span class="badge item-badge">{{ f.itemFornecido || '—' }}</span></td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="selecionarFornecedorModal(f)">
+                    <i class="bi bi-check2-circle me-1"></i>
+                    Selecionar
+                  </button>
+                </td>
+              </tr>
 
-            <small class="text-muted" style="color:#35689b;">
-              {{ formatarCNPJ(f.cnpj) }}
-            </small>
-          </button>
-
-          <div *ngIf="fornecedoresFiltrados.length === 0" class="text-center text-muted py-3">
-            Nenhum fornecedor encontrado.
-          </div>
+              <tr *ngIf="fornecedoresFiltrados.length === 0">
+                <td colspan="4" class="text-center text-muted py-3">Nenhum fornecedor encontrado.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="fecharModalFornecedor()">Cancelar</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- MODAL PEÇA -->
-<div class="modal fade" id="modalPeca" tabindex="-1" aria-hidden="true" style="color:#35689b;">
-  <div class="modal-dialog modal-lg modal-dialog-centered" style="color:#35689b;">
-    <div class="modal-content" style="color:#35689b;">
-
-      <div class="modal-header" style="background:#eef6ff; color:#35689b;">
-        <h5 class="modal-title" style="color:#35689b;">
-          Selecionar Peça
-        </h5>
-
-        <button type="button" class="btn-close" data-bs-dismiss="modal" style="color:#35689b;"></button>
+<div class="modal fade" id="modalPeca" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg modal-dialog-centered selection-modal-dialog">
+    <div class="modal-content selection-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-nut me-1"></i>
+            Selecionar Peça/Insumo
+          </h5>
+          <small>Escolha a peça ou insumo que será fornecido.</small>
+        </div>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="fecharModalPeca()"></button>
       </div>
 
-      <div class="modal-body" style="color:#35689b;">
-        <input
-          type="search"
-          class="form-control mb-3"
-          placeholder="Buscar peça por nome, fabricante, modelo ou norma..."
-          [(ngModel)]="descricaoFiltroEdit"
-          (input)="aplicarFiltroPecaEdit()"
-          style="color:#35689b;"
-        />
+      <div class="modal-body selection-modal-body">
+        <div class="input-group mb-2">
+          <span class="input-group-text input-icon">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Buscar peça por nome, fabricante, modelo, norma, tipo ou unidade..."
+            [(ngModel)]="descricaoFiltroEdit"
+            (input)="aplicarFiltroPecaEdit()"
+          />
+        </div>
 
-        <div class="selection-lista" style="color:#35689b;">
-          <button
-            type="button"
-            class="list-group-item list-group-item-action"
-            *ngFor="let p of pecasFiltradas"
-            (click)="selecionarPecaModal(p)"
-            style="color:#35689b;"
-          >
-            <div class="fw-semibold" style="color:#35689b;">
-              {{ capitalizar(p.nome) }}
-            </div>
+        <div class="selection-table-scroll">
+          <table class="table table-hover align-middle table-compact table-sticky-header">
+            <thead>
+              <tr>
+                <th>Peça/Insumo</th>
+                <th>Fabricante</th>
+                <th>Tipo</th>
+                <th>Unidade</th>
+                <th class="text-center">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of pecasFiltradas; trackBy: trackByPeca">
+                <td>
+                  <div class="fw-semibold">{{ capitalizar(p.nome) }}</div>
+                  <small>{{ capitalizar(p.modelo) || 'Modelo não informado' }}</small>
+                </td>
+                <td>{{ capitalizar(p.fabricante) || '—' }}</td>
+                <td><span class="badge item-badge">{{ p.tipo || '—' }}</span></td>
+                <td>{{ p.unidade || '—' }}</td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="selecionarPecaModal(p)">
+                    <i class="bi bi-check2-circle me-1"></i>
+                    Selecionar
+                  </button>
+                </td>
+              </tr>
 
-            <small class="text-muted" style="color:#35689b;">
-              {{ capitalizar(p.fabricante) }}
-              <span *ngIf="p.modelo">
-                - {{ capitalizar(p.modelo) }}
-              </span>
-            </small>
-          </button>
-
-          <div *ngIf="pecasFiltradas.length === 0" class="text-center text-muted py-3">
-            Nenhuma peça encontrada.
-          </div>
+              <tr *ngIf="pecasFiltradas.length === 0">
+                <td colspan="5" class="text-center text-muted py-3">Nenhuma peça ou insumo encontrado.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="fecharModalPeca()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO EXCLUSÃO -->
+<div class="modal fade" id="modalConfirmacaoExclusaoFornecimento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content confirm-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Confirmar exclusão
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="confirm-box">
+          <strong>Deseja excluir este fornecimento?</strong>
+          <p class="mb-0 mt-2">
+            {{ resumoFornecimento(fornecimentoParaExcluir || {}) }}
+          </p>
+          <small>Essa ação removerá o vínculo de fornecimento da peça/insumo com o fornecedor.</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-outline-danger" (click)="confirmarExclusao()">
+          <i class="bi bi-trash me-1"></i>
+          Excluir
+        </button>
+      </div>
     </div>
   </div>
 </div>
