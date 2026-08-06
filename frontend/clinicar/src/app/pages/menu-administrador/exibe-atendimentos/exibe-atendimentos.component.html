@@ -1,197 +1,414 @@
-<div class="container-fluid mt-0 mb-0" style="color:#35689b;">
+<div class="container-fluid mt-0 mb-0 atendimentos-page" style="color:#35689b; max-height: 82vh;">
   <div class="row justify-content-center">
     <div class="col-md-12">
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">
+          <div class="card page-title-card">
+            <div class="card-body">
               <i class="bi bi-tools me-1"></i>
               Gerenciamento de Atendimentos
             </div>
           </div>
         </div>
       </div>
-      <div class="row g-2 mb-3">
-        <div class="col-md-3">
-          <div class="summary-card">
+
+      <div class="row g-2 mb-3 summary-grid">
+        <div class="col-xl-2 col-md-4 col-sm-6">
+          <div class="summary-card summary-total">
             <small>Total</small>
             <strong>{{ totalAtendimentos }}</strong>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="summary-card">
+
+        <div class="col-xl-2 col-md-4 col-sm-6">
+          <div class="summary-card summary-open">
+            <small>Abertos</small>
+            <strong>{{ totalAbertos }}</strong>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-sm-6">
+          <div class="summary-card summary-running">
             <small>Em execução</small>
             <strong>{{ totalEmExecucao }}</strong>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="summary-card">
+
+        <div class="col-xl-2 col-md-4 col-sm-6">
+          <div class="summary-card summary-success">
             <small>Concluídos</small>
             <strong>{{ totalConcluidos }}</strong>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="summary-card">
+
+        <div class="col-xl-2 col-md-4 col-sm-6">
+          <div class="summary-card summary-delivered">
             <small>Entregues</small>
             <strong>{{ totalEntregues }}</strong>
           </div>
         </div>
+
+        <div class="col-xl-2 col-md-4 col-sm-6">
+          <div class="summary-card summary-danger">
+            <small>Cancelados</small>
+            <strong>{{ totalCancelados }}</strong>
+          </div>
+        </div>
       </div>
-      <div class="card clinicar-card">
-        <div class="card-body">
-          <div class="row g-2 align-items-end mb-3">
-            <div class="col-md-4">
-              <label for="buscarInput" class="form-label">Buscar</label>
-              <input
-                id="buscarInput"
-                class="form-control"
-                placeholder="Cliente, placa, serviço, código..."
-                [(ngModel)]="filtro"
-                style="color:#35689b;"
-              />
+
+      <div class="card clinicar-card atendimentos-list-card" style="color:#35689b;">
+        <div class="card-body atendimentos-list-body" style="color:#35689b;">
+          <div class="row g-2 align-items-end mb-2 toolbar-filters" style="color:#35689b;">
+            <div class="col-xl-3 col-lg-4 col-md-12" style="color:#35689b;">
+              <label for="buscarInput" class="form-label fw-bold">Buscar</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="bi bi-search" style="color:#35689b;"></i>
+                </span>
+
+                <input
+                  id="buscarInput"
+                  class="form-control"
+                  placeholder="Cliente, placa, serviço, código, OS..."
+                  [(ngModel)]="filtro"
+                  (ngModelChange)="aoAlterarFiltros()"
+                  style="color:#35689b;"
+                />
+              </div>
             </div>
-            <div class="col-md-3">
-              <label for="filtroStatusSelect" class="form-label">Status</label>
-              <select id="filtroStatusSelect" class="form-select" [(ngModel)]="filtroStatus" style="color:#35689b;">
+
+            <div class="col-xl-2 col-lg-3 col-md-4">
+              <label for="filtroStatusSelect" class="form-label fw-bold">Status</label>
+              <select
+                id="filtroStatusSelect"
+                class="form-select"
+                [(ngModel)]="filtroStatus"
+                (ngModelChange)="aoAlterarFiltros()"
+                style="color:#35689b;"
+              >
                 <option value="">Todos</option>
-                <option value="ABERTO">Aberto</option>
-                <option value="EM_DIAGNOSTICO">Em diagnóstico</option>
-                <option value="APROVADO">Aprovado</option>
-                <option value="EM_EXECUCAO">Em execução</option>
-                <option value="CONCLUIDO">Concluído</option>
-                <option value="ENTREGUE">Entregue</option>
-                <option value="CANCELADO">Cancelado</option>
+                <option *ngFor="let status of statusAtendimentos" [value]="status">
+                  {{ formatarStatus(status) }}
+                </option>
               </select>
             </div>
-            <div class="col-md-5 text-end">
-              <button type="button" class="btn btn-outline-secondary me-2" (click)="voltar()">
+
+            <div class="col-xl-2 col-lg-3 col-md-4">
+              <label for="filtroTipoExecucaoSelect" class="form-label fw-bold">Tipo</label>
+              <select
+                id="filtroTipoExecucaoSelect"
+                class="form-select"
+                [(ngModel)]="filtroTipoExecucao"
+                (ngModelChange)="aoAlterarFiltros()"
+                style="color:#35689b;"
+              >
+                <option value="">Todos</option>
+                <option *ngFor="let tipo of tiposExecucao" [value]="tipo">
+                  {{ formatarTipoExecucao(tipo) }}
+                </option>
+              </select>
+            </div>
+                        <div class="col-lg-1 col-md-4">
+                              <button class="btn btn-outline-secondary btn-md" type="button" [disabled]="!possuiFiltrosAplicados" (click)="limparFiltros()">
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+            </div>
+
+            <div class="col-xl-4 col-lg-2 col-md-4 toolbar-actions">
+              <button type="button" class="btn btn-outline-secondary" (click)="voltar()">
                 <i class="bi bi-arrow-left me-1"></i>
                 Voltar
               </button>
-              <button type="button" class="btn btn-outline-primary me-2" (click)="carregarTudo()">
+
+              <button type="button" class="btn btn-outline-primary" (click)="carregarTudo()">
                 <i class="bi bi-arrow-clockwise me-1"></i>
                 Atualizar
               </button>
-              <button type="button" class="btn" style="background:#35689b;color:white;" (click)="abrirModalCadastro()">
+
+              <button type="button" class="btn btn-primary-clinicar" (click)="abrirModalCadastro()">
                 <i class="bi bi-plus-circle me-1"></i>
                 Novo Atendimento
               </button>
             </div>
           </div>
-          <div *ngIf="mensagemErro" class="alert alert-danger">
+
+          <div class="filter-chip-row mb-2" *ngIf="possuiFiltrosAplicados">
+            <span class="filter-chip" *ngIf="filtro.trim()">
+              Busca: {{ filtro }}
+              <button type="button" (click)="filtro = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroStatus">
+              Status: {{ formatarStatus(filtroStatus) }}
+              <button type="button" (click)="filtroStatus = ''; aoAlterarFiltros()" aria-label="Remover status">×</button>
+            </span>
+
+            <span class="filter-chip" *ngIf="filtroTipoExecucao">
+              Tipo: {{ formatarTipoExecucao(filtroTipoExecucao) }}
+              <button type="button" (click)="filtroTipoExecucao = ''; aoAlterarFiltros()" aria-label="Remover tipo">×</button>
+            </span>
+
+            <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" (click)="limparFiltros()">
+              <i class="bi bi-x-circle me-1"></i>
+              Limpar filtros
+            </button>
+          </div>
+
+          <div *ngIf="mensagemErro" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
             {{ mensagemErro }}
           </div>
-          <div *ngIf="carregando" class="text-center py-4">
+
+          <div *ngIf="carregando" class="text-center py-4 loading-box">
             <output class="spinner-border" aria-label="Carregando atendimentos"></output>
             <div class="mt-2">Carregando atendimentos...</div>
           </div>
-          <div class="table-responsive" *ngIf="!carregando">
-            <table class="table table-hover align-middle">
-              <thead style="background:#eef6ff;color:#35689b;">
-                <tr>
-                  <th>Código</th>
-                  <th>Cliente</th>
-                  <th>Veículo</th>
-                  <th>Serviço</th>
-                  <th>Status</th>
-                  <th>Itens</th>
-                  <th>Valores</th>
-                  <th>OS</th>
-                  <th class="text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of atendimentosFiltrados">
-                  <td>
-                    <div class="fw-semibold">{{ item.codigoAtendimento || '—' }}</div>
-                    <small class="text-muted">{{ item.codigoAgendamento || '—' }}</small>
-                  </td>
-                  <td>
-                    <div>{{ item.nomeCliente || '—' }}</div>
-                    <small>{{ item.telefoneCliente || '—' }}</small>
-                  </td>
-                  <td>
-                    <div class="fw-semibold">{{ formatarPlaca(item.placaVeiculo) }}</div>
-                    <small>{{ item.modeloVeiculo || '—' }}</small>
-                  </td>
-                  <td>
-                    <div>{{ item.nomeServico || '—' }}</div>
-                    <small>{{ item.categoriaServico || '—' }}</small>
-                  </td>
-                  <td>
-                    <span class="badge" [ngClass]="statusBadgeClass(item.statusAtendimento)">
-                      {{ formatarStatus(item.statusAtendimento) }}
-                    </span>
-                  </td>
-                  <td>
-                    <div class="btn-group btn-group-sm">
-                      <button
-                        class="btn btn-outline-secondary"
-                        title="Peças utilizadas"
-                        type="button"
-                        [disabled]="!podeGerenciarItens(item)"
-                        (click)="abrirModalPecas(item)"
-                      >
-                        <i class="bi bi-nut"></i>
-                      </button>
-                      <button
-                        class="btn btn-outline-secondary"
-                        title="Serviços executados"
-                        type="button"
-                        [disabled]="!podeGerenciarItens(item)"
-                        (click)="abrirModalServicos(item)"
-                      >
-                        <i class="bi bi-wrench-adjustable"></i>
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <div>Peças: {{ formatarMoedaBR(item.valorPecas) }}</div>
-                    <div>Mão de obra: {{ formatarMoedaBR(item.valorMaoObra) }}</div>
-                    <div>Terceiros: {{ formatarMoedaBR(item.valorTerceiros) }}</div>
-                    <div class="fw-semibold">Total: {{ formatarMoedaBR(item.valorTotal) }}</div>
-                  </td>
-                  <td>
-                    <span class="badge" [ngClass]="osBadgeClass(item)">
-                      {{ formatarStatusOs(item) }}
-                    </span>
-                    <div class="small text-muted" *ngIf="item.osEmailDestino">
-                      {{ item.osEmailDestino }}
-                    </div>
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group btn-group-sm flex-wrap">
-                      <button type="button" class="btn btn-outline-info" title="Detalhes" (click)="abrirDetalhes(item)">
-                        <i class="bi bi-eye"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-primary" title="Iniciar" [disabled]="!podeIniciar(item)" (click)="iniciar(item)">
-                        <i class="bi bi-play-circle"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-success" title="Aprovar" [disabled]="!podeAprovar(item)" (click)="aprovar(item)">
-                        <i class="bi bi-check-circle"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-success" title="Concluir" [disabled]="!podeConcluir(item)" (click)="concluir(item)">
-                        <i class="bi bi-flag"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-primary" title="Entregar" [disabled]="!podeEntregar(item)" (click)="entregar(item)">
-                        <i class="bi bi-box-arrow-right"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-success" title="Reenviar OS" [disabled]="!podeReenviarOsEmail(item)" (click)="reenviarOsEmail(item)">
-                        <i class="bi bi-envelope-arrow-up"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-danger" title="Cancelar" [disabled]="!podeCancelar(item)" (click)="abrirCancelamento(item)">
-                        <i class="bi bi-x-circle"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr *ngIf="atendimentosFiltrados.length === 0">
-                  <td colspan="9" class="text-center text-muted py-4">
-                    Nenhum atendimento encontrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+
+          <div class="atendimento-table-shell" *ngIf="!carregando">
+            <div class="atendimento-table-scroll">
+              <table class="table table-hover align-middle table-compact table-sticky-header mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col" class="sortable" (click)="ordenarPor('codigoAtendimento')">
+                      Código <i class="bi ms-1" [ngClass]="iconeOrdenacao('codigoAtendimento')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('nomeCliente')">
+                      Cliente <i class="bi ms-1" [ngClass]="iconeOrdenacao('nomeCliente')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('placaVeiculo')">
+                      Veículo <i class="bi ms-1" [ngClass]="iconeOrdenacao('placaVeiculo')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('nomeServico')">
+                      Serviço <i class="bi ms-1" [ngClass]="iconeOrdenacao('nomeServico')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('statusAtendimento')">
+                      Status <i class="bi ms-1" [ngClass]="iconeOrdenacao('statusAtendimento')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('tipoExecucao')">
+                      Tipo <i class="bi ms-1" [ngClass]="iconeOrdenacao('tipoExecucao')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('valorTotal')">
+                      Valores <i class="bi ms-1" [ngClass]="iconeOrdenacao('valorTotal')"></i>
+                    </th>
+                    <th scope="col" class="sortable" (click)="ordenarPor('os')">
+                      OS <i class="bi ms-1" [ngClass]="iconeOrdenacao('os')"></i>
+                    </th>
+                    <th scope="col" class="text-center actions-column">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let item of atendimentosPaginados; trackBy: trackByAtendimento">
+                    <td>
+                      <div class="fw-semibold">{{ item.codigoAtendimento || '—' }}</div>
+                      <small class="text-muted">Ag.: {{ item.codigoAgendamento || '—' }}</small>
+                    </td>
+
+                    <td>
+                      <div class="fw-semibold text-truncate table-main-text" [title]="item.nomeCliente || '—'">
+                        {{ item.nomeCliente || '—' }}
+                      </div>
+                      <small>{{ item.telefoneCliente || item.emailCliente || '—' }}</small>
+                    </td>
+
+                    <td>
+                      <div class="fw-semibold">{{ formatarPlaca(item.placaVeiculo) }}</div>
+                      <small class="text-truncate d-block table-sub-text" [title]="item.modeloVeiculo || '—'">
+                        {{ item.modeloVeiculo || '—' }}
+                      </small>
+                    </td>
+
+                    <td>
+                      <div class="fw-semibold text-truncate table-main-text" [title]="item.nomeServico || '—'">
+                        {{ item.nomeServico || '—' }}
+                      </div>
+                      <small>{{ item.categoriaServico || '—' }}</small>
+                    </td>
+
+                    <td>
+                      <span class="badge" [ngClass]="statusBadgeClass(item.statusAtendimento)">
+                        {{ formatarStatus(item.statusAtendimento) }}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span class="badge" [ngClass]="tipoExecucaoBadgeClass(item.tipoExecucao)">
+                        {{ formatarTipoExecucao(item.tipoExecucao) }}
+                      </span>
+                    </td>
+
+                    <td class="values-cell">
+                      <div>Peças: <strong>{{ formatarMoedaBR(item.valorPecas) }}</strong></div>
+                      <div>M.O.: <strong>{{ formatarMoedaBR(item.valorMaoObra) }}</strong></div>
+                      <div>Total: <strong>{{ formatarMoedaBR(item.valorTotal) }}</strong></div>
+                    </td>
+
+                    <td>
+                      <span class="badge" [ngClass]="osBadgeClass(item)">
+                        {{ formatarStatusOs(item) }}
+                      </span>
+                      <div class="small text-muted text-truncate os-email" *ngIf="item.osEmailDestino" [title]="item.osEmailDestino">
+                        {{ item.osEmailDestino }}
+                      </div>
+                    </td>
+
+                    <td class="text-center actions-column">
+                      <div class="table-actions">
+                        <button type="button" class="btn btn-sm btn-outline-info" title="Visualizar detalhes" (click)="abrirDetalhes(item)">
+                          <i class="bi bi-eye"></i>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          title="Peças utilizadas"
+                          [disabled]="!podeGerenciarItens(item)"
+                          (click)="abrirModalPecas(item)"
+                        >
+                          <i class="bi bi-nut"></i>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          title="Serviços executados"
+                          [disabled]="!podeGerenciarItens(item)"
+                          (click)="abrirModalServicos(item)"
+                        >
+                          <i class="bi bi-wrench-adjustable"></i>
+                        </button>
+
+                        <div class="dropdown d-inline-block">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            title="Mais ações"
+                          >
+                            <i class="bi bi-three-dots-vertical"></i>
+                          </button>
+
+                          <ul class="dropdown-menu dropdown-menu-end action-dropdown-menu">
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeIniciar(item)" (click)="iniciar(item)">
+                                <i class="bi bi-play-circle me-2"></i>
+                                Iniciar
+                              </button>
+                            </li>
+
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeAprovar(item)" (click)="aprovar(item)">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Aprovar
+                              </button>
+                            </li>
+
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeConcluir(item)" (click)="concluir(item)">
+                                <i class="bi bi-flag me-2"></i>
+                                Concluir
+                              </button>
+                            </li>
+
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeEntregar(item)" (click)="entregar(item)">
+                                <i class="bi bi-box-arrow-right me-2"></i>
+                                Entregar
+                              </button>
+                            </li>
+
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeReenviarOsEmail(item)" (click)="reenviarOsEmail(item)">
+                                <i class="bi bi-envelope-arrow-up me-2"></i>
+                                Reenviar OS
+                              </button>
+                            </li>
+
+                            <li><hr class="dropdown-divider"></li>
+
+                            <li>
+                              <button class="dropdown-item text-danger" type="button" [disabled]="!podeCancelar(item)" (click)="abrirCancelamento(item)">
+                                <i class="bi bi-x-circle me-2"></i>
+                                Cancelar
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="totalRegistrosFiltrados === 0">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      <i class="bi bi-inbox me-1"></i>
+                      Nenhum atendimento encontrado.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+              <div class="pagination-info">
+                Mostrando
+                <strong>{{ indiceInicialPagina }}</strong>
+                a
+                <strong>{{ indiceFinalPagina }}</strong>
+                de
+                <strong>{{ totalRegistrosFiltrados }}</strong>
+                registro(s)
+              </div>
+
+              <div class="pagination-size">
+                <label>Exibir</label>
+
+                <select
+                  class="form-select form-select-sm"
+                  [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()"
+                  style="color:#35689b;"
+                >
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+
+                <span>por página</span>
+              </div>
+
+              <div class="pagination-actions">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1" (click)="primeiraPagina()">
+                  <i class="bi bi-chevron-double-left"></i>
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1" (click)="paginaAnterior()">
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina"
+                  [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)"
+                >
+                  {{ pagina }}
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas" (click)="proximaPagina()">
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas" (click)="ultimaPagina()">
+                  <i class="bi bi-chevron-double-right"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1307,7 +1524,35 @@
               </span>
             </div>
           </div>
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Estoque</small>
+              <span class="badge" [ngClass]="atendimentoSelecionado?.estoqueBaixado ? 'bg-success' : 'bg-secondary'">
+                {{ atendimentoSelecionado?.estoqueBaixado ? 'Baixado' : 'Não baixado' }}
+              </span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="detail-box">
+              <small>Estoque Baixado Em</small>
+              <span class="badge" [ngClass]="atendimentoSelecionado?.estoqueBaixadoEm ? 'bg-success' : 'bg-secondary'">
+                {{ atendimentoSelecionado?.estoqueBaixadoEm ? formatarDataHora(atendimentoSelecionado?.estoqueBaixadoEm) : 'Não baixado' }}
+              </span>
+            </div>
+          </div>
+<div class="details-line">
+  Estoque:
+  <span
+    class="badge"
+    [ngClass]="atendimentoSelecionado?.estoqueBaixado ? 'bg-success' : 'bg-secondary'"
+  >
+    {{ atendimentoSelecionado?.estoqueBaixado ? 'Baixado' : 'Não baixado' }}
+  </span>
+</div>
 
+<div class="details-line" *ngIf="atendimentoSelecionado?.estoqueBaixadoEm">
+  Baixado em: {{ formatarDataHora(atendimentoSelecionado?.estoqueBaixadoEm) }}
+</div>
           <div class="col-md-12">
             <div class="detail-box">
               <small>Observações</small>

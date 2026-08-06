@@ -56,19 +56,22 @@ public class AtendimentoService {
     private final UsuarioRepository usuarioRepository;
     private final FornecedorRepository fornecedorRepository;
     private final OrdemServicoEnvioService ordemServicoEnvioService;
+    private final AtendimentoEstoqueService atendimentoEstoqueService;
 
     public AtendimentoService(
         AtendimentoRepository atendimentoRepository,
         AgendamentoRepository agendamentoRepository,
         UsuarioRepository usuarioRepository,
         FornecedorRepository fornecedorRepository,
-        OrdemServicoEnvioService ordemServicoEnvioService
+        OrdemServicoEnvioService ordemServicoEnvioService,
+        AtendimentoEstoqueService atendimentoEstoqueService
 ) {
     this.atendimentoRepository = atendimentoRepository;
     this.agendamentoRepository = agendamentoRepository;
     this.usuarioRepository = usuarioRepository;
     this.fornecedorRepository = fornecedorRepository;
     this.ordemServicoEnvioService = ordemServicoEnvioService;
+    this.atendimentoEstoqueService = atendimentoEstoqueService;
 }
 
     @Transactional
@@ -285,6 +288,12 @@ public class AtendimentoService {
         if ("ENTREGUE".equals(atendimento.getStatusAtendimento())) {
             throw new IllegalArgumentException("Não é possível concluir um atendimento já entregue.");
         }
+        
+        if ("CONCLUIDO".equals(atendimento.getStatusAtendimento())) {
+            return atendimento;
+        }
+
+        atendimentoEstoqueService.baixarPecasDoAtendimento(atendimento);
 
         LocalDateTime agora = LocalDateTime.now();
 

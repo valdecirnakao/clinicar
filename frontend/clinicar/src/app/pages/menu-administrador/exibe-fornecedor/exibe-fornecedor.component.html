@@ -59,7 +59,7 @@
         <div class="card-body fornecedor-list-body p-2">
 
           <div class="row g-2 align-items-end toolbar-filters mb-2">
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-3 col-md-6">
               <label class="form-label fw-bold" for="filtro-fornecedores">Buscar</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -74,7 +74,7 @@
               </div>
             </div>
 
-            <div class="col-lg-2 col-md-3">
+            <div class="col-lg-1 col-md-3">
               <label class="form-label fw-bold" for="filtro-estado">UF</label>
               <select
                 id="filtro-estado"
@@ -89,7 +89,7 @@
               </select>
             </div>
 
-            <div class="col-lg-3 col-md-3">
+            <div class="col-lg-2 col-md-3">
               <label class="form-label fw-bold" for="filtro-item">Item fornecido</label>
               <select
                 id="filtro-item"
@@ -103,30 +103,31 @@
                 </option>
               </select>
             </div>
-
-            <div class="col-lg-3 col-md-12">
-              <div class="toolbar-actions">
-                <button class="btn btn-primary btn-sm" type="button" (click)="abrirModalCadastro()">
-                  <i class="bi bi-plus-circle me-1"></i>
-                  Novo Fornecedor
-                </button>
-
-                <button class="btn btn-outline-primary btn-sm" type="button" (click)="recarregar()">
-                  <i class="bi bi-arrow-clockwise me-1"></i>
-                  Atualizar
-                </button>
-
-                <button
-                  class="btn btn-outline-secondary btn-sm"
+            <div class="col-lg-1 col-md-3">
+                              <button
+                  class="btn btn-outline-secondary btn-md"
                   type="button"
                   [disabled]="!possuiFiltrosAplicados"
                   (click)="limparFiltros()"
                 >
                   <i class="bi bi-eraser me-1"></i>
-                  Limpar
+                  Limpar Filtros
+                </button>
+            </div>
+
+            <div class="col-lg-5 col-md-12">
+              <div class="toolbar-actions">
+                <button class="btn btn-primary btn-md" type="button" (click)="abrirModalCadastro()">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Novo Fornecedor
                 </button>
 
-                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="voltar()">
+                <button class="btn btn-outline-primary btn-md" type="button" (click)="recarregar()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+
+                <button class="btn btn-outline-secondary btn-md" type="button" (click)="voltar()">
                   <i class="bi bi-arrow-left me-1"></i>
                   Voltar
                 </button>

@@ -345,7 +345,7 @@
 }
 
 .estoque-modal-content {
-  height: calc(100vh - 3rem);
+  height: calc(70vh - 3rem);
   max-height: calc(100vh - 3rem);
   display: flex;
   flex-direction: column;
@@ -944,5 +944,12 @@ textarea {
 
   .hist-col-motivo {
     width: 17%;
+  }
+
+  .btn-local-estoque {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   }
 }

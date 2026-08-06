@@ -11,6 +11,7 @@ import java.util.List;
 public interface AtendimentoPecaUtilizadaRepository extends JpaRepository<AtendimentoPecaUtilizada, Long> {
 
     List<AtendimentoPecaUtilizada> findByAtendimento_IdOrderByCriadoEmAsc(Long atendimentoId);
+    List<AtendimentoPecaUtilizada> findByAtendimentoId(Long atendimentoId);
 
     @Query("""
             SELECT COALESCE(SUM(i.valorTotal), 0)

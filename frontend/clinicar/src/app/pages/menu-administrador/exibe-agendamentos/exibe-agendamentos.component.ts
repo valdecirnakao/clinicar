@@ -19,6 +19,35 @@ import {
 
 declare var bootstrap: any;
 
+type DirecaoOrdenacao = 'asc' | 'desc';
+type ColunaOrdenacaoAgendamento =
+  | 'codigoAgendamento'
+  | 'nomeCliente'
+  | 'placaVeiculo'
+  | 'nomeServico'
+  | 'dataHoraInicio'
+  | 'statusAgendamento'
+  | 'prioridade'
+  | 'valorEstimado';
+
+type AcaoConfirmacaoAgendamento =
+  | 'confirmar'
+  | 'iniciar'
+  | 'concluir'
+  | 'naoCompareceu'
+  | 'excluir';
+
+interface ConfirmacaoAgendamento {
+  acao: AcaoConfirmacaoAgendamento;
+  item: Agendamento;
+  titulo: string;
+  mensagem: string;
+  textoBotao: string;
+  classeBotao: string;
+  icone: string;
+}
+
+
 @Component({
   selector: 'app-exibe-agendamentos',
   standalone: true,
@@ -45,7 +74,11 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   filtro = '';
   filtroStatus = '';
+  filtroPrioridade = '';
   statusFiltroAberto = false;
+
+  colunaOrdenacao: ColunaOrdenacaoAgendamento = 'dataHoraInicio';
+  direcaoOrdenacao: DirecaoOrdenacao = 'desc';
 
   paginaAtual = 1;
   itensPorPagina = 10;
@@ -62,6 +95,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   modalPeca: any;
   modalDetalhes: any;
   modalCancelamento: any;
+  modalConfirmacao: any;
 
   editandoId: number | null = null;
   editandoPecaId: number | null = null;
@@ -69,6 +103,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   private tempPecaId = -1;
 
   motivoCancelamento = '';
+  acaoConfirmacao: ConfirmacaoAgendamento | null = null;
 
   readonly statusAgendamento = [
     'AGENDADO',
@@ -109,21 +144,50 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   get agendamentosFiltrados(): Agendamento[] {
     const termo = this.normalizar(this.filtro);
+    const termoNumerico = this.onlyDigits(this.filtro);
+    const status = this.filtroStatus.trim();
+    const prioridade = this.filtroPrioridade.trim();
 
-    return this.agendamentos.filter(item => {
-      const statusOk = !this.filtroStatus || item.statusAgendamento === this.filtroStatus;
+    const filtrados = this.agendamentos.filter(item => {
+      const statusOk = !status || item.statusAgendamento === status;
+      const prioridadeOk = !prioridade || item.prioridade === prioridade;
 
       const texto = this.normalizar([
         item.codigoAgendamento,
         item.nomeCliente,
+        item.cliente?.nome,
+        item.cpfCliente,
+        item.emailCliente,
+        item.telefoneCliente,
         item.placaVeiculo,
+        item.veiculo?.placa,
+        item.fabricanteVeiculo,
         item.modeloVeiculo,
+        item.veiculo?.modelo,
         item.nomeServico,
-        item.statusAgendamento
+        item.servico?.nome,
+        item.servico?.descricao,
+        item.statusAgendamento,
+        item.prioridade,
+        item.canalOrigem,
+        item.nomeResponsavel,
+        item.responsavel?.nome
       ].join(' '));
 
-      return statusOk && (!termo || texto.includes(termo));
+      const textoNumerico = this.onlyDigits([
+        item.codigoAgendamento,
+        item.cpfCliente,
+        item.telefoneCliente,
+        item.placaVeiculo,
+        item.veiculo?.placa
+      ].join(' '));
+
+      const textoOk = !termo || texto.includes(termo) || (!!termoNumerico && textoNumerico.includes(termoNumerico));
+
+      return statusOk && prioridadeOk && textoOk;
     });
+
+    return this.ordenarAgendamentos(filtrados);
   }
 
   get totalRegistrosFiltrados(): number {
@@ -165,6 +229,10 @@ export class ExibeAgendamentosComponent implements OnInit {
     return this.agendamentos.length;
   }
 
+  get totalAgendados(): number {
+    return this.agendamentos.filter(a => a.statusAgendamento === 'AGENDADO').length;
+  }
+
   get totalConfirmados(): number {
     return this.agendamentos.filter(a => a.statusAgendamento === 'CONFIRMADO').length;
   }
@@ -175,6 +243,20 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   get totalConcluidos(): number {
     return this.agendamentos.filter(a => a.statusAgendamento === 'CONCLUIDO').length;
+  }
+
+  get totalCancelados(): number {
+    return this.agendamentos.filter(a =>
+      a.statusAgendamento === 'CANCELADO' || a.statusAgendamento === 'NAO_COMPARECEU'
+    ).length;
+  }
+
+  get possuiFiltrosAplicados(): boolean {
+    return !!(
+      this.filtro.trim() ||
+      this.filtroStatus.trim() ||
+      this.filtroPrioridade.trim()
+    );
   }
 
   get agendamentoProntoParaSalvar(): boolean {
@@ -1113,15 +1195,109 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   excluir(item: Agendamento): void {
+    this.abrirConfirmacaoAcao(item, 'excluir');
+  }
+
+  abrirConfirmacaoAcao(item: Agendamento, acao: AcaoConfirmacaoAgendamento): void {
     if (!item.id) return;
 
-    if (!confirm('Deseja excluir este agendamento?')) {
-      return;
+    const rotulo = item.codigoAgendamento || `#${item.id}`;
+
+    const configuracoes: Record<AcaoConfirmacaoAgendamento, Omit<ConfirmacaoAgendamento, 'acao' | 'item'>> = {
+      confirmar: {
+        titulo: 'Confirmar agendamento',
+        mensagem: `Deseja confirmar o agendamento ${rotulo}?`,
+        textoBotao: 'Confirmar',
+        classeBotao: 'btn-success',
+        icone: 'bi-check-circle'
+      },
+      iniciar: {
+        titulo: 'Iniciar atendimento',
+        mensagem: `Deseja iniciar o atendimento do agendamento ${rotulo}?`,
+        textoBotao: 'Iniciar',
+        classeBotao: 'btn-primary',
+        icone: 'bi-play-circle'
+      },
+      concluir: {
+        titulo: 'Concluir agendamento',
+        mensagem: `Deseja marcar o agendamento ${rotulo} como concluído?`,
+        textoBotao: 'Concluir',
+        classeBotao: 'btn-success',
+        icone: 'bi-flag'
+      },
+      naoCompareceu: {
+        titulo: 'Registrar não comparecimento',
+        mensagem: `Deseja registrar não comparecimento para o agendamento ${rotulo}?`,
+        textoBotao: 'Registrar',
+        classeBotao: 'btn-warning',
+        icone: 'bi-person-x'
+      },
+      excluir: {
+        titulo: 'Excluir agendamento',
+        mensagem: `Deseja excluir definitivamente o agendamento ${rotulo}? Esta ação não poderá ser desfeita.`,
+        textoBotao: 'Excluir',
+        classeBotao: 'btn-danger',
+        icone: 'bi-trash'
+      }
+    };
+
+    this.acaoConfirmacao = {
+      acao,
+      item,
+      ...configuracoes[acao]
+    };
+
+    const el = document.getElementById('modalConfirmacaoAgendamento');
+
+    if (!el) return;
+
+    this.modalConfirmacao = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalConfirmacao.show();
+  }
+
+  confirmarAcaoAgendamento(): void {
+    if (!this.acaoConfirmacao?.item?.id) return;
+
+    const id = this.acaoConfirmacao.item.id;
+    const acao = this.acaoConfirmacao.acao;
+
+    let request$: any;
+    let mensagemErroPadrao = 'Erro ao executar ação do agendamento.';
+
+    switch (acao) {
+      case 'confirmar':
+        request$ = this.service.confirmar(id);
+        mensagemErroPadrao = 'Erro ao confirmar agendamento.';
+        break;
+      case 'iniciar':
+        request$ = this.service.iniciar(id);
+        mensagemErroPadrao = 'Erro ao iniciar agendamento.';
+        break;
+      case 'concluir':
+        request$ = this.service.concluir(id);
+        mensagemErroPadrao = 'Erro ao concluir agendamento.';
+        break;
+      case 'naoCompareceu':
+        request$ = this.service.naoCompareceu(id);
+        mensagemErroPadrao = 'Erro ao registrar não comparecimento.';
+        break;
+      case 'excluir':
+        request$ = this.service.excluir(id);
+        mensagemErroPadrao = 'Erro ao excluir agendamento.';
+        break;
+      default:
+        return;
     }
 
-    this.service.excluir(item.id).subscribe({
-      next: () => this.recarregar(),
-      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao excluir agendamento.'))
+    request$.subscribe({
+      next: () => {
+        this.modalConfirmacao?.hide();
+        this.acaoConfirmacao = null;
+        this.recarregar();
+      },
+      error: (erro: any) => {
+        alert(this.extrairMensagemErro(erro, mensagemErroPadrao));
+      }
     });
   }
 
@@ -1142,6 +1318,11 @@ export class ExibeAgendamentosComponent implements OnInit {
     return item.statusAgendamento !== 'CANCELADO'
       && item.statusAgendamento !== 'CONCLUIDO'
       && item.statusAgendamento !== 'NAO_COMPARECEU';
+  }
+
+  podeMarcarNaoCompareceu(item: Agendamento): boolean {
+    return item.statusAgendamento === 'AGENDADO'
+      || item.statusAgendamento === 'CONFIRMADO';
   }
 
   formatarStatus(status?: string | null): string {
@@ -1539,6 +1720,10 @@ export class ExibeAgendamentosComponent implements OnInit {
       .trim();
   }
 
+  private onlyDigits(valor: any): string {
+    return String(valor ?? '').replace(/\D/g, '');
+  }
+
   private normalizarTipoAcesso(valor: any): string {
     return String(valor ?? '')
       .normalize('NFD')
@@ -1611,11 +1796,83 @@ export class ExibeAgendamentosComponent implements OnInit {
     return Math.floor(numero);
   }
 
+
+  ordenarPor(coluna: ColunaOrdenacaoAgendamento): void {
+    if (this.colunaOrdenacao === coluna) {
+      this.direcaoOrdenacao = this.direcaoOrdenacao === 'asc' ? 'desc' : 'asc';
+      return;
+    }
+
+    this.colunaOrdenacao = coluna;
+    this.direcaoOrdenacao = coluna === 'dataHoraInicio' ? 'desc' : 'asc';
+  }
+
+  iconeOrdenacao(coluna: ColunaOrdenacaoAgendamento): string {
+    if (this.colunaOrdenacao !== coluna) {
+      return 'bi-arrow-down-up';
+    }
+
+    return this.direcaoOrdenacao === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
+  }
+
+  private ordenarAgendamentos(lista: Agendamento[]): Agendamento[] {
+    return [...lista].sort((a, b) => {
+      const valorA = this.valorOrdenacao(a, this.colunaOrdenacao);
+      const valorB = this.valorOrdenacao(b, this.colunaOrdenacao);
+      const resultado = this.compararValores(valorA, valorB);
+
+      return this.direcaoOrdenacao === 'asc' ? resultado : resultado * -1;
+    });
+  }
+
+  private valorOrdenacao(item: Agendamento, coluna: ColunaOrdenacaoAgendamento): string | number {
+    switch (coluna) {
+      case 'codigoAgendamento':
+        return item.codigoAgendamento || '';
+      case 'nomeCliente':
+        return item.nomeCliente || item.cliente?.nome || '';
+      case 'placaVeiculo':
+        return item.placaVeiculo || item.veiculo?.placa || '';
+      case 'nomeServico':
+        return item.nomeServico || item.servico?.nome || item.servico?.descricao || '';
+      case 'dataHoraInicio':
+        return this.dataValida(item.dataHoraInicio)?.getTime() || 0;
+      case 'statusAgendamento':
+        return item.statusAgendamento || '';
+      case 'prioridade':
+        return item.prioridade || '';
+      case 'valorEstimado':
+        return this.moedaParaNumero(item.valorEstimado);
+      default:
+        return '';
+    }
+  }
+
+  private compararValores(a: string | number, b: string | number): number {
+    if (typeof a === 'number' && typeof b === 'number') {
+      return a - b;
+    }
+
+    return String(a).localeCompare(String(b), 'pt-BR', {
+      sensitivity: 'base',
+      numeric: true
+    });
+  }
+
   aoAlterarFiltros(): void {
     this.paginaAtual = 1;
   }
 
+  limparFiltros(): void {
+    this.filtro = '';
+    this.filtroStatus = '';
+    this.filtroPrioridade = '';
+    this.statusFiltroAberto = false;
+    this.paginaAtual = 1;
+  }
+
   aoAlterarItensPorPagina(): void {
+    this.itensPorPagina = Number(this.itensPorPagina) || 10;
     this.paginaAtual = 1;
     this.ajustarPaginaAtual();
   }
@@ -1638,6 +1895,14 @@ export class ExibeAgendamentosComponent implements OnInit {
     if (this.paginaAtual < this.totalPaginas) {
       this.paginaAtual++;
     }
+  }
+
+  primeiraPagina(): void {
+    this.paginaAtual = 1;
+  }
+
+  ultimaPagina(): void {
+    this.paginaAtual = this.totalPaginas;
   }
 
   paginasVisiveis(): number[] {
@@ -1665,31 +1930,33 @@ export class ExibeAgendamentosComponent implements OnInit {
     }
   }
 
-  @HostListener('document:click')
-fecharDropdownsAoClicarFora(): void {
-  this.statusFiltroAberto = false;
-}
+  trackByAgendamento(index: number, item: Agendamento): number | string {
+    return item.id ?? item.codigoAgendamento ?? index;
+  }
 
-alternarFiltroStatus(event: Event): void {
+  @HostListener('document:click')
+  fecharDropdownsAoClicarFora(): void {
+    this.statusFiltroAberto = false;
+  }
+
+  alternarFiltroStatus(event: Event): void {
   event.stopPropagation();
   this.statusFiltroAberto = !this.statusFiltroAberto;
 }
 
-selecionarFiltroStatus(status: string): void {
-  this.filtroStatus = status;
-  this.statusFiltroAberto = false;
-  this.aoAlterarFiltros();
-}
-
-rotuloFiltroStatus(): string {
-  if (!this.filtroStatus) {
-    return 'Todos';
+  selecionarFiltroStatus(status: string): void {
+    this.filtroStatus = status;
+    this.statusFiltroAberto = false;
+    this.aoAlterarFiltros();
   }
 
-  return this.formatarStatus(this.filtroStatus);
-}
+  rotuloFiltroStatus(): string {
+    if (!this.filtroStatus) {
+      return 'Todos';
+    }
 
-
+    return this.formatarStatus(this.filtroStatus);
+  }
 
   formatarTelefone(telefone: string | null | undefined): string {
     if(!telefone) return '-';

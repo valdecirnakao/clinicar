@@ -181,6 +181,13 @@ public class Atendimento {
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
 
+
+    @Column(name = "estoque_baixado", nullable = false)
+    private Boolean estoqueBaixado = false;
+
+    @Column(name = "estoque_baixado_em")
+    private LocalDateTime estoqueBaixadoEm;
+
     @PrePersist
     public void prePersist() {
         if (criadoEm == null) {

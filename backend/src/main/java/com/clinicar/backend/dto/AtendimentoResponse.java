@@ -80,4 +80,7 @@ public class AtendimentoResponse {
 
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
+
+    private Boolean estoqueBaixado;
+    private String estoqueBaixadoEm;
 }

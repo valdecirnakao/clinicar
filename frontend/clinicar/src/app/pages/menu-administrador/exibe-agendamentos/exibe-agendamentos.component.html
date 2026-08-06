@@ -3,123 +3,207 @@
     <div class="col-md-12">
       <div class="row mt-0">
         <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:10px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">
+          <div class="card page-title-card">
+            <div class="card-body">
               <i class="bi bi-calendar-check me-1"></i>
               Gerenciamento de Agendamentos
             </div>
           </div>
         </div>
       </div>
-      <div class="row g-2 mb-3">
-        <div class="col-md-3">
-          <div class="summary-card">
+
+      <div class="row g-2 mb-3 summary-grid">
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-total">
             <small>Total</small>
             <strong>{{ totalAgendamentos }}</strong>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="summary-card">
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-agendado">
+            <small>Agendados</small>
+            <strong>{{ totalAgendados }}</strong>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-confirmado">
             <small>Confirmados</small>
             <strong>{{ totalConfirmados }}</strong>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="summary-card">
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-atendimento">
             <small>Em atendimento</small>
             <strong>{{ totalEmAtendimento }}</strong>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="summary-card">
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-concluido">
             <small>Concluídos</small>
             <strong>{{ totalConcluidos }}</strong>
           </div>
         </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-cancelado">
+            <small>Cancelados / ausentes</small>
+            <strong>{{ totalCancelados }}</strong>
+          </div>
+        </div>
       </div>
+
       <div class="card clinicar-card agendamentos-list-card" style="color:#35689b;">
-        <div class="card-body agendamentos-list-body" style="color:#35689b;">
-          <div class="row g-2 align-items-end mb-3 toolbar-filters" style="color:#35689b;">
-            <div class="col-md-4" style="color:#35689b;">
-              <label class="form-label" for="buscar-agendamentos">Buscar</label>
-              <input id="buscar-agendamentos" class="form-control" style="color:#35689b;" placeholder="Cliente, placa, serviço, código..." [(ngModel)]="filtro"
-                (ngModelChange)="aoAlterarFiltros()" style="color:#35689b;" />
-            </div>
-            <div class="col-md-3 status-filter-column" style="color:#35689b;">
-              <label class="form-label" for="filtro-status">Status</label>
-              <div class="status-filter-dropdown" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" (keyup)="$event.stopPropagation()" (keypress)="$event.stopPropagation()">
-                <button id="filtro-status" type="button" class="status-filter-button" [class.active]="statusFiltroAberto"
-                  (click)="alternarFiltroStatus($event)">
-                  <span>{{ rotuloFiltroStatus() }}</span>
-                  <i class="bi" [class.bi-chevron-up]="statusFiltroAberto"
-                    [class.bi-chevron-down]="!statusFiltroAberto"></i>
-                </button>
-                <div class="status-filter-menu" *ngIf="statusFiltroAberto">
-                  <button type="button" class="status-filter-option" [class.selected]="!filtroStatus"
-                    (click)="selecionarFiltroStatus('')">
-                    <span class="status-filter-option-text">
-                      Todos
-                    </span>
-                    <i class="bi bi-check2" *ngIf="!filtroStatus"></i>
+        <div class="card-body agendamentos-list-body">
+          <div class="toolbar-card mb-3">
+            <div class="row g-2 align-items-end toolbar-filters">
+              <div class="col-xl-4 col-lg-4 col-md-12">
+                <label class="form-label fw-bold" for="buscar-agendamentos">Buscar</label>
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                  </span>
+
+                  <input id="buscar-agendamentos" class="form-control"
+                    placeholder="Cliente, placa, serviço, código, responsável..." [(ngModel)]="filtro"
+                    (ngModelChange)="aoAlterarFiltros()" />
+                </div>
+              </div>
+
+              <div class="col-xl-2 col-lg-3 col-md-4 status-filter-column">
+                <label class="form-label fw-bold" for="filtro-status">Status</label>
+                <div class="status-filter-dropdown" (click)="$event.stopPropagation()"
+                  (keydown)="$event.stopPropagation()" (keyup)="$event.stopPropagation()"
+                  (keypress)="$event.stopPropagation()">
+                  <button id="filtro-status" type="button" class="status-filter-button"
+                    [class.active]="statusFiltroAberto" (click)="alternarFiltroStatus($event)">
+                    <span>{{ rotuloFiltroStatus() }}</span>
+                    <i class="bi" [class.bi-chevron-up]="statusFiltroAberto"
+                      [class.bi-chevron-down]="!statusFiltroAberto"></i>
                   </button>
-                  <button type="button" class="status-filter-option" *ngFor="let status of statusAgendamento"
-                    [class.selected]="filtroStatus === status" (click)="selecionarFiltroStatus(status)">
-                    <span class="badge" [ngClass]="statusBadgeClass(status)">
-                      {{ formatarStatus(status) }}
-                    </span>
-                    <i class="bi bi-check2" *ngIf="filtroStatus === status"></i>
+
+                  <div class="status-filter-menu" *ngIf="statusFiltroAberto">
+                    <button type="button" class="status-filter-option" [class.selected]="!filtroStatus"
+                      (click)="selecionarFiltroStatus('')">
+                      <span class="status-filter-option-text">Todos</span>
+                      <i class="bi bi-check2" *ngIf="!filtroStatus"></i>
+                    </button>
+
+                    <button type="button" class="status-filter-option" *ngFor="let status of statusAgendamento"
+                      [class.selected]="filtroStatus === status" (click)="selecionarFiltroStatus(status)">
+                      <span class="badge" [ngClass]="statusBadgeClass(status)">
+                        {{ formatarStatus(status) }}
+                      </span>
+                      <i class="bi bi-check2" *ngIf="filtroStatus === status"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-1 col-md-3">
+                <button type="button" class="btn btn-outline-secondary btn-md"
+                  (click)="filtro=''; filtroStatus=''; aoAlterarFiltros()">
+                  Limpar filtros
+                </button>
+              </div>
+
+              <div class="col-xl-5 col-lg-5 col-md-12">
+                <div class="toolbar-actions">
+                  <button class="btn btn-clinicar-primary" type="button" (click)="abrirModalCadastro()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Novo Agendamento
+                  </button>
+
+                  <button class="btn btn-outline-primary" type="button" (click)="carregarTudo()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Atualizar
+                  </button>
+
+                  <button class="btn btn-outline-secondary" type="button" (click)="voltar()">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Voltar
                   </button>
                 </div>
               </div>
             </div>
-            <div class="col-md-5 text-end">
-              <button class="btn btn-outline-secondary me-2" type="button" (click)="voltar()">
-                <i class="bi bi-arrow-left me-1"></i>
-                Voltar
-              </button>
-              <button class="btn btn-outline-primary me-2" type="button" (click)="carregarTudo()">
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                Atualizar
-              </button>
-              <button class="btn" type="button" style="background:#35689b;color:white;" (click)="abrirModalCadastro()">
-                <i class="bi bi-plus-circle me-1"></i>
-                Novo Agendamento
-              </button>
+
+            <div class="filter-chip-row" *ngIf="filtro || filtroStatus">
+              <span class="filter-chip" *ngIf="filtro">
+                Busca: {{ filtro }}
+                <button type="button" (click)="filtro = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+              </span>
+
+              <span class="filter-chip" *ngIf="filtroStatus">
+                Status: {{ formatarStatus(filtroStatus) }}
+                <button type="button" (click)="selecionarFiltroStatus('')" aria-label="Remover status">×</button>
+              </span>
             </div>
           </div>
-          <div *ngIf="mensagemErro" class="alert alert-danger">
+
+          <div *ngIf="mensagemErro" class="alert alert-danger py-2 mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
             {{ mensagemErro }}
           </div>
-          <div *ngIf="carregando" class="text-center py-4">
+
+          <div *ngIf="carregando" class="loading-box">
             <output class="spinner-border" aria-live="polite" aria-label="Carregando agendamentos"></output>
             <div class="mt-2">Carregando agendamentos...</div>
           </div>
+
           <div class="agendamento-table-shell" *ngIf="!carregando">
             <div class="agendamento-table-scroll">
               <table class="table table-hover align-middle table-compact table-sticky-header">
-                <thead style="background:#eef6ff;color:#35689b;">
+                <thead>
                   <tr>
-                    <th>Código</th>
-                    <th>Cliente</th>
-                    <th>Veículo</th>
-                    <th>Serviço</th>
-                    <th>Data</th>
-                    <th>Status</th>
-                    <th>Valor estimado</th>
-                    <th class="text-center">Ações</th>
+                    <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                      onkeypress="return false;">
+                      Código <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                      onkeypress="return false;">
+                      Cliente <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                      onkeypress="return false;">
+                      Veículo <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                      onkeypress="return false;">
+                      Serviço <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                      onkeypress="return false;">
+                      Data <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                      onkeypress="return false;">
+                      Prioridade <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                      onkeypress="return false;">
+                      Status <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="sortable text-end" tabindex="0" onkeydown="return false;"
+                      onkeyup="return false;" onkeypress="return false;">
+                      Valor <i class="bi bi-arrow-down-up ms-1"></i>
+                    </th>
+                    <th scope="col" class="text-center">Ações</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  <tr *ngFor="let item of agendamentosPaginados">
+                  <tr *ngFor="let item of agendamentosPaginados"
+                    [class.row-inactive]="item.statusAgendamento === 'CANCELADO' || item.statusAgendamento === 'NAO_COMPARECEU'">
                     <td>
                       <div class="fw-semibold">{{ item.codigoAgendamento || '—' }}</div>
-                      <small>{{ item.canalOrigem || '—' }}</small>
+                      <small>{{ formatarStatus(item.canalOrigem) }}</small>
                     </td>
 
                     <td>
-                      <div>{{ item.nomeCliente || item.cliente?.nome || '—' }}</div>
-                      <small>{{ item.telefoneCliente || item.cliente?.telefone || '—' }}</small>
+                      <div class="fw-semibold">{{ item.nomeCliente || item.cliente?.nome || '—' }}</div>
+                      <small>{{ formatarTelefone(item.telefoneCliente || item.cliente?.telefone) || '—' }}</small>
                     </td>
 
                     <td>
@@ -130,8 +214,9 @@
                     </td>
 
                     <td>
-                      <div>{{ item.nomeServico || item.servico?.nome || item.servico?.descricao || '—' }}</div>
-                      <small>{{ item.categoriaServico || item.servico?.categoria || '—' }}</small>
+                      <div class="fw-semibold">{{ item.nomeServico || item.servico?.nome || item.servico?.descricao ||
+                        '—' }}</div>
+                      <small>{{ item.nomeResponsavel || item.responsavel?.nome || 'Responsável não informado' }}</small>
                     </td>
 
                     <td>
@@ -140,56 +225,95 @@
                     </td>
 
                     <td>
+                      <span class="badge prioridade-badge">
+                        {{ formatarStatus(item.prioridade || 'NORMAL') }}
+                      </span>
+                    </td>
+
+                    <td>
                       <span class="badge" [ngClass]="statusBadgeClass(item.statusAgendamento)">
                         {{ formatarStatus(item.statusAgendamento) }}
                       </span>
                     </td>
 
-                    <td class="fw-semibold">
+                    <td class="fw-semibold text-end">
                       {{ formatarMoedaBR(item.valorEstimado) }}
                     </td>
 
-                    <td class="text-center">
-                      <div class="btn-group btn-group-sm flex-wrap">
-                        <button class="btn btn-outline-info" title="Detalhes" type="button"
+                    <td class="text-center actions-cell">
+                      <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-info" title="Visualizar" type="button"
                           (click)="abrirDetalhes(item)">
                           <i class="bi bi-eye"></i>
                         </button>
 
-                        <button class="btn btn-outline-primary" title="Editar" type="button"
+                        <button class="btn btn-sm btn-outline-primary" title="Editar" type="button"
                           (click)="abrirModalEdicao(item)">
                           <i class="bi bi-pencil-square"></i>
                         </button>
 
-                        <button class="btn btn-outline-success" title="Confirmar" type="button"
-                          [disabled]="!podeConfirmar(item)" (click)="confirmar(item)">
-                          <i class="bi bi-check-circle"></i>
-                        </button>
+                        <div class="btn-group">
+                          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false" title="Mais ações">
+                            <i class="bi bi-three-dots"></i>
+                          </button>
 
-                        <button class="btn btn-outline-primary" title="Iniciar" type="button"
-                          [disabled]="!podeIniciar(item)" (click)="iniciar(item)">
-                          <i class="bi bi-play-circle"></i>
-                        </button>
+                          <ul class="dropdown-menu dropdown-menu-end action-menu">
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeConfirmar(item)">
+                                <i class="bi bi-check-circle me-2 text-success"></i>
+                                Confirmar
+                              </button>
+                            </li>
 
-                        <button class="btn btn-outline-success" title="Concluir" type="button"
-                          [disabled]="!podeConcluir(item)" (click)="concluir(item)">
-                          <i class="bi bi-flag"></i>
-                        </button>
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeIniciar(item)">
+                                <i class="bi bi-play-circle me-2 text-primary"></i>
+                                Iniciar
+                              </button>
+                            </li>
 
-                        <button class="btn btn-outline-danger" title="Cancelar" type="button"
-                          [disabled]="!podeCancelar(item)" (click)="abrirCancelamento(item)">
-                          <i class="bi bi-x-circle"></i>
-                        </button>
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeConcluir(item)">
+                                <i class="bi bi-flag me-2 text-success"></i>
+                                Concluir
+                              </button>
+                            </li>
 
-                        <button class="btn btn-outline-danger" title="Excluir" type="button" (click)="excluir(item)">
-                          <i class="bi bi-trash"></i>
-                        </button>
+                            <li>
+                              <button class="dropdown-item" type="button" (click)="abrirCancelamento(item)">
+                                <i class="bi bi-person-x me-2 text-warning"></i>
+                                Não compareceu
+                              </button>
+                            </li>
+
+                            <li>
+                              <hr class="dropdown-divider">
+                            </li>
+
+                            <li>
+                              <button class="dropdown-item" type="button" [disabled]="!podeCancelar(item)"
+                                (click)="abrirCancelamento(item)">
+                                <i class="bi bi-x-circle me-2 text-danger"></i>
+                                Cancelar
+                              </button>
+                            </li>
+
+                            <li>
+                              <button class="dropdown-item text-danger" type="button">
+                                <i class="bi bi-trash me-2"></i>
+                                Excluir
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
                       </div>
                     </td>
                   </tr>
 
                   <tr *ngIf="totalRegistrosFiltrados === 0">
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      <i class="bi bi-search me-1"></i>
                       Nenhum agendamento encontrado.
                     </td>
                   </tr>
@@ -197,7 +321,7 @@
               </table>
             </div>
 
-            <div class="table-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
+            <div class="table-pagination-footer agendamento-pagination-footer" *ngIf="totalRegistrosFiltrados > 0">
               <div class="pagination-info">
                 Mostrando
                 <strong>{{ indiceInicialPagina }}</strong>
@@ -209,10 +333,10 @@
               </div>
 
               <div class="pagination-size">
-                <label>Exibir</label>
+                <label for="itensPorPaginaAgendamento">Exibir</label>
 
-                <select class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
-                  (ngModelChange)="aoAlterarItensPorPagina()" style="color:#35689b;">
+                <select id="itensPorPaginaAgendamento" class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()">
                   <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
                     {{ opcao }}
                   </option>
@@ -221,16 +345,21 @@
                 <span>por página</span>
               </div>
 
-              <div class="pagination-actions">
+              <div class="pagination-actions" aria-label="Paginação da tabela de agendamentos">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1"
+                  (click)="irParaPagina(1)" title="Primeira página">
+                  <i class="bi bi-chevron-double-left"></i>
+                </button>
+
                 <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1"
                   (click)="paginaAnterior()">
                   <i class="bi bi-chevron-left"></i>
                   Anterior
                 </button>
 
-                <button type="button" class="btn btn-sm" *ngFor="let pagina of paginasVisiveis()"
+                <button type="button" class="btn btn-sm pagination-page-button" *ngFor="let pagina of paginasVisiveis()"
                   [class.btn-primary]="paginaAtual === pagina" [class.btn-outline-primary]="paginaAtual !== pagina"
-                  (click)="irParaPagina(pagina)">
+                  [attr.aria-current]="paginaAtual === pagina ? 'page' : null" (click)="irParaPagina(pagina)">
                   {{ pagina }}
                 </button>
 
@@ -239,14 +368,16 @@
                   Próxima
                   <i class="bi bi-chevron-right"></i>
                 </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas"
+                  (click)="irParaPagina(totalPaginas)" title="Última página">
+                  <i class="bi bi-chevron-double-right"></i>
+                </button>
               </div>
             </div>
-
           </div>
-
         </div>
       </div>
-
     </div>
   </div>
 </div>
@@ -256,490 +387,477 @@
   <div class="modal-dialog modal-xl modal-dialog-centered agendamento-modal-dialog">
     <div class="modal-content agendamento-modal-content" style="color:#35689b;">
 
-      <div class="modal-header" style="background:#eef6ff;">
-        <h5 class="modal-title">
-          <i class="bi bi-calendar-plus me-1"></i>
-          {{ editandoId ? 'Editar Agendamento' : 'Novo Agendamento' }}
-        </h5>
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title mb-1">
+            <i class="bi bi-calendar-plus me-1"></i>
+            {{ editandoId ? 'Editar Agendamento' : 'Novo Agendamento' }}
+          </h5>
+          <small>
+            {{ novoAgendamento.nomeCliente || 'Cliente não selecionado' }} · {{
+            formatarPlaca(novoAgendamento.placaVeiculo) || 'Veículo não selecionado' }} · {{ novoAgendamento.nomeServico
+            || 'Serviço não selecionado' }}
+          </small>
+        </div>
 
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body agendamento-modal-body">
-<div class="agendamento-modal-tabs-area">
-        <div *ngIf="mensagemErroModal" class="alert alert-danger py-2">
-          <i class="bi bi-exclamation-triangle me-1"></i>
-          {{ mensagemErroModal }}
+        <div class="agendamento-modal-tabs-area">
+
+
+          <ul class="nav nav-pills clinicar-tabs mb-1">
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaNovoAgendamento === &apos;agendamento&apos;"
+                (click)="trocarAbaNovoAgendamento(&apos;agendamento&apos;)">
+                <i class="bi bi-calendar-check me-1"></i>
+                Agendamento
+                <i class="bi ms-1"
+                  [ngClass]="agendamentoProntoParaSalvar ? 'bi-check-circle-fill text-success' : 'bi-exclamation-circle-fill text-danger'"></i>
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaNovoAgendamento === &apos;pecas&apos;"
+                (click)="trocarAbaNovoAgendamento(&apos;pecas&apos;)">
+                <i class="bi bi-nut me-1"></i>
+                Peças previstas
+                <span class="badge bg-light text-primary ms-1">
+                  {{ pecasNovoAgendamento.length }}
+                </span>
+                <i class="bi ms-1"
+                  [ngClass]="pecasNovoAgendamento.length > 0 ? &apos;bi-check-circle-fill text-success&apos; : &apos;bi-exclamation-circle-fill text-warning&apos;"></i>
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" type="button" [class.active]="abaNovoAgendamento === 'adicionais'"
+                (click)="trocarAbaNovoAgendamento('adicionais')">
+                <i class="bi bi-card-text me-1"></i>
+                Informações adicionais
+              </button>
+            </li>
+          </ul>
         </div>
-
-        <div *ngIf="mensagemDisponibilidadeResponsavel" class="alert alert-warning py-2">
-          <i class="bi bi-exclamation-circle me-1"></i>
-          {{ mensagemDisponibilidadeResponsavel }}
-        </div>
-
-        <div *ngIf="!agendamentoProntoParaSalvar" class="alert alert-info py-2">
-          <i class="bi bi-info-circle me-1"></i>
-          {{ mensagemBloqueioSalvar || 'Complete os campos obrigatórios para salvar.' }}
-        </div>
-
-        <ul class="nav nav-pills clinicar-tabs mb-3">
-          <li class="nav-item">
-            <button class="nav-link" type="button" [class.active]="abaNovoAgendamento === &apos;agendamento&apos;"
-              (click)="trocarAbaNovoAgendamento(&apos;agendamento&apos;)">
-              <i class="bi bi-calendar-check me-1"></i>
-              Agendamento
-              <i class="bi ms-1"
-                [ngClass]="agendamentoProntoParaSalvar ? 'bi-check-circle-fill text-success' : 'bi-exclamation-circle-fill text-danger'"></i>
-            </button>
-          </li>
-
-          <li class="nav-item">
-            <button class="nav-link" type="button" [class.active]="abaNovoAgendamento === &apos;pecas&apos;"
-              (click)="trocarAbaNovoAgendamento(&apos;pecas&apos;)">
-              <i class="bi bi-nut me-1"></i>
-              Peças previstas
-              <span class="badge bg-light text-primary ms-1">
-                {{ pecasNovoAgendamento.length }}
-              </span>
-              <i class="bi ms-1"
-                [ngClass]="pecasNovoAgendamento.length > 0 ? &apos;bi-check-circle-fill text-success&apos; : &apos;bi-exclamation-circle-fill text-warning&apos;"></i>
-            </button>
-          </li>
-
-          <li class="nav-item">
-            <button class="nav-link" type="button" [class.active]="abaNovoAgendamento === 'adicionais'"
-              (click)="trocarAbaNovoAgendamento('adicionais')">
-              <i class="bi bi-card-text me-1"></i>
-              Informações adicionais
-            </button>
-          </li>
-        </ul>
-        </div>
-<div class="agendamento-modal-scroll-area">
-        <!-- GUIA AGENDAMENTO -->
-        <div *ngIf="abaNovoAgendamento === 'agendamento'">
-
-          <div class="card clinicar-card mb-3">
-            <div class="card-body">
-              <h6 class="modal-section-title">
-                <i class="bi bi-person me-1"></i>
-                Cliente e veículo
-              </h6>
-
-              <div class="row g-1">
-                <div class="col-md-3">
-                  <label class="form-label">
-                    Cliente *
-                  </label>
-
-                  <select class="form-select" [class.is-invalid]="clienteInvalido()"
-                    [(ngModel)]="novoAgendamento.idCliente" (change)="selecionarCliente()" style="color:#35689b;">
-                    <option [ngValue]="undefined">Selecione...</option>
-
-                    <option *ngFor="let c of clientes" [ngValue]="c.id">
-                      {{ c.nome || c.nome_social || c.nomeSocial }}
-                    </option>
-                  </select>
-
-                  <div class="invalid-feedback">
-                    Selecione o cliente.
+        <div class="agendamento-modal-scroll-area">
+          <!-- GUIA AGENDAMENTO -->
+          <div *ngIf="abaNovoAgendamento === 'agendamento'">
+            <div class="card clinicar-card mb-2">
+              <div class="card-body">
+                <h6 class="modal-section-title">
+                  <i class="bi bi-person me-1"></i>
+                  Cliente e veículo
+                </h6>
+                <div class="row g-1">
+                  <div class="col-md-3">
+                    <label class="form-label">
+                      Cliente *
+                    </label>
+                    <select class="form-select" [class.is-invalid]="clienteInvalido()"
+                      [(ngModel)]="novoAgendamento.idCliente" (change)="selecionarCliente()" style="color:#35689b;">
+                      <option [ngValue]="undefined">Selecione...</option>
+                      <option *ngFor="let c of clientes" [ngValue]="c.id">
+                        {{ c.nome || c.nome_social || c.nomeSocial }}
+                      </option>
+                    </select>
+                    <div class="invalid-feedback">
+                      Selecione o cliente.
+                    </div>
                   </div>
-                </div>
+                  <div class="col-md-5">
+                    <label class="form-label">
+                      Veículo *
+                    </label>
+                    <select class="form-select" [class.is-invalid]="veiculoInvalido()"
+                      [(ngModel)]="novoAgendamento.idVeiculo" (change)="selecionarVeiculo()" style="color:#35689b;">
+                      <option [ngValue]="undefined">
+                        {{
+                        !novoAgendamento.idCliente
+                        ? 'Selecione primeiro o cliente'
+                        : 'Selecione...'
+                        }}
+                      </option>
 
-                <div class="col-md-5">
-                  <label class="form-label">
-                    Veículo *
-                  </label>
+                      <option *ngFor="let v of veiculosDoCliente()" [ngValue]="v.id">
+                        {{ labelVeiculo(v) }}
+                      </option>
+                    </select>
 
-                  <select class="form-select" [class.is-invalid]="veiculoInvalido()"
-                    [(ngModel)]="novoAgendamento.idVeiculo" (change)="selecionarVeiculo()" style="color:#35689b;">
-                    <option [ngValue]="undefined">
-                      {{
-                      !novoAgendamento.idCliente
-                      ? 'Selecione primeiro o cliente'
-                      : 'Selecione...'
-                      }}
-                    </option>
-
-                    <option *ngFor="let v of veiculosDoCliente()" [ngValue]="v.id">
-                      {{ labelVeiculo(v) }}
-                    </option>
-                  </select>
-
-                  <div class="invalid-feedback">
-                    Selecione o veículo do cliente.
-                  </div>
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label">
-                    KM atual *
-                  </label>
-
-                  <input type="number" min="0" step="1" class="form-control"
-                    [class.is-invalid]="quilometragemAtualInvalida()" [(ngModel)]="novoAgendamento.quilometragemAtual"
-                    (blur)="normalizarQuilometragemAtual()" style="color:#35689b;" />
-
-                  <div class="invalid-feedback">
-                    Informe a quilometragem atual.
-                  </div>
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label">Prioridade</label>
-                  <select class="form-select" [(ngModel)]="novoAgendamento.prioridade" style="color:#35689b;">
-                    <option *ngFor="let prioridade of prioridades" [value]="prioridade">
-                      {{ formatarStatus(prioridade) }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card clinicar-card mb-3">
-            <div class="card-body">
-              <h6 class="modal-section-title">
-                <i class="bi bi-wrench me-1"></i>
-                Serviço, data e responsável
-              </h6>
-
-              <div class="row g-2">
-                <div class="col-md-4">
-                  <label class="form-label">
-                    Serviço previsto *
-                  </label>
-
-                  <select class="form-select" [class.is-invalid]="servicoPrevistoInvalido()"
-                    [(ngModel)]="novoAgendamento.idServico" (change)="selecionarServico()" style="color:#35689b;">
-                    <option [ngValue]="undefined">Selecione...</option>
-
-                    <option *ngFor="let s of servicos" [ngValue]="s.id">
-                      {{ s.nome || s.descricao }} - {{ s.categoria || 'Sem categoria' }}
-                    </option>
-                  </select>
-
-                  <div class="invalid-feedback">
-                    Selecione o serviço previsto para o agendamento.
-                  </div>
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label">Início *</label>
-                  <input type="datetime-local" class="form-control" [(ngModel)]="novoAgendamento.dataHoraInicio"
-                    (change)="recalcularDataFim()" style="color:#35689b;" />
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label">Duração min.</label>
-                  <input type="number" class="form-control" [(ngModel)]="novoAgendamento.duracaoEstimadaMinutos"
-                    (input)="recalcularDataFim()" style="color:#35689b;" />
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label">Fim *</label>
-                  <input type="datetime-local" class="form-control" [(ngModel)]="novoAgendamento.dataHoraFim"
-                    (change)="atualizarDisponibilidadeResponsavel()" style="color:#35689b;" />
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label">Status</label>
-                  <select class="form-select" [(ngModel)]="novoAgendamento.statusAgendamento" style="color:#35689b;">
-                    <option *ngFor="let status of statusAgendamento" [value]="status">
-                      {{ formatarStatus(status) }}
-                    </option>
-                  </select>
-                </div>
-
-
-                <div class="col-md-4">
-                  <label class="form-label">
-                    Responsável disponível *
-                  </label>
-
-                  <select class="form-select" [class.is-invalid]="responsavelDisponivelInvalido()"
-                    [(ngModel)]="novoAgendamento.idResponsavel" (change)="selecionarResponsavel()"
-                    [disabled]="!periodoAgendamentoValido() || responsaveisDisponiveis().length === 0"
-                    style="color:#35689b;">
-                    <option [ngValue]="undefined">
-                      {{
-                      !periodoAgendamentoValido()
-                      ? 'Informe início e fim válidos'
-                      : (
-                      responsaveisDisponiveis().length === 0
-                      ? 'Nenhum responsável disponível'
-                      : 'Selecione...'
-                      )
-                      }}
-                    </option>
-
-                    <option *ngFor="let r of responsaveisDisponiveis()" [ngValue]="r.id">
-                      {{ r.nome || r.nome_social || r.nomeSocial }}
-                    </option>
-                  </select>
-
-                  <div class="invalid-feedback d-block" *ngIf="responsavelDisponivelInvalido()">
-                    {{ mensagemResponsavelInvalido() }}
+                    <div class="invalid-feedback">
+                      Selecione o veículo do cliente.
+                    </div>
                   </div>
 
-                  <small class="text-muted" *ngIf="!responsavelDisponivelInvalido()">
-                    A lista mostra apenas responsáveis sem conflito no período informado.
-                  </small>
-                </div>
+                  <div class="col-md-2">
+                    <label class="form-label">
+                      KM atual *
+                    </label>
 
+                    <input type="number" min="0" step="1" class="form-control"
+                      [class.is-invalid]="quilometragemAtualInvalida()" [(ngModel)]="novoAgendamento.quilometragemAtual"
+                      (blur)="normalizarQuilometragemAtual()" style="color:#35689b;" />
 
-                <div class="col-md-4">
-                  <label class="form-label">Fornecedor</label>
-                  <select class="form-select" [(ngModel)]="novoAgendamento.idFornecedor" style="color:#35689b;">
-                    <option [ngValue]="undefined">Selecione...</option>
-                    <option *ngFor="let f of fornecedores" [ngValue]="f.id">
-                      {{ f.razaoSocial || f.razao_social || f.nomeFantasia || f.nome_fantasia }}
-                    </option>
-                  </select>
-                </div>
+                    <div class="invalid-feedback">
+                      Informe a quilometragem atual.
+                    </div>
+                  </div>
 
-                <div class="col-md-2">
-                  <label class="form-label">Canal</label>
-                  <select class="form-select" [(ngModel)]="novoAgendamento.canalOrigem" style="color:#35689b;">
-                    <option *ngFor="let canal of canais" [value]="canal">
-                      {{ formatarStatus(canal) }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="col-md-2">
-                  <label class="form-label">Atendimento</label>
-                  <select class="form-select" [(ngModel)]="novoAgendamento.tipoAtendimento" style="color:#35689b;">
-                    <option *ngFor="let tipo of tiposAtendimento" [value]="tipo">
-                      {{ formatarStatus(tipo) }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-2">
-            <div class="col-md-4">
-              <div class="info-card">
-                <div class="info-card-title">Cliente</div>
-                <div class="info-line">
-                  <span>Nome</span>
-                  <strong>{{ novoAgendamento.nomeCliente || '—' }}</strong>
-                </div>
-                <div class="info-line">
-                  <span>CPF</span>
-                  <strong>{{ formatarCpf(novoAgendamento.cpfCliente) }}</strong>
-                </div>
-                <div class="info-line">
-                  <span>Telefone</span>
-                  <strong>{{ formatarTelefone(novoAgendamento.telefoneCliente) || '—' }}</strong>
+                  <div class="col-md-2">
+                    <label class="form-label">Prioridade</label>
+                    <select class="form-select" [(ngModel)]="novoAgendamento.prioridade" style="color:#35689b;">
+                      <option *ngFor="let prioridade of prioridades" [value]="prioridade">
+                        {{ formatarStatus(prioridade) }}
+                      </option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="col-md-4">
-              <div class="info-card">
-                <div class="info-card-title">Veículo</div>
-                <div class="info-line">
-                  <span>Placa</span>
-                  <strong>{{ formatarPlaca(novoAgendamento.placaVeiculo) }}</strong>
-                </div>
-                <div class="info-line">
-                  <span>Modelo</span>
-                  <strong>{{ capitalizar(novoAgendamento.modeloVeiculo) || '—' }}</strong>
-                </div>
-                <div class="info-line">
-                  <span>Fabricante</span>
-                  <strong>{{ formatarFabricante(novoAgendamento.fabricanteVeiculo) || '—' }}</strong>
+            <div class="card clinicar-card mb-2">
+              <div class="card-body">
+                <h6 class="modal-section-title">
+                  <i class="bi bi-wrench me-1"></i>
+                  Serviço, data e responsável
+                </h6>
+
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <label class="form-label">
+                      Serviço previsto *
+                    </label>
+
+                    <select class="form-select" [class.is-invalid]="servicoPrevistoInvalido()"
+                      [(ngModel)]="novoAgendamento.idServico" (change)="selecionarServico()" style="color:#35689b;">
+                      <option [ngValue]="undefined">Selecione...</option>
+
+                      <option *ngFor="let s of servicos" [ngValue]="s.id">
+                        {{ s.nome || s.descricao }} - {{ s.categoria || 'Sem categoria' }}
+                      </option>
+                    </select>
+
+                    <div class="invalid-feedback">
+                      Selecione o serviço previsto para o agendamento.
+                    </div>
+                  </div>
+
+                  <div class="col-md-2">
+                    <label class="form-label">Início *</label>
+                    <input type="datetime-local" class="form-control" [(ngModel)]="novoAgendamento.dataHoraInicio"
+                      (change)="recalcularDataFim()" style="color:#35689b;" />
+                  </div>
+
+                  <div class="col-md-2">
+                    <label class="form-label">Duração min.</label>
+                    <input type="number" class="form-control" [(ngModel)]="novoAgendamento.duracaoEstimadaMinutos"
+                      (input)="recalcularDataFim()" style="color:#35689b;" />
+                  </div>
+
+                  <div class="col-md-2">
+                    <label class="form-label">Fim *</label>
+                    <input type="datetime-local" class="form-control" [(ngModel)]="novoAgendamento.dataHoraFim"
+                      (change)="atualizarDisponibilidadeResponsavel()" style="color:#35689b;" />
+                  </div>
+
+                  <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" [(ngModel)]="novoAgendamento.statusAgendamento" style="color:#35689b;">
+                      <option *ngFor="let status of statusAgendamento" [value]="status">
+                        {{ formatarStatus(status) }}
+                      </option>
+                    </select>
+                  </div>
+
+
+                  <div class="col-md-4">
+                    <label class="form-label">
+                      Responsável disponível *
+                    </label>
+
+                    <select class="form-select" [class.is-invalid]="responsavelDisponivelInvalido()"
+                      [(ngModel)]="novoAgendamento.idResponsavel" (change)="selecionarResponsavel()"
+                      [disabled]="!periodoAgendamentoValido() || responsaveisDisponiveis().length === 0"
+                      style="color:#35689b;">
+                      <option [ngValue]="undefined">
+                        {{
+                        !periodoAgendamentoValido()
+                        ? 'Informe início e fim válidos'
+                        : (
+                        responsaveisDisponiveis().length === 0
+                        ? 'Nenhum responsável disponível'
+                        : 'Selecione...'
+                        )
+                        }}
+                      </option>
+
+                      <option *ngFor="let r of responsaveisDisponiveis()" [ngValue]="r.id">
+                        {{ r.nome || r.nome_social || r.nomeSocial }}
+                      </option>
+                    </select>
+
+                    <div class="invalid-feedback d-block" *ngIf="responsavelDisponivelInvalido()">
+                      {{ mensagemResponsavelInvalido() }}
+                    </div>
+
+                    <small class="text-muted" *ngIf="!responsavelDisponivelInvalido()">
+                      A lista mostra apenas responsáveis sem conflito no período informado.
+                    </small>
+                  </div>
+
+
+                  <div class="col-md-4">
+                    <label class="form-label">Fornecedor</label>
+                    <select class="form-select" [(ngModel)]="novoAgendamento.idFornecedor" style="color:#35689b;">
+                      <option [ngValue]="undefined">Selecione...</option>
+                      <option *ngFor="let f of fornecedores" [ngValue]="f.id">
+                        {{ f.razaoSocial || f.razao_social || f.nomeFantasia || f.nome_fantasia }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-2">
+                    <label class="form-label">Canal</label>
+                    <select class="form-select" [(ngModel)]="novoAgendamento.canalOrigem" style="color:#35689b;">
+                      <option *ngFor="let canal of canais" [value]="canal">
+                        {{ formatarStatus(canal) }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-2">
+                    <label class="form-label">Atendimento</label>
+                    <select class="form-select" [(ngModel)]="novoAgendamento.tipoAtendimento" style="color:#35689b;">
+                      <option *ngFor="let tipo of tiposAtendimento" [value]="tipo">
+                        {{ formatarStatus(tipo) }}
+                      </option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="col-md-4">
-              <div class="info-card">
-                <div class="info-card-title">Valores</div>
-                <div class="info-line">
-                  <span>Mão de obra</span>
-                  <strong>{{ formatarMoedaBR(valorServicoSelecionado()) }}</strong>
-                </div>
-                <div class="info-line">
-                  <span>Peças previstas</span>
-                  <strong>{{ formatarMoedaBR(totalPecasAgendamento()) }}</strong>
-                </div>
-                <div class="info-line">
-                  <span>Total estimado</span>
-                  <strong>{{ novoAgendamento.valorEstimado || 'R$ 0,00' }}</strong>
+            <div class="row g-2">
+              <div class="col-md-4">
+                <div class="info-card">
+                  <div class="info-card-title">Cliente</div>
+                  <div class="info-line">
+                    <span>Nome</span>
+                    <strong>{{ novoAgendamento.nomeCliente || '—' }}</strong>
+                  </div>
+                  <div class="info-line">
+                    <span>CPF</span>
+                    <strong>{{ formatarCpf(novoAgendamento.cpfCliente) }}</strong>
+                  </div>
+                  <div class="info-line">
+                    <span>Telefone</span>
+                    <strong>{{ formatarTelefone(novoAgendamento.telefoneCliente) || '—' }}</strong>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-        </div>
-
-        <!-- GUIA PEÇAS -->
-        <div *ngIf="abaNovoAgendamento === 'pecas'">
-
-          <div class="card clinicar-card mb-3">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                  <h6 class="modal-section-title mb-1">
-                    <i class="bi bi-nut me-1"></i>
-                    Peças previstas para o agendamento *
-                  </h6>
-                  <small class="text-muted">
-                    As peças selecionadas entram no cálculo do valor estimado para o agendamento.
-                  </small>
+              <div class="col-md-4">
+                <div class="info-card">
+                  <div class="info-card-title">Veículo</div>
+                  <div class="info-line">
+                    <span>Placa</span>
+                    <strong>{{ formatarPlaca(novoAgendamento.placaVeiculo) }}</strong>
+                  </div>
+                  <div class="info-line">
+                    <span>Modelo</span>
+                    <strong>{{ capitalizar(novoAgendamento.modeloVeiculo) || '—' }}</strong>
+                  </div>
+                  <div class="info-line">
+                    <span>Fabricante</span>
+                    <strong>{{ formatarFabricante(novoAgendamento.fabricanteVeiculo) || '—' }}</strong>
+                  </div>
                 </div>
-
-                <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalPecaAgendamento()">
-                  <i class="bi bi-plus-circle me-1"></i>
-                  Adicionar peça
-                </button>
               </div>
-            </div>
-          </div>
 
-          <div class="card clinicar-card mb-3">
-            <div class="card-body">
-              <div class="table-responsive item-table-wrapper">
-                <table class="table table-sm table-hover align-middle mb-0">
-                  <thead style="background:#eef6ff;color:#35689b;">
-                    <tr>
-                      <th>Descrição</th>
-                      <th>Fabricante</th>
-                      <th>Modelo</th>
-                      <th class="text-end">Quantidade</th>
-                      <th>Unidade</th>
-                      <th class="text-end">Custo unitário</th>
-                      <th class="text-end">Total</th>
-                      <th class="text-center">Ações</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr *ngFor="let item of pecasNovoAgendamento">
-                      <td>
-                        <div class="fw-semibold">{{ item.descricaoPeca || item.nomePeca || '—' }}</div>
-                        <small class="text-muted">{{ item.observacoes || '' }}</small>
-                      </td>
-
-                      <td>{{ item.fabricantePeca || '—' }}</td>
-                      <td>{{ item.modeloPeca || '—' }}</td>
-                      <td class="text-end">{{ item.quantidade }}</td>
-                      <td>{{ item.unidadeMedida || '—' }}</td>
-                      <td class="text-end">{{ formatarMoedaBR(item.valorUnitario) }}</td>
-                      <td class="text-end fw-semibold">{{ formatarMoedaBR(item.valorTotal) }}</td>
-
-                      <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Editar peça"
-                          (click)="abrirModalEditarPecaAgendamento(item)">
-                          <i class="bi bi-pencil-square"></i>
-                        </button>
-
-                        <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir peça"
-                          (click)="removerPecaAgendamento(item)">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </td>
-                    </tr>
-
-                    <tr *ngIf="pecasNovoAgendamento.length === 0">
-                      <td colspan="8" class="text-center text-muted py-3">
-                        Nenhuma peça prevista para este agendamento.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="card clinicar-card resumo-itens-card">
-            <div class="card-body">
-              <h6 class="modal-section-title">
-                <i class="bi bi-calculator me-1"></i>
-                Resumo do agendamento
-              </h6>
-
-              <div class="row g-2">
-                <div class="col-md-4">
-                  <div class="resumo-valor-box">
-                    <small>Mão de obra</small>
+              <div class="col-md-4">
+                <div class="info-card">
+                  <div class="info-card-title">Valores</div>
+                  <div class="info-line">
+                    <span>Mão de obra</span>
                     <strong>{{ formatarMoedaBR(valorServicoSelecionado()) }}</strong>
                   </div>
-                </div>
-
-                <div class="col-md-4">
-                  <div class="resumo-valor-box">
-                    <small>Total de peças</small>
+                  <div class="info-line">
+                    <span>Peças previstas</span>
                     <strong>{{ formatarMoedaBR(totalPecasAgendamento()) }}</strong>
                   </div>
-                </div>
-
-                <div class="col-md-4">
-                  <div class="resumo-valor-box total">
-                    <small>Total estimado</small>
+                  <div class="info-line">
+                    <span>Total estimado</span>
                     <strong>{{ novoAgendamento.valorEstimado || 'R$ 0,00' }}</strong>
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
 
-        </div>
+          <!-- GUIA PEÇAS -->
+          <div *ngIf="abaNovoAgendamento === 'pecas'">
 
-        <!-- GUIA ADICIONAIS -->
-        <div *ngIf="abaNovoAgendamento === 'adicionais'">
+            <div class="card clinicar-card mb-3">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div>
+                    <h6 class="modal-section-title mb-1">
+                      <i class="bi bi-nut me-1"></i>
+                      Peças previstas para o agendamento *
+                    </h6>
+                    <small class="text-muted">
+                      As peças selecionadas entram no cálculo do valor estimado para o agendamento.
+                    </small>
+                  </div>
 
-          <div class="card clinicar-card">
-            <div class="card-body">
-              <h6 class="modal-section-title">
-                <i class="bi bi-card-text me-1"></i>
-                Informações adicionais
-              </h6>
-
-              <div class="row g-2">
-                <div class="col-md-6">
-                  <label class="form-label">Queixa do cliente</label>
-                  <textarea class="form-control" rows="3" [(ngModel)]="novoAgendamento.queixaCliente"
-                    style="color:#35689b;"></textarea>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Diagnóstico prévio</label>
-                  <textarea class="form-control" rows="3" [(ngModel)]="novoAgendamento.diagnosticoPrevio"
-                    style="color:#35689b;"></textarea>
-                </div>
-
-                <div class="col-md-12">
-                  <label class="form-label">Observações</label>
-                  <textarea class="form-control" rows="4" [(ngModel)]="novoAgendamento.observacoes"
-                    style="color:#35689b;"></textarea>
-                </div>
-
-                <div class="col-md-3">
-                  <label class="form-label">Requer confirmação?</label>
-                  <select class="form-select" [(ngModel)]="novoAgendamento.requerConfirmacao" style="color:#35689b;">
-                    <option [ngValue]="true">Sim</option>
-                    <option [ngValue]="false">Não</option>
-                  </select>
-                </div>
-
-                <div class="col-md-3">
-                  <label class="form-label">Confirmado?</label>
-                  <select class="form-select" [(ngModel)]="novoAgendamento.confirmado" style="color:#35689b;">
-                    <option [ngValue]="false">Não</option>
-                    <option [ngValue]="true">Sim</option>
-                  </select>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalPecaAgendamento()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Adicionar peça
+                  </button>
                 </div>
               </div>
             </div>
+
+            <div class="card clinicar-card mb-3">
+              <div class="card-body">
+                <div class="table-responsive item-table-wrapper">
+                  <table class="table table-sm table-hover align-middle mb-0">
+                    <thead style="background:#eef6ff;color:#35689b;">
+                      <tr>
+                        <th>Descrição</th>
+                        <th>Fabricante</th>
+                        <th>Modelo</th>
+                        <th class="text-end">Quantidade</th>
+                        <th>Unidade</th>
+                        <th class="text-end">Custo unitário</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-center">Ações</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      <tr *ngFor="let item of pecasNovoAgendamento">
+                        <td>
+                          <div class="fw-semibold">{{ item.descricaoPeca || item.nomePeca || '—' }}</div>
+                          <small class="text-muted">{{ item.observacoes || '' }}</small>
+                        </td>
+
+                        <td>{{ item.fabricantePeca || '—' }}</td>
+                        <td>{{ item.modeloPeca || '—' }}</td>
+                        <td class="text-end">{{ item.quantidade }}</td>
+                        <td>{{ item.unidadeMedida || '—' }}</td>
+                        <td class="text-end">{{ formatarMoedaBR(item.valorUnitario) }}</td>
+                        <td class="text-end fw-semibold">{{ formatarMoedaBR(item.valorTotal) }}</td>
+
+                        <td class="text-center">
+                          <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Editar peça"
+                            (click)="abrirModalEditarPecaAgendamento(item)">
+                            <i class="bi bi-pencil-square"></i>
+                          </button>
+
+                          <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir peça"
+                            (click)="removerPecaAgendamento(item)">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+
+                      <tr *ngIf="pecasNovoAgendamento.length === 0">
+                        <td colspan="8" class="text-center text-muted py-3">
+                          Nenhuma peça prevista para este agendamento.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="card clinicar-card resumo-itens-card">
+              <div class="card-body">
+                <h6 class="modal-section-title">
+                  <i class="bi bi-calculator me-1"></i>
+                  Resumo do agendamento
+                </h6>
+
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <div class="resumo-valor-box">
+                      <small>Mão de obra</small>
+                      <strong>{{ formatarMoedaBR(valorServicoSelecionado()) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="resumo-valor-box">
+                      <small>Total de peças</small>
+                      <strong>{{ formatarMoedaBR(totalPecasAgendamento()) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="resumo-valor-box total">
+                      <small>Total estimado</small>
+                      <strong>{{ novoAgendamento.valorEstimado || 'R$ 0,00' }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
+          <!-- GUIA ADICIONAIS -->
+          <div *ngIf="abaNovoAgendamento === 'adicionais'">
+
+            <div class="card clinicar-card">
+              <div class="card-body">
+                <h6 class="modal-section-title">
+                  <i class="bi bi-card-text me-1"></i>
+                  Informações adicionais
+                </h6>
+
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <label class="form-label">Queixa do cliente</label>
+                    <textarea class="form-control" rows="3" [(ngModel)]="novoAgendamento.queixaCliente"
+                      style="color:#35689b;"></textarea>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Diagnóstico prévio</label>
+                    <textarea class="form-control" rows="3" [(ngModel)]="novoAgendamento.diagnosticoPrevio"
+                      style="color:#35689b;"></textarea>
+                  </div>
+
+                  <div class="col-md-12">
+                    <label class="form-label">Observações</label>
+                    <textarea class="form-control" rows="4" [(ngModel)]="novoAgendamento.observacoes"
+                      style="color:#35689b;"></textarea>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Requer confirmação?</label>
+                    <select class="form-select" [(ngModel)]="novoAgendamento.requerConfirmacao" style="color:#35689b;">
+                      <option [ngValue]="true">Sim</option>
+                      <option [ngValue]="false">Não</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Confirmado?</label>
+                    <select class="form-select" [(ngModel)]="novoAgendamento.confirmado" style="color:#35689b;">
+                      <option [ngValue]="false">Não</option>
+                      <option [ngValue]="true">Sim</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
-</div>
       </div>
 
       <div class="modal-footer modal-footer-totais">
@@ -966,6 +1084,62 @@
         </button>
       </div>
 
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL CONFIRMAÇÃO DE AÇÃO -->
+<div class="modal fade" id="modalConfirmacaoAgendamento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content confirm-modal" style="color:#35689b;">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title mb-1">
+            <i class="bi me-1 bi-question-circle"></i>
+            Confirmar ação
+          </h5>
+          <small>{{ agendamentoSelecionado?.codigoAgendamento || 'Agendamento selecionado' }}</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="confirm-box">
+          <div class="confirm-icon">
+            <i class="bi bi-question-circle"></i>
+          </div>
+
+          <div>
+            <strong>Confirmar ação</strong>
+            <p class="mb-0">Confirme a execução da ação para o agendamento selecionado.</p>
+          </div>
+        </div>
+
+        <div class="detail-box mt-3" *ngIf="agendamentoSelecionado as agendamento">
+          <small>Resumo do agendamento</small>
+          <strong>{{ agendamento.nomeCliente || agendamento.cliente?.nome || 'Cliente não informado' }}</strong>
+          <div class="details-line mt-1">
+            {{ formatarPlaca(agendamento.placaVeiculo || agendamento.veiculo?.placa) }} ·
+            {{ agendamento.nomeServico || agendamento.servico?.nome || agendamento.servico?.descricao || 'Serviço não
+            informado' }}
+          </div>
+          <div class="details-line">
+            {{ formatarDataHora(agendamento.dataHoraInicio) }} · {{ formatarStatus(agendamento.statusAgendamento) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn" class="btn btn-primary" (click)="confirmarCancelamento()">
+          <i class="bi bi-check-circle me-1"></i>
+          Confirmar
+        </button>
+      </div>
     </div>
   </div>
 </div>

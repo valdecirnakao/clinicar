@@ -113,6 +113,14 @@ public class AtendimentoMapper {
         response.setCriadoEm(atendimento.getCriadoEm());
         response.setAtualizadoEm(atendimento.getAtualizadoEm());
 
+        response.setEstoqueBaixado(atendimento.getEstoqueBaixado());
+
+        response.setEstoqueBaixadoEm(
+            atendimento.getEstoqueBaixadoEm() != null
+                ? atendimento.getEstoqueBaixadoEm().toString()
+                : null
+        );
+
         return response;
     }
 

@@ -76,6 +76,9 @@ export interface Atendimento {
 
   criadoEm?: string;
   atualizadoEm?: string;
+
+  estoqueBaixado?: boolean;
+  estoqueBaixadoEm?: string | null;
 }
 
 export interface AtendimentoRequest {

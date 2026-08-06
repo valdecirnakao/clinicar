@@ -1,7 +1,9 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { catchError, forkJoin, of } from 'rxjs';
+import { Observable, from, catchError, forkJoin, of } from 'rxjs';
+import { concatMap, map, toArray } from 'rxjs/operators';
+
 
 import {
   AgendamentoResumo,
@@ -21,6 +23,18 @@ import {
 } from './exibe-atendimentos.service';
 
 declare var bootstrap: any;
+
+type DirecaoOrdenacaoAtendimento = 'asc' | 'desc';
+type ColunaOrdenacaoAtendimento =
+  | 'codigoAtendimento'
+  | 'nomeCliente'
+  | 'placaVeiculo'
+  | 'nomeServico'
+  | 'statusAtendimento'
+  | 'tipoExecucao'
+  | 'valorTotal'
+  | 'dataEntrada'
+  | 'os';
 
 @Component({
   selector: 'app-exibe-atendimentos',
@@ -52,6 +66,15 @@ export class ExibeAtendimentosComponent implements OnInit {
 
   filtro = '';
   filtroStatus = '';
+  filtroTipoExecucao = '';
+
+  paginaAtual = 1;
+  itensPorPagina = 10;
+  opcoesItensPorPagina = [5, 10, 20, 50];
+
+  colunaOrdenacao: ColunaOrdenacaoAtendimento = 'dataEntrada';
+  direcaoOrdenacao: DirecaoOrdenacaoAtendimento = 'desc';
+
   carregando = false;
   mensagemErro = '';
 
@@ -75,7 +98,21 @@ export class ExibeAtendimentosComponent implements OnInit {
 
   motivoCancelamento = '';
 
+  estoqueBaixado?: boolean;
+  estoqueBaixadoEm?: string | null;
+
   readonly tiposExecucao = ['INTERNO', 'TERCEIRO', 'MISTO'];
+  readonly statusAtendimentos = [
+    'ABERTO',
+    'EM_DIAGNOSTICO',
+    'AGUARDANDO_APROVACAO',
+    'APROVADO',
+    'EM_EXECUCAO',
+    'AGUARDANDO_TERCEIRO',
+    'CONCLUIDO',
+    'ENTREGUE',
+    'CANCELADO'
+  ];
   readonly statusItemServico = ['PENDENTE', 'EM_EXECUCAO', 'EXECUTADO', 'CANCELADO'];
 
   constructor(
@@ -89,23 +126,81 @@ export class ExibeAtendimentosComponent implements OnInit {
 
   get atendimentosFiltrados(): Atendimento[] {
     const termo = this.normalizar(this.filtro);
+    const status = String(this.filtroStatus || '').trim();
+    const tipoExecucao = String(this.filtroTipoExecucao || '').trim();
 
-    return this.atendimentos.filter(item => {
-      const statusOk = !this.filtroStatus || item.statusAtendimento === this.filtroStatus;
+    const filtrados = this.atendimentos.filter(item => {
+      const statusOk = !status || item.statusAtendimento === status;
+      const tipoOk = !tipoExecucao || item.tipoExecucao === tipoExecucao;
 
       const texto = this.normalizar([
         item.codigoAtendimento,
         item.codigoAgendamento,
         item.nomeCliente,
+        item.cpfCliente,
+        item.telefoneCliente,
+        item.emailCliente,
         item.placaVeiculo,
         item.modeloVeiculo,
+        item.fabricanteVeiculo,
         item.nomeServico,
+        item.categoriaServico,
+        item.razaoSocialFornecedor,
         item.nomeResponsavel,
-        item.statusAtendimento
+        item.statusAtendimento,
+        item.tipoExecucao,
+        item.osEmailDestino
       ].join(' '));
 
-      return statusOk && (!termo || texto.includes(termo));
+      return statusOk && tipoOk && (!termo || texto.includes(termo));
     });
+
+    return this.ordenarAtendimentos(filtrados);
+  }
+
+  get atendimentosPaginados(): Atendimento[] {
+    this.ajustarPaginaAtual();
+
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+
+    return this.atendimentosFiltrados.slice(inicio, fim);
+  }
+
+  get totalRegistrosFiltrados(): number {
+    return this.atendimentosFiltrados.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalRegistrosFiltrados / this.itensPorPagina));
+  }
+
+  get indiceInicialPagina(): number {
+    if (this.totalRegistrosFiltrados === 0) {
+      return 0;
+    }
+
+    return (this.paginaAtual - 1) * this.itensPorPagina + 1;
+  }
+
+  get indiceFinalPagina(): number {
+    return Math.min(this.paginaAtual * this.itensPorPagina, this.totalRegistrosFiltrados);
+  }
+
+  get possuiFiltrosAplicados(): boolean {
+    return !!(
+      this.filtro.trim()
+      || this.filtroStatus.trim()
+      || this.filtroTipoExecucao.trim()
+    );
+  }
+
+  get totalAbertos(): number {
+    return this.atendimentos.filter(a => a.statusAtendimento === 'ABERTO').length;
+  }
+
+  get totalCancelados(): number {
+    return this.atendimentos.filter(a => a.statusAtendimento === 'CANCELADO').length;
   }
 
   get responsaveis(): UsuarioResumo[] {
@@ -159,6 +254,7 @@ export class ExibeAtendimentosComponent implements OnInit {
       this.pecasCatalogo = resposta.pecas ?? [];
       this.fornecimentosPecas = this.extrairLista<FornecimentoPecaResumo>(resposta.fornecimentosPecas);
       this.servicosCatalogo = resposta.servicos ?? [];
+      this.ajustarPaginaAtual();
       this.carregando = false;
 
       console.log('Peças catálogo:', this.pecasCatalogo);
@@ -178,6 +274,7 @@ export class ExibeAtendimentosComponent implements OnInit {
     this.service.listar().subscribe({
       next: (lista) => {
         this.atendimentos = lista ?? [];
+        this.ajustarPaginaAtual();
         this.carregando = false;
       },
       error: (erro) => {
@@ -189,6 +286,135 @@ export class ExibeAtendimentosComponent implements OnInit {
 
   voltar(): void {
     this.location.back();
+  }
+
+  aoAlterarFiltros(): void {
+    this.paginaAtual = 1;
+  }
+
+  limparFiltros(): void {
+    this.filtro = '';
+    this.filtroStatus = '';
+    this.filtroTipoExecucao = '';
+    this.paginaAtual = 1;
+  }
+
+  aoAlterarItensPorPagina(): void {
+    this.paginaAtual = 1;
+    this.ajustarPaginaAtual();
+  }
+
+  irParaPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) {
+      return;
+    }
+
+    this.paginaAtual = pagina;
+  }
+
+  primeiraPagina(): void {
+    this.irParaPagina(1);
+  }
+
+  paginaAnterior(): void {
+    this.irParaPagina(this.paginaAtual - 1);
+  }
+
+  proximaPagina(): void {
+    this.irParaPagina(this.paginaAtual + 1);
+  }
+
+  ultimaPagina(): void {
+    this.irParaPagina(this.totalPaginas);
+  }
+
+  paginasVisiveis(): number[] {
+    const total = this.totalPaginas;
+    const atual = this.paginaAtual;
+    const paginas: number[] = [];
+
+    const inicio = Math.max(1, atual - 2);
+    const fim = Math.min(total, atual + 2);
+
+    for (let pagina = inicio; pagina <= fim; pagina++) {
+      paginas.push(pagina);
+    }
+
+    return paginas;
+  }
+
+  ordenarPor(coluna: ColunaOrdenacaoAtendimento): void {
+    if (this.colunaOrdenacao === coluna) {
+      this.direcaoOrdenacao = this.direcaoOrdenacao === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.colunaOrdenacao = coluna;
+      this.direcaoOrdenacao = coluna === 'dataEntrada' || coluna === 'valorTotal' ? 'desc' : 'asc';
+    }
+  }
+
+  iconeOrdenacao(coluna: ColunaOrdenacaoAtendimento): string {
+    if (this.colunaOrdenacao !== coluna) {
+      return 'bi-arrow-down-up';
+    }
+
+    return this.direcaoOrdenacao === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
+  }
+
+  trackByAtendimento(index: number, item: Atendimento): number | string {
+    return item.id ?? item.codigoAtendimento ?? index;
+  }
+
+  private ajustarPaginaAtual(): void {
+    if (this.paginaAtual > this.totalPaginas) {
+      this.paginaAtual = this.totalPaginas;
+    }
+
+    if (this.paginaAtual < 1) {
+      this.paginaAtual = 1;
+    }
+  }
+
+  private ordenarAtendimentos(lista: Atendimento[]): Atendimento[] {
+    const direcao = this.direcaoOrdenacao === 'asc' ? 1 : -1;
+
+    return [...lista].sort((a, b) => {
+      const valorA = this.valorOrdenacaoAtendimento(a, this.colunaOrdenacao);
+      const valorB = this.valorOrdenacaoAtendimento(b, this.colunaOrdenacao);
+
+      if (typeof valorA === 'number' && typeof valorB === 'number') {
+        return (valorA - valorB) * direcao;
+      }
+
+      return String(valorA).localeCompare(String(valorB), 'pt-BR', {
+        numeric: true,
+        sensitivity: 'base'
+      }) * direcao;
+    });
+  }
+
+  private valorOrdenacaoAtendimento(item: Atendimento, coluna: ColunaOrdenacaoAtendimento): string | number {
+    switch (coluna) {
+      case 'codigoAtendimento':
+        return item.codigoAtendimento || '';
+      case 'nomeCliente':
+        return item.nomeCliente || '';
+      case 'placaVeiculo':
+        return item.placaVeiculo || '';
+      case 'nomeServico':
+        return item.nomeServico || '';
+      case 'statusAtendimento':
+        return item.statusAtendimento || '';
+      case 'tipoExecucao':
+        return item.tipoExecucao || '';
+      case 'valorTotal':
+        return this.moedaParaNumero(item.valorTotal);
+      case 'dataEntrada':
+        return item.dataEntrada ? new Date(item.dataEntrada).getTime() || 0 : 0;
+      case 'os':
+        return this.formatarStatusOs(item);
+      default:
+        return '';
+    }
   }
 
   trocarAbaNovoAtendimento(aba: 'atendimento' | 'itens' | 'adicionais'): void {

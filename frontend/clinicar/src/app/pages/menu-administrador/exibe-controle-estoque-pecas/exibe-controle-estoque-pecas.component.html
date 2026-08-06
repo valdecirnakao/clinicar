@@ -431,12 +431,20 @@
                   <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)">Selecione o local.</div>
                 </div>
 
-                <div class="col-md-2 d-flex align-items-end">
-                  <button type="button" class="btn btn-outline-primary w-100" (click)="abrirModalNovoLocal()">
-                    <i class="bi bi-plus-circle me-1"></i>
-                    Local
-                  </button>
-                </div>
+                <div class="col-md-2">
+  <label class="form-label invisible d-none d-md-block" aria-hidden="true">
+    Local
+  </label>
+
+  <button
+    type="button"
+    class="btn btn-outline-primary w-100 btn-local-estoque"
+    (click)="abrirModalNovoLocal()"
+  >
+    <i class="bi bi-plus-circle me-1"></i>
+    Local
+  </button>
+</div>
 
                 <div class="col-md-12">
                   <div class="preview-card">
