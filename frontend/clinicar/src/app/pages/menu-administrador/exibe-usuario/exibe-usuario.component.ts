@@ -75,6 +75,7 @@ export class ExibeUsuarioComponent implements OnInit {
   abaEdicaoUsuario: AbaEdicaoUsuario = 'dados';
   abaCadastroUsuario: AbaCadastroUsuario = 'dados';
   mensagemErroCadastro = '';
+  mensagemErroModal = '';
   cepCadastroCarregando = false;
   cepCadastroErro = '';
 
@@ -498,6 +499,7 @@ export class ExibeUsuarioComponent implements OnInit {
     };
     this.editOriginal = { ...this.edit };
     this.camposInvalidosEdicao = [];
+    this.mensagemErroModal = '';
     this.abaEdicaoUsuario = 'dados';
   }
 
@@ -506,6 +508,7 @@ export class ExibeUsuarioComponent implements OnInit {
     this.edit = {};
     this.editOriginal = {};
     this.camposInvalidosEdicao = [];
+    this.mensagemErroModal = '';
     this.abaEdicaoUsuario = 'dados';
   }
 
@@ -533,6 +536,7 @@ export class ExibeUsuarioComponent implements OnInit {
     };
     this.editOriginal = { ...this.edit };
     this.camposInvalidosEdicao = [];
+    this.mensagemErroModal = '';
     this.abaEdicaoUsuario = 'dados';
 
     const el = document.getElementById('modalEdicaoUsuario');
@@ -559,8 +563,15 @@ export class ExibeUsuarioComponent implements OnInit {
         this.recarregar();
       },
       error: (err) => {
-        console.error(err);
-        alert('Erro ao salvar alterações.');
+        console.error('Erro ao salvar alterações:', err);
+
+        const mensagem = this.extrairMensagemErro(
+          err,
+          'Erro ao salvar alterações. Verifique os dados informados.'
+        );
+
+        this.aplicarErroUsuario(mensagem, false);
+        alert(mensagem);
       }
     });
   }
@@ -573,10 +584,11 @@ export class ExibeUsuarioComponent implements OnInit {
     const erroValidacao = this.validarEdicaoUsuario();
 
     if (erroValidacao) {
-      alert(erroValidacao);
+      this.mensagemErroModal = erroValidacao;
       return;
     }
 
+    this.mensagemErroModal = '';
     this.formatarCamposEdicaoAntesSalvar();
 
     const payload = this.montarPayloadUsuario(this.edit, false);
@@ -589,8 +601,14 @@ export class ExibeUsuarioComponent implements OnInit {
         this.recarregar();
       },
       error: (err) => {
-        console.error(err);
-        alert('Erro ao salvar alterações do usuário.');
+        console.error('Erro ao salvar alterações do usuário:', err);
+
+        this.mensagemErroModal = this.extrairMensagemErro(
+          err,
+          'Erro ao salvar alterações do usuário. Verifique os dados informados.'
+        );
+
+        this.aplicarErroUsuario(this.mensagemErroModal, false);
       }
     });
   }
@@ -602,6 +620,18 @@ export class ExibeUsuarioComponent implements OnInit {
 
   campoEdicaoInvalido(campo: string): boolean {
     return this.camposInvalidosEdicao.includes(campo);
+  }
+
+  limparCampoEdicaoInvalido(campo: string): void {
+    if (!this.camposInvalidosEdicao.includes(campo)) {
+      return;
+    }
+
+    this.camposInvalidosEdicao = this.camposInvalidosEdicao.filter(item => item !== campo);
+
+    if (!this.camposInvalidosEdicao.length) {
+      this.mensagemErroModal = '';
+    }
   }
 
   private validarEdicaoUsuario(): string | null {
@@ -630,7 +660,7 @@ export class ExibeUsuarioComponent implements OnInit {
     }
 
     const email = String(this.edit.email || '').trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!this.emailValido(email)) {
       this.camposInvalidosEdicao = ['email'];
       this.abaEdicaoUsuario = 'contato';
       return 'Informe um e-mail válido para o usuário.';
@@ -845,8 +875,14 @@ export class ExibeUsuarioComponent implements OnInit {
         this.recarregar();
       },
       error: (err) => {
-        console.error(err);
-        this.mensagemErroCadastro = this.extrairMensagemErro(err, 'Erro ao cadastrar usuário.');
+        console.error('Erro ao cadastrar usuário:', err);
+
+        this.mensagemErroCadastro = this.extrairMensagemErro(
+          err,
+          'Erro ao cadastrar usuário. Verifique os dados informados.'
+        );
+
+        this.aplicarErroUsuario(this.mensagemErroCadastro, true);
       }
     });
   }
@@ -1028,8 +1064,8 @@ export class ExibeUsuarioComponent implements OnInit {
         this.recarregar();
       },
       error: (err) => {
-        console.error(err);
-        alert('Erro ao alterar o status do usuário.');
+        console.error('Erro ao alterar o status do usuário:', err);
+        alert(this.extrairMensagemErro(err, 'Erro ao alterar o status do usuário.'));
         this.acaoEmExecucao = false;
       }
     });
@@ -1152,11 +1188,36 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   get progressoCadastroPercentual(): number {
-    const obrigatorios = this.camposObrigatoriosCadastro();
-    const preenchidos = obrigatorios.filter(campo => String(this.novoUsuario[campo] ?? '').trim()).length;
-    const base = Math.round((preenchidos / obrigatorios.length) * 100);
+    /*
+     * A barra de progresso deve refletir a validação real do cadastro,
+     * e não apenas a quantidade bruta de campos preenchidos.
+     *
+     * Quando o formulário já pode ser salvo, a barra precisa chegar a 100%,
+     * mesmo que algum cálculo intermediário de preenchimento não acompanhe
+     * imediatamente a última alteração feita pelo usuário.
+     */
+    if (this.cadastroProntoParaSalvar) {
+      return 100;
+    }
 
-    return Math.max(0, Math.min(100, base));
+    const obrigatorios = this.camposObrigatoriosCadastro();
+    const totalObrigatorios = obrigatorios.length || 1;
+
+    const preenchidos = obrigatorios.filter(campo =>
+      String(this.novoUsuario[campo] ?? '').trim().length > 0
+    ).length;
+
+    const percentualPreenchimento = Math.round((preenchidos / totalObrigatorios) * 100);
+
+    /*
+     * Se existem campos preenchidos, mas inválidos, reduzimos um pouco o avanço
+     * para que a barra não indique conclusão total antes de o formulário ficar válido.
+     */
+    const pendencias = this.quantidadePendenciasCadastro;
+    const descontoPorPendencias = Math.min(25, pendencias * 5);
+    const percentualAjustado = percentualPreenchimento - descontoPorPendencias;
+
+    return Math.max(0, Math.min(99, percentualAjustado));
   }
 
   get quantidadePendenciasCadastro(): number {
@@ -1355,6 +1416,11 @@ export class ExibeUsuarioComponent implements OnInit {
     this.limparCampoCadastroInvalido('email');
   }
 
+  normalizarEmailEdicao(): void {
+    this.edit.email = String(this.edit.email || '').trim().toLowerCase();
+    this.limparCampoEdicaoInvalido('email');
+  }
+
   onCepBlurCadastro(): void {
     const cepNums = this.onlyDigits(this.novoUsuario.cep);
     this.cepCadastroErro = '';
@@ -1391,7 +1457,9 @@ export class ExibeUsuarioComponent implements OnInit {
           this.novoUsuario.complemento_endereco = resp.complemento;
         }
 
-        ['logradouro', 'bairro', 'cidade', 'estado'].forEach(campo => this.limparCampoCadastroInvalido(campo));
+        for (const campo of ['logradouro', 'bairro', 'cidade', 'estado']) {
+          this.limparCampoCadastroInvalido(campo);
+        }
       },
       error: (e) => {
         console.error(e);
@@ -1402,83 +1470,26 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   private validarCadastroUsuario(marcarInvalidos: boolean): string | null {
-    const camposObrigatorios = this.camposObrigatoriosCadastro();
-    const faltando = camposObrigatorios.filter(campo => !String(this.novoUsuario[campo] ?? '').trim());
-
-    if (faltando.length) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = [...faltando];
-        this.abaCadastroUsuario = this.abaPorCampoCadastro(faltando[0]);
-      }
-
-      return 'Preencha todos os campos obrigatórios antes de cadastrar o usuário.';
+    const erroCampos = this.validarCamposObrigatoriosCadastro(marcarInvalidos);
+    if (erroCampos) {
+      return erroCampos;
     }
 
-    const cpfCnpj = this.onlyDigits(this.novoUsuario.cpf);
-    if (cpfCnpj.length !== 11 && cpfCnpj.length !== 14) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = ['cpf'];
-        this.abaCadastroUsuario = 'dados';
+    const validacoes: Array<() => string | null> = [
+      () => this.validarCpfCnpjCadastro(marcarInvalidos),
+      () => this.validarEmailCadastro(marcarInvalidos),
+      () => this.validarTelefoneCadastro(marcarInvalidos),
+      () => this.validarCepCadastro(marcarInvalidos),
+      () => this.validarUfCadastro(marcarInvalidos),
+      () => this.validarSenhaCadastro(marcarInvalidos),
+      () => this.validarConfirmacaoSenhaCadastro(marcarInvalidos)
+    ];
+
+    for (const validar of validacoes) {
+      const erro = validar();
+      if (erro) {
+        return erro;
       }
-
-      return 'Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.';
-    }
-
-    const email = String(this.novoUsuario.email || '').trim();
-    if (!this.emailValido(email)) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = ['email'];
-        this.abaCadastroUsuario = 'contato';
-      }
-
-      return 'Informe um e-mail válido para o usuário.';
-    }
-
-    if (!this.telefoneWhatsappValido(this.novoUsuario.telefone)) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = ['telefone'];
-        this.abaCadastroUsuario = 'contato';
-      }
-
-      return 'Informe um telefone com DDD válido para contato e notificações.';
-    }
-
-    const cep = this.onlyDigits(this.novoUsuario.cep);
-    if (cep.length !== 8) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = ['cep'];
-        this.abaCadastroUsuario = 'endereco';
-      }
-
-      return 'Informe um CEP com 8 dígitos.';
-    }
-
-    const uf = String(this.novoUsuario.estado || '').trim().toUpperCase();
-    if (uf.length !== 2) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = ['estado'];
-        this.abaCadastroUsuario = 'endereco';
-      }
-
-      return 'Informe a UF com 2 letras.';
-    }
-
-    if (!this.senhaCadastroAtendePolitica()) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = ['senha'];
-        this.abaCadastroUsuario = 'seguranca';
-      }
-
-      return 'Informe uma senha com pelo menos 8 caracteres, letra maiúscula, letra minúscula e número.';
-    }
-
-    if (this.senhasCadastroDiferentes()) {
-      if (marcarInvalidos) {
-        this.camposInvalidos = ['senha', 'confirmarSenha'];
-        this.abaCadastroUsuario = 'seguranca';
-      }
-
-      return 'As senhas informadas não coincidem.';
     }
 
     if (marcarInvalidos) {
@@ -1486,6 +1497,116 @@ export class ExibeUsuarioComponent implements OnInit {
     }
 
     return null;
+  }
+
+  private validarCamposObrigatoriosCadastro(marcarInvalidos: boolean): string | null {
+    const faltando = this.camposObrigatoriosCadastro().filter(campo => !String(this.novoUsuario[campo] ?? '').trim());
+
+    if (!faltando.length) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = [...faltando];
+      this.abaCadastroUsuario = this.abaPorCampoCadastro(faltando[0]);
+    }
+
+    return 'Preencha todos os campos obrigatórios antes de cadastrar o usuário.';
+  }
+
+  private validarCpfCnpjCadastro(marcarInvalidos: boolean): string | null {
+    const cpfCnpj = this.onlyDigits(this.novoUsuario.cpf);
+
+    if (cpfCnpj.length === 11 || cpfCnpj.length === 14) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = ['cpf'];
+      this.abaCadastroUsuario = 'dados';
+    }
+
+    return 'Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.';
+  }
+
+  private validarEmailCadastro(marcarInvalidos: boolean): string | null {
+    const email = String(this.novoUsuario.email || '').trim();
+
+    if (this.emailValido(email)) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = ['email'];
+      this.abaCadastroUsuario = 'contato';
+    }
+
+    return 'Informe um e-mail válido para o usuário.';
+  }
+
+  private validarTelefoneCadastro(marcarInvalidos: boolean): string | null {
+    if (this.telefoneWhatsappValido(this.novoUsuario.telefone)) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = ['telefone'];
+      this.abaCadastroUsuario = 'contato';
+    }
+
+    return 'Informe um telefone com DDD válido para contato e notificações.';
+  }
+
+  private validarCepCadastro(marcarInvalidos: boolean): string | null {
+    if (this.onlyDigits(this.novoUsuario.cep).length === 8) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = ['cep'];
+      this.abaCadastroUsuario = 'endereco';
+    }
+
+    return 'Informe um CEP com 8 dígitos.';
+  }
+
+  private validarUfCadastro(marcarInvalidos: boolean): string | null {
+    if (String(this.novoUsuario.estado || '').trim().toUpperCase().length === 2) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = ['estado'];
+      this.abaCadastroUsuario = 'endereco';
+    }
+
+    return 'Informe a UF com 2 letras.';
+  }
+
+  private validarSenhaCadastro(marcarInvalidos: boolean): string | null {
+    if (this.senhaCadastroAtendePolitica()) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = ['senha'];
+      this.abaCadastroUsuario = 'seguranca';
+    }
+
+    return 'Informe uma senha com pelo menos 8 caracteres, letra maiúscula, letra minúscula e número.';
+  }
+
+  private validarConfirmacaoSenhaCadastro(marcarInvalidos: boolean): string | null {
+    if (!this.senhasCadastroDiferentes()) {
+      return null;
+    }
+
+    if (marcarInvalidos) {
+      this.camposInvalidos = ['senha', 'confirmarSenha'];
+      this.abaCadastroUsuario = 'seguranca';
+    }
+
+    return 'As senhas informadas não coincidem.';
   }
 
   private camposObrigatoriosCadastro(): Array<keyof Usuario> {
@@ -1542,7 +1663,32 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   private emailValido(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+    const valor = String(email || '').trim();
+    const arroba = valor.indexOf('@');
+    const ponto = valor.lastIndexOf('.');
+
+    return arroba > 0 && ponto > arroba + 1 && ponto < valor.length - 1;
+  }
+
+
+  private aplicarErroUsuario(mensagem: string, cadastro: boolean): void {
+    const texto = this.normalizarTexto(mensagem);
+
+    if (texto.includes('e-mail') || texto.includes('email')) {
+      if (cadastro) {
+        this.camposInvalidos = Array.from(new Set([
+          ...this.camposInvalidos,
+          'email'
+        ]));
+        this.abaCadastroUsuario = 'contato';
+      } else {
+        this.camposInvalidosEdicao = Array.from(new Set([
+          ...this.camposInvalidosEdicao,
+          'email'
+        ]));
+        this.abaEdicaoUsuario = 'contato';
+      }
+    }
   }
 
   private extrairMensagemErro(err: any, mensagemPadrao: string): string {
@@ -1552,6 +1698,10 @@ export class ExibeUsuarioComponent implements OnInit {
 
     if (typeof err?.error?.mensagem === 'string') {
       return err.error.mensagem;
+    }
+
+    if (typeof err?.error?.message === 'string') {
+      return err.error.message;
     }
 
     if (typeof err?.message === 'string') {
@@ -1841,6 +1991,7 @@ export class ExibeUsuarioComponent implements OnInit {
       cpf: this.onlyDigits(usuario.cpf),
       cep: this.onlyDigits(usuario.cep),
       telefone: this.onlyDigits(usuario.telefone),
+      email: (usuario.email || '').toString().trim().toLowerCase(),
       estado: (usuario.estado || '').toString().toUpperCase().trim(),
       tipo_do_acesso: (usuario.tipo_do_acesso || 'cliente').toString().toLowerCase().trim(),
       status: (usuario.status || 'ativo').toString().toLowerCase().trim()

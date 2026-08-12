@@ -11,7 +11,6 @@
           </div>
         </div>
       </div>
-
       <div class="row g-2 mb-2 usuarios-summary-row">
         <div class="col-md-3 col-sm-6">
           <div class="summary-card">
@@ -36,7 +35,6 @@
             </div>
           </div>
         </div>
-
         <div class="col-md-3 col-sm-6">
           <div class="summary-card">
             <div class="summary-icon muted">
@@ -48,7 +46,6 @@
             </div>
           </div>
         </div>
-
         <div class="col-md-3 col-sm-6">
           <div class="summary-card">
             <div class="summary-icon security">
@@ -66,22 +63,23 @@
         <div class="card-body usuarios-list-body p-2">
           <div class="row g-2 align-items-end mb-2 toolbar-filters">
             <div class="col-lg-4 col-md-12">
-              <label class="form-label mb-1">Buscar</label>
+              <label class="form-label mb-1" for="buscar-usuarios">Buscar</label>
               <div class="input-group">
                 <span class="input-group-text" style="background:#eef6ff;border-color:#d0e2f2;color:#35689b;">
                   <i class="bi bi-search"></i>
                 </span>
-                <input type="search" class="form-control" placeholder="CPF, CNPJ, nome, nome social, e-mail ou telefone"
-                  [(ngModel)]="termoBusca" (ngModelChange)="filtrar($event)" style="color:#35689b;" />
+                <input id="buscar-usuarios" type="search" class="form-control"
+                  placeholder="CPF, CNPJ, nome, nome social, e-mail ou telefone" [(ngModel)]="termoBusca"
+                  (ngModelChange)="filtrar($event)" style="color:#35689b;" />
               </div>
             </div>
 
             <div class="col-lg-1 col-md-4 status-filter-column">
-              <label class="form-label mb-1">Status</label>
+              <label class="form-label mb-1" for="filtro-status">Status</label>
 
-              <div class="filter-dropdown" (click)="$event.stopPropagation()">
-                <button type="button" class="filter-button" [class.active]="statusFiltroAberto || filtroStatus"
-                  (click)="alternarFiltroStatus($event)">
+              <div class="filter-dropdown" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+                <button id="filtro-status" type="button" class="filter-button"
+                  [class.active]="statusFiltroAberto || filtroStatus" (click)="alternarFiltroStatus($event)">
                   <span>{{ rotuloFiltroStatus() }}</span>
                   <i class="bi" [class.bi-chevron-up]="statusFiltroAberto"
                     [class.bi-chevron-down]="!statusFiltroAberto"></i>
@@ -102,10 +100,11 @@
             </div>
 
             <div class="col-lg-1 col-md-4 status-filter-column">
-              <label class="form-label mb-1">Tipo de acesso</label>
+              <label class="form-label mb-1" for="filtro-tipo-acesso">Tipo de acesso</label>
 
-              <div class="filter-dropdown" (click)="$event.stopPropagation()">
-                <button type="button" class="filter-button" [class.active]="tipoAcessoFiltroAberto || filtroTipoAcesso"
+              <div class="filter-dropdown" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+                <button id="filtro-tipo-acesso" type="button" class="filter-button"
+                  [class.active]="tipoAcessoFiltroAberto || filtroTipoAcesso"
                   (click)="alternarFiltroTipoAcesso($event)">
                   <span>{{ rotuloFiltroTipoAcesso() }}</span>
                   <i class="bi" [class.bi-chevron-up]="tipoAcessoFiltroAberto"
@@ -125,15 +124,15 @@
                 </div>
               </div>
             </div>
-             <div class="col-lg-1 col-md-4 status-filter-column">
-                <button class="btn btn-outline-secondary btn-md" type="button" (click)="limparFiltros()"
-                  [disabled]="!possuiFiltrosAplicados"
-                  [title]="possuiFiltrosAplicados ? 'Limpar filtros aplicados' : 'Nenhum filtro aplicado'">
-                  <i class="bi bi-eraser me-1"></i>
-                  Limpar Filtros
-                </button>
-             </div>
-            <div class="col-lg-5 col-md-4">
+            <div class="col-lg-2 col-md-4 status-filter-column">
+              <button class="btn btn-outline-secondary btn-md" type="button" (click)="limparFiltros()"
+                [disabled]="!possuiFiltrosAplicados"
+                [title]="possuiFiltrosAplicados ? 'Limpar filtros aplicados' : 'Nenhum filtro aplicado'">
+                <i class="bi bi-eraser me-1"></i>
+                Limpar Filtros
+              </button>
+            </div>
+            <div class="col-lg-4 col-md-4">
               <div class="d-flex gap-2 justify-content-lg-end flex-wrap toolbar-actions">
                 <button class="btn btn-md btn-primary-clinicar" type="button" (click)="abrirModalCadastro()">
                   <i class="bi bi-person-plus me-1"></i>
@@ -278,7 +277,7 @@
 
                     <td>
                       <span class="text-truncate table-email" [title]="u.email">
-                        {{ u.email?.toLowerCase() || '—' }}
+                        {{ u.email.toLowerCase() || '—' }}
                       </span>
                     </td>
 
@@ -320,7 +319,8 @@
                           <i class="bi bi-pencil-square"></i>
                         </button>
 
-                        <div class="action-dropdown" (click)="$event.stopPropagation()">
+                        <div class="action-dropdown" (click)="$event.stopPropagation()"
+                          (keydown)="$event.stopPropagation()">
                           <button type="button" class="btn btn-sm btn-outline-secondary" title="Mais ações"
                             (click)="alternarMenuAcoes($event, u)">
                             <i class="bi bi-three-dots-vertical"></i>
@@ -365,7 +365,7 @@
                       <button type="button" class="usuario-link" (click)="abrirDetalhes(u)">
                         <strong>{{ u.nome || '—' }}</strong>
                       </button>
-                      <small>{{ u.email?.toLowerCase() || '—' }}</small>
+                      <small>{{ u.email.toLowerCase() || '—' }}</small>
                     </div>
 
                     <span class="badge" [ngClass]="statusBadgeClass(u.status)">
@@ -428,9 +428,9 @@
               </div>
 
               <div class="pagination-size">
-                <label>Exibir</label>
+                <label for="itensPorPaginaSelect">Exibir</label>
 
-                <select class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
+                <select id="itensPorPaginaSelect" class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
                   (ngModelChange)="aoAlterarItensPorPagina()" style="color:#35689b;">
                   <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
                     {{ opcao }}
@@ -485,7 +485,7 @@
             </div>
             <div>
               <h5>{{ usuarioDetalhe.nome || '—' }}</h5>
-              <p>{{ usuarioDetalhe.email?.toLowerCase() || '—' }}</p>
+              <p>{{ usuarioDetalhe.email.toLowerCase() || '—' }}</p>
               <div class="d-flex gap-2 flex-wrap">
                 <span class="badge" [ngClass]="statusBadgeClass(usuarioDetalhe.status)">
                   {{ formatarStatus(usuarioDetalhe.status) }}
@@ -787,7 +787,7 @@
                   <input id="edit-email" class="form-control form-control-sm" type="email"
                     [class.is-invalid]="campoEdicaoInvalido('email')" [(ngModel)]="edit.email" style="color:#35689b;" />
                   <div class="form-text">Usado para login, recuperação de senha e comunicações do sistema.</div>
-                  <div class="invalid-feedback">Informe um e-mail válido.</div>
+                  <div class="invalid-feedback">Informe um e-mail válido e ainda não cadastrado no sistema.</div>
                 </div>
 
                 <div class="col-md-3">
@@ -995,7 +995,8 @@
               <span class="badge" [ngClass]="statusBadgeClass(novoUsuario.status || 'ativo')">
                 {{ cadastroStatusPreview() }}
               </span>
-              <span class="badge" [ngClass]="telefoneCadastroValido() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'">
+              <span class="badge"
+                [ngClass]="telefoneCadastroValido() ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'">
                 <i class="bi" [ngClass]="telefoneCadastroValido() ? 'bi-whatsapp' : 'bi-telephone'"></i>
                 {{ cadastroWhatsappPreview() }}
               </span>
@@ -1015,19 +1016,14 @@
                 </div>
 
                 <span class="badge" [ngClass]="cadastroProntoParaSalvar ? 'bg-success' : 'bg-warning text-dark'">
-                  {{ cadastroProntoParaSalvar ? 'Pronto para cadastrar' : quantidadePendenciasCadastro + ' pendência(s)' }}
+                  {{ cadastroProntoParaSalvar ? 'Pronto para cadastrar' : quantidadePendenciasCadastro + ' pendência(s)'
+                  }}
                 </span>
               </div>
 
-              <div class="progress cadastro-progress">
-                <div
-                  class="progress-bar"
-                  role="progressbar"
-                  [style.width.%]="progressoCadastroPercentual"
-                  [attr.aria-valuenow]="progressoCadastroPercentual"
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                >
+              <div class="progress cadastro-progress" role="progressbar" aria-label="Progresso do cadastro"
+                [attr.aria-valuenow]="progressoCadastroPercentual" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" [style.width.%]="progressoCadastroPercentual">
                   {{ progressoCadastroPercentual }}%
                 </div>
               </div>
@@ -1101,57 +1097,35 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label for="cpfCnpj" class="form-label">CPF | CNPJ *</label>
-                  <input
-                    id="cpfCnpj"
-                    class="form-control form-control-sm"
-                    [class.is-invalid]="campoCadastroInvalido('cpf')"
-                    [(ngModel)]="novoUsuario.cpf"
-                    (ngModelChange)="limparCampoCadastroInvalido('cpf')"
-                    (blur)="formatarCpfCnpjCadastro()"
-                    placeholder="000.000.000-00"
-                    style="color:#35689b;"
-                  />
+                  <input id="cpfCnpj" class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('cpf')" [(ngModel)]="novoUsuario.cpf"
+                    (ngModelChange)="limparCampoCadastroInvalido('cpf')" (blur)="formatarCpfCnpjCadastro()"
+                    placeholder="000.000.000-00" style="color:#35689b;" />
                   <div class="invalid-feedback">Informe CPF com 11 dígitos ou CNPJ com 14 dígitos.</div>
                   <small class="text-muted">Utilizado para identificação cadastral.</small>
                 </div>
 
                 <div class="col-md-5">
                   <label for="nome" class="form-label">Nome *</label>
-                  <input
-                    id="nome"
-                    class="form-control form-control-sm"
-                    [class.is-invalid]="campoCadastroInvalido('nome')"
-                    [(ngModel)]="novoUsuario.nome"
-                    (ngModelChange)="limparCampoCadastroInvalido('nome')"
-                    placeholder="Nome completo"
-                    style="color:#35689b;"
-                  />
+                  <input id="nome" class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('nome')" [(ngModel)]="novoUsuario.nome"
+                    (ngModelChange)="limparCampoCadastroInvalido('nome')" placeholder="Nome completo"
+                    style="color:#35689b;" />
                   <div class="invalid-feedback">Informe o nome.</div>
                 </div>
 
                 <div class="col-md-4">
                   <label for="nomeSocial" class="form-label">Nome social</label>
-                  <input
-                    id="nomeSocial"
-                    class="form-control form-control-sm"
-                    [(ngModel)]="novoUsuario.nome_social"
-                    placeholder="Opcional"
-                    style="color:#35689b;"
-                  />
+                  <input id="nomeSocial" class="form-control form-control-sm" [(ngModel)]="novoUsuario.nome_social"
+                    placeholder="Opcional" style="color:#35689b;" />
                   <small class="text-muted">Será usado em comunicações quando informado.</small>
                 </div>
 
                 <div class="col-md-3">
                   <label for="nascimento" class="form-label">Nascimento *</label>
-                  <input
-                    id="nascimento"
-                    type="date"
-                    class="form-control form-control-sm"
-                    [class.is-invalid]="campoCadastroInvalido('nascimento')"
-                    [(ngModel)]="novoUsuario.nascimento"
-                    (ngModelChange)="limparCampoCadastroInvalido('nascimento')"
-                    style="color:#35689b;"
-                  />
+                  <input id="nascimento" type="date" class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('nascimento')" [(ngModel)]="novoUsuario.nascimento"
+                    (ngModelChange)="limparCampoCadastroInvalido('nascimento')" style="color:#35689b;" />
                   <div class="invalid-feedback">Informe a data de nascimento.</div>
                 </div>
 
@@ -1160,7 +1134,8 @@
                     <i class="bi bi-info-circle"></i>
                     <div>
                       <strong>Boas práticas de cadastro</strong>
-                      <small>Confirme CPF/CNPJ e e-mail antes de salvar. Esses dados podem ser usados para auditoria, acesso e notificações.</small>
+                      <small>Confirme CPF/CNPJ e e-mail antes de salvar. Esses dados podem ser usados para auditoria,
+                        acesso e notificações.</small>
                     </div>
                   </div>
                 </div>
@@ -1186,16 +1161,10 @@
                     <span class="input-group-text" style="background:#eef6ff;color:#35689b;border-color:#d0e2f2;">
                       <i class="bi bi-whatsapp"></i>
                     </span>
-                    <input
-                      id="telefone"
-                      class="form-control form-control-sm"
-                      [class.is-invalid]="campoCadastroInvalido('telefone')"
-                      [(ngModel)]="novoUsuario.telefone"
-                      (ngModelChange)="limparCampoCadastroInvalido('telefone')"
-                      (blur)="formatarTelefoneCadastro()"
-                      placeholder="+55 (11) 99999-9999"
-                      style="color:#35689b;"
-                    />
+                    <input id="telefone" class="form-control form-control-sm"
+                      [class.is-invalid]="campoCadastroInvalido('telefone')" [(ngModel)]="novoUsuario.telefone"
+                      (ngModelChange)="limparCampoCadastroInvalido('telefone')" (blur)="formatarTelefoneCadastro()"
+                      placeholder="+55 (11) 99999-9999" style="color:#35689b;" />
                     <div class="invalid-feedback">Informe telefone com DDD válido.</div>
                   </div>
                   <small class="text-muted">Usado para notificações automáticas quando aplicável.</small>
@@ -1203,30 +1172,19 @@
 
                 <div class="col-md-5">
                   <label for="email" class="form-label">E-mail *</label>
-                  <input
-                    id="email"
-                    type="email"
-                    class="form-control form-control-sm"
-                    [class.is-invalid]="campoCadastroInvalido('email')"
-                    [(ngModel)]="novoUsuario.email"
-                    (ngModelChange)="limparCampoCadastroInvalido('email')"
-                    (blur)="normalizarEmailCadastro()"
-                    placeholder="usuario@exemplo.com"
-                    style="color:#35689b;"
-                  />
+                  <input id="email" type="email" class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('email')" [(ngModel)]="novoUsuario.email"
+                    (ngModelChange)="limparCampoCadastroInvalido('email')" (blur)="normalizarEmailCadastro()"
+                    placeholder="usuario@exemplo.com" style="color:#35689b;" />
                   <div class="invalid-feedback">Informe um e-mail válido.</div>
                 </div>
 
                 <div class="col-md-3">
                   <label for="tipoDoAcesso" class="form-label">Tipo de acesso *</label>
-                  <select
-                    id="tipoDoAcesso"
-                    class="form-select form-select-sm"
+                  <select id="tipoDoAcesso" class="form-select form-select-sm"
                     [class.is-invalid]="campoCadastroInvalido('tipo_do_acesso')"
                     [(ngModel)]="novoUsuario.tipo_do_acesso"
-                    (ngModelChange)="limparCampoCadastroInvalido('tipo_do_acesso')"
-                    style="color:#35689b;"
-                  >
+                    (ngModelChange)="limparCampoCadastroInvalido('tipo_do_acesso')" style="color:#35689b;">
                     <option value="administrador">Administrador</option>
                     <option value="cliente">Cliente</option>
                     <option value="colaborador">Colaborador</option>
@@ -1270,16 +1228,11 @@
                 <div class="col-md-3">
                   <label class="form-label" for="cep">CEP *</label>
                   <div class="input-group input-group-sm">
-                    <input
-                      id="cep"
-                      class="form-control form-control-sm"
+                    <input id="cep" class="form-control form-control-sm"
                       [class.is-invalid]="campoCadastroInvalido('cep') || !!cepCadastroErro"
                       [(ngModel)]="novoUsuario.cep"
                       (ngModelChange)="limparCampoCadastroInvalido('cep'); cepCadastroErro = ''"
-                      (blur)="onCepBlurCadastro()"
-                      placeholder="00000-000"
-                      style="color:#35689b;"
-                    />
+                      (blur)="onCepBlurCadastro()" placeholder="00000-000" style="color:#35689b;" />
                     <span class="input-group-text" style="background:#eef6ff;color:#35689b;border-color:#d0e2f2;">
                       <span class="spinner-border spinner-border-sm" *ngIf="cepCadastroCarregando"></span>
                       <i class="bi bi-search" *ngIf="!cepCadastroCarregando"></i>
@@ -1291,79 +1244,50 @@
 
                 <div class="col-md-6">
                   <label class="form-label" for="logradouro">Logradouro *</label>
-                  <input
-                    id="logradouro"
-                    class="form-control form-control-sm"
-                    [class.is-invalid]="campoCadastroInvalido('logradouro')"
-                    [(ngModel)]="novoUsuario.logradouro"
-                    (ngModelChange)="limparCampoCadastroInvalido('logradouro')"
-                    style="color:#35689b;"
-                  />
+                  <input id="logradouro" class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('logradouro')" [(ngModel)]="novoUsuario.logradouro"
+                    (ngModelChange)="limparCampoCadastroInvalido('logradouro')" style="color:#35689b;" />
                   <div class="invalid-feedback">Informe o logradouro.</div>
                 </div>
 
                 <div class="col-md-3">
                   <label class="form-label" for="numero_endereco">Número *</label>
-                  <input
-                    id="numero_endereco"
-                    class="form-control form-control-sm"
+                  <input id="numero_endereco" class="form-control form-control-sm"
                     [class.is-invalid]="campoCadastroInvalido('numero_endereco')"
                     [(ngModel)]="novoUsuario.numero_endereco"
-                    (ngModelChange)="limparCampoCadastroInvalido('numero_endereco')"
-                    style="color:#35689b;"
-                  />
+                    (ngModelChange)="limparCampoCadastroInvalido('numero_endereco')" style="color:#35689b;" />
                   <div class="invalid-feedback">Informe o número.</div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="complemento_endereco">Complemento</label>
-                  <input
-                    id="complemento_endereco"
-                    class="form-control form-control-sm"
-                    [(ngModel)]="novoUsuario.complemento_endereco"
-                    placeholder="Apartamento, bloco, referência..."
-                    style="color:#35689b;"
-                  />
+                  <input id="complemento_endereco" class="form-control form-control-sm"
+                    [(ngModel)]="novoUsuario.complemento_endereco" placeholder="Apartamento, bloco, referência..."
+                    style="color:#35689b;" />
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="bairro">Bairro *</label>
-                  <input
-                    id="bairro"
-                    class="form-control form-control-sm"
-                    [class.is-invalid]="campoCadastroInvalido('bairro')"
-                    [(ngModel)]="novoUsuario.bairro"
-                    (ngModelChange)="limparCampoCadastroInvalido('bairro')"
-                    style="color:#35689b;"
-                  />
+                  <input id="bairro" class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('bairro')" [(ngModel)]="novoUsuario.bairro"
+                    (ngModelChange)="limparCampoCadastroInvalido('bairro')" style="color:#35689b;" />
                   <div class="invalid-feedback">Informe o bairro.</div>
                 </div>
 
                 <div class="col-md-3">
                   <label class="form-label" for="cidade">Cidade *</label>
-                  <input
-                    id="cidade"
-                    class="form-control form-control-sm"
-                    [class.is-invalid]="campoCadastroInvalido('cidade')"
-                    [(ngModel)]="novoUsuario.cidade"
-                    (ngModelChange)="limparCampoCadastroInvalido('cidade')"
-                    style="color:#35689b;"
-                  />
+                  <input id="cidade" class="form-control form-control-sm"
+                    [class.is-invalid]="campoCadastroInvalido('cidade')" [(ngModel)]="novoUsuario.cidade"
+                    (ngModelChange)="limparCampoCadastroInvalido('cidade')" style="color:#35689b;" />
                   <div class="invalid-feedback">Informe a cidade.</div>
                 </div>
 
                 <div class="col-md-1">
                   <label class="form-label" for="estado">UF *</label>
-                  <input
-                    id="estado"
-                    class="form-control form-control-sm text-uppercase"
-                    [class.is-invalid]="campoCadastroInvalido('estado')"
-                    maxlength="2"
-                    [(ngModel)]="novoUsuario.estado"
-                    (ngModelChange)="limparCampoCadastroInvalido('estado')"
-                    (blur)="normalizarUfCadastro()"
-                    style="color:#35689b;"
-                  />
+                  <input id="estado" class="form-control form-control-sm text-uppercase"
+                    [class.is-invalid]="campoCadastroInvalido('estado')" maxlength="2" [(ngModel)]="novoUsuario.estado"
+                    (ngModelChange)="limparCampoCadastroInvalido('estado')" (blur)="normalizarUfCadastro()"
+                    style="color:#35689b;" />
                   <div class="invalid-feedback">UF.</div>
                 </div>
               </div>
@@ -1384,14 +1308,9 @@
               <div class="row g-3">
                 <div class="col-md-4">
                   <label class="form-label" for="statusCadastro">Status inicial *</label>
-                  <select
-                    id="statusCadastro"
-                    class="form-select form-select-sm"
-                    [class.is-invalid]="campoCadastroInvalido('status')"
-                    [(ngModel)]="novoUsuario.status"
-                    (ngModelChange)="limparCampoCadastroInvalido('status')"
-                    style="color:#35689b;"
-                  >
+                  <select id="statusCadastro" class="form-select form-select-sm"
+                    [class.is-invalid]="campoCadastroInvalido('status')" [(ngModel)]="novoUsuario.status"
+                    (ngModelChange)="limparCampoCadastroInvalido('status')" style="color:#35689b;">
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
                   </select>
@@ -1402,15 +1321,9 @@
                 <div class="col-md-4">
                   <label for="senha" class="form-label">Senha temporária *</label>
                   <div class="input-group input-group-sm">
-                    <input
-                      id="senha"
-                      [type]="mostrarSenha ? 'text' : 'password'"
-                      class="form-control form-control-sm"
-                      [(ngModel)]="novoUsuario.senha"
-                      (ngModelChange)="limparCampoCadastroInvalido('senha')"
-                      [class.is-invalid]="campoCadastroInvalido('senha')"
-                      style="color:#35689b;"
-                    />
+                    <input id="senha" [type]="mostrarSenha ? 'text' : 'password'" class="form-control form-control-sm"
+                      [(ngModel)]="novoUsuario.senha" (ngModelChange)="limparCampoCadastroInvalido('senha')"
+                      [class.is-invalid]="campoCadastroInvalido('senha')" style="color:#35689b;" />
                     <button type="button" class="btn btn-sm btn-outline-primary senha-toggle-btn-inline"
                       title="Mostrar/Ocultar senha" (click)="toggleMostrarSenha()">
                       <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"></i>
@@ -1421,17 +1334,11 @@
 
                 <div class="col-md-4">
                   <label for="confirmarSenha" class="form-label">Confirmar senha *</label>
-                  <input
-                    id="confirmarSenha"
-                    [type]="mostrarSenha ? 'text' : 'password'"
-                    class="form-control form-control-sm"
-                    name="confirmarSenha"
-                    [(ngModel)]="novoUsuario.confirmarSenha"
+                  <input id="confirmarSenha" [type]="mostrarSenha ? 'text' : 'password'"
+                    class="form-control form-control-sm" name="confirmarSenha" [(ngModel)]="novoUsuario.confirmarSenha"
                     (ngModelChange)="limparCampoCadastroInvalido('confirmarSenha')"
                     [class.is-invalid]="campoCadastroInvalido('confirmarSenha') || senhasCadastroDiferentes()"
-                    aria-required="true"
-                    style="color:#35689b;"
-                  />
+                    aria-required="true" style="color:#35689b;" />
                   <div class="invalid-feedback">As senhas devem coincidir.</div>
                 </div>
 
@@ -1442,15 +1349,22 @@
                       <span [ngClass]="senhaForcaClasse()">{{ senhaForcaLabel() }}</span>
                     </div>
                     <div class="progress senha-strength-progress">
-                      <div class="progress-bar" [ngClass]="senhaForcaClasse()" [style.width.%]="senhaForcaPercentual()"></div>
+                      <div class="progress-bar" [ngClass]="senhaForcaClasse()" [style.width.%]="senhaForcaPercentual()">
+                      </div>
                     </div>
 
                     <div class="senha-checklist">
-                      <span [class.ok]="senhaTemMinimo()"><i class="bi" [ngClass]="senhaTemMinimo() ? 'bi-check-circle' : 'bi-circle'"></i> 8 caracteres</span>
-                      <span [class.ok]="senhaTemMaiuscula()"><i class="bi" [ngClass]="senhaTemMaiuscula() ? 'bi-check-circle' : 'bi-circle'"></i> Letra maiúscula</span>
-                      <span [class.ok]="senhaTemMinuscula()"><i class="bi" [ngClass]="senhaTemMinuscula() ? 'bi-check-circle' : 'bi-circle'"></i> Letra minúscula</span>
-                      <span [class.ok]="senhaTemNumero()"><i class="bi" [ngClass]="senhaTemNumero() ? 'bi-check-circle' : 'bi-circle'"></i> Número</span>
-                      <span [class.ok]="senhaTemEspecial()"><i class="bi" [ngClass]="senhaTemEspecial() ? 'bi-check-circle' : 'bi-circle'"></i> Caractere especial recomendado</span>
+                      <span [class.ok]="senhaTemMinimo()"><i class="bi"
+                          [ngClass]="senhaTemMinimo() ? 'bi-check-circle' : 'bi-circle'"></i> 8 caracteres</span>
+                      <span [class.ok]="senhaTemMaiuscula()"><i class="bi"
+                          [ngClass]="senhaTemMaiuscula() ? 'bi-check-circle' : 'bi-circle'"></i> Letra maiúscula</span>
+                      <span [class.ok]="senhaTemMinuscula()"><i class="bi"
+                          [ngClass]="senhaTemMinuscula() ? 'bi-check-circle' : 'bi-circle'"></i> Letra minúscula</span>
+                      <span [class.ok]="senhaTemNumero()"><i class="bi"
+                          [ngClass]="senhaTemNumero() ? 'bi-check-circle' : 'bi-circle'"></i> Número</span>
+                      <span [class.ok]="senhaTemEspecial()"><i class="bi"
+                          [ngClass]="senhaTemEspecial() ? 'bi-check-circle' : 'bi-circle'"></i> Caractere especial
+                        recomendado</span>
                     </div>
                   </div>
                 </div>
@@ -1463,7 +1377,9 @@
                     <div>
                       <strong>Fluxo de segurança recomendado</strong>
                       <small>
-                        Após o cadastro, o sistema enviará a notificação automática de criação do usuário quando o telefone estiver válido. O QR Code de 2FA não deve ser enviado por WhatsApp; ele deve ser configurado apenas na tela própria de autenticação.
+                        Após o cadastro, o sistema enviará a notificação automática de criação do usuário quando o
+                        telefone estiver válido. O QR Code de 2FA não deve ser enviado por WhatsApp; ele deve ser
+                        configurado apenas na tela própria de autenticação.
                       </small>
                     </div>
                   </div>
@@ -1489,17 +1405,20 @@
             Cancelar
           </button>
 
-          <button type="button" class="btn btn-outline-primary" [disabled]="cadastroEhPrimeiraAba()" (click)="cadastroAbaAnterior()">
+          <button type="button" class="btn btn-outline-primary" [disabled]="cadastroEhPrimeiraAba()"
+            (click)="cadastroAbaAnterior()">
             <i class="bi bi-chevron-left me-1"></i>
             Anterior
           </button>
 
-          <button type="button" class="btn btn-outline-primary" *ngIf="!cadastroEhUltimaAba()" (click)="cadastroAbaProxima()">
+          <button type="button" class="btn btn-outline-primary" *ngIf="!cadastroEhUltimaAba()"
+            (click)="cadastroAbaProxima()">
             Próximo
             <i class="bi bi-chevron-right ms-1"></i>
           </button>
 
-          <button type="button" class="btn btn-primary-clinicar" [disabled]="!cadastroProntoParaSalvar" (click)="salvarNovoUsuario()">
+          <button type="button" class="btn btn-primary-clinicar" [disabled]="!cadastroProntoParaSalvar"
+            (click)="salvarNovoUsuario()">
             <i class="bi bi-check-circle me-1"></i>
             Cadastrar usuário
           </button>

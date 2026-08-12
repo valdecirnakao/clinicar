@@ -16,7 +16,10 @@ public class Usuario {
 
     private String nome;
     private String nome_social;
+    
+    @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
+    
     private String senha;
     private String cpf;
     private LocalDate nascimento;       

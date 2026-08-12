@@ -55,7 +55,7 @@ class UsuarioServiceTest {
         when(repo.save(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Usuario salvo = service.criar(req);
+        var salvo = service.criar(req);
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(repo).save(captor.capture());
@@ -99,7 +99,7 @@ class UsuarioServiceTest {
         when(repo.save(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Usuario salvo = service.criar(req);
+        var salvo = service.criar(req);
 
         assertNull(salvo.getNascimento());
 

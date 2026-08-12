@@ -35,12 +35,45 @@ public class WhatsAppService {
     @Value("${whatsapp.template-language}")
     private String templateLanguage;
 
+    @Value("${meta.whatsapp.templates.alerta-atualiza-usuario}")
+    private String templateAlertaAtualizaUsuario;
+
+    @Value("${meta.whatsapp.templates.alerta-redefine-2fa}")
+    private String templateAlertaRedefine2fa;
+
+    @Value("${meta.whatsapp.templates.alerta-inativa-usuario}")
+    private String templateAlertaInativaUsuario;
+
     public String enviarMensagemTemplate(String telefoneDestino) {
         return enviarTemplateComParametros(
                 telefoneDestino,
                 templateName,
                 templateLanguage,
                 List.of()
+        );
+    }
+
+    public void enviarAlertaAtualizacaoUsuario(String telefone, String nome) {
+        enviarTemplate(
+                telefone,
+                templateAlertaAtualizaUsuario,
+                List.of(nomeNotificacao(nome))
+        );
+    }
+
+    public void enviarAlertaRedefinicao2fa(String telefone, String nome) {
+        enviarTemplate(
+                telefone,
+                templateAlertaRedefine2fa,
+                List.of(nomeNotificacao(nome))
+        );
+    }
+
+    public void enviarAlertaInativacaoUsuario(String telefone, String nome) {
+        enviarTemplate(
+                telefone,
+                templateAlertaInativaUsuario,
+                List.of(nomeNotificacao(nome))
         );
     }
 
@@ -72,6 +105,19 @@ public class WhatsAppService {
                 telefoneDestino,
                 templateFinal,
                 idiomaFinal,
+                parametrosBody
+        );
+    }
+
+    private String enviarTemplate(
+            String telefoneDestino,
+            String nomeTemplate,
+            List<String> parametrosBody
+    ) {
+        return enviarTemplateComParametros(
+                telefoneDestino,
+                nomeTemplate,
+                templateLanguage,
                 parametrosBody
         );
     }
@@ -145,6 +191,10 @@ public class WhatsAppService {
 
             throw e;
         }
+    }
+
+    private String nomeNotificacao(String nome) {
+        return valorSeguro(nome, "Cliente");
     }
 
     private String normalizarTelefone(String telefone) {
