@@ -1,8 +1,8 @@
 package com.clinicar.backend.service;
-import com.clinicar.backend.event.UsuarioAtualizadoEvent;
-import com.clinicar.backend.event.UsuarioInativadoEvent;
+
 import com.clinicar.backend.dto.UsuarioRequest;
 import com.clinicar.backend.dto.UsuarioResponse;
+import com.clinicar.backend.event.UsuarioAtivadoEvent;
 import com.clinicar.backend.event.UsuarioAtualizadoEvent;
 import com.clinicar.backend.event.UsuarioInativadoEvent;
 import com.clinicar.backend.model.Usuario;
@@ -13,6 +13,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -26,7 +27,6 @@ public class UsuarioService {
 
     private final UsuarioRepository repo;
     private final PasswordEncoder passwordEncoder;
-    private final WhatsAppService whatsAppService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -82,31 +82,44 @@ public class UsuarioService {
 
         boolean ficouInativo = statusInativo(usuario.getStatus());
         boolean acabouDeSerInativado = !estavaInativo && ficouInativo;
+        boolean foiReativado = estavaInativo && !ficouInativo;
 
         log.info("Usuário ID {} depois da atualização: {}", id, assinaturaDepois);
 
         log.info(
-                "Resultado da atualização do usuário ID {}: houveAlteracao={}, acabouDeSerInativado={}, telefone={}",
+                "Resultado da atualização do usuário ID {}: houveAlteracao={}, acabouDeSerInativado={}, foiReativado={}, telefone={}",
                 id,
                 houveAlteracao,
                 acabouDeSerInativado,
+                foiReativado,
                 usuario.getTelefone()
         );
 
         Usuario salvo = repo.save(usuario);
 
         /*
-         * Regra de precedência:
+         * Regra de prioridade:
          *
-         * 1. Se o usuário acabou de ser inativado, envia somente o alerta de inativação.
-         * 2. Se foi uma atualização comum, envia o alerta de atualização cadastral.
-         * 3. Se não houve alteração real, não envia nada.
+         * 1. ATIVO -> INATIVO: envia alerta_inativa_usuario.
+         * 2. INATIVO -> ATIVO: envia alerta_ativa_usuario.
+         * 3. Outras alterações: envia alerta_atualiza_usuario.
          */
         if (acabouDeSerInativado) {
             log.info("Publicando UsuarioInativadoEvent para usuário {}.", salvo.getId());
 
             eventPublisher.publishEvent(
                     new UsuarioInativadoEvent(
+                            salvo.getId(),
+                            nomePreferencial(salvo),
+                            salvo.getTelefone()
+                    )
+            );
+
+        } else if (foiReativado) {
+            log.info("Publicando UsuarioAtivadoEvent para usuário {}.", salvo.getId());
+
+            eventPublisher.publishEvent(
+                    new UsuarioAtivadoEvent(
                             salvo.getId(),
                             nomePreferencial(salvo),
                             salvo.getTelefone()

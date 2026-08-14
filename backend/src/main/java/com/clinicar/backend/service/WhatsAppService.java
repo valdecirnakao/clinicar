@@ -44,37 +44,36 @@ public class WhatsAppService {
     @Value("${meta.whatsapp.templates.alerta-inativa-usuario}")
     private String templateAlertaInativaUsuario;
 
+    @Value("${meta.whatsapp.templates.alerta-ativa-usuario}")
+    private String templateAlertaAtivaUsuario;
+
     public String enviarMensagemTemplate(String telefoneDestino) {
         return enviarTemplateComParametros(
                 telefoneDestino,
                 templateName,
                 templateLanguage,
-                List.of()
-        );
+                List.of());
     }
 
     public void enviarAlertaAtualizacaoUsuario(String telefone, String nome) {
         enviarTemplate(
                 telefone,
                 templateAlertaAtualizaUsuario,
-                List.of(nomeNotificacao(nome))
-        );
+                List.of(nomeNotificacao(nome)));
     }
 
     public void enviarAlertaRedefinicao2fa(String telefone, String nome) {
         enviarTemplate(
                 telefone,
                 templateAlertaRedefine2fa,
-                List.of(nomeNotificacao(nome))
-        );
+                List.of(nomeNotificacao(nome)));
     }
 
     public void enviarAlertaInativacaoUsuario(String telefone, String nome) {
         enviarTemplate(
                 telefone,
                 templateAlertaInativaUsuario,
-                List.of(nomeNotificacao(nome))
-        );
+                List.of(nomeNotificacao(nome)));
     }
 
     public String enviarMensagemCadastroUsuario(String telefoneDestino, String nomeUsuario) {
@@ -82,52 +81,45 @@ public class WhatsAppService {
                 telefoneDestino,
                 templateName,
                 templateLanguage,
-                List.of(valorSeguro(nomeUsuario, "Cliente"))
-        );
+                List.of(valorSeguro(nomeUsuario, "Cliente")));
     }
 
     public String enviarMensagemCadastroVeiculo(
             String telefoneDestino,
             String template,
             String languageCode,
-            List<String> parametrosBody
-    ) {
+            List<String> parametrosBody) {
         String templateFinal = valorSeguro(template, templateCadastroVeiculoName);
         String idiomaFinal = valorSeguro(languageCode, templateLanguage);
 
         if (parametrosBody == null || parametrosBody.size() != 2) {
             throw new IllegalArgumentException(
-                    "O template cadastro_veiculo deve receber exatamente 2 parâmetros: nome do usuário e modelo do veículo."
-            );
+                    "O template cadastro_veiculo deve receber exatamente 2 parâmetros: nome do usuário e modelo do veículo.");
         }
 
         return enviarTemplateComParametros(
                 telefoneDestino,
                 templateFinal,
                 idiomaFinal,
-                parametrosBody
-        );
+                parametrosBody);
     }
 
     private String enviarTemplate(
             String telefoneDestino,
             String nomeTemplate,
-            List<String> parametrosBody
-    ) {
+            List<String> parametrosBody) {
         return enviarTemplateComParametros(
                 telefoneDestino,
                 nomeTemplate,
                 templateLanguage,
-                parametrosBody
-        );
+                parametrosBody);
     }
 
     private String enviarTemplateComParametros(
             String telefoneDestino,
             String nomeTemplate,
             String codigoIdioma,
-            List<String> parametrosBody
-    ) {
+            List<String> parametrosBody) {
         String url = apiUrl + "/" + phoneNumberId + "/messages";
 
         HttpHeaders headers = new HttpHeaders();
@@ -177,8 +169,7 @@ public class WhatsAppService {
             ResponseEntity<String> response = restTemplate.postForEntity(
                     url,
                     request,
-                    String.class
-            );
+                    String.class);
 
             System.out.println("Resposta WhatsApp: " + response.getBody());
 
@@ -217,5 +208,12 @@ public class WhatsAppService {
         }
 
         return valor.trim();
+    }
+
+    public void enviarAlertaAtivacaoUsuario(String telefone, String nome) {
+        enviarTemplate(
+                telefone,
+                templateAlertaAtivaUsuario,
+                List.of(nomeNotificacao(nome)));
     }
 }

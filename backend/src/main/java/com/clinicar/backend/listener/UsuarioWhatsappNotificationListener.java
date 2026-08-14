@@ -1,5 +1,6 @@
 package com.clinicar.backend.listener;
 
+import com.clinicar.backend.event.UsuarioAtivadoEvent;
 import com.clinicar.backend.event.UsuarioAtualizadoEvent;
 import com.clinicar.backend.event.UsuarioInativadoEvent;
 import com.clinicar.backend.event.UsuarioMfaResetadoEvent;
@@ -63,6 +64,28 @@ public class UsuarioWhatsappNotificationListener {
                         event.nome()
                 ),
                 "alerta_inativa_usuario",
+                event.usuarioId()
+        );
+    }
+
+    @TransactionalEventListener(
+            phase = TransactionPhase.AFTER_COMMIT,
+            fallbackExecution = true
+    )
+    public void aoAtivarUsuario(UsuarioAtivadoEvent event) {
+        log.info(
+                "Listener recebeu UsuarioAtivadoEvent. usuarioId={}, nome={}, telefone={}",
+                event.usuarioId(),
+                event.nome(),
+                event.telefone()
+        );
+
+        tentarEnviar(
+                () -> whatsAppService.enviarAlertaAtivacaoUsuario(
+                        event.telefone(),
+                        event.nome()
+                ),
+                "alerta_ativa_usuario",
                 event.usuarioId()
         );
     }
