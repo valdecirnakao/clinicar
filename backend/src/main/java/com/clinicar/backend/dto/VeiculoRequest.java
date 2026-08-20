@@ -1,6 +1,7 @@
 package com.clinicar.backend.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
@@ -25,10 +26,22 @@ public class VeiculoRequest {
   private String modelo;
 
   @NotBlank
-  @JsonProperty("ano_modelo_combustivel")   // chave “oficial” esperada no JSON
-  private String anoModeloCombustivel;
+  @JsonAlias({
+            "ano_modelo_combustivel",
+            "anoModelo",
+            "ano_modelo",
+            "anoCombustivel"
+    })
+    private String anoModeloCombustivel;
 
   @NotNull
-  @JsonProperty("id_proprietario")          // chave “oficial” esperada no JSON
-  private Long idProprietario;
+    @JsonAlias({
+            "id_proprietario",
+            "proprietarioId",
+            "idCliente",
+            "clienteId",
+            "idUsuario",
+            "usuarioId"
+    })
+    private Long idProprietario;
 }

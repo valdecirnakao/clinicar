@@ -63,24 +63,14 @@
               <label class="form-label fw-semibold">Buscar</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input
-                  type="search"
-                  class="form-control"
-                  placeholder="Placa, fabricante, modelo, cor, proprietário..."
-                  [(ngModel)]="filtro"
-                  (ngModelChange)="aoAlterarFiltros()"
-                  autocomplete="off"
-                />
+                <input type="search" class="form-control" placeholder="Placa, fabricante, modelo, cor, proprietário..."
+                  [(ngModel)]="filtro" (ngModelChange)="aoAlterarFiltros()" autocomplete="off" />
               </div>
             </div>
 
             <div class="col-lg-2 col-md-6">
               <label class="form-label fw-semibold">Fabricante</label>
-              <select
-                class="form-select"
-                [(ngModel)]="filtroFabricante"
-                (ngModelChange)="aoAlterarFiltros()"
-              >
+              <select class="form-select" [(ngModel)]="filtroFabricante" (ngModelChange)="aoAlterarFiltros()">
                 <option value="">Todos</option>
                 <option *ngFor="let fabricante of fabricantesFiltro" [value]="fabricante">
                   {{ fabricante }}
@@ -90,11 +80,7 @@
 
             <div class="col-lg-2 col-md-6">
               <label class="form-label fw-semibold">Proprietário</label>
-              <select
-                class="form-select"
-                [(ngModel)]="filtroProprietario"
-                (ngModelChange)="aoAlterarFiltros()"
-              >
+              <select class="form-select" [(ngModel)]="filtroProprietario" (ngModelChange)="aoAlterarFiltros()">
                 <option value="">Todos</option>
                 <option value="com">Com proprietário</option>
                 <option value="sem">Sem proprietário</option>
@@ -102,15 +88,11 @@
               </select>
             </div>
             <div class="col-lg-1 col-md-6">
-                              <button
-                  class="btn btn-outline-secondary"
-                  type="button"
-                  [disabled]="!possuiFiltrosAplicados()"
-                  (click)="limparFiltros()"
-                >
-                  <i class="bi bi-eraser me-1"></i>
-                  Limpar Filtros
-                </button>
+              <button class="btn btn-outline-secondary" type="button" [disabled]="!possuiFiltrosAplicados()"
+                (click)="limparFiltros()">
+                <i class="bi bi-eraser me-1"></i>
+                Limpar Filtros
+              </button>
             </div>
 
 
@@ -148,8 +130,10 @@
 
             <span class="filter-chip" *ngIf="filtroProprietario">
               Proprietário:
-              {{ filtroProprietario === 'com' ? 'Com proprietário' : filtroProprietario === 'sem' ? 'Sem proprietário' : 'WhatsApp válido' }}
-              <button type="button" (click)="filtroProprietario = ''; aoAlterarFiltros()"><i class="bi bi-x"></i></button>
+              {{ filtroProprietario === 'com' ? 'Com proprietário' : filtroProprietario === 'sem' ? 'Sem proprietário' :
+              'WhatsApp válido' }}
+              <button type="button" (click)="filtroProprietario = ''; aoAlterarFiltros()"><i
+                  class="bi bi-x"></i></button>
             </span>
           </div>
 
@@ -197,7 +181,8 @@
                       Cor <i class="bi ms-1" [ngClass]="iconeOrdenacao('cor')"></i>
                     </th>
                     <th scope="col" class="sortable" (click)="ordenarPor('anoModeloCombustivel')">
-                      Ano-modelo | Combustível <i class="bi ms-1" [ngClass]="iconeOrdenacao('anoModeloCombustivel')"></i>
+                      Ano-modelo | Combustível <i class="bi ms-1"
+                        [ngClass]="iconeOrdenacao('anoModeloCombustivel')"></i>
                     </th>
                     <th scope="col" class="sortable" (click)="ordenarPor('proprietario')">
                       Proprietário <i class="bi ms-1" [ngClass]="iconeOrdenacao('proprietario')"></i>
@@ -218,7 +203,8 @@
 
                     <td>
                       <div class="fw-semibold">{{ formatarModeloVeiculo(v.modelo) }}</div>
-                      <small>{{ formatarAnoCombustivel(v.anoModeloCombustivel) || 'Ano/combustível não informado' }}</small>
+                      <small>{{ formatarAnoCombustivel(v.anoModeloCombustivel) || 'Ano/combustível não informado'
+                        }}</small>
                     </td>
 
                     <td>{{ capitalizar(v.cor) || '—' }}</td>
@@ -243,15 +229,18 @@
 
                     <td class="text-center">
                       <div class="table-actions">
-                        <button class="btn btn-sm btn-outline-info" type="button" title="Visualizar" (click)="abrirDetalhes(v)">
+                        <button class="btn btn-sm btn-outline-info" type="button" title="Visualizar"
+                          (click)="abrirDetalhes(v)">
                           <i class="bi bi-eye"></i>
                         </button>
 
-                        <button class="btn btn-sm btn-outline-primary" type="button" title="Editar veículo" (click)="abrirModalEdicao(v)">
+                        <button class="btn btn-sm btn-outline-primary" type="button" title="Editar veículo"
+                          (click)="abrirModalEdicao(v)">
                           <i class="bi bi-pencil-square"></i>
                         </button>
 
-                        <button class="btn btn-sm btn-outline-danger" type="button" title="Excluir veículo" (click)="abrirConfirmacaoExclusao(v)">
+                        <button class="btn btn-sm btn-outline-danger" type="button" title="Excluir veículo"
+                          (click)="abrirConfirmacaoExclusao(v)">
                           <i class="bi bi-trash"></i>
                         </button>
                       </div>
@@ -280,11 +269,8 @@
 
               <div class="pagination-size">
                 <label>Exibir</label>
-                <select
-                  class="form-select form-select-sm"
-                  [(ngModel)]="itensPorPagina"
-                  (ngModelChange)="aoAlterarItensPorPagina()"
-                >
+                <select class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()">
                   <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
                     {{ opcao }}
                   </option>
@@ -293,23 +279,20 @@
               </div>
 
               <div class="pagination-actions">
-                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1" (click)="paginaAnterior()">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1"
+                  (click)="paginaAnterior()">
                   <i class="bi bi-chevron-left"></i>
                   Anterior
                 </button>
 
-                <button
-                  type="button"
-                  class="btn btn-sm"
-                  *ngFor="let pagina of paginasVisiveis()"
-                  [class.btn-primary]="paginaAtual === pagina"
-                  [class.btn-outline-primary]="paginaAtual !== pagina"
-                  (click)="irParaPagina(pagina)"
-                >
+                <button type="button" class="btn btn-sm" *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina" [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)">
                   {{ pagina }}
                 </button>
 
-                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas" (click)="proximaPagina()">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas"
+                  (click)="proximaPagina()">
                   Próxima
                   <i class="bi bi-chevron-right"></i>
                 </button>
@@ -353,7 +336,8 @@
   </div>
 
   <!-- Modal de cadastro de novo veículo -->
-  <div class="modal fade" id="modalCadastroVeiculo" tabindex="-1" aria-labelledby="modalCadastroVeiculoLabel" aria-hidden="true">
+  <div class="modal fade" id="modalCadastroVeiculo" tabindex="-1" aria-labelledby="modalCadastroVeiculoLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered veiculo-modal-dialog">
       <div class="modal-content veiculo-modal-content veiculo-modal-content-auto">
         <div class="modal-header modal-header-clinicar">
@@ -389,7 +373,8 @@
 
             <ul class="nav nav-pills clinicar-tabs">
               <li class="nav-item">
-                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'veiculo'" (click)="trocarAbaCadastroVeiculo('veiculo')">
+                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'veiculo'"
+                  (click)="trocarAbaCadastroVeiculo('veiculo')">
                   <i class="bi bi-car-front me-1"></i>
                   Dados do veículo
                   <span class="tab-alert" *ngIf="dadosVeiculoCadastroPendentes()">!</span>
@@ -397,15 +382,18 @@
               </li>
 
               <li class="nav-item">
-                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'proprietario'" (click)="trocarAbaCadastroVeiculo('proprietario')">
+                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'proprietario'"
+                  (click)="trocarAbaCadastroVeiculo('proprietario')">
                   <i class="bi bi-person-vcard me-1"></i>
                   Proprietário
-                  <span class="tab-alert" *ngIf="proprietarioCadastroInvalido() || whatsappProprietarioCadastroInvalido()">!</span>
+                  <span class="tab-alert"
+                    *ngIf="proprietarioCadastroInvalido() || whatsappProprietarioCadastroInvalido()">!</span>
                 </button>
               </li>
 
               <li class="nav-item">
-                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'revisao'" (click)="trocarAbaCadastroVeiculo('revisao')">
+                <button class="nav-link" type="button" [class.active]="abaCadastroVeiculo === 'revisao'"
+                  (click)="trocarAbaCadastroVeiculo('revisao')">
                   <i class="bi bi-clipboard-check me-1"></i>
                   Revisão
                 </button>
@@ -424,45 +412,34 @@
                 <div class="row g-3">
                   <div class="col-md-2">
                     <label class="form-label">Placa *</label>
-                    <input
-                      class="form-control"
-                      [(ngModel)]="novoVeiculo.placa"
+                    <input class="form-control" [(ngModel)]="novoVeiculo.placa"
                       (input)="novoVeiculo.placa = normalizarPlaca(novoVeiculo.placa)"
-                      (blur)="aplicarMascaraPlacaCadastro()"
-                      [class.is-invalid]="placaCadastroInvalida()"
-                      maxlength="8"
-                      placeholder="ABC-1D23"
-                      autocomplete="off"
-                    />
-                    <div class="invalid-feedback d-block" *ngIf="placaCadastroInvalida()">Informe uma placa válida.</div>
+                      (blur)="aplicarMascaraPlacaCadastro()" [class.is-invalid]="placaCadastroInvalida()" maxlength="8"
+                      placeholder="ABC-1D23" autocomplete="off" />
+                    <div class="invalid-feedback d-block" *ngIf="placaCadastroInvalida()">Informe uma placa válida.
+                    </div>
                   </div>
 
                   <div class="col-md-3">
                     <label class="form-label">Fabricante *</label>
-                    <select
-                      class="form-select"
-                      [(ngModel)]="marcaCadastroSelCode"
+                    <select class="form-select" [(ngModel)]="marcaCadastroSelCode"
                       (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
-                      (ngModelChange)="onChangeMarcaCadastro($event)"
-                      [class.is-invalid]="fabricanteCadastroInvalido()"
-                    >
+                      (ngModelChange)="onChangeMarcaCadastro($event)" [class.is-invalid]="fabricanteCadastroInvalido()">
                       <option value="">Selecione...</option>
                       <option *ngFor="let m of marcas; trackBy: trackByBrand" [value]="m.code">
                         {{ formatarFabricante(m.name) }}
                       </option>
                     </select>
-                    <div class="invalid-feedback d-block" *ngIf="fabricanteCadastroInvalido()">Selecione o fabricante.</div>
+                    <div class="invalid-feedback d-block" *ngIf="fabricanteCadastroInvalido()">Selecione o fabricante.
+                    </div>
                   </div>
 
                   <div class="col-md-4">
                     <label class="form-label">Modelo *</label>
-                    <select
-                      class="form-select"
-                      [(ngModel)]="modeloCadastroSelCode"
+                    <select class="form-select" [(ngModel)]="modeloCadastroSelCode"
                       (ngModelChange)="onChangeModeloCadastro($event)"
                       [disabled]="!marcaCadastroSelCode || fipeCarregando.modelos"
-                      [class.is-invalid]="modeloCadastroInvalido()"
-                    >
+                      [class.is-invalid]="modeloCadastroInvalido()">
                       <option value="">
                         {{ novoVeiculo.fabricante ? 'Selecione um modelo...' : 'Selecione primeiro o fabricante' }}
                       </option>
@@ -476,13 +453,10 @@
 
                   <div class="col-md-3">
                     <label class="form-label">Ano-modelo | Combustível *</label>
-                    <select
-                      class="form-select"
-                      [(ngModel)]="anoCadastroSelCode"
+                    <select class="form-select" [(ngModel)]="anoCadastroSelCode"
                       (ngModelChange)="onChangeAnoModeloCombustivelCadastro($event)"
                       [disabled]="!modeloCadastroSelCode || fipeCarregando.anos"
-                      [class.is-invalid]="anoCadastroInvalido()"
-                    >
+                      [class.is-invalid]="anoCadastroInvalido()">
                       <option value="">
                         {{ novoVeiculo.modelo ? 'Selecione...' : 'Selecione primeiro o modelo' }}
                       </option>
@@ -491,19 +465,16 @@
                       </option>
                     </select>
                     <small class="text-muted" *ngIf="fipeCarregando.anos">Carregando anos-modelo...</small>
-                    <div class="invalid-feedback d-block" *ngIf="anoCadastroInvalido()">Selecione ano-modelo e combustível.</div>
+                    <div class="invalid-feedback d-block" *ngIf="anoCadastroInvalido()">Selecione ano-modelo e
+                      combustível.</div>
                   </div>
 
                   <div class="col-md-3">
-                    <label class="form-label">Cor *</label>
-                    <input
-                      class="form-control"
-                      [(ngModel)]="novoVeiculo.cor"
-                      (blur)="normalizarCorCadastro()"
-                      [class.is-invalid]="corCadastroInvalida()"
-                      placeholder="Ex.: Branco"
-                      autocomplete="off"
-                    />
+                    <label class="form-label" for="NovoVeiculoCor">Cor *</label>
+                    <input class="form-control" id="NovoVeiculoCor" [(ngModel)]="novoVeiculo.cor"
+                      (input)="novoVeiculo.cor = capitalizar(novoVeiculo.cor)"
+                      (blur)="capitalizar(novoVeiculo.cor)" [class.is-invalid]="corCadastroInvalida()"
+                      placeholder="Ex.: Branco" autocomplete="off"/>
                     <div class="invalid-feedback d-block" *ngIf="corCadastroInvalida()">Informe a cor.</div>
                   </div>
 
@@ -536,34 +507,35 @@
                   <div class="col-md-4">
                     <label class="form-label">CPF do proprietário *</label>
                     <div class="input-group">
-                      <input
-                        class="form-control"
-                        [value]="cpfProprietarioSelecionadoCadastro()"
-                        placeholder="Selecione um proprietário"
-                        readonly
+                      <input class="form-control" [value]="cpfProprietarioSelecionadoCadastro()"
+                        placeholder="Selecione um proprietário" readonly
                         [class.is-invalid]="proprietarioCadastroInvalido()"
-                        (click)="abrirModalSelecaoProprietario('cadastro')"
-                      />
-                      <button type="button" class="btn btn-outline-primary" (click)="abrirModalSelecaoProprietario('cadastro')">
+                        (click)="abrirModalSelecaoProprietario('cadastro')" />
+                      <button type="button" class="btn btn-outline-primary"
+                        (click)="abrirModalSelecaoProprietario('cadastro')">
                         <i class="bi bi-search"></i>
                       </button>
                     </div>
-                    <div class="invalid-feedback d-block" *ngIf="proprietarioCadastroInvalido()">Selecione o proprietário.</div>
+                    <div class="invalid-feedback d-block" *ngIf="proprietarioCadastroInvalido()">Selecione o
+                      proprietário.</div>
                   </div>
 
                   <div class="col-md-8">
                     <div class="owner-card" [class.owner-card-empty]="!proprietarioSelecionadoCadastro()">
                       <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
                         <div>
-                          <div class="owner-name">{{ nomeProprietarioSelecionadoCadastro() || 'Nenhum proprietário selecionado' }}</div>
+                          <div class="owner-name">{{ nomeProprietarioSelecionadoCadastro() || 'Nenhum proprietário
+                            selecionado' }}</div>
                           <div class="owner-meta">
                             CPF: {{ cpfProprietarioSelecionadoCadastro() || '—' }} ·
                             E-mail: {{ emailProprietarioSelecionadoCadastro() || '—' }} ·
-                            WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ? formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}
+                            WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ?
+                            formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}
                           </div>
                         </div>
 
-                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirModalSelecaoProprietario('cadastro')">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                          (click)="abrirModalSelecaoProprietario('cadastro')">
                           <i class="bi bi-person-gear me-1"></i>
                           {{ proprietarioSelecionadoCadastro() ? 'Trocar' : 'Selecionar' }}
                         </button>
@@ -604,7 +576,8 @@
                       <div class="review-main">{{ nomeProprietarioSelecionadoCadastro() || '—' }}</div>
                       <div>CPF: {{ cpfProprietarioSelecionadoCadastro() || '—' }}</div>
                       <div>E-mail: {{ emailProprietarioSelecionadoCadastro() || '—' }}</div>
-                      <div>WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ? formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}</div>
+                      <div>WhatsApp: {{ telefoneProprietarioSelecionadoCadastro() ?
+                        formatarTelefone(telefoneProprietarioSelecionadoCadastro()) : '—' }}</div>
                     </div>
                   </div>
                 </div>
@@ -625,25 +598,22 @@
             </span>
           </div>
 
-          <button type="button" class="btn btn-outline-secondary" *ngIf="abaCadastroVeiculo !== 'veiculo'" (click)="abaAnteriorCadastroVeiculo()">
+          <button type="button" class="btn btn-outline-secondary" *ngIf="abaCadastroVeiculo !== 'veiculo'"
+            (click)="abaAnteriorCadastroVeiculo()">
             <i class="bi bi-chevron-left me-1"></i>
             Anterior
           </button>
 
-          <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroVeiculo !== 'revisao'" (click)="proximaAbaCadastroVeiculo()">
+          <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroVeiculo !== 'revisao'"
+            (click)="proximaAbaCadastroVeiculo()">
             Próximo
             <i class="bi bi-chevron-right ms-1"></i>
           </button>
 
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="!cadastroVeiculoProntoParaSalvar"
-            [title]="mensagemBloqueioCadastro || 'Salvar veículo'"
-            (click)="salvarCadastroVeiculo()"
-          >
+          <button type="button" class="btn btn-primary" [disabled]="!cadastroVeiculoProntoParaSalvar"
+            [title]="mensagemBloqueioCadastro || 'Salvar veículo'" (click)="salvarCadastroVeiculo()">
             <i class="bi bi-check-circle me-1"></i>
             Salvar veículo
           </button>
@@ -653,7 +623,8 @@
   </div>
 
   <!-- Modal de edição do veículo -->
-  <div class="modal fade" id="modalEdicaoVeiculo" tabindex="-1" aria-labelledby="modalEdicaoVeiculoLabel" aria-hidden="true">
+  <div class="modal fade" id="modalEdicaoVeiculo" tabindex="-1" aria-labelledby="modalEdicaoVeiculoLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered veiculo-modal-dialog">
       <div class="modal-content veiculo-modal-content veiculo-modal-content-auto">
         <div class="modal-header modal-header-clinicar">
@@ -663,7 +634,8 @@
               Editar Veículo
             </h5>
             <small>
-              ID #{{ editId || '—' }} · {{ formatarPlaca(edit.placa) || 'Placa não informada' }} · {{ edit.modelo || 'Modelo não informado' }}
+              ID #{{ editId || '—' }} · {{ formatarPlaca(edit.placa) || 'Placa não informada' }} · {{ edit.modelo ||
+              'Modelo não informado' }}
             </small>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -689,7 +661,8 @@
 
             <ul class="nav nav-pills clinicar-tabs">
               <li class="nav-item">
-                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'veiculo'" (click)="trocarAbaEdicaoVeiculo('veiculo')">
+                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'veiculo'"
+                  (click)="trocarAbaEdicaoVeiculo('veiculo')">
                   <i class="bi bi-car-front me-1"></i>
                   Dados do veículo
                   <span class="tab-alert" *ngIf="dadosVeiculoEdicaoPendentes()">!</span>
@@ -697,15 +670,18 @@
               </li>
 
               <li class="nav-item">
-                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'proprietario'" (click)="trocarAbaEdicaoVeiculo('proprietario')">
+                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'proprietario'"
+                  (click)="trocarAbaEdicaoVeiculo('proprietario')">
                   <i class="bi bi-person-vcard me-1"></i>
                   Proprietário
-                  <span class="tab-alert" *ngIf="proprietarioEdicaoInvalido() || whatsappProprietarioEdicaoInvalido()">!</span>
+                  <span class="tab-alert"
+                    *ngIf="proprietarioEdicaoInvalido() || whatsappProprietarioEdicaoInvalido()">!</span>
                 </button>
               </li>
 
               <li class="nav-item">
-                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'revisao'" (click)="trocarAbaEdicaoVeiculo('revisao')">
+                <button class="nav-link" type="button" [class.active]="abaEdicaoVeiculo === 'revisao'"
+                  (click)="trocarAbaEdicaoVeiculo('revisao')">
                   <i class="bi bi-clipboard-check me-1"></i>
                   Revisão
                 </button>
@@ -724,45 +700,33 @@
                 <div class="row g-3">
                   <div class="col-md-2">
                     <label class="form-label">Placa *</label>
-                    <input
-                      class="form-control"
-                      [(ngModel)]="edit.placa"
-                      (input)="edit.placa = normalizarPlaca(edit.placa)"
-                      (blur)="aplicarMascaraPlacaEdicao()"
-                      [class.is-invalid]="placaEdicaoInvalida()"
-                      maxlength="8"
-                      autocomplete="off"
-                    />
+                    <input class="form-control" [(ngModel)]="edit.placa"
+                      (input)="edit.placa = normalizarPlaca(edit.placa)" (blur)="aplicarMascaraPlacaEdicao()"
+                      [class.is-invalid]="placaEdicaoInvalida()" maxlength="8" autocomplete="off" />
                     <div class="invalid-feedback d-block" *ngIf="placaEdicaoInvalida()">Informe uma placa válida.</div>
                   </div>
 
                   <div class="col-md-3">
                     <label class="form-label">Fabricante *</label>
-                    <select
-                      class="form-select"
-                      [(ngModel)]="marcaSelCode"
+                    <select class="form-select" [(ngModel)]="marcaSelCode"
                       (focus)="marcas.length === 0 ? fipeCarregarMarcas() : null"
-                      (ngModelChange)="onChangeMarca($event)"
-                      [class.is-invalid]="fabricanteEdicaoInvalido()"
-                    >
-                      <option value="">{{ edit.fabricante ? formatarFabricante(edit.fabricante) : 'Selecione...' }}</option>
+                      (ngModelChange)="onChangeMarca($event)" [class.is-invalid]="fabricanteEdicaoInvalido()">
+                      <option value="">{{ edit.fabricante ? formatarFabricante(edit.fabricante) : 'Selecione...' }}
+                      </option>
                       <option *ngFor="let m of marcas; trackBy: trackByBrand" [value]="m.code">
                         {{ formatarFabricante(m.name) }}
                       </option>
                     </select>
-                    <div class="invalid-feedback d-block" *ngIf="fabricanteEdicaoInvalido()">Selecione o fabricante.</div>
+                    <div class="invalid-feedback d-block" *ngIf="fabricanteEdicaoInvalido()">Selecione o fabricante.
+                    </div>
                   </div>
 
                   <div class="col-md-4">
                     <label class="form-label">Modelo *</label>
-                    <select
-                      class="form-select"
-                      [(ngModel)]="modeloSelCode"
-                      (ngModelChange)="onChangeModelo($event)"
-                      [disabled]="!marcaSelCode || fipeCarregando.modelos"
-                      [class.is-invalid]="modeloEdicaoInvalido()"
-                    >
-                      <option value="">{{ edit.modelo ? formatarModeloVeiculo(edit.modelo) : 'Selecione um modelo...' }}</option>
+                    <select class="form-select" [(ngModel)]="modeloSelCode" (ngModelChange)="onChangeModelo($event)"
+                      [disabled]="!marcaSelCode || fipeCarregando.modelos" [class.is-invalid]="modeloEdicaoInvalido()">
+                      <option value="">{{ edit.modelo ? formatarModeloVeiculo(edit.modelo) : 'Selecione um modelo...' }}
+                      </option>
                       <option *ngFor="let modelo of modelos; trackBy: trackByModel" [value]="modelo.code">
                         {{ formatarModeloVeiculo(modelo.name) }}
                       </option>
@@ -773,31 +737,23 @@
 
                   <div class="col-md-3">
                     <label class="form-label">Ano-modelo | Combustível *</label>
-                    <select
-                      class="form-select"
-                      [(ngModel)]="anoSelCode"
+                    <select class="form-select" [(ngModel)]="anoSelCode"
                       (ngModelChange)="onChangeAnoModeloCombustivel($event)"
-                      [disabled]="!modeloSelCode || fipeCarregando.anos"
-                      [class.is-invalid]="anoEdicaoInvalido()"
-                    >
+                      [disabled]="!modeloSelCode || fipeCarregando.anos" [class.is-invalid]="anoEdicaoInvalido()">
                       <option value="">{{ edit.anoModeloCombustivel || 'Selecione...' }}</option>
                       <option *ngFor="let ano of anos; trackBy: trackByYear" [value]="ano.code">
                         {{ ano.name.replace(' ', ' | ') }}
                       </option>
                     </select>
                     <small class="text-muted" *ngIf="fipeCarregando.anos">Carregando anos-modelo...</small>
-                    <div class="invalid-feedback d-block" *ngIf="anoEdicaoInvalido()">Selecione ano-modelo e combustível.</div>
+                    <div class="invalid-feedback d-block" *ngIf="anoEdicaoInvalido()">Selecione ano-modelo e
+                      combustível.</div>
                   </div>
 
                   <div class="col-md-3">
                     <label class="form-label">Cor *</label>
-                    <input
-                      class="form-control"
-                      [(ngModel)]="edit.cor"
-                      (blur)="normalizarCorEdicao()"
-                      [class.is-invalid]="corEdicaoInvalida()"
-                      autocomplete="off"
-                    />
+                    <input class="form-control" [(ngModel)]="edit.cor" (blur)="normalizarCorEdicao()"
+                      [class.is-invalid]="corEdicaoInvalida()" autocomplete="off" />
                     <div class="invalid-feedback d-block" *ngIf="corEdicaoInvalida()">Informe a cor.</div>
                   </div>
 
@@ -830,34 +786,35 @@
                   <div class="col-md-4">
                     <label class="form-label">CPF do proprietário *</label>
                     <div class="input-group">
-                      <input
-                        class="form-control"
-                        [value]="cpfProprietarioSelecionadoModal()"
-                        placeholder="Selecione um proprietário"
-                        readonly
+                      <input class="form-control" [value]="cpfProprietarioSelecionadoModal()"
+                        placeholder="Selecione um proprietário" readonly
                         [class.is-invalid]="proprietarioEdicaoInvalido()"
-                        (click)="abrirModalSelecaoProprietario('edicao')"
-                      />
-                      <button type="button" class="btn btn-outline-primary" (click)="abrirModalSelecaoProprietario('edicao')">
+                        (click)="abrirModalSelecaoProprietario('edicao')" />
+                      <button type="button" class="btn btn-outline-primary"
+                        (click)="abrirModalSelecaoProprietario('edicao')">
                         <i class="bi bi-search"></i>
                       </button>
                     </div>
-                    <div class="invalid-feedback d-block" *ngIf="proprietarioEdicaoInvalido()">Selecione o proprietário.</div>
+                    <div class="invalid-feedback d-block" *ngIf="proprietarioEdicaoInvalido()">Selecione o proprietário.
+                    </div>
                   </div>
 
                   <div class="col-md-8">
                     <div class="owner-card" [class.owner-card-empty]="!proprietarioSelecionadoModal()">
                       <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
                         <div>
-                          <div class="owner-name">{{ nomeProprietarioSelecionadoModal() || 'Nenhum proprietário selecionado' }}</div>
+                          <div class="owner-name">{{ nomeProprietarioSelecionadoModal() || 'Nenhum proprietário
+                            selecionado' }}</div>
                           <div class="owner-meta">
                             CPF: {{ cpfProprietarioSelecionadoModal() || '—' }} ·
                             E-mail: {{ emailProprietarioSelecionadoModal() || '—' }} ·
-                            WhatsApp: {{ telefoneProprietarioSelecionadoModal() ? formatarTelefone(telefoneProprietarioSelecionadoModal()) : '—' }}
+                            WhatsApp: {{ telefoneProprietarioSelecionadoModal() ?
+                            formatarTelefone(telefoneProprietarioSelecionadoModal()) : '—' }}
                           </div>
                         </div>
 
-                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="abrirModalSelecaoProprietario('edicao')">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                          (click)="abrirModalSelecaoProprietario('edicao')">
                           <i class="bi bi-person-gear me-1"></i>
                           {{ proprietarioSelecionadoModal() ? 'Trocar' : 'Selecionar' }}
                         </button>
@@ -898,7 +855,8 @@
                       <div class="review-main">{{ nomeProprietarioSelecionadoModal() || '—' }}</div>
                       <div>CPF: {{ cpfProprietarioSelecionadoModal() || '—' }}</div>
                       <div>E-mail: {{ emailProprietarioSelecionadoModal() || '—' }}</div>
-                      <div>WhatsApp: {{ telefoneProprietarioSelecionadoModal() ? formatarTelefone(telefoneProprietarioSelecionadoModal()) : '—' }}</div>
+                      <div>WhatsApp: {{ telefoneProprietarioSelecionadoModal() ?
+                        formatarTelefone(telefoneProprietarioSelecionadoModal()) : '—' }}</div>
                     </div>
                   </div>
                 </div>
@@ -919,25 +877,22 @@
             </span>
           </div>
 
-          <button type="button" class="btn btn-outline-secondary" *ngIf="abaEdicaoVeiculo !== 'veiculo'" (click)="abaAnteriorEdicaoVeiculo()">
+          <button type="button" class="btn btn-outline-secondary" *ngIf="abaEdicaoVeiculo !== 'veiculo'"
+            (click)="abaAnteriorEdicaoVeiculo()">
             <i class="bi bi-chevron-left me-1"></i>
             Anterior
           </button>
 
-          <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoVeiculo !== 'revisao'" (click)="proximaAbaEdicaoVeiculo()">
+          <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoVeiculo !== 'revisao'"
+            (click)="proximaAbaEdicaoVeiculo()">
             Próximo
             <i class="bi bi-chevron-right ms-1"></i>
           </button>
 
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="!edicaoVeiculoProntaParaSalvar"
-            [title]="mensagemBloqueioEdicao || 'Salvar alterações'"
-            (click)="salvarEdicaoModal()"
-          >
+          <button type="button" class="btn btn-primary" [disabled]="!edicaoVeiculoProntaParaSalvar"
+            [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
             <i class="bi bi-check-circle me-1"></i>
             Salvar alterações
           </button>
@@ -956,7 +911,8 @@
               <i class="bi bi-eye me-1"></i>
               Detalhes do Veículo
             </h5>
-            <small>{{ formatarPlaca(veiculoDetalhe?.placa) }} · {{ veiculoDetalhe?.modelo || 'Modelo não informado' }}</small>
+            <small>{{ formatarPlaca(veiculoDetalhe?.placa) }} · {{ veiculoDetalhe?.modelo || 'Modelo não informado'
+              }}</small>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
@@ -966,11 +922,15 @@
             <div class="col-md-6">
               <div class="details-card">
                 <div class="details-title"><i class="bi bi-car-front me-1"></i>Veículo</div>
-                <div class="details-line"><strong>Placa:</strong> {{ formatarPlaca(veiculoDetalhe?.placa) || '—' }}</div>
-                <div class="details-line"><strong>Fabricante:</strong> {{ formatarFabricante(veiculoDetalhe?.fabricante) || '—' }}</div>
-                <div class="details-line"><strong>Modelo:</strong> {{ formatarModeloVeiculo(veiculoDetalhe?.modelo) || '—' }}</div>
+                <div class="details-line"><strong>Placa:</strong> {{ formatarPlaca(veiculoDetalhe?.placa) || '—' }}
+                </div>
+                <div class="details-line"><strong>Fabricante:</strong> {{ formatarFabricante(veiculoDetalhe?.fabricante)
+                  || '—' }}</div>
+                <div class="details-line"><strong>Modelo:</strong> {{ formatarModeloVeiculo(veiculoDetalhe?.modelo) ||
+                  '—' }}</div>
                 <div class="details-line"><strong>Cor:</strong> {{ capitalizar(veiculoDetalhe?.cor) || '—' }}</div>
-                <div class="details-line"><strong>Ano/combustível:</strong> {{ formatarAnoCombustivel(veiculoDetalhe?.anoModeloCombustivel) || '—' }}</div>
+                <div class="details-line"><strong>Ano/combustível:</strong> {{
+                  formatarAnoCombustivel(veiculoDetalhe?.anoModeloCombustivel) || '—' }}</div>
               </div>
             </div>
 
@@ -981,8 +941,10 @@
                 <div class="details-line"><strong>CPF:</strong> {{ proprietarioCpf(veiculoDetalhe!) }}</div>
                 <div class="details-line"><strong>E-mail:</strong> {{ proprietarioEmail(veiculoDetalhe) }}</div>
                 <div class="details-line"><strong>WhatsApp:</strong> {{ proprietarioTelefone(veiculoDetalhe) }}</div>
-                <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(veiculoDetalhe)">WhatsApp válido</span>
-                <span class="badge badge-soft-secondary" *ngIf="!whatsappValidoDoProprietario(veiculoDetalhe)">Sem WhatsApp válido</span>
+                <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(veiculoDetalhe)">WhatsApp
+                  válido</span>
+                <span class="badge badge-soft-secondary" *ngIf="!whatsappValidoDoProprietario(veiculoDetalhe)">Sem
+                  WhatsApp válido</span>
               </div>
             </div>
           </div>
@@ -990,7 +952,8 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
-          <button type="button" class="btn btn-primary" *ngIf="veiculoDetalhe" (click)="modalDetalhes?.hide(); abrirModalEdicao(veiculoDetalhe)">
+          <button type="button" class="btn btn-primary" *ngIf="veiculoDetalhe"
+            (click)="modalDetalhes?.hide(); abrirModalEdicao(veiculoDetalhe)">
             <i class="bi bi-pencil-square me-1"></i>
             Editar
           </button>
@@ -1000,7 +963,9 @@
   </div>
 
   <!-- Modal de seleção do proprietário -->
-  <div class="modal fade" id="modalSelecionarProprietario" tabindex="-1" aria-labelledby="modalSelecionarProprietarioLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal fade" id="modalSelecionarProprietario" tabindex="-1"
+    aria-labelledby="modalSelecionarProprietarioLabel" aria-hidden="true" data-bs-backdrop="static"
+    data-bs-keyboard="false">
     <div class="modal-dialog modal-xl modal-dialog-centered proprietario-modal-dialog">
       <div class="modal-content proprietario-modal-content">
         <div class="modal-header modal-header-clinicar">
@@ -1020,15 +985,9 @@
               <label class="form-label">Buscar proprietário</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input
-                  type="search"
-                  class="form-control"
-                  placeholder="CPF, nome, e-mail ou telefone"
-                  name="cpfFiltroModal"
-                  [(ngModel)]="cpfFiltroModal"
-                  (ngModelChange)="filtrarProprietariosModal($event)"
-                  autocomplete="off"
-                />
+                <input type="search" class="form-control" placeholder="CPF, nome, e-mail ou telefone"
+                  name="cpfFiltroModal" [(ngModel)]="cpfFiltroModal" (ngModelChange)="filtrarProprietariosModal($event)"
+                  autocomplete="off" />
               </div>
             </div>
             <div class="col-md-3 text-md-end">
@@ -1058,16 +1017,15 @@
                     <td>{{ u.email || '—' }}</td>
                     <td>{{ formatarTelefone(u.telefone) || '—' }}</td>
                     <td>
-                      <span
-                        class="badge"
+                      <span class="badge"
                         [class.bg-success]="!u.status || u.status === 'ativo' || u.status === 'ATIVO' || u.status === 'Ativo'"
-                        [class.bg-secondary]="u.status && u.status !== 'ativo' && u.status !== 'ATIVO' && u.status !== 'Ativo'"
-                      >
+                        [class.bg-secondary]="u.status && u.status !== 'ativo' && u.status !== 'ATIVO' && u.status !== 'Ativo'">
                         {{ u.status ? (u.status | titlecase) : 'Ativo' }}
                       </span>
                     </td>
                     <td class="text-center">
-                      <button type="button" class="btn btn-sm btn-outline-primary" (click)="selecionarProprietarioModal(u)">
+                      <button type="button" class="btn btn-sm btn-outline-primary"
+                        (click)="selecionarProprietarioModal(u)">
                         <i class="bi bi-check-circle me-1"></i>
                         Selecionar
                       </button>
@@ -1084,7 +1042,8 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" (click)="cancelarSelecaoProprietario()">Cancelar</button>
+          <button type="button" class="btn btn-outline-secondary"
+            (click)="cancelarSelecaoProprietario()">Cancelar</button>
         </div>
       </div>
     </div>
@@ -1110,12 +1069,14 @@
             <small>Proprietário: {{ proprietarioNome(veiculoAcao) }}</small>
           </div>
           <div class="alert alert-warning py-2 mt-3 mb-0">
-            Esta ação remove o cadastro do veículo e pode impactar agendamentos ou atendimentos relacionados, dependendo das regras do backend.
+            Esta ação remove o cadastro do veículo e pode impactar agendamentos ou atendimentos relacionados, dependendo
+            das regras do backend.
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" [disabled]="executandoAcao">Cancelar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+            [disabled]="executandoAcao">Cancelar</button>
           <button type="button" class="btn btn-danger" (click)="confirmarExclusao()" [disabled]="executandoAcao">
             <span class="spinner-border spinner-border-sm me-1" *ngIf="executandoAcao"></span>
             Confirmar exclusão

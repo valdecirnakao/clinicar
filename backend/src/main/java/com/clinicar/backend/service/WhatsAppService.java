@@ -1,5 +1,6 @@
 package com.clinicar.backend.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class WhatsAppService {
 
@@ -47,91 +49,179 @@ public class WhatsAppService {
     @Value("${meta.whatsapp.templates.alerta-ativa-usuario}")
     private String templateAlertaAtivaUsuario;
 
+    @Value("${meta.whatsapp.templates.alerta-atualiza-veiculo}")
+    private String templateAlertaAtualizaVeiculo;
+
     public String enviarMensagemTemplate(String telefoneDestino) {
         return enviarTemplateComParametros(
                 telefoneDestino,
                 templateName,
                 templateLanguage,
-                List.of());
+                List.of()
+        );
     }
 
-    public void enviarAlertaAtualizacaoUsuario(String telefone, String nome) {
-        enviarTemplate(
-                telefone,
-                templateAlertaAtualizaUsuario,
-                List.of(nomeNotificacao(nome)));
-    }
-
-    public void enviarAlertaRedefinicao2fa(String telefone, String nome) {
-        enviarTemplate(
-                telefone,
-                templateAlertaRedefine2fa,
-                List.of(nomeNotificacao(nome)));
-    }
-
-    public void enviarAlertaInativacaoUsuario(String telefone, String nome) {
-        enviarTemplate(
-                telefone,
-                templateAlertaInativaUsuario,
-                List.of(nomeNotificacao(nome)));
-    }
-
-    public String enviarMensagemCadastroUsuario(String telefoneDestino, String nomeUsuario) {
+    public String enviarMensagemCadastroUsuario(
+            String telefoneDestino,
+            String nomeUsuario
+    ) {
         return enviarTemplateComParametros(
                 telefoneDestino,
                 templateName,
                 templateLanguage,
-                List.of(valorSeguro(nomeUsuario, "Cliente")));
+                List.of(nomeNotificacao(nomeUsuario))
+        );
     }
 
-    public String enviarMensagemCadastroVeiculo(
-            String telefoneDestino,
-            String template,
-            String languageCode,
-            List<String> parametrosBody) {
-        String templateFinal = valorSeguro(template, templateCadastroVeiculoName);
-        String idiomaFinal = valorSeguro(languageCode, templateLanguage);
+public String enviarMensagemCadastroVeiculo(
+        String telefoneDestino,
+        String nomeUsuario,
+        String veiculoFabricante,
+        String veiculoModelo,
+        String veiculoPlaca
+) {
+    String nome = nomeNotificacao(nomeUsuario);
+    String fabricante = valorSeguro(veiculoFabricante, "");
+    String modelo = valorSeguro(veiculoModelo, "");
+    String placa = veiculoPlaca;
+    String descricaoVeiculo = (fabricante + " " + modelo).trim();
 
-        if (parametrosBody == null || parametrosBody.size() != 2) {
-            throw new IllegalArgumentException(
-                    "O template cadastro_veiculo deve receber exatamente 2 parâmetros: nome do usuário e modelo do veículo.");
-        }
+    if (descricaoVeiculo.isBlank()) {
+        descricaoVeiculo = "Veículo";
+    }
 
-        return enviarTemplateComParametros(
-                telefoneDestino,
-                templateFinal,
-                idiomaFinal,
-                parametrosBody);
+    if (placa != null && !placa.isBlank()) {
+        descricaoVeiculo += " - Placa " + placa.substring(0, 3) + "-" + placa.substring(3);
+    }
+
+    log.info(
+            "WhatsAppService cadastro veículo - {{1}}={}, {{2}}={}",
+            nome,
+            descricaoVeiculo
+    );
+
+    return enviarTemplateComParametros(
+            telefoneDestino,
+            templateCadastroVeiculoName,
+            templateLanguage,
+            List.of(
+                    nome,
+                    descricaoVeiculo
+            )
+    );
+}
+
+    public void enviarAlertaAtualizacaoUsuario(
+            String telefone,
+            String nome
+    ) {
+        enviarTemplate(
+                telefone,
+                templateAlertaAtualizaUsuario,
+                List.of(nomeNotificacao(nome))
+        );
+    }
+
+    public void enviarAlertaRedefinicao2fa(
+            String telefone,
+            String nome
+    ) {
+        enviarTemplate(
+                telefone,
+                templateAlertaRedefine2fa,
+                List.of(nomeNotificacao(nome))
+        );
+    }
+
+    public void enviarAlertaInativacaoUsuario(
+            String telefone,
+            String nome
+    ) {
+        enviarTemplate(
+                telefone,
+                templateAlertaInativaUsuario,
+                List.of(nomeNotificacao(nome))
+        );
+    }
+
+    public void enviarAlertaAtivacaoUsuario(
+            String telefone,
+            String nome
+    ) {
+        enviarTemplate(
+                telefone,
+                templateAlertaAtivaUsuario,
+                List.of(nomeNotificacao(nome))
+        );
+    }
+
+    public void enviarAlertaAtualizacaoVeiculo(
+            String telefone,
+            String nome,
+            String veiculo
+    ) {
+        String nomeFormatado = nomeNotificacao(nome);
+        String descricaoVeiculo = valorSeguro(veiculo, "Veículo");
+
+        log.info(
+                "WhatsAppService atualização veículo - {{1}}={}, {{2}}={}",
+                nomeFormatado,
+                descricaoVeiculo
+        );
+
+        enviarTemplate(
+                telefone,
+                templateAlertaAtualizaVeiculo,
+                List.of(
+                        nomeFormatado,
+                        descricaoVeiculo
+                )
+        );
     }
 
     private String enviarTemplate(
             String telefoneDestino,
             String nomeTemplate,
-            List<String> parametrosBody) {
+            List<String> parametrosBody
+    ) {
         return enviarTemplateComParametros(
                 telefoneDestino,
                 nomeTemplate,
                 templateLanguage,
-                parametrosBody);
+                parametrosBody
+        );
     }
 
     private String enviarTemplateComParametros(
             String telefoneDestino,
             String nomeTemplate,
             String codigoIdioma,
-            List<String> parametrosBody) {
+            List<String> parametrosBody
+    ) {
+        if (nomeTemplate == null || nomeTemplate.isBlank()) {
+            throw new IllegalArgumentException("Nome do template WhatsApp não configurado.");
+        }
+
+        if (codigoIdioma == null || codigoIdioma.isBlank()) {
+            throw new IllegalArgumentException("Código de idioma do template WhatsApp não configurado.");
+        }
+
         String url = apiUrl + "/" + phoneNumberId + "/messages";
+
+        String telefoneNormalizado = normalizarTelefone(telefoneDestino);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(accessToken);
 
         Map<String, Object> body = new HashMap<>();
+
         body.put("messaging_product", "whatsapp");
-        body.put("to", normalizarTelefone(telefoneDestino));
+        body.put("to", telefoneNormalizado);
         body.put("type", "template");
 
         Map<String, Object> template = new HashMap<>();
+
         template.put("name", nomeTemplate);
 
         Map<String, String> language = new HashMap<>();
@@ -144,12 +234,15 @@ public class WhatsAppService {
 
             for (String parametro : parametrosBody) {
                 Map<String, Object> parameter = new HashMap<>();
+
                 parameter.put("type", "text");
                 parameter.put("text", valorSeguro(parametro, "-"));
+
                 parameters.add(parameter);
             }
 
             Map<String, Object> component = new HashMap<>();
+
             component.put("type", "body");
             component.put("parameters", parameters);
 
@@ -158,8 +251,15 @@ public class WhatsAppService {
 
         body.put("template", template);
 
-        System.out.println("URL WhatsApp Cloud API: " + url);
-        System.out.println("Payload WhatsApp: " + body);
+        log.info("WhatsApp Cloud API - URL: {}", url);
+        log.info(
+                "WhatsApp Cloud API - template='{}', idioma='{}', telefone='{}', parametros={}",
+                nomeTemplate,
+                codigoIdioma,
+                mascararTelefone(telefoneNormalizado),
+                parametrosBody
+        );
+        log.info("WhatsApp Cloud API - payload sem token: {}", body);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
@@ -169,16 +269,26 @@ public class WhatsAppService {
             ResponseEntity<String> response = restTemplate.postForEntity(
                     url,
                     request,
-                    String.class);
+                    String.class
+            );
 
-            System.out.println("Resposta WhatsApp: " + response.getBody());
+            log.info(
+                    "WhatsApp Cloud API - template '{}' enviado. HTTP {}. Resposta da Meta: {}",
+                    nomeTemplate,
+                    response.getStatusCode().value(),
+                    response.getBody()
+            );
 
             return response.getBody();
 
         } catch (HttpStatusCodeException e) {
-            System.err.println("Erro HTTP ao enviar WhatsApp.");
-            System.err.println("Status: " + e.getStatusCode());
-            System.err.println("Resposta da Meta: " + e.getResponseBodyAsString());
+            log.error(
+                    "Erro HTTP ao enviar WhatsApp. Template='{}'. Status: {}. Resposta da Meta: {}",
+                    nomeTemplate,
+                    e.getStatusCode(),
+                    e.getResponseBodyAsString(),
+                    e
+            );
 
             throw e;
         }
@@ -202,7 +312,21 @@ public class WhatsAppService {
         return numero;
     }
 
-    private String valorSeguro(String valor, String valorPadrao) {
+    private String normalizarPlaca(String placa) {
+        if (placa == null || placa.isBlank()) {
+            return "";
+        }
+
+        return placa
+                .trim()
+                .toUpperCase()
+                .replaceAll("\\s+", "");
+    }
+
+    private String valorSeguro(
+            String valor,
+            String valorPadrao
+    ) {
         if (valor == null || valor.isBlank()) {
             return valorPadrao;
         }
@@ -210,10 +334,11 @@ public class WhatsAppService {
         return valor.trim();
     }
 
-    public void enviarAlertaAtivacaoUsuario(String telefone, String nome) {
-        enviarTemplate(
-                telefone,
-                templateAlertaAtivaUsuario,
-                List.of(nomeNotificacao(nome)));
+    private String mascararTelefone(String telefone) {
+        if (telefone == null || telefone.length() <= 4) {
+            return "****";
+        }
+
+        return "*********" + telefone.substring(telefone.length() - 4);
     }
 }

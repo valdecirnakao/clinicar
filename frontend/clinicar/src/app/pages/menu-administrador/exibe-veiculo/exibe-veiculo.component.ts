@@ -1451,24 +1451,6 @@ export class ExibeVeiculoComponent implements OnInit {
       if (exibirAlertas) alert('O proprietário selecionado não possui telefone cadastrado.');
       return;
     }
-
-    this.whatsappService.enviarMensagemCadastroVeiculo({
-      telefone: telefoneWhatsapp,
-      template: 'cadastro_veiculo',
-      languageCode: 'pt_BR',
-      parametrosBody: [
-        proprietario.nome || 'Cliente',
-        this.formatarModeloVeiculo(veiculo.modelo || 'Veículo')
-      ]
-    }).subscribe({
-      next: () => {
-        if (exibirAlertas) alert('Mensagem de WhatsApp enviada com sucesso.');
-      },
-      error: (err) => {
-        console.error('Erro ao enviar mensagem pelo WhatsApp:', err);
-        if (exibirAlertas) alert('Veículo cadastrado, mas houve erro ao enviar a mensagem pelo WhatsApp.');
-      }
-    });
   }
 
   private extrairMensagemErro(erro: any, mensagemPadrao: string): string {

@@ -61,14 +61,4 @@ export class WhatsappCloudService {
       { responseType: 'text', withCredentials: true }
     );
   }
-
-  enviarMensagemCadastroVeiculo(
-    request: WhatsAppCadastroVeiculoRequest
-  ): Observable<string> {
-    return this.http.post(
-      `${this.apiUrl}/cadastro-veiculo`,
-      request,
-      { responseType: 'text', withCredentials: true }
-    );
-  }
 }
