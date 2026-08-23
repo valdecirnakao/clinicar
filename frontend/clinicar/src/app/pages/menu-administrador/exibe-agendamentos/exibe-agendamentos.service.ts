@@ -274,6 +274,13 @@ export interface AgendamentoPecaSelecionada {
   observacoes?: string;
 }
 
+export interface AgendamentoInicioResponse {
+  agendamento: any;
+  atendimento: any;
+  atendimentoCriado: boolean;
+  mensagem: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -325,11 +332,13 @@ export class ExibeAgendamentosService {
     });
   }
 
-  iniciar(id: number): Observable<Agendamento> {
-    return this.http.patch<Agendamento>(`${this.agendamentoUrl}/${id}/iniciar`, {}, {
-      withCredentials: true
-    });
-  }
+  iniciar(id: number) {
+  return this.http.patch<AgendamentoInicioResponse>(
+    `${this.agendamentoUrl}/${id}/iniciar`,
+    {},
+    { withCredentials: true }
+  );
+}
 
   concluir(id: number): Observable<Agendamento> {
     return this.http.patch<Agendamento>(`${this.agendamentoUrl}/${id}/concluir`, {}, {

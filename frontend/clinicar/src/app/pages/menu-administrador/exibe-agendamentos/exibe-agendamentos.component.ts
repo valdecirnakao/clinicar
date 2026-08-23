@@ -2,7 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
-
+import { Router } from '@angular/router';
 import {
   Agendamento,
   AgendamentoCancelamentoRequest,
@@ -87,6 +87,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   opcoesItensPorPagina = [5, 10, 20, 50];
 
   carregando = false;
+  mensagemSucesso = '';
   mensagemErro = '';
   mensagemErroModal = '';
   mensagemDisponibilidadeResponsavel = '';
@@ -123,7 +124,8 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   constructor(
     private service: ExibeAgendamentosService,
-    private location: Location
+    private location: Location,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -1492,9 +1494,8 @@ export class ExibeAgendamentosComponent implements OnInit {
         mensagemErroPadrao = 'Erro ao confirmar agendamento.';
         break;
       case 'iniciar':
-        request$ = this.service.iniciar(id);
-        mensagemErroPadrao = 'Erro ao iniciar agendamento.';
-        break;
+        this.iniciarAgendamentoComAtendimento(this.acaoConfirmacao.item);
+        return;
       case 'concluir':
         request$ = this.service.concluir(id);
         mensagemErroPadrao = 'Erro ao concluir agendamento.';
@@ -1521,6 +1522,11 @@ export class ExibeAgendamentosComponent implements OnInit {
         alert(this.extrairMensagemErro(erro, mensagemErroPadrao));
       }
     });
+  }
+
+  fecharModalConfirmacaoAcao(): void {
+    this.modalConfirmacao?.hide();
+    this.acaoConfirmacao = null;
   }
 
   podeConfirmar(item: Agendamento): boolean {
@@ -2223,4 +2229,56 @@ export class ExibeAgendamentosComponent implements OnInit {
     if (!s) return '';
     return s.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
   }
+
+  private iniciarAgendamentoComAtendimento(agendamento: any): void {
+  const id = Number(agendamento?.id);
+
+  if (!id) {
+    this.mensagemErro = 'Agendamento inválido para iniciar atendimento.';
+    return;
+  }
+
+  this.carregando = true;
+
+  this.service.iniciar(id).subscribe({
+    next: (resposta) => {
+      this.carregando = false;
+
+      this.mensagemSucesso =
+        resposta?.mensagem ||
+        'Agendamento iniciado com sucesso.';
+
+      this.recarregar();
+
+      const atendimentoId = resposta?.atendimento?.id;
+
+      if (atendimentoId) {
+        console.log(
+          'Atendimento gerado automaticamente a partir do agendamento:',
+          atendimentoId
+        );
+        this.router.navigate(
+    ['/menuAdministrador/exibeAtendimentos'],
+    {
+      queryParams: {
+        atendimentoId
+      }
+    }
+  );
+      }
+
+      this.fecharModalConfirmacaoAcao();
+    },
+    error: (erro) => {
+      this.carregando = false;
+
+      console.error('Erro ao iniciar agendamento:', erro);
+
+      this.mensagemErro = this.extrairMensagemErro(
+        erro,
+        'Erro ao iniciar agendamento e gerar atendimento.'
+      );
+    }
+  });
+}
 }

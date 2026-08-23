@@ -28,11 +28,15 @@ import java.util.UUID;
 @Service
 public class AtendimentoService {
 
+    public record AtendimentoAutomaticoResultado(
+            Atendimento atendimento,
+            boolean criado) {
+    }
+
     private static final Set<String> TIPOS_EXECUCAO_VALIDOS = Set.of(
             "INTERNO",
             "TERCEIRO",
-            "MISTO"
-    );
+            "MISTO");
 
     private static final Set<String> STATUS_VALIDOS = Set.of(
             "ABERTO",
@@ -43,13 +47,11 @@ public class AtendimentoService {
             "AGUARDANDO_TERCEIRO",
             "CONCLUIDO",
             "ENTREGUE",
-            "CANCELADO"
-    );
+            "CANCELADO");
 
     private static final Set<String> TIPOS_RESPONSAVEL_VALIDOS = Set.of(
             "COLABORADOR",
-            "ADMINISTRADOR"
-    );
+            "ADMINISTRADOR");
 
     private final AtendimentoRepository atendimentoRepository;
     private final AgendamentoRepository agendamentoRepository;
@@ -59,20 +61,19 @@ public class AtendimentoService {
     private final AtendimentoEstoqueService atendimentoEstoqueService;
 
     public AtendimentoService(
-        AtendimentoRepository atendimentoRepository,
-        AgendamentoRepository agendamentoRepository,
-        UsuarioRepository usuarioRepository,
-        FornecedorRepository fornecedorRepository,
-        OrdemServicoEnvioService ordemServicoEnvioService,
-        AtendimentoEstoqueService atendimentoEstoqueService
-) {
-    this.atendimentoRepository = atendimentoRepository;
-    this.agendamentoRepository = agendamentoRepository;
-    this.usuarioRepository = usuarioRepository;
-    this.fornecedorRepository = fornecedorRepository;
-    this.ordemServicoEnvioService = ordemServicoEnvioService;
-    this.atendimentoEstoqueService = atendimentoEstoqueService;
-}
+            AtendimentoRepository atendimentoRepository,
+            AgendamentoRepository agendamentoRepository,
+            UsuarioRepository usuarioRepository,
+            FornecedorRepository fornecedorRepository,
+            OrdemServicoEnvioService ordemServicoEnvioService,
+            AtendimentoEstoqueService atendimentoEstoqueService) {
+        this.atendimentoRepository = atendimentoRepository;
+        this.agendamentoRepository = agendamentoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.fornecedorRepository = fornecedorRepository;
+        this.ordemServicoEnvioService = ordemServicoEnvioService;
+        this.atendimentoEstoqueService = atendimentoEstoqueService;
+    }
 
     @Transactional
     public Atendimento criar(AtendimentoRequest request) {
@@ -80,8 +81,7 @@ public class AtendimentoService {
 
         Long idAgendamento = validarIdObrigatorio(
                 request.getIdAgendamento(),
-                "Agendamento"
-        );
+                "Agendamento");
 
         if (atendimentoRepository.existsByAgendamento_Id(idAgendamento)) {
             throw new IllegalArgumentException("Já existe atendimento para este agendamento.");
@@ -140,8 +140,7 @@ public class AtendimentoService {
         validarPertenceAoConjunto(
                 statusNormalizado,
                 STATUS_VALIDOS,
-                "Status de atendimento inválido."
-        );
+                "Status de atendimento inválido.");
 
         return atendimentoRepository.findByStatusAtendimentoOrderByCriadoEmDesc(statusNormalizado);
     }
@@ -152,8 +151,7 @@ public class AtendimentoService {
         validarPertenceAoConjunto(
                 tipoNormalizado,
                 TIPOS_EXECUCAO_VALIDOS,
-                "Tipo de execução inválido."
-        );
+                "Tipo de execução inválido.");
 
         return atendimentoRepository.findByTipoExecucaoOrderByCriadoEmDesc(tipoNormalizado);
     }
@@ -192,8 +190,7 @@ public class AtendimentoService {
 
         return atendimentoRepository.findByInicioRealBetweenOrderByInicioRealAsc(
                 dataInicio,
-                dataFim
-        );
+                dataFim);
     }
 
     public Atendimento buscarPorId(Long id) {
@@ -262,14 +259,12 @@ public class AtendimentoService {
         if (!"TERCEIRO".equals(atendimento.getTipoExecucao())
                 && !"MISTO".equals(atendimento.getTipoExecucao())) {
             throw new IllegalArgumentException(
-                    "Apenas atendimentos do tipo TERCEIRO ou MISTO podem aguardar fornecedor terceiro."
-            );
+                    "Apenas atendimentos do tipo TERCEIRO ou MISTO podem aguardar fornecedor terceiro.");
         }
 
         if (atendimento.getFornecedor() == null) {
             throw new IllegalArgumentException(
-                    "Informe um fornecedor para colocar o atendimento em aguardando terceiro."
-            );
+                    "Informe um fornecedor para colocar o atendimento em aguardando terceiro.");
         }
 
         atendimento.setStatusAtendimento("AGUARDANDO_TERCEIRO");
@@ -288,7 +283,7 @@ public class AtendimentoService {
         if ("ENTREGUE".equals(atendimento.getStatusAtendimento())) {
             throw new IllegalArgumentException("Não é possível concluir um atendimento já entregue.");
         }
-        
+
         if ("CONCLUIDO".equals(atendimento.getStatusAtendimento())) {
             return atendimento;
         }
@@ -299,8 +294,7 @@ public class AtendimentoService {
 
         if (atendimento.getDataEntrada() != null && agora.isBefore(atendimento.getDataEntrada())) {
             throw new IllegalArgumentException(
-                    "Não é possível concluir o atendimento antes da data de entrada."
-            );
+                    "Não é possível concluir o atendimento antes da data de entrada.");
         }
 
         atendimento.setStatusAtendimento("CONCLUIDO");
@@ -309,8 +303,7 @@ public class AtendimentoService {
             atendimento.setInicioReal(
                     atendimento.getDataEntrada() != null
                             ? atendimento.getDataEntrada()
-                            : agora
-            );
+                            : agora);
         }
 
         if (atendimento.getFimReal() == null) {
@@ -341,14 +334,12 @@ public class AtendimentoService {
 
         if (atendimento.getDataEntrada() != null && agora.isBefore(atendimento.getDataEntrada())) {
             throw new IllegalArgumentException(
-                    "Não é possível entregar o veículo antes da data de entrada do atendimento."
-            );
+                    "Não é possível entregar o veículo antes da data de entrada do atendimento.");
         }
 
         if (atendimento.getFimReal() != null && agora.isBefore(atendimento.getFimReal())) {
             throw new IllegalArgumentException(
-                    "Não é possível entregar o veículo antes da data/hora de conclusão do serviço."
-            );
+                    "Não é possível entregar o veículo antes da data/hora de conclusão do serviço.");
         }
 
         atendimento.setStatusAtendimento("ENTREGUE");
@@ -360,24 +351,22 @@ public class AtendimentoService {
     }
 
     @Transactional
-public Atendimento reenviarOrdemServicoEmail(Long id) {
-    Atendimento atendimento = buscarPorId(id);
+    public Atendimento reenviarOrdemServicoEmail(Long id) {
+        Atendimento atendimento = buscarPorId(id);
 
-    if (!"CONCLUIDO".equals(atendimento.getStatusAtendimento())
-            && !"ENTREGUE".equals(atendimento.getStatusAtendimento())) {
-        throw new IllegalArgumentException(
-                "A Ordem de Serviço só pode ser enviada para atendimento concluído ou entregue."
-        );
+        if (!"CONCLUIDO".equals(atendimento.getStatusAtendimento())
+                && !"ENTREGUE".equals(atendimento.getStatusAtendimento())) {
+            throw new IllegalArgumentException(
+                    "A Ordem de Serviço só pode ser enviada para atendimento concluído ou entregue.");
+        }
+
+        return ordemServicoEnvioService.enviarOrdemServicoPorEmail(atendimento);
     }
-
-    return ordemServicoEnvioService.enviarOrdemServicoPorEmail(atendimento);
-}
 
     @Transactional
     public Atendimento cancelar(
             Long id,
-            AtendimentoCancelamentoRequest request
-    ) {
+            AtendimentoCancelamentoRequest request) {
         Atendimento atendimento = buscarPorId(id);
 
         if ("CONCLUIDO".equals(atendimento.getStatusAtendimento())
@@ -390,8 +379,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
 
         if (request != null) {
             atendimento.setMotivoCancelamento(
-                    limparTextoOpcional(request.getMotivoCancelamento())
-            );
+                    limparTextoOpcional(request.getMotivoCancelamento()));
         }
 
         Agendamento agendamento = atendimento.getAgendamento();
@@ -403,8 +391,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
 
             if (request != null) {
                 agendamento.setMotivoCancelamento(
-                        limparTextoOpcional(request.getMotivoCancelamento())
-                );
+                        limparTextoOpcional(request.getMotivoCancelamento()));
             }
 
             agendamentoRepository.save(agendamento);
@@ -415,33 +402,28 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
 
     private void preencherDadosEditaveis(
             Atendimento atendimento,
-            AtendimentoRequest request
-    ) {
+            AtendimentoRequest request) {
         String tipoExecucao = normalizarValorComDefault(
                 request.getTipoExecucao(),
                 atendimento.getTipoExecucao() == null
                         ? "INTERNO"
-                        : atendimento.getTipoExecucao()
-        );
+                        : atendimento.getTipoExecucao());
 
         validarPertenceAoConjunto(
                 tipoExecucao,
                 TIPOS_EXECUCAO_VALIDOS,
-                "Tipo de execução inválido."
-        );
+                "Tipo de execução inválido.");
 
         String status = normalizarValorComDefault(
                 request.getStatusAtendimento(),
                 atendimento.getStatusAtendimento() == null
                         ? "ABERTO"
-                        : atendimento.getStatusAtendimento()
-        );
+                        : atendimento.getStatusAtendimento());
 
         validarPertenceAoConjunto(
                 status,
                 STATUS_VALIDOS,
-                "Status de atendimento inválido."
-        );
+                "Status de atendimento inválido.");
 
         Fornecedor fornecedor = resolverFornecedor(request, atendimento, tipoExecucao);
         Usuario responsavel = resolverResponsavel(request);
@@ -495,8 +477,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
         atendimento.setNecessitaRetorno(
                 request.getNecessitaRetorno() == null
                         ? false
-                        : request.getNecessitaRetorno()
-        );
+                        : request.getNecessitaRetorno());
 
         atendimento.setDataRetornoSugerida(dataRetornoSugerida);
         atendimento.setGarantiaDias(garantiaDias);
@@ -514,8 +495,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
     private Fornecedor resolverFornecedor(
             AtendimentoRequest request,
             Atendimento atendimento,
-            String tipoExecucao
-    ) {
+            String tipoExecucao) {
         if (request.getIdFornecedor() != null) {
             return fornecedorRepository
                     .findById(request.getIdFornecedor())
@@ -564,8 +544,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
 
         if (!TIPOS_RESPONSAVEL_VALIDOS.contains(tipo)) {
             throw new IllegalArgumentException(
-                    "O responsável pelo atendimento precisa possuir perfil COLABORADOR ou ADMINISTRADOR."
-            );
+                    "O responsável pelo atendimento precisa possuir perfil COLABORADOR ou ADMINISTRADOR.");
         }
     }
 
@@ -630,8 +609,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
         if ("INTERNO".equals(atendimento.getTipoExecucao())
                 && "AGUARDANDO_TERCEIRO".equals(atendimento.getStatusAtendimento())) {
             throw new IllegalArgumentException(
-                    "Atendimento interno não pode ficar com status AGUARDANDO_TERCEIRO."
-            );
+                    "Atendimento interno não pode ficar com status AGUARDANDO_TERCEIRO.");
         }
     }
 
@@ -639,8 +617,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
             LocalDateTime dataEntrada,
             LocalDateTime inicioReal,
             LocalDateTime fimReal,
-            LocalDateTime dataEntrega
-    ) {
+            LocalDateTime dataEntrega) {
         if (inicioReal != null && fimReal != null && fimReal.isBefore(inicioReal)) {
             throw new IllegalArgumentException("A data/hora final não pode ser anterior ao início real.");
         }
@@ -658,8 +635,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
 
     private void aplicarAprovacao(
             Atendimento atendimento,
-            AtendimentoRequest request
-    ) {
+            AtendimentoRequest request) {
         if (request.getAprovado() == null) {
             return;
         }
@@ -677,8 +653,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
 
     private BigDecimal parseMoedaComDefault(
             String valor,
-            BigDecimal valorAtual
-    ) {
+            BigDecimal valorAtual) {
         if (valor == null || valor.trim().isBlank()) {
             return valorAtual == null
                     ? BigDecimal.ZERO
@@ -757,8 +732,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
 
     private String gerarCodigoAtendimento() {
         String data = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyyMMdd")
-        );
+                DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         String sufixo = UUID.randomUUID()
                 .toString()
@@ -802,8 +776,7 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
     private void validarPertenceAoConjunto(
             String valor,
             Set<String> permitidos,
-            String mensagemErro
-    ) {
+            String mensagemErro) {
         if (!permitidos.contains(valor)) {
             throw new IllegalArgumentException(mensagemErro);
         }
@@ -815,5 +788,75 @@ public Atendimento reenviarOrdemServicoEmail(Long id) {
         }
 
         return valor.trim();
+    }
+
+    @Transactional
+    public AtendimentoAutomaticoResultado criarAutomaticamenteAPartirDoAgendamento(
+            Agendamento agendamento) {
+        if (agendamento == null || agendamento.getId() == null) {
+            throw new IllegalArgumentException("Agendamento não informado.");
+        }
+
+        return atendimentoRepository.findByAgendamento_Id(agendamento.getId())
+                .map(atendimentoExistente -> new AtendimentoAutomaticoResultado(
+                        atendimentoExistente,
+                        false))
+                .orElseGet(() -> {
+                    Atendimento atendimento = new Atendimento();
+
+                    atendimento.setCodigoAtendimento(gerarCodigoAtendimento());
+                    atendimento.setAgendamento(agendamento);
+                    atendimento.setCliente(agendamento.getCliente());
+                    atendimento.setVeiculo(agendamento.getVeiculo());
+                    atendimento.setServico(agendamento.getServico());
+                    atendimento.setFornecedor(agendamento.getFornecedor());
+                    atendimento.setResponsavel(agendamento.getResponsavel());
+
+                    atendimento.setTipoExecucao("INTERNO");
+                    atendimento.setStatusAtendimento("ABERTO");
+
+                    atendimento.setDataEntrada(LocalDateTime.now());
+                    atendimento.setQuilometragemEntrada(agendamento.getQuilometragemAtual());
+
+                    atendimento.setRelatoCliente(agendamento.getQueixaCliente());
+                    atendimento.setDiagnosticoTecnico(agendamento.getDiagnosticoPrevio());
+
+                    atendimento.setObservacoesInternas(
+                            agendamento.getObservacoes() != null
+                                    ? agendamento.getObservacoes()
+                                    : "");
+
+                    atendimento.setNecessitaRetorno(false);
+
+                    if (agendamento.getServico() != null
+                            && agendamento.getServico().getGarantiaDias() != null) {
+                        atendimento.setGarantiaDias(agendamento.getServico().getGarantiaDias());
+                    } else {
+                        atendimento.setGarantiaDias(0);
+                    }
+
+                    BigDecimal valorMaoObra = BigDecimal.ZERO;
+
+                    if (agendamento.getServico() != null
+                            && agendamento.getServico().getValorBase() != null) {
+                        valorMaoObra = agendamento.getServico().getValorBase();
+                    } else if (agendamento.getValorEstimado() != null) {
+                        valorMaoObra = agendamento.getValorEstimado();
+                    }
+
+                    atendimento.setValorMaoObra(valorMaoObra);
+                    atendimento.setValorPecas(BigDecimal.ZERO);
+                    atendimento.setValorTerceiros(BigDecimal.ZERO);
+                    atendimento.setDesconto(BigDecimal.ZERO);
+                    atendimento.setValorTotal(valorMaoObra);
+
+                    atendimento.setAprovado(false);
+
+                    Atendimento salvo = atendimentoRepository.save(atendimento);
+
+                    return new AtendimentoAutomaticoResultado(
+                            salvo,
+                            true);
+                });
     }
 }

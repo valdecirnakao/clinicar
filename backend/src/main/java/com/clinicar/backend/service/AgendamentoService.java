@@ -1,12 +1,10 @@
 package com.clinicar.backend.service;
-
 import com.clinicar.backend.dto.AgendamentoCancelamentoRequest;
 import com.clinicar.backend.dto.AgendamentoRequest;
 import com.clinicar.backend.model.*;
 import com.clinicar.backend.repository.*;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.Normalizer;
@@ -53,29 +51,17 @@ public class AgendamentoService {
             "GUINCHO"
     );
 
-    /*
-     * Como no CliniCar o cliente também é um Usuario,
-     * validamos o papel pelo campo tipo_do_acesso.
-     *
-     * Se quiser restringir cliente apenas a CLIENTE,
-     * remova ADMINISTRADOR deste conjunto.
-     */
     private static final Set<String> TIPOS_CLIENTE_VALIDOS = Set.of(
             "CLIENTE",
             "ADMINISTRADOR"
     );
 
-    /*
-     * O mecânico no seu projeto está cadastrado como COLABORADOR.
-     * Por isso, o responsável pelo atendimento pode ser:
-     * - COLABORADOR
-     * - ADMINISTRADOR
-     */
     private static final Set<String> TIPOS_RESPONSAVEL_VALIDOS = Set.of(
             "COLABORADOR",
             "ADMINISTRADOR"
     );
 
+    private final AtendimentoService atendimentoService;
     private final AgendamentoRepository agendamentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final VeiculoRepository veiculoRepository;
@@ -83,18 +69,29 @@ public class AgendamentoService {
     private final FornecedorRepository fornecedorRepository;
 
     public AgendamentoService(
+            AtendimentoService atendimentoService,
             AgendamentoRepository agendamentoRepository,
             UsuarioRepository usuarioRepository,
             VeiculoRepository veiculoRepository,
             ServicoRepository servicoRepository,
             FornecedorRepository fornecedorRepository
     ) {
+        this.atendimentoService = atendimentoService;
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.veiculoRepository = veiculoRepository;
         this.servicoRepository = servicoRepository;
         this.fornecedorRepository = fornecedorRepository;
     }
+
+    public record ResultadoInicioAgendamento(
+            Agendamento agendamento,
+            Atendimento atendimento,
+            boolean atendimentoCriado
+    ) {
+    }
+
+    
 
     @Transactional
     public Agendamento criar(AgendamentoRequest request) {
@@ -138,12 +135,10 @@ public class AgendamentoService {
         validarPertenceAoConjunto(
                 statusNormalizado,
                 STATUS_VALIDOS,
-                "Status de agendamento inválido."
-        );
+                "Status de agendamento inválido.");
 
         return agendamentoRepository.findByStatusAgendamentoOrderByDataHoraInicioAsc(
-                statusNormalizado
-        );
+                statusNormalizado);
     }
 
     public List<Agendamento> listarPorCliente(Long clienteId) {
@@ -172,8 +167,7 @@ public class AgendamentoService {
 
         return agendamentoRepository.findByDataHoraInicioBetweenOrderByDataHoraInicioAsc(
                 dataInicio,
-                dataFim
-        );
+                dataFim);
     }
 
     public Agendamento buscarPorId(Long id) {
@@ -200,15 +194,9 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public Agendamento iniciarAtendimento(Long id) {
-        Agendamento agendamento = buscarPorId(id);
-
-        validarPodeAlterarStatus(agendamento);
-
-        agendamento.setStatusAgendamento("EM_ATENDIMENTO");
-
-        return agendamentoRepository.save(agendamento);
-    }
+public Agendamento iniciarAtendimento(Long id) {
+    return iniciarComAtendimento(id).agendamento();
+}
 
     @Transactional
     public Agendamento concluir(Long id) {
@@ -226,8 +214,7 @@ public class AgendamentoService {
     @Transactional
     public Agendamento cancelar(
             Long id,
-            AgendamentoCancelamentoRequest request
-    ) {
+            AgendamentoCancelamentoRequest request) {
         Agendamento agendamento = buscarPorId(id);
 
         if ("CONCLUIDO".equals(agendamento.getStatusAgendamento())) {
@@ -240,8 +227,7 @@ public class AgendamentoService {
 
         if (request != null) {
             agendamento.setMotivoCancelamento(
-                    limparTextoOpcional(request.getMotivoCancelamento())
-            );
+                    limparTextoOpcional(request.getMotivoCancelamento()));
         }
 
         return agendamentoRepository.save(agendamento);
@@ -267,8 +253,7 @@ public class AgendamentoService {
     private void preencherDados(
             Agendamento agendamento,
             AgendamentoRequest request,
-            Long ignorarIdNaValidacao
-    ) {
+            Long ignorarIdNaValidacao) {
         Long idCliente = validarIdObrigatorio(request.getIdCliente(), "Cliente");
         Long idVeiculo = validarIdObrigatorio(request.getIdVeiculo(), "Veículo");
         Long idServico = validarIdObrigatorio(request.getIdServico(), "Serviço");
@@ -309,8 +294,7 @@ public class AgendamentoService {
 
         LocalDateTime inicio = parseDataHoraObrigatoria(
                 request.getDataHoraInicio(),
-                "Data/hora de início"
-        );
+                "Data/hora de início");
 
         LocalDateTime fim = parseDataHoraOpcional(request.getDataHoraFim());
 
@@ -332,63 +316,53 @@ public class AgendamentoService {
                 veiculo.getId(),
                 inicio,
                 fim,
-                ignorarIdNaValidacao
-        );
+                ignorarIdNaValidacao);
 
         if (responsavel != null) {
             validarSobreposicaoResponsavel(
                     responsavel.getId(),
                     inicio,
                     fim,
-                    ignorarIdNaValidacao
-            );
+                    ignorarIdNaValidacao);
         }
 
         String status = normalizarValorComDefault(
                 request.getStatusAgendamento(),
                 agendamento.getStatusAgendamento() == null
                         ? "AGENDADO"
-                        : agendamento.getStatusAgendamento()
-        );
+                        : agendamento.getStatusAgendamento());
 
         validarPertenceAoConjunto(
                 status,
                 STATUS_VALIDOS,
-                "Status de agendamento inválido."
-        );
+                "Status de agendamento inválido.");
 
         String canal = normalizarValorComDefault(
                 request.getCanalOrigem(),
-                "SISTEMA"
-        );
+                "SISTEMA");
 
         validarPertenceAoConjunto(
                 canal,
                 CANAIS_VALIDOS,
-                "Canal de origem inválido."
-        );
+                "Canal de origem inválido.");
 
         String prioridade = normalizarValorComDefault(
                 request.getPrioridade(),
-                "NORMAL"
-        );
+                "NORMAL");
 
         validarPertenceAoConjunto(
                 prioridade,
                 PRIORIDADES_VALIDAS,
-                "Prioridade inválida."
-        );
+                "Prioridade inválida.");
 
         String tipoAtendimento = normalizarValorComDefault(
                 request.getTipoAtendimento(),
-                "PRESENCIAL"
-        );
+                "PRESENCIAL");
 
         validarPertenceAoConjunto(
                 tipoAtendimento,
                 TIPOS_ATENDIMENTO_VALIDOS,
-                "Tipo de atendimento inválido."
-        );
+                "Tipo de atendimento inválido.");
 
         Integer quilometragem = request.getQuilometragemAtual();
 
@@ -426,16 +400,14 @@ public class AgendamentoService {
         agendamento.setRequerConfirmacao(
                 request.getRequerConfirmacao() == null
                         ? true
-                        : request.getRequerConfirmacao()
-        );
+                        : request.getRequerConfirmacao());
 
         aplicarConfirmacao(agendamento, request);
     }
 
     private void aplicarConfirmacao(
             Agendamento agendamento,
-            AgendamentoRequest request
-    ) {
+            AgendamentoRequest request) {
         if ("CONFIRMADO".equals(agendamento.getStatusAgendamento())) {
             agendamento.setConfirmado(true);
 
@@ -464,8 +436,7 @@ public class AgendamentoService {
 
         if (!TIPOS_CLIENTE_VALIDOS.contains(tipo)) {
             throw new IllegalArgumentException(
-                    "O usuário selecionado como cliente precisa possuir perfil CLIENTE."
-            );
+                    "O usuário selecionado como cliente precisa possuir perfil CLIENTE.");
         }
     }
 
@@ -474,8 +445,7 @@ public class AgendamentoService {
 
         if (!TIPOS_RESPONSAVEL_VALIDOS.contains(tipo)) {
             throw new IllegalArgumentException(
-                    "O responsável pelo atendimento precisa possuir perfil COLABORADOR ou ADMINISTRADOR."
-            );
+                    "O responsável pelo atendimento precisa possuir perfil COLABORADOR ou ADMINISTRADOR.");
         }
     }
 
@@ -499,19 +469,16 @@ public class AgendamentoService {
             Long veiculoId,
             LocalDateTime inicio,
             LocalDateTime fim,
-            Long ignorarId
-    ) {
+            Long ignorarId) {
         long conflitos = agendamentoRepository.contarSobreposicaoVeiculo(
                 veiculoId,
                 inicio,
                 fim,
-                ignorarId
-        );
+                ignorarId);
 
         if (conflitos > 0) {
             throw new IllegalArgumentException(
-                    "Já existe agendamento para este veículo no período informado."
-            );
+                    "Já existe agendamento para este veículo no período informado.");
         }
     }
 
@@ -519,19 +486,16 @@ public class AgendamentoService {
             Long responsavelId,
             LocalDateTime inicio,
             LocalDateTime fim,
-            Long ignorarId
-    ) {
+            Long ignorarId) {
         long conflitos = agendamentoRepository.contarSobreposicaoResponsavel(
                 responsavelId,
                 inicio,
                 fim,
-                ignorarId
-        );
+                ignorarId);
 
         if (conflitos > 0) {
             throw new IllegalArgumentException(
-                    "Já existe agendamento para este responsável no período informado."
-            );
+                    "Já existe agendamento para este responsável no período informado.");
         }
     }
 
@@ -545,7 +509,8 @@ public class AgendamentoService {
         }
 
         if ("NAO_COMPARECEU".equals(agendamento.getStatusAgendamento())) {
-            throw new IllegalArgumentException("Agendamento marcado como não compareceu não pode ter o status alterado.");
+            throw new IllegalArgumentException(
+                    "Agendamento marcado como não compareceu não pode ter o status alterado.");
         }
     }
 
@@ -577,8 +542,7 @@ public class AgendamentoService {
 
     private String gerarCodigoAgendamento() {
         String data = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyyMMdd")
-        );
+                DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         String sufixo = UUID.randomUUID()
                 .toString()
@@ -622,8 +586,7 @@ public class AgendamentoService {
     private void validarPertenceAoConjunto(
             String valor,
             Set<String> permitidos,
-            String mensagemErro
-    ) {
+            String mensagemErro) {
         if (!permitidos.contains(valor)) {
             throw new IllegalArgumentException(mensagemErro);
         }
@@ -709,21 +672,64 @@ public class AgendamentoService {
     }
 
     @Transactional
-public void excluir(Long id) {
+    public void excluir(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID do agendamento não informado.");
+        }
+
+        Agendamento agendamento = buscarPorId(id);
+
+        if ("EM_ATENDIMENTO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
+            throw new IllegalArgumentException("Não é possível excluir um agendamento em atendimento.");
+        }
+
+        if ("CONCLUIDO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
+            throw new IllegalArgumentException("Não é possível excluir um agendamento concluído.");
+        }
+
+        agendamentoRepository.delete(agendamento);
+    }
+
+@Transactional
+public ResultadoInicioAgendamento iniciarComAtendimento(Long id) {
     if (id == null) {
         throw new IllegalArgumentException("ID do agendamento não informado.");
     }
 
     Agendamento agendamento = buscarPorId(id);
 
-    if ("EM_ATENDIMENTO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
-        throw new IllegalArgumentException("Não é possível excluir um agendamento em atendimento.");
+    String statusAtual = agendamento.getStatusAgendamento();
+
+    if ("CANCELADO".equalsIgnoreCase(statusAtual)) {
+        throw new IllegalArgumentException("Agendamento cancelado não pode ser iniciado.");
     }
 
-    if ("CONCLUIDO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
-        throw new IllegalArgumentException("Não é possível excluir um agendamento concluído.");
+    if ("CONCLUIDO".equalsIgnoreCase(statusAtual)) {
+        throw new IllegalArgumentException("Agendamento concluído não pode ser iniciado.");
     }
 
-    agendamentoRepository.delete(agendamento);
+    if ("NAO_COMPARECEU".equalsIgnoreCase(statusAtual)) {
+        throw new IllegalArgumentException("Agendamento marcado como não compareceu não pode ser iniciado.");
+    }
+
+    LocalDateTime agora = LocalDateTime.now();
+
+    agendamento.setStatusAgendamento("EM_ATENDIMENTO");
+
+    if (!Boolean.TRUE.equals(agendamento.getConfirmado())) {
+        agendamento.setConfirmado(true);
+        agendamento.setConfirmadoEm(agora);
+    }
+
+    Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
+
+    AtendimentoService.AtendimentoAutomaticoResultado resultadoAtendimento =
+            atendimentoService.criarAutomaticamenteAPartirDoAgendamento(agendamentoSalvo);
+
+    return new ResultadoInicioAgendamento(
+            agendamentoSalvo,
+            resultadoAtendimento.atendimento(),
+            resultadoAtendimento.criado()
+    );
 }
 }
