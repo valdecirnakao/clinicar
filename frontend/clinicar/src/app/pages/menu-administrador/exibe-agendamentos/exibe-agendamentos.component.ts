@@ -30,6 +30,8 @@ type ColunaOrdenacaoAgendamento =
   | 'prioridade'
   | 'valorEstimado';
 
+type AbaNovoAgendamento = 'agendamento' | 'pecas' | 'adicionais';
+
 type AcaoConfirmacaoAgendamento =
   | 'confirmar'
   | 'iniciar'
@@ -89,7 +91,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   mensagemErroModal = '';
   mensagemDisponibilidadeResponsavel = '';
 
-  abaNovoAgendamento: 'agendamento' | 'pecas' | 'adicionais' = 'agendamento';
+  abaNovoAgendamento: AbaNovoAgendamento = 'agendamento';
 
   modalCadastro: any;
   modalPeca: any;
@@ -267,6 +269,91 @@ export class ExibeAgendamentosComponent implements OnInit {
     return this.validarCamposObrigatoriosAgendamento() || '';
   }
 
+  get progressoAgendamentoPercentual(): number {
+    /*
+     * A barra de progresso acompanha a validação real do agendamento.
+     * Quando todos os campos obrigatórios estão válidos, o progresso chega a 100%.
+     */
+    if (this.agendamentoProntoParaSalvar) {
+      return 100;
+    }
+
+    const obrigatorios = this.camposObrigatoriosAgendamento();
+    const totalObrigatorios = obrigatorios.length || 1;
+
+    const preenchidos = obrigatorios.filter(campo =>
+      this.campoAgendamentoPreenchido(campo)
+    ).length;
+
+    const percentualPreenchimento = Math.round((preenchidos / totalObrigatorios) * 100);
+
+    const pendencias = this.quantidadePendenciasAgendamento;
+    const descontoPorPendencias = Math.min(25, pendencias * 5);
+    const percentualAjustado = percentualPreenchimento - descontoPorPendencias;
+
+    return Math.max(0, Math.min(99, percentualAjustado));
+  }
+
+  get quantidadePendenciasAgendamento(): number {
+    return this.pendenciasAgendamentoAba('agendamento')
+      + this.pendenciasAgendamentoAba('pecas')
+      + this.pendenciasAgendamentoAba('adicionais');
+  }
+
+  pendenciasAgendamentoAba(aba: AbaNovoAgendamento): number {
+    if (aba !== 'agendamento') {
+      return 0;
+    }
+
+    let total = 0;
+
+    if (this.clienteInvalido()) total++;
+    if (this.veiculoInvalido()) total++;
+    if (this.servicoPrevistoInvalido()) total++;
+    if (this.quilometragemAtualInvalida()) total++;
+    if (!this.novoAgendamento.dataHoraInicio) total++;
+    if (!this.novoAgendamento.dataHoraFim) total++;
+
+    const possuiPeriodoInformado = !!this.novoAgendamento.dataHoraInicio && !!this.novoAgendamento.dataHoraFim;
+    const periodoValido = this.periodoAgendamentoValido();
+
+    if (possuiPeriodoInformado && !periodoValido) {
+      total++;
+    }
+
+    if (periodoValido) {
+      if (this.responsavelDisponivelInvalido()) {
+        total++;
+      }
+    } else if (!this.novoAgendamento.idResponsavel) {
+      total++;
+    }
+
+    return total;
+  }
+
+  private camposObrigatoriosAgendamento(): string[] {
+    return [
+      'idCliente',
+      'idVeiculo',
+      'idServico',
+      'quilometragemAtual',
+      'dataHoraInicio',
+      'dataHoraFim',
+      'idResponsavel'
+    ];
+  }
+
+  private campoAgendamentoPreenchido(campo: string): boolean {
+    const valor = (this.novoAgendamento as any)[campo];
+
+    if (valor === null || valor === undefined) {
+      return false;
+    }
+
+    return String(valor).trim().length > 0;
+  }
+
   carregarTudo(): void {
     this.carregando = true;
     this.mensagemErro = '';
@@ -325,7 +412,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   trocarAbaNovoAgendamento(
-    aba: 'agendamento' | 'pecas' | 'adicionais'
+    aba: AbaNovoAgendamento
   ): void {
     this.abaNovoAgendamento = aba;
   }
@@ -396,7 +483,11 @@ export class ExibeAgendamentosComponent implements OnInit {
     this.abaNovoAgendamento = 'agendamento';
     this.mensagemErroModal = '';
     this.mensagemDisponibilidadeResponsavel = '';
-    this.pecasNovoAgendamento = [];
+    this.tempPecaId = -1;
+
+    const observacoesOriginais = this.limparOpcional(item.observacoes);
+
+    this.pecasNovoAgendamento = this.extrairPecasPrevistasDasObservacoes(observacoesOriginais);
 
     this.novoAgendamento = {
       ...item,
@@ -407,6 +498,7 @@ export class ExibeAgendamentosComponent implements OnInit {
       idResponsavel: item.idResponsavel ?? item.responsavel?.id,
       dataHoraInicio: this.paraDatetimeLocal(item.dataHoraInicio || ''),
       dataHoraFim: this.paraDatetimeLocal(item.dataHoraFim || ''),
+      observacoes: this.removerBlocoPecasDasObservacoes(observacoesOriginais),
       valorEstimado: this.formatarMoedaBR(item.valorEstimado),
       valorFinal: item.valorFinal ? this.formatarMoedaBR(item.valorFinal) : ''
     };
@@ -414,6 +506,7 @@ export class ExibeAgendamentosComponent implements OnInit {
     this.selecionarCliente(false);
     this.selecionarVeiculo();
     this.selecionarServico(false);
+    this.recalcularValoresAgendamento();
     this.atualizarDisponibilidadeResponsavel();
 
     const el = document.getElementById('modalCadastroAgendamento');
@@ -1081,7 +1174,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   private montarObservacoesComPecas(): string {
-    const observacoesBase = this.limparOpcional(this.novoAgendamento.observacoes);
+    const observacoesBase = this.removerBlocoPecasDasObservacoes(this.novoAgendamento.observacoes);
 
     if (this.pecasNovoAgendamento.length === 0) {
       return observacoesBase;
@@ -1100,6 +1193,133 @@ export class ExibeAgendamentosComponent implements OnInit {
     ].join('\n');
 
     return `${observacoesBase}${bloco}`.trim();
+  }
+
+  private extrairPecasPrevistasDasObservacoes(observacoes: any): AgendamentoPecaSelecionada[] {
+    const bloco = this.extrairBlocoPecasDasObservacoes(observacoes);
+
+    if (!bloco) {
+      return [];
+    }
+
+    return bloco
+      .split(/\r?\n/)
+      .map(linha => linha.trim())
+      .filter(linha => linha.startsWith('- '))
+      .map(linha => this.linhaObservacaoParaPecaAgendamento(linha))
+      .filter((item): item is AgendamentoPecaSelecionada => item !== null);
+  }
+
+  private extrairBlocoPecasDasObservacoes(observacoes: any): string {
+    const texto = this.limparOpcional(observacoes);
+
+    if (!texto) {
+      return '';
+    }
+
+    const match = texto.match(/\[PEÇAS PREVISTAS NO AGENDAMENTO\]([\s\S]*?)\[\/PEÇAS PREVISTAS NO AGENDAMENTO\]/i);
+
+    return match ? match[1].trim() : '';
+  }
+
+  private removerBlocoPecasDasObservacoes(observacoes: any): string {
+    const texto = this.limparOpcional(observacoes);
+
+    if (!texto) {
+      return '';
+    }
+
+    return texto
+      .replace(/\s*\[PEÇAS PREVISTAS NO AGENDAMENTO\][\s\S]*?\[\/PEÇAS PREVISTAS NO AGENDAMENTO\]\s*/gi, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  private linhaObservacaoParaPecaAgendamento(linha: string): AgendamentoPecaSelecionada | null {
+    const texto = linha.replace(/^-\s*/, '').trim();
+
+    if (!texto || this.normalizar(texto).startsWith('total estimado de pecas')) {
+      return null;
+    }
+
+    const partes = texto.split('|').map(parte => parte.trim());
+    const descricao = partes[0] || 'Peça';
+    const fabricante = this.valorRotuloLinhaPeca(partes, 'Fabricante');
+    const modelo = this.valorRotuloLinhaPeca(partes, 'Modelo');
+    const quantidadeUnidade = this.valorRotuloLinhaPeca(partes, 'Qtd');
+    const valorUnitarioTexto = this.valorRotuloLinhaPeca(partes, 'Unitário');
+    const valorTotalTexto = this.valorRotuloLinhaPeca(partes, 'Total');
+
+    const quantidadeMatch = quantidadeUnidade.match(/^([\d.,]+)\s*(.*)$/);
+    const quantidade = this.quantidadeInteiraMinima(quantidadeMatch?.[1] || 1);
+    const unidadeMedida = (quantidadeMatch?.[2] || 'UNIDADE').trim() || 'UNIDADE';
+    const valorUnitario = this.moedaParaNumero(valorUnitarioTexto);
+    const valorTotalExtraido = this.moedaParaNumero(valorTotalTexto);
+    const valorTotal = valorTotalExtraido > 0 ? valorTotalExtraido : quantidade * valorUnitario;
+    const pecaCatalogo = this.localizarPecaCatalogoPorDados(descricao, fabricante, modelo);
+
+    return {
+      id: this.tempPecaId--,
+      idPeca: pecaCatalogo?.id,
+      nomePeca: pecaCatalogo?.nome || descricao,
+      descricaoPeca: pecaCatalogo?.descricao || descricao,
+      fabricantePeca: fabricante !== '—' ? fabricante : (pecaCatalogo?.fabricante || ''),
+      modeloPeca: modelo !== '—' ? modelo : (pecaCatalogo?.modelo || ''),
+      idFornecedor: null,
+      razaoSocialFornecedor: '',
+      quantidade,
+      unidadeMedida,
+      valorUnitario: valorUnitario.toFixed(2),
+      valorTotal: valorTotal.toFixed(2),
+      observacoes: ''
+    };
+  }
+
+  private valorRotuloLinhaPeca(partes: string[], rotulo: string): string {
+    const rotuloNormalizado = this.normalizar(rotulo);
+
+    const parte = partes.find(item =>
+      this.normalizar(item).startsWith(`${rotuloNormalizado}:`)
+    );
+
+    if (!parte) {
+      return '';
+    }
+
+    const indiceDoisPontos = parte.indexOf(':');
+
+    if (indiceDoisPontos < 0) {
+      return '';
+    }
+
+    return parte.slice(indiceDoisPontos + 1).trim();
+  }
+
+  private localizarPecaCatalogoPorDados(
+    descricao: string,
+    fabricante: string,
+    modelo: string
+  ): PecaResumo | null {
+    const descricaoNormalizada = this.normalizar(descricao);
+    const fabricanteNormalizado = this.normalizar(fabricante === '—' ? '' : fabricante);
+    const modeloNormalizado = this.normalizar(modelo === '—' ? '' : modelo);
+
+    if (!descricaoNormalizada) {
+      return null;
+    }
+
+    return this.pecas.find(peca => {
+      const nomePeca = this.normalizar(peca.nome);
+      const descricaoPeca = this.normalizar(peca.descricao);
+      const fabricantePeca = this.normalizar(peca.fabricante);
+      const modeloPeca = this.normalizar(peca.modelo);
+
+      const descricaoConfere = nomePeca === descricaoNormalizada || descricaoPeca === descricaoNormalizada;
+      const fabricanteConfere = !fabricanteNormalizado || !fabricantePeca || fabricantePeca === fabricanteNormalizado;
+      const modeloConfere = !modeloNormalizado || !modeloPeca || modeloPeca === modeloNormalizado;
+
+      return descricaoConfere && fabricanteConfere && modeloConfere;
+    }) || null;
   }
 
   private recalcularValoresAgendamento(): void {
@@ -1200,6 +1420,8 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   abrirConfirmacaoAcao(item: Agendamento, acao: AcaoConfirmacaoAgendamento): void {
     if (!item.id) return;
+
+    this.agendamentoSelecionado = item;
 
     const rotulo = item.codigoAgendamento || `#${item.id}`;
 

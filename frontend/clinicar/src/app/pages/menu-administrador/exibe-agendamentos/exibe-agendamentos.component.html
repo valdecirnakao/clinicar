@@ -260,28 +260,31 @@
 
                           <ul class="dropdown-menu dropdown-menu-end action-menu">
                             <li>
-                              <button class="dropdown-item" type="button" [disabled]="!podeConfirmar(item)">
+                              <button class="dropdown-item" type="button" [disabled]="!podeConfirmar(item)"
+                                (click)="abrirConfirmacaoAcao(item, 'confirmar')">
                                 <i class="bi bi-check-circle me-2 text-success"></i>
                                 Confirmar
                               </button>
                             </li>
 
                             <li>
-                              <button class="dropdown-item" type="button" [disabled]="!podeIniciar(item)">
+                              <button class="dropdown-item" type="button" [disabled]="!podeIniciar(item)"
+                                (click)="abrirConfirmacaoAcao(item, 'iniciar')">
                                 <i class="bi bi-play-circle me-2 text-primary"></i>
                                 Iniciar
                               </button>
                             </li>
 
                             <li>
-                              <button class="dropdown-item" type="button" [disabled]="!podeConcluir(item)">
+                              <button class="dropdown-item" type="button" [disabled]="!podeConcluir(item)"
+                                (click)="abrirConfirmacaoAcao(item, 'concluir')">
                                 <i class="bi bi-flag me-2 text-success"></i>
                                 Concluir
                               </button>
                             </li>
 
                             <li>
-                              <button class="dropdown-item" type="button" (click)="abrirCancelamento(item)">
+                              <button class="dropdown-item" type="button" (click)="abrirConfirmacaoAcao(item, 'naoCompareceu')">
                                 <i class="bi bi-person-x me-2 text-warning"></i>
                                 Não compareceu
                               </button>
@@ -300,7 +303,7 @@
                             </li>
 
                             <li>
-                              <button class="dropdown-item text-danger" type="button">
+                              <button class="dropdown-item text-danger" type="button" (click)="excluir(item)">
                                 <i class="bi bi-trash me-2"></i>
                                 Excluir
                               </button>
@@ -405,7 +408,40 @@
 
       <div class="modal-body agendamento-modal-body">
         <div class="agendamento-modal-tabs-area">
+          <div class="cadastro-progress-card agendamento-progress-card">
+            <div class="cadastro-progress-top">
+              <div>
+                <strong>{{ editandoId ? 'Progresso da edição' : 'Progresso do cadastro' }}</strong>
+                <small *ngIf="agendamentoProntoParaSalvar">
+                  Agendamento pronto para ser salvo.
+                </small>
+                <small *ngIf="!agendamentoProntoParaSalvar">
+                  {{ quantidadePendenciasAgendamento }} pendência(s) para concluir.
+                  {{ mensagemBloqueioSalvar }}
+                </small>
+              </div>
 
+              <span class="progress-percent-badge">
+                {{ progressoAgendamentoPercentual }}%
+              </span>
+            </div>
+
+            <div
+              class="progress cadastro-progress"
+              role="progressbar"
+              aria-label="Progresso do agendamento"
+              [attr.aria-valuenow]="progressoAgendamentoPercentual"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <div
+                class="progress-bar"
+                [style.width.%]="progressoAgendamentoPercentual"
+              >
+                {{ progressoAgendamentoPercentual }}%
+              </div>
+            </div>
+          </div>
 
           <ul class="nav nav-pills clinicar-tabs mb-1">
             <li class="nav-item">
@@ -413,6 +449,9 @@
                 (click)="trocarAbaNovoAgendamento(&apos;agendamento&apos;)">
                 <i class="bi bi-calendar-check me-1"></i>
                 Agendamento
+                <span class="tab-pendencia ms-1" *ngIf="pendenciasAgendamentoAba('agendamento') > 0">
+                  {{ pendenciasAgendamentoAba('agendamento') }}
+                </span>
                 <i class="bi ms-1"
                   [ngClass]="agendamentoProntoParaSalvar ? 'bi-check-circle-fill text-success' : 'bi-exclamation-circle-fill text-danger'"></i>
               </button>
@@ -1096,10 +1135,10 @@
       <div class="modal-header modal-header-clinicar">
         <div>
           <h5 class="modal-title mb-1">
-            <i class="bi me-1 bi-question-circle"></i>
-            Confirmar ação
+            <i class="bi me-1" [ngClass]="acaoConfirmacao?.icone || 'bi-question-circle'"></i>
+            {{ acaoConfirmacao?.titulo || 'Confirmar ação' }}
           </h5>
-          <small>{{ agendamentoSelecionado?.codigoAgendamento || 'Agendamento selecionado' }}</small>
+          <small>{{ acaoConfirmacao?.item?.codigoAgendamento || 'Agendamento selecionado' }}</small>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
@@ -1107,22 +1146,23 @@
       <div class="modal-body">
         <div class="confirm-box">
           <div class="confirm-icon">
-            <i class="bi bi-question-circle"></i>
+            <i class="bi" [ngClass]="acaoConfirmacao?.icone || 'bi-question-circle'"></i>
           </div>
 
           <div>
-            <strong>Confirmar ação</strong>
-            <p class="mb-0">Confirme a execução da ação para o agendamento selecionado.</p>
+            <strong>{{ acaoConfirmacao?.titulo || 'Confirmar ação' }}</strong>
+            <p class="mb-0">
+              {{ acaoConfirmacao?.mensagem || 'Confirme a execução da ação para o agendamento selecionado.' }}
+            </p>
           </div>
         </div>
 
-        <div class="detail-box mt-3" *ngIf="agendamentoSelecionado as agendamento">
+        <div class="detail-box mt-3" *ngIf="acaoConfirmacao?.item as agendamento">
           <small>Resumo do agendamento</small>
           <strong>{{ agendamento.nomeCliente || agendamento.cliente?.nome || 'Cliente não informado' }}</strong>
           <div class="details-line mt-1">
             {{ formatarPlaca(agendamento.placaVeiculo || agendamento.veiculo?.placa) }} ·
-            {{ agendamento.nomeServico || agendamento.servico?.nome || agendamento.servico?.descricao || 'Serviço não
-            informado' }}
+            {{ agendamento.nomeServico || agendamento.servico?.nome || agendamento.servico?.descricao || 'Serviço não informado' }}
           </div>
           <div class="details-line">
             {{ formatarDataHora(agendamento.dataHoraInicio) }} · {{ formatarStatus(agendamento.statusAgendamento) }}
@@ -1135,9 +1175,10 @@
           Cancelar
         </button>
 
-        <button type="button" class="btn" class="btn btn-primary" (click)="confirmarCancelamento()">
-          <i class="bi bi-check-circle me-1"></i>
-          Confirmar
+        <button type="button" class="btn" [ngClass]="acaoConfirmacao?.classeBotao || 'btn-primary'"
+          [disabled]="!acaoConfirmacao" (click)="confirmarAcaoAgendamento()">
+          <i class="bi me-1" [ngClass]="acaoConfirmacao?.icone || 'bi-check-circle'"></i>
+          {{ acaoConfirmacao?.textoBotao || 'Confirmar' }}
         </button>
       </div>
     </div>

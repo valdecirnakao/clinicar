@@ -237,28 +237,28 @@
                       </span>
                     </td>
                     <td class="text-center actions-column">
-                      <div class="btn-group btn-group-sm" role="group" aria-label="Ações">
-                        <button type="button" class="btn btn-outline-info" title="Visualizar"
+                      <div class="btn-group btn-group-sm" role="group" aria-label="Ações" style="gap: 0.25rem; border-radius: 3px;">
+                        <button type="button" class="btn btn-outline-info" title="Visualizar" style="border-radius: 3px;"
                           (click)="abrirModalDetalhes(item)">
                           <i class="bi bi-eye"></i>
                         </button>
 
-                        <button type="button" class="btn btn-outline-primary" title="Editar"
+                        <button type="button" class="btn btn-outline-primary" title="Editar" style="border-radius: 3px;"
                           (click)="abrirModalEdicao(item)">
                           <i class="bi bi-pencil-square"></i>
                         </button>
 
-                        <button type="button" class="btn btn-outline-success" title="Ativar"
+                        <button type="button" class="btn btn-outline-success" title="Ativar" style="border-radius: 3px;"
                           *ngIf="!fornecimentoAtivo(item)" (click)="abrirConfirmacao(item, 'ativar')">
                           <i class="bi bi-check-circle"></i>
                         </button>
 
-                        <button type="button" class="btn btn-outline-warning" title="Inativar"
+                        <button type="button" class="btn btn-outline-warning" title="Inativar" style="border-radius: 3px;"
                           *ngIf="fornecimentoAtivo(item)" (click)="abrirConfirmacao(item, 'inativar')">
                           <i class="bi bi-pause-circle"></i>
                         </button>
 
-                        <button type="button" class="btn btn-outline-danger" title="Excluir"
+                        <button type="button" class="btn btn-outline-danger" title="Excluir" style="border-radius: 3px;"
                           (click)="abrirConfirmacao(item, 'excluir')">
                           <i class="bi bi-trash"></i>
                         </button>

@@ -14,7 +14,7 @@
       </div>
 
       <div class="row g-2 mb-2 summary-row">
-        <div class="col-md-3 col-6">
+        <div class="col-md-4 col-6">
           <div class="summary-card">
             <div class="summary-icon"><i class="bi bi-box-seam"></i></div>
             <div>
@@ -24,7 +24,7 @@
           </div>
         </div>
 
-        <div class="col-md-3 col-6">
+        <div class="col-md-4 col-6">
           <div class="summary-card">
             <div class="summary-icon"><i class="bi bi-tags"></i></div>
             <div>
@@ -34,22 +34,12 @@
           </div>
         </div>
 
-        <div class="col-md-3 col-6">
+        <div class="col-md-4 col-6">
           <div class="summary-card">
             <div class="summary-icon"><i class="bi bi-buildings"></i></div>
             <div>
               <div class="summary-label">Fabricantes</div>
               <div class="summary-value">{{ totalFabricantes }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-3 col-6">
-          <div class="summary-card">
-            <div class="summary-icon"><i class="bi bi-patch-check"></i></div>
-            <div>
-              <div class="summary-label">Com norma</div>
-              <div class="summary-value">{{ totalComNorma }}</div>
             </div>
           </div>
         </div>
@@ -229,13 +219,15 @@
                     <td>
                       <span class="badge unidade-badge">{{ exibirCapitalizado(p.unidade) }}</span>
                     </td>
-                    <td class="text-center">
-                      <div class="btn-group btn-group-sm">
+                    <td class="text-center ">
+                      <div class="btn-group btn-group-sm table-actions" style="gap: .25rem; border-radius: 3px;">
+
                         <button
                           class="btn btn-outline-info"
                           type="button"
                           title="Visualizar detalhes"
                           (click)="abrirDetalhes(p)"
+                          style="border-radius: 3px;"
                         >
                           <i class="bi bi-eye"></i>
                         </button>
@@ -245,6 +237,7 @@
                           type="button"
                           title="Editar peça"
                           (click)="abrirModalEdicao(p)"
+                          style="border-radius: 3px;"
                         >
                           <i class="bi bi-pencil-square"></i>
                         </button>
@@ -254,6 +247,7 @@
                           type="button"
                           title="Excluir peça"
                           (click)="abrirConfirmacaoExclusao(p)"
+                          style="border-radius: 3px;"
                         >
                           <i class="bi bi-trash"></i>
                         </button>

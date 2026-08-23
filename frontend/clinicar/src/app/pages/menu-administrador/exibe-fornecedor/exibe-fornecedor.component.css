@@ -284,6 +284,7 @@
 
 .actions-cell .btn {
   min-width: 34px;
+  border-radius: 3px;
 }
 
 .table-pagination-footer {

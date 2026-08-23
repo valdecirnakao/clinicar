@@ -707,4 +707,23 @@ public class AgendamentoService {
 
         throw new IllegalArgumentException(campo + " inválida.");
     }
+
+    @Transactional
+public void excluir(Long id) {
+    if (id == null) {
+        throw new IllegalArgumentException("ID do agendamento não informado.");
+    }
+
+    Agendamento agendamento = buscarPorId(id);
+
+    if ("EM_ATENDIMENTO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
+        throw new IllegalArgumentException("Não é possível excluir um agendamento em atendimento.");
+    }
+
+    if ("CONCLUIDO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
+        throw new IllegalArgumentException("Não é possível excluir um agendamento concluído.");
+    }
+
+    agendamentoRepository.delete(agendamento);
+}
 }

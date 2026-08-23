@@ -690,6 +690,7 @@
     flex: 1 1 auto;
   }
 
+
   .mobile-record-actions .btn {
     flex: 1 1 auto;
   }
@@ -706,4 +707,6 @@
   .pagination-actions .btn {
     flex: 1;
   }
+
+
 }

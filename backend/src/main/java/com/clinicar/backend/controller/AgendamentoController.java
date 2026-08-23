@@ -171,4 +171,13 @@ public class AgendamentoController {
                 )
         );
     }
+
+    @DeleteMapping("/{id}")
+public ResponseEntity<Void> excluirAgendamento(
+        @PathVariable Long id
+) {
+    agendamentoService.excluir(id);
+
+    return ResponseEntity.noContent().build();
+}
 }

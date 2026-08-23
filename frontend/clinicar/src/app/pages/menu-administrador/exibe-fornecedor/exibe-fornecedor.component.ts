@@ -755,9 +755,9 @@ export class ExibeFornecedorComponent implements OnInit {
       return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
     }
 
-    if (n.length >= 11) {
-      const ddd = n.slice(-11, -9);
-      const parte1 = n.slice(-9, -4);
+    if (n.length === 12 && n.startsWith('55')) {
+      const ddd = n.slice(-10, -8);
+      const parte1 = n.slice(-8, -4);
       const parte2 = n.slice(-4);
 
       return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
