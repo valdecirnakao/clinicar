@@ -5,6 +5,14 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * DTO de saída para serviços executados em um atendimento.
+ *
+ * Observação:
+ * - valorMaoObra representa o valor unitário da mão de obra do serviço.
+ * - valorTotal representa o total calculado do item:
+ *   quantidade * valorMaoObra + valorTerceiro - desconto.
+ */
 @Data
 public class AtendimentoServicoExecutadoResponse {
 

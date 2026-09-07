@@ -8,15 +8,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "estoque_peca",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_estoque_peca_local",
-                        columnNames = {"id_peca", "id_local_estoque"}
-                )
-        }
-)
+@Table(name = "estoque_peca", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_estoque_peca_local", columnNames = { "id_peca", "id_local_estoque" })
+})
 @Getter
 @Setter
 public class EstoquePeca {
@@ -36,7 +30,7 @@ public class EstoquePeca {
     @Column(name = "quantidade_atual", nullable = false, precision = 12, scale = 3)
     private BigDecimal quantidadeAtual = BigDecimal.ZERO;
 
-    @Column(name = "quantidade_reservada", nullable = false, precision = 12, scale = 3)
+    @Column(name = "quantidade_reservada", nullable = false, precision = 10, scale = 2)
     private BigDecimal quantidadeReservada = BigDecimal.ZERO;
 
     @Column(name = "estoque_minimo", nullable = false, precision = 12, scale = 3)
@@ -112,5 +106,17 @@ public class EstoquePeca {
         if (ativo == null) {
             ativo = true;
         }
+    }
+
+    public BigDecimal getQuantidadeDisponivel() {
+        BigDecimal atual = quantidadeAtual != null
+                ? quantidadeAtual
+                : BigDecimal.ZERO;
+
+        BigDecimal reservada = quantidadeReservada != null
+                ? quantidadeReservada
+                : BigDecimal.ZERO;
+
+        return atual.subtract(reservada);
     }
 }

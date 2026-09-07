@@ -261,22 +261,12 @@
 
                         <button
                           type="button"
-                          class="btn btn-sm btn-outline-secondary"
-                          title="Peças utilizadas"
-                          [disabled]="!podeGerenciarItens(item)"
-                          (click)="abrirModalPecas(item)"
+                          class="btn btn-sm btn-outline-primary"
+                          title="Editar peças e serviços do atendimento"
+                          [disabled]="!podeEditarItensAtendimento(item)"
+                          (click)="abrirModalEdicao(item)"
                         >
-                          <i class="bi bi-nut"></i>
-                        </button>
-
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-secondary"
-                          title="Serviços executados"
-                          [disabled]="!podeGerenciarItens(item)"
-                          (click)="abrirModalServicos(item)"
-                        >
-                          <i class="bi bi-wrench-adjustable"></i>
+                          <i class="bi bi-pencil-square"></i>
                         </button>
 
                         <div class="dropdown d-inline-block">
@@ -761,7 +751,7 @@
                       <th>Modelo</th>
                       <th class="text-end">Quantidade</th>
                       <th>Unidade</th>
-                      <th class="text-end">Custo unitário</th>
+                      <th class="text-end">Valor unitário</th>
                       <th class="text-end">Total</th>
                       <th class="text-center">Ações</th>
                     </tr>
@@ -1090,6 +1080,460 @@
   </div>
 </div>
 
+
+<!-- MODAL EDIÇÃO ATENDIMENTO -->
+<div class="modal fade" id="modalEdicaoAtendimento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="color:#35689b;">
+      <div class="modal-header" style="background:#eef6ff;">
+        <h5 class="modal-title">
+          <i class="bi bi-pencil-square me-1"></i>
+          Editar Atendimento
+          <small class="text-muted ms-2">
+            {{ atendimentoSelecionado?.codigoAtendimento || '' }}
+          </small>
+        </h5>
+        <button type="button" class="btn-close" (click)="fecharModalEdicaoAtendimento()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="mensagemErroEdicao" class="alert alert-danger py-2">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          {{ mensagemErroEdicao }}
+        </div>
+
+        <div *ngIf="carregandoModalEdicao" class="text-center py-4 loading-box">
+          <output class="spinner-border" aria-label="Carregando dados do atendimento"></output>
+          <div class="mt-2">Carregando dados do atendimento...</div>
+        </div>
+
+        <ng-container *ngIf="!carregandoModalEdicao && atendimentoSelecionado">
+          <div class="alert alert-info py-2 mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            As peças e os serviços podem ser alterados somente após o atendimento ser iniciado e antes da aprovação.
+            No atendimento, os valores são somente leitura: o usuário altera a composição, e os totais são recalculados automaticamente ao salvar.
+          </div>
+
+          <div class="clinicar-edit-progress mb-3">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+              <div>
+                <div class="fw-bold">Progresso da edição</div>
+                <small class="text-muted">{{ rotuloProgressoEdicaoAtendimento() }}</small>
+              </div>
+
+              <span class="progress-percent-pill">
+                {{ progressoEdicaoAtendimento() }}%
+              </span>
+            </div>
+
+            <div class="progress cadastro-progress">
+              <div
+                class="progress-bar cadastro-progress-bar"
+                role="progressbar"
+                [style.width.%]="progressoEdicaoAtendimento()"
+                [attr.aria-valuenow]="progressoEdicaoAtendimento()"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                {{ progressoEdicaoAtendimento() }}%
+              </div>
+            </div>
+
+            <div *ngIf="haAlteracoesEdicaoItens()" class="pending-edit-note mt-2">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              Existem alterações pendentes. Elas serão gravadas somente ao clicar em <strong>Salvar edição</strong>.
+            </div>
+          </div>
+
+          <div
+            *ngIf="salvandoEdicaoAtendimento"
+            class="alert alert-primary py-2 mb-3 d-flex align-items-center gap-2"
+            role="alert"
+          >
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span>{{ etapaSalvamentoEdicao || 'Salvando alterações do atendimento...' }}</span>
+          </div>
+
+          <ul class="nav nav-pills clinicar-tabs mb-3">
+            <li class="nav-item">
+              <button
+                type="button"
+                class="nav-link"
+                [class.active]="abaEdicaoAtendimento === 'resumo'"
+                (click)="trocarAbaEdicaoAtendimento('resumo')"
+              >
+                <i class="bi bi-card-checklist me-1"></i>
+                Resumo
+              </button>
+            </li>
+            <li class="nav-item">
+              <button
+                type="button"
+                class="nav-link"
+                [class.active]="abaEdicaoAtendimento === 'pecas'"
+                (click)="trocarAbaEdicaoAtendimento('pecas')"
+              >
+                <i class="bi bi-nut me-1"></i>
+                Peças utilizadas
+                <span class="badge bg-light text-primary ms-1">{{ pecasAtendimento.length }}</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button
+                type="button"
+                class="nav-link"
+                [class.active]="abaEdicaoAtendimento === 'servicos'"
+                (click)="trocarAbaEdicaoAtendimento('servicos')"
+              >
+                <i class="bi bi-wrench-adjustable me-1"></i>
+                Serviços executados
+                <span class="badge bg-light text-primary ms-1">{{ servicosAtendimento.length }}</span>
+              </button>
+            </li>
+          </ul>
+
+          <!-- GUIA RESUMO -->
+          <div *ngIf="abaEdicaoAtendimento === 'resumo'">
+            <div class="row g-2 mb-3">
+              <div class="col-md-3">
+                <div class="detail-box">
+                  <small>Código</small>
+                  <strong>{{ atendimentoSelecionado.codigoAtendimento || '—' }}</strong>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="detail-box">
+                  <small>Status</small>
+                  <span class="badge" [ngClass]="statusBadgeClass(atendimentoSelecionado.statusAtendimento)">
+                    {{ formatarStatus(atendimentoSelecionado.statusAtendimento) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="detail-box">
+                  <small>Cliente</small>
+                  <strong>{{ atendimentoSelecionado.nomeCliente || '—' }}</strong>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="detail-box">
+                  <small>Veículo</small>
+                  <strong>{{ formatarPlaca(atendimentoSelecionado.placaVeiculo) }}</strong>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="detail-box">
+                  <small>Serviço principal</small>
+                  <strong>{{ atendimentoSelecionado.nomeServico || '—' }}</strong>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="detail-box">
+                  <small>Responsável</small>
+                  <strong>{{ atendimentoSelecionado.nomeResponsavel || '—' }}</strong>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="detail-box">
+                  <small>Entrada</small>
+                  <strong>{{ formatarDataHora(atendimentoSelecionado.dataEntrada) }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="card clinicar-card resumo-itens-card">
+              <div class="card-body">
+                <h6 class="modal-section-title">
+                  <i class="bi bi-calculator me-1"></i>
+                  Resumo dos valores atuais
+                </h6>
+
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <div class="resumo-valor-box">
+                      <small>Peças</small>
+                      <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorPecas) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="resumo-valor-box">
+                      <small>Mão de obra</small>
+                      <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorMaoObra) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="resumo-valor-box">
+                      <small>Terceiros</small>
+                      <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorTerceiros) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <div class="resumo-valor-box total">
+                      <small>Total</small>
+                      <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorTotal) }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GUIA PEÇAS -->
+          <div *ngIf="abaEdicaoAtendimento === 'pecas'">
+            <div class="card clinicar-card mb-3">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div>
+                    <h6 class="modal-section-title mb-1">
+                      <i class="bi bi-nut me-1"></i>
+                      Peças utilizadas
+                      <span class="badge bg-primary ms-1">{{ pecasAtendimento.length }}</span>
+                    </h6>
+                    <small class="text-muted">
+                      Adicione, edite ou remova peças antes da aprovação do atendimento.
+                    </small>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    [disabled]="!podeEditarItensAtendimento(atendimentoSelecionado) || salvandoEdicaoAtendimento"
+                    (click)="abrirModalPecasEdicao()"
+                  >
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Adicionar peça
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive item-table-wrapper">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead style="background:#eef6ff;color:#35689b;">
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Fabricante</th>
+                    <th>Modelo</th>
+                    <th class="text-end">Quantidade</th>
+                    <th>Unidade</th>
+                    <th class="text-end">Valor unitário</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-center">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let item of pecasAtendimento">
+                    <td>
+                      <div class="fw-semibold">
+                        {{ item.descricaoPeca || item.nomePeca || '—' }}
+                        <span *ngIf="modoItensAtendimento === 'existente' && item.id && item.id < 0" class="badge bg-warning text-dark ms-1">
+                          Pendente
+                        </span>
+                      </div>
+                      <small class="text-muted">{{ item.observacoes || '' }}</small>
+                    </td>
+                    <td>{{ item.fabricantePeca || '—' }}</td>
+                    <td>{{ item.modeloPeca || '—' }}</td>
+                    <td class="text-end">{{ item.quantidade }}</td>
+                    <td>{{ item.unidadeMedida || '—' }}</td>
+                    <td class="text-end">{{ formatarMoedaBR(item.valorUnitario) }}</td>
+                    <td class="text-end fw-semibold">{{ formatarMoedaBR(item.valorTotal) }}</td>
+                    <td class="text-center">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary me-1"
+                        title="Editar peça"
+                        [disabled]="!podeEditarItensAtendimento(atendimentoSelecionado) || salvandoEdicaoAtendimento"
+                        (click)="abrirModalEditarPecaEdicao(item)"
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        title="Excluir peça"
+                        [disabled]="!podeEditarItensAtendimento(atendimentoSelecionado) || salvandoEdicaoAtendimento"
+                        (click)="removerPecaAtendimento(item)"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="pecasAtendimento.length === 0">
+                    <td colspan="8" class="text-center text-muted py-3">
+                      Nenhuma peça utilizada registrada para este atendimento.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- GUIA SERVIÇOS -->
+          <div *ngIf="abaEdicaoAtendimento === 'servicos'">
+            <div class="card clinicar-card mb-3">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div>
+                    <h6 class="modal-section-title mb-1">
+                      <i class="bi bi-wrench-adjustable me-1"></i>
+                      Serviços executados
+                      <span class="badge bg-primary ms-1">{{ servicosAtendimento.length }}</span>
+                    </h6>
+                    <small class="text-muted">
+                      Ajuste os serviços executados antes de aprovar o atendimento.
+                    </small>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    [disabled]="!podeEditarItensAtendimento(atendimentoSelecionado) || salvandoEdicaoAtendimento"
+                    (click)="abrirModalServicosEdicao()"
+                  >
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Adicionar serviço
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div
+              *ngIf="sincronizandoServicoPrincipal"
+              class="alert alert-info py-2 mb-3 d-flex align-items-center gap-2"
+              role="alert"
+            >
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              <span>Sincronizando o serviço principal vinculado ao agendamento...</span>
+            </div>
+
+            <div class="table-responsive item-table-wrapper">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead style="background:#eef6ff;color:#35689b;">
+                  <tr>
+                    <th>Serviço</th>
+                    <th>Categoria</th>
+                    <th>Tipo</th>
+                    <th>Responsável</th>
+                    <th>Fornecedor</th>
+                    <th class="text-end">Mão de obra</th>
+                    <th class="text-end">Terceiro</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-center">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let item of servicosAtendimento">
+                    <td>
+                      <div class="fw-semibold">
+                        {{ item.nomeServico || item.descricaoServico || '—' }}
+                        <span *ngIf="modoItensAtendimento === 'existente' && item.id && item.id < 0" class="badge bg-warning text-dark ms-1">
+                          Pendente
+                        </span>
+                      </div>
+                      <small class="text-muted">{{ item.observacoes || '' }}</small>
+                    </td>
+                    <td>{{ item.categoriaServico || '—' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="tipoExecucaoBadgeClass(item.tipoExecucao)">
+                        {{ formatarTipoExecucao(item.tipoExecucao) }}
+                      </span>
+                    </td>
+                    <td>{{ item.nomeResponsavel || '—' }}</td>
+                    <td>{{ item.razaoSocialFornecedor || '—' }}</td>
+                    <td class="text-end">{{ formatarMoedaBR(item.valorMaoObra) }}</td>
+                    <td class="text-end">{{ formatarMoedaBR(item.valorTerceiro) }}</td>
+                    <td class="text-end fw-semibold">{{ formatarMoedaBR(item.valorTotal) }}</td>
+                    <td class="text-center">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        title="Excluir serviço"
+                        [disabled]="!podeEditarItensAtendimento(atendimentoSelecionado) || salvandoEdicaoAtendimento"
+                        (click)="removerServicoAtendimento(item)"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+
+                  <tr *ngIf="servicosAtendimento.length === 0 && !sincronizandoServicoPrincipal">
+                    <td colspan="9" class="text-center text-muted py-3">
+                      <div>Nenhum serviço executado registrado para este atendimento.</div>
+
+                      <div
+                        *ngIf="podeSincronizarServicoPrincipalDoAtendimento()"
+                        class="mt-2"
+                      >
+                        <button
+                          type="button"
+                          class="btn btn-outline-primary btn-sm"
+                          (click)="sincronizarServicoPrincipalDoAtendimento()"
+                        >
+                          <i class="bi bi-arrow-repeat me-1"></i>
+                          Importar serviço do agendamento
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="modal-footer modal-footer-totais" *ngIf="atendimentoSelecionado">
+        <div class="totais-footer me-auto">
+          <span>Peças: <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorPecas) }}</strong></span>
+          <span>Mão de obra: <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorMaoObra) }}</strong></span>
+          <span>Terceiros: <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorTerceiros) }}</strong></span>
+          <span class="total-final-footer">
+            Total:
+            <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorTotal) }}</strong>
+          </span>
+          <span *ngIf="haAlteracoesEdicaoItens()" class="badge bg-warning text-dark">
+            {{ quantidadeAlteracoesEdicaoItens() || 1 }} alteração(ões) pendente(s)
+          </span>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [disabled]="salvandoEdicaoAtendimento"
+          (click)="fecharModalEdicaoAtendimento()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary-clinicar"
+          [disabled]="salvandoEdicaoAtendimento || !haAlteracoesEdicaoItens() || !podeEditarItensAtendimento(atendimentoSelecionado)"
+          (click)="salvarEdicaoAtendimento()"
+        >
+          <span *ngIf="salvandoEdicaoAtendimento" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+          <i *ngIf="!salvandoEdicaoAtendimento" class="bi bi-save me-1"></i>
+          Salvar edição
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PEÇAS -->
 <div
   class="modal fade"
@@ -1113,6 +1557,11 @@
       </div>
 
       <div class="modal-body">
+        <div *ngIf="modoItensAtendimento === 'existente'" class="alert alert-warning py-2 mb-3">
+          <i class="bi bi-hourglass-split me-1"></i>
+          Esta alteração será aplicada somente depois de clicar em <strong>Salvar edição</strong> no modal do atendimento. Valores são somente leitura. Valores são somente leitura.
+        </div>
+
         <div class="row g-2">
           <div class="col-md-6">
             <label class="form-label">Peça *</label>
@@ -1120,6 +1569,7 @@
               class="form-select"
               [(ngModel)]="pecaForm.idPeca"
               (change)="selecionarPecaCatalogo()"
+              [disabled]="modoItensAtendimento === 'existente' && editandoPecaId !== null"
               style="color:#35689b;"
             >
               <option [ngValue]="undefined">Selecione...</option>
@@ -1175,18 +1625,19 @@
           <div class="col-md-2">
             <label class="form-label">Unidade</label>
             <input
-              class="form-control"
-              [(ngModel)]="pecaForm.unidadeMedida"
+              class="form-control bg-light"
+              [value]="pecaForm.unidadeMedida || '—'"
+              readonly
               style="color:#35689b;"
             />
           </div>
 
           <div class="col-md-2">
-            <label class="form-label">Custo unitário</label>
+            <label class="form-label">Valor unitário</label>
             <input
-              class="form-control"
-              [(ngModel)]="pecaForm.valorUnitario"
-              (blur)="formatarValorUnitarioPeca()"
+              class="form-control bg-light"
+              [value]="pecaForm.valorUnitario || 'R$ 0,00'"
+              readonly
               style="color:#35689b;"
             />
           </div>
@@ -1194,11 +1645,18 @@
           <div class="col-md-3">
             <label class="form-label">Total</label>
             <input
-              class="form-control fw-semibold"
+              class="form-control fw-semibold bg-light"
               [value]="pecaForm.valorTotal || 'R$ 0,00'"
               readonly
               style="color:#35689b;"
             />
+          </div>
+
+          <div class="col-md-12" *ngIf="modoItensAtendimento === 'existente'">
+            <div class="readonly-values-note">
+              <i class="bi bi-shield-check me-1"></i>
+              O valor unitário vem do fornecimento/estoque da peça. No atendimento, altere apenas a peça utilizada, a quantidade e as observações.
+            </div>
           </div>
 
           <div class="col-md-9">
@@ -1224,10 +1682,11 @@
         <button
           type="button"
           class="btn btn-outline-success"
+          [disabled]="modoItensAtendimento === 'existente' && salvandoEdicaoAtendimento"
           (click)="salvarPecaAtendimento()"
         >
           <i class="bi bi-check-circle me-1"></i>
-          {{ editandoPecaId !== null ? 'Atualizar Peça' : 'Adicionar Peça' }}
+          {{ textoBotaoSalvarPeca() }}
         </button>
       </div>
 
@@ -1248,7 +1707,7 @@
       <div class="modal-header" style="background:#eef6ff;">
         <h5 class="modal-title">
           <i class="bi bi-wrench-adjustable me-1"></i>
-          {{ editandoServicoId !== null ? 'Editar Serviço' : 'Adicionar Serviço' }}
+          {{ modoItensAtendimento === 'existente' ? 'Adicionar Serviço' : (editandoServicoId !== null ? 'Editar Serviço' : 'Adicionar Serviço') }}
           <small class="text-muted ms-2">
             {{ modoItensAtendimento === 'novo' ? 'Novo Atendimento' : atendimentoSelecionado?.codigoAtendimento }}
           </small>
@@ -1258,6 +1717,11 @@
       </div>
 
       <div class="modal-body">
+        <div *ngIf="modoItensAtendimento === 'existente'" class="alert alert-warning py-2 mb-3">
+          <i class="bi bi-hourglass-split me-1"></i>
+          Esta alteração será aplicada somente depois de clicar em <strong>Salvar edição</strong> no modal do atendimento. Valores são somente leitura.
+        </div>
+
         <div class="row g-2">
           <div class="col-md-4">
             <label class="form-label">Serviço *</label>
@@ -1300,6 +1764,7 @@
               class="form-select"
               [(ngModel)]="servicoForm.tipoExecucao"
               (change)="aoAlterarTipoExecucaoServico()"
+              [disabled]="modoItensAtendimento === 'existente'"
               style="color:#35689b;"
             >
               <option *ngFor="let t of tiposExecucao" [ngValue]="t">
@@ -1316,6 +1781,9 @@
               step="0.01"
               class="form-control"
               [(ngModel)]="servicoForm.quantidade"
+              (input)="recalcularTotalServicoForm()"
+              [readonly]="modoItensAtendimento === 'existente'"
+              [class.bg-light]="modoItensAtendimento === 'existente'"
               style="color:#35689b;"
             />
           </div>
@@ -1328,6 +1796,8 @@
               step="0.01"
               class="form-control"
               [(ngModel)]="servicoForm.tempoExecucao"
+              [readonly]="modoItensAtendimento === 'existente'"
+              [class.bg-light]="modoItensAtendimento === 'existente'"
               style="color:#35689b;"
             />
           </div>
@@ -1337,6 +1807,8 @@
             <input
               class="form-control"
               [(ngModel)]="servicoForm.unidadeTempo"
+              [readonly]="modoItensAtendimento === 'existente'"
+              [class.bg-light]="modoItensAtendimento === 'existente'"
               style="color:#35689b;"
             />
           </div>
@@ -1346,6 +1818,7 @@
             <select
               class="form-select"
               [(ngModel)]="servicoForm.idResponsavel"
+              [disabled]="modoItensAtendimento === 'existente'"
               style="color:#35689b;"
             >
               <option [ngValue]="undefined">Selecione...</option>
@@ -1376,9 +1849,9 @@
           <div class="col-md-2">
             <label class="form-label">Mão de obra</label>
             <input
-              class="form-control"
-              [(ngModel)]="servicoForm.valorMaoObra"
-              (blur)="formatarValoresServicoForm()"
+              class="form-control bg-light"
+              [value]="servicoForm.valorMaoObra || 'R$ 0,00'"
+              readonly
               style="color:#35689b;"
             />
           </div>
@@ -1386,9 +1859,9 @@
           <div class="col-md-2">
             <label class="form-label">Terceiro</label>
             <input
-              class="form-control"
-              [(ngModel)]="servicoForm.valorTerceiro"
-              (blur)="formatarValoresServicoForm()"
+              class="form-control bg-light"
+              [value]="servicoForm.valorTerceiro || 'R$ 0,00'"
+              readonly
               style="color:#35689b;"
             />
           </div>
@@ -1396,9 +1869,9 @@
           <div class="col-md-2">
             <label class="form-label">Desconto</label>
             <input
-              class="form-control"
-              [(ngModel)]="servicoForm.desconto"
-              (blur)="formatarValoresServicoForm()"
+              class="form-control bg-light"
+              [value]="servicoForm.desconto || 'R$ 0,00'"
+              readonly
               style="color:#35689b;"
             />
           </div>
@@ -1406,7 +1879,7 @@
           <div class="col-md-2">
             <label class="form-label">Total</label>
             <input
-              class="form-control fw-semibold"
+              class="form-control fw-semibold bg-light"
               [value]="servicoForm.valorTotal || 'R$ 0,00'"
               readonly
               style="color:#35689b;"
@@ -1418,12 +1891,20 @@
             <select
               class="form-select"
               [(ngModel)]="servicoForm.statusItem"
+              [disabled]="modoItensAtendimento === 'existente'"
               style="color:#35689b;"
             >
               <option *ngFor="let s of statusItemServico" [ngValue]="s">
                 {{ formatarStatus(s) }}
               </option>
             </select>
+          </div>
+
+          <div class="col-md-12" *ngIf="modoItensAtendimento === 'existente'">
+            <div class="readonly-values-note">
+              <i class="bi bi-shield-check me-1"></i>
+              Os valores deste serviço vêm do cadastro do serviço e não podem ser editados no atendimento.
+            </div>
           </div>
 
           <div class="col-md-12">
@@ -1449,10 +1930,11 @@
         <button
           type="button"
           class="btn btn-outline-success"
+          [disabled]="modoItensAtendimento === 'existente' && salvandoEdicaoAtendimento"
           (click)="salvarServicoAtendimento()"
         >
           <i class="bi bi-check-circle me-1"></i>
-          {{ editandoServicoId !== null ? 'Atualizar Serviço' : 'Adicionar Serviço' }}
+          {{ textoBotaoSalvarServico() }}
         </button>
       </div>
 

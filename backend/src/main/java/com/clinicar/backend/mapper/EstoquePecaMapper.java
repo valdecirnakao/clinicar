@@ -6,6 +6,7 @@ import com.clinicar.backend.model.LocalEstoque;
 import com.clinicar.backend.model.Peca;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Component
@@ -55,6 +56,21 @@ public class EstoquePecaMapper {
 
         response.setCriadoEm(estoque.getCriadoEm());
         response.setAtualizadoEm(estoque.getAtualizadoEm());
+
+        response.setQuantidadeReservada(
+                estoque.getQuantidadeReservada() != null
+                        ? estoque.getQuantidadeReservada()
+                        : BigDecimal.ZERO);
+
+        BigDecimal atual = estoque.getQuantidadeAtual() != null
+                ? estoque.getQuantidadeAtual()
+                : BigDecimal.ZERO;
+
+        BigDecimal reservada = estoque.getQuantidadeReservada() != null
+                ? estoque.getQuantidadeReservada()
+                : BigDecimal.ZERO;
+
+        response.setQuantidadeDisponivel(atual.subtract(reservada));
 
         return response;
     }

@@ -34,32 +34,82 @@ export interface EstoquePeca {
   id?: number;
 
   idPeca?: number;
+  id_peca?: number;
+  pecaId?: number;
+  peca?: any;
+
   nomePeca?: string;
+  nome_peca?: string;
+  descricaoPeca?: string;
+  descricao_peca?: string;
   fabricantePeca?: string;
+  fabricante_peca?: string;
   modeloPeca?: string;
+  modelo_peca?: string;
   unidadePeca?: string;
+  unidade_peca?: string;
 
   idLocalEstoque?: number;
+  id_local_estoque?: number;
+  localEstoqueId?: number;
+  local_estoque_id?: number;
+  localEstoque?: any;
+
   nomeLocalEstoque?: string;
+  nome_local_estoque?: string;
+  nomeLocal?: string;
+  nome_local?: string;
+  local?: string;
 
-  quantidadeAtual?: string | number;
-  quantidadeReservada?: string | number;
-
-  estoqueMinimo?: string | number;
-  estoqueCritico?: string | number;
-  estoqueMaximo?: string | number | null;
-
-  pontoReposicao?: string | number | null;
-  quantidadeReposicaoSugerida?: string | number | null;
-
-  custoMedio?: string | number | null;
   localizacaoFisica?: string;
+  localizacao_fisica?: string;
+  localizacao?: string;
+
+  quantidadeAtual?: number | string | null;
+  quantidade_atual?: number | string | null;
+  atual?: number | string | null;
+
+  quantidadeReservada?: number | string | null;
+  quantidade_reservada?: number | string | null;
+  reservada?: number | string | null;
+
+  quantidadeDisponivel?: number | string | null;
+  quantidade_disponivel?: number | string | null;
+  disponivel?: number | string | null;
+
+  estoqueMinimo?: number | string | null;
+  estoque_minimo?: number | string | null;
+  minimo?: number | string | null;
+
+  estoqueCritico?: number | string | null;
+  estoque_critico?: number | string | null;
+  critico?: number | string | null;
+
+  estoqueMaximo?: number | string | null;
+  estoque_maximo?: number | string | null;
+  maximo?: number | string | null;
+
+  pontoReposicao?: number | string | null;
+  ponto_reposicao?: number | string | null;
+
+  quantidadeReposicaoSugerida?: number | string | null;
+  quantidade_reposicao_sugerida?: number | string | null;
+
+  unidadeMedida?: string;
+  unidade_medida?: string;
+  unidade?: string;
+
+  custoMedio?: number | string | null;
+  custo_medio?: number | string | null;
 
   statusEstoque?: string;
-  ativo?: boolean;
+  status_estoque?: string;
 
+  ativo?: boolean;
   criadoEm?: string;
+  criado_em?: string;
   atualizadoEm?: string;
+  atualizado_em?: string;
 }
 
 export interface EstoquePecaRequest {

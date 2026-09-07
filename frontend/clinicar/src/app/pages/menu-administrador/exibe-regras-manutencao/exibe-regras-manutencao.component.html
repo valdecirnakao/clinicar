@@ -1,0 +1,2185 @@
+<div class="container-fluid mt-0 mb-0 regras-page">
+
+  <!-- =====================================================
+       CABEÇALHO
+       ===================================================== -->
+
+  <div class="row mt-0">
+
+    <div class="col-12">
+
+      <div class="card clinicar-header-card">
+
+        <div class="card-body">
+
+          <div
+            class="d-flex flex-column flex-lg-row
+                   justify-content-between
+                   align-items-lg-center
+                   gap-3"
+          >
+
+            <div>
+
+              <div
+                class="d-flex
+                       align-items-center
+                       gap-2"
+              >
+
+                <div class="header-icon">
+                  <i class="bi bi-tools"></i>
+                </div>
+
+                <div>
+
+                  <h4 class="mb-0">
+                    Regras de Manutenção Preventiva
+                  </h4>
+
+                  <small>
+                    Configure os critérios utilizados
+                    pelo CliniCar para prever as
+                    próximas manutenções dos veículos.
+                  </small>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="d-flex
+                     flex-wrap
+                     gap-2"
+            >
+
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="voltar()"
+              >
+                <i
+                  class="bi bi-arrow-left me-1"
+                ></i>
+                Voltar
+              </button>
+
+
+              <button
+                type="button"
+                class="btn btn-outline-primary"
+                [disabled]="loading"
+                (click)="recarregar()"
+              >
+                <i
+                  class="bi bi-arrow-clockwise me-1"
+                ></i>
+                Atualizar
+              </button>
+
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="abrirCadastro()"
+              >
+                <i
+                  class="bi bi-plus-circle me-1"
+                ></i>
+                Nova Regra
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       CARDS DE RESUMO
+       ===================================================== -->
+
+  <div class="row g-3 mt-1">
+
+    <div class="col-6 col-xl-3">
+
+      <div class="summary-card">
+
+        <div class="summary-icon">
+          <i class="bi bi-list-check"></i>
+        </div>
+
+        <div>
+
+          <div class="summary-label">
+            Total de regras
+          </div>
+
+          <div class="summary-value">
+            {{ totalRegras }}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="col-6 col-xl-3">
+
+      <div class="summary-card">
+
+        <div
+          class="summary-icon
+                 summary-success"
+        >
+          <i class="bi bi-check-circle"></i>
+        </div>
+
+        <div>
+
+          <div class="summary-label">
+            Ativas
+          </div>
+
+          <div class="summary-value">
+            {{ totalAtivas }}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="col-6 col-xl-3">
+
+      <div class="summary-card">
+
+        <div
+          class="summary-icon
+                 summary-secondary"
+        >
+          <i class="bi bi-pause-circle"></i>
+        </div>
+
+        <div>
+
+          <div class="summary-label">
+            Inativas
+          </div>
+
+          <div class="summary-value">
+            {{ totalInativas }}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="col-6 col-xl-3">
+
+      <div class="summary-card">
+
+        <div
+          class="summary-icon
+                 summary-warning"
+        >
+          <i class="bi bi-droplet-half"></i>
+        </div>
+
+        <div>
+
+          <div class="summary-label">
+            Troca de óleo
+          </div>
+
+          <div class="summary-value">
+            {{ totalTrocaOleo }}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       FILTROS
+       ===================================================== -->
+
+  <div class="card filter-card mt-3">
+
+    <div class="card-body">
+
+      <div
+        class="d-flex
+               justify-content-between
+               align-items-center
+               mb-3"
+      >
+
+        <div class="filter-title">
+
+          <i
+            class="bi bi-funnel me-1"
+          ></i>
+
+          Filtros
+
+        </div>
+
+
+        <button
+          *ngIf="possuiFiltrosAplicados"
+          type="button"
+          class="btn btn-sm btn-link
+                 text-decoration-none"
+          (click)="limparFiltros()"
+        >
+          <i
+            class="bi bi-x-circle me-1"
+          ></i>
+          Limpar filtros
+        </button>
+
+      </div>
+
+
+      <div class="row g-2">
+
+        <div class="col-12 col-lg-5">
+
+          <label class="form-label">
+            Pesquisar
+          </label>
+
+          <div class="input-group">
+
+            <span class="input-group-text">
+              <i class="bi bi-search"></i>
+            </span>
+
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="filtroTexto"
+              (ngModelChange)="aoAlterarFiltros()"
+              placeholder="Descrição, serviço, peça, observação..."
+            />
+
+          </div>
+
+        </div>
+
+
+        <div class="col-12 col-md-4 col-lg-3">
+
+          <label class="form-label">
+            Grupo
+          </label>
+
+          <select
+            class="form-select"
+            [(ngModel)]="filtroGrupo"
+            (ngModelChange)="aoAlterarFiltros()"
+          >
+
+            <option value="">
+              Todos
+            </option>
+
+            <option
+              *ngFor="let grupo of gruposDisponiveis"
+              [value]="grupo"
+            >
+              {{ formatarGrupo(grupo) }}
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="col-6 col-md-4 col-lg-2">
+
+          <label class="form-label">
+            Tipo de óleo
+          </label>
+
+          <select
+            class="form-select"
+            [(ngModel)]="filtroOrigemOleo"
+            (ngModelChange)="aoAlterarFiltros()"
+          >
+
+            <option value="">
+              Todos
+            </option>
+
+            <option
+              *ngFor="let origem of origensOleo"
+              [value]="origem"
+            >
+              {{ formatarOrigemOleo(origem) }}
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="col-6 col-md-4 col-lg-2">
+
+          <label class="form-label">
+            Status
+          </label>
+
+          <select
+            class="form-select"
+            [(ngModel)]="filtroStatus"
+            (ngModelChange)="aoAlterarFiltros()"
+          >
+
+            <option value="">
+              Todos
+            </option>
+
+            <option value="ativo">
+              Ativas
+            </option>
+
+            <option value="inativo">
+              Inativas
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       MENSAGEM DE ERRO
+       ===================================================== -->
+
+  <div
+    *ngIf="errorMsg"
+    class="alert alert-danger mt-3 mb-0"
+  >
+
+    <i
+      class="bi bi-exclamation-triangle
+             me-1"
+    ></i>
+
+    {{ errorMsg }}
+
+  </div>
+
+
+  <!-- =====================================================
+       LISTAGEM
+       ===================================================== -->
+
+  <div class="card table-card mt-3">
+
+    <div class="card-header">
+
+      <div
+        class="d-flex
+               flex-column
+               flex-sm-row
+               justify-content-between
+               align-items-sm-center
+               gap-2"
+      >
+
+        <div>
+
+          <span class="fw-semibold">
+            Regras cadastradas
+          </span>
+
+          <span class="text-muted ms-1">
+            ({{ totalRegistrosFiltrados }})
+          </span>
+
+        </div>
+
+
+        <small class="text-muted">
+          As regras ativas são utilizadas
+          na previsão das próximas manutenções.
+        </small>
+
+      </div>
+
+    </div>
+
+
+    <!-- Loading -->
+
+    <div
+      *ngIf="loading"
+      class="loading-container"
+    >
+
+      <div
+        class="spinner-border
+               text-primary"
+        role="status"
+      >
+        <span class="visually-hidden">
+          Carregando...
+        </span>
+      </div>
+
+      <span>
+        Carregando regras de manutenção...
+      </span>
+
+    </div>
+
+
+    <!-- Tabela -->
+
+    <ng-container *ngIf="!loading">
+
+      <div class="table-responsive table-wrapper">
+
+        <table
+          class="table
+                 table-hover
+                 align-middle
+                 mb-0
+                 regras-table"
+        >
+
+          <thead>
+
+            <tr>
+
+              <th
+                class="sortable
+                       prioridade-column"
+                (click)="ordenarPor('prioridade')"
+              >
+                Prioridade
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('prioridade')"
+                ></i>
+              </th>
+
+
+              <th
+                class="sortable"
+                (click)="ordenarPor('grupoManutencao')"
+              >
+                Grupo
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('grupoManutencao')"
+                ></i>
+              </th>
+
+
+              <th
+                class="sortable descricao-column"
+                (click)="ordenarPor('descricao')"
+              >
+                Regra
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('descricao')"
+                ></i>
+              </th>
+
+
+              <th
+                class="sortable"
+                (click)="ordenarPor('servico')"
+              >
+                Serviço
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('servico')"
+                ></i>
+              </th>
+
+
+              <th
+                class="sortable"
+                (click)="ordenarPor('peca')"
+              >
+                Peça
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('peca')"
+                ></i>
+              </th>
+
+
+              <th
+                class="sortable"
+                (click)="ordenarPor('intervalo')"
+              >
+                Periodicidade
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('intervalo')"
+                ></i>
+              </th>
+
+
+              <th
+                class="sortable text-center"
+                (click)="ordenarPor('origemOleo')"
+              >
+                Óleo
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('origemOleo')"
+                ></i>
+              </th>
+
+
+              <th
+                class="sortable text-center"
+                (click)="ordenarPor('ativo')"
+              >
+                Status
+                <i
+                  class="bi ms-1"
+                  [ngClass]="iconeOrdenacao('ativo')"
+                ></i>
+              </th>
+
+
+              <th class="text-center actions-column">
+                Ações
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            <tr
+              *ngFor="
+                let regra of regrasPaginadas;
+                trackBy: trackByRegra
+              "
+              [class.regra-inativa]="!regraAtiva(regra)"
+            >
+
+              <!-- PRIORIDADE -->
+
+              <td>
+
+                <span class="priority-badge">
+                  {{ formatarPrioridade(regra.prioridade) }}
+                </span>
+
+              </td>
+
+
+              <!-- GRUPO -->
+
+              <td>
+
+                <span
+                  class="badge regra-grupo-badge"
+                  [ngClass]="classeGrupo(regra.grupoManutencao)"
+                >
+                  {{ formatarGrupo(regra.grupoManutencao) }}
+                </span>
+
+              </td>
+
+
+              <!-- REGRA -->
+
+              <td>
+
+                <div class="rule-description">
+                  {{ regra.descricao }}
+                </div>
+
+                <small
+                  *ngIf="regra.observacoes"
+                  class="text-muted table-observation"
+                >
+                  {{ regra.observacoes }}
+                </small>
+
+              </td>
+
+
+              <!-- SERVIÇO -->
+
+              <td>
+
+                <div
+                  *ngIf="servicoRegra(regra) !== '—';
+                         else semServico"
+                >
+                  <i
+                    class="bi bi-wrench-adjustable-circle
+                           me-1 text-primary"
+                  ></i>
+
+                  {{ servicoRegra(regra) }}
+
+                </div>
+
+                <ng-template #semServico>
+                  <span class="text-muted">
+                    —
+                  </span>
+                </ng-template>
+
+              </td>
+
+
+              <!-- PEÇA -->
+
+              <td>
+
+                <div
+                  *ngIf="pecaRegra(regra) !== '—';
+                         else semPeca"
+                >
+                  <i
+                    class="bi bi-gear
+                           me-1 text-secondary"
+                  ></i>
+
+                  {{ pecaRegra(regra) }}
+
+                </div>
+
+                <ng-template #semPeca>
+                  <span class="text-muted">
+                    —
+                  </span>
+                </ng-template>
+
+              </td>
+
+
+              <!-- INTERVALO -->
+
+              <td>
+
+                <div class="interval-cell">
+
+                  <div
+                    *ngIf="
+                      regra.intervaloKm
+                      && regra.intervaloKm > 0
+                    "
+                  >
+                    <i
+                      class="bi bi-speedometer2
+                             me-1"
+                    ></i>
+
+                    {{ formatarNumero(regra.intervaloKm) }}
+                    km
+                  </div>
+
+
+                  <div
+                    *ngIf="
+                      regra.intervaloDias
+                      && regra.intervaloDias > 0
+                    "
+                  >
+                    <i
+                      class="bi bi-calendar3
+                             me-1"
+                    ></i>
+
+                    {{ formatarNumero(regra.intervaloDias) }}
+                    dias
+                  </div>
+
+
+                  <span
+                    *ngIf="
+                      !regra.intervaloKm
+                      && !regra.intervaloDias
+                    "
+                    class="text-muted"
+                  >
+                    —
+                  </span>
+
+                </div>
+
+              </td>
+
+
+              <!-- ÓLEO -->
+
+              <td class="text-center">
+
+                <span
+                  *ngIf="regra.origemOleo"
+                  class="badge oil-badge"
+                >
+                  <i
+                    class="bi bi-droplet-half me-1"
+                  ></i>
+
+                  {{ formatarOrigemOleo(regra.origemOleo) }}
+                </span>
+
+
+                <span
+                  *ngIf="!regra.origemOleo"
+                  class="text-muted"
+                >
+                  —
+                </span>
+
+              </td>
+
+
+              <!-- STATUS -->
+
+              <td class="text-center">
+
+                <span
+                  *ngIf="regraAtiva(regra)"
+                  class="badge status-active"
+                >
+                  <i
+                    class="bi bi-check-circle me-1"
+                  ></i>
+                  Ativa
+                </span>
+
+
+                <span
+                  *ngIf="!regraAtiva(regra)"
+                  class="badge status-inactive"
+                >
+                  <i
+                    class="bi bi-pause-circle me-1"
+                  ></i>
+                  Inativa
+                </span>
+
+              </td>
+
+
+              <!-- AÇÕES -->
+
+              <td class="text-center">
+
+                <div
+                  class="d-inline-flex
+                         align-items-center
+                         gap-1"
+                >
+
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    title="Visualizar detalhes"
+                    (click)="abrirDetalhes(regra)"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+
+
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    title="Editar regra"
+                    (click)="abrirEdicao(regra)"
+                  >
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+
+
+                  <div class="btn-group">
+
+                    <button
+                      type="button"
+                      class="btn btn-sm
+                             btn-outline-secondary
+                             dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      title="Mais ações"
+                    >
+                      <i class="bi bi-three-dots"></i>
+                    </button>
+
+
+                    <ul
+                      class="dropdown-menu
+                             dropdown-menu-end
+                             action-menu"
+                    >
+
+                      <li
+                        *ngIf="!regraAtiva(regra)"
+                      >
+
+                        <button
+                          type="button"
+                          class="dropdown-item"
+                          (click)="
+                            abrirConfirmacao(
+                              regra,
+                              'ativar'
+                            )
+                          "
+                        >
+                          <i
+                            class="bi bi-check-circle
+                                   me-2
+                                   text-success"
+                          ></i>
+                          Ativar
+                        </button>
+
+                      </li>
+
+
+                      <li
+                        *ngIf="regraAtiva(regra)"
+                      >
+
+                        <button
+                          type="button"
+                          class="dropdown-item"
+                          (click)="
+                            abrirConfirmacao(
+                              regra,
+                              'desativar'
+                            )
+                          "
+                        >
+                          <i
+                            class="bi bi-pause-circle
+                                   me-2
+                                   text-warning"
+                          ></i>
+                          Desativar
+                        </button>
+
+                      </li>
+
+
+                      <li>
+                        <hr class="dropdown-divider">
+                      </li>
+
+
+                      <li>
+
+                        <button
+                          type="button"
+                          class="dropdown-item text-danger"
+                          (click)="
+                            abrirConfirmacao(
+                              regra,
+                              'excluir'
+                            )
+                          "
+                        >
+                          <i
+                            class="bi bi-trash
+                                   me-2"
+                          ></i>
+                          Remover
+                        </button>
+
+                      </li>
+
+                    </ul>
+
+                  </div>
+
+                </div>
+
+              </td>
+
+            </tr>
+
+
+            <!-- SEM RESULTADOS -->
+
+            <tr
+              *ngIf="
+                totalRegistrosFiltrados === 0
+              "
+            >
+
+              <td
+                colspan="9"
+                class="text-center
+                       py-5
+                       text-muted"
+              >
+
+                <i
+                  class="bi bi-search
+                         empty-icon"
+                ></i>
+
+                <div class="mt-2 fw-semibold">
+                  Nenhuma regra de manutenção encontrada.
+                </div>
+
+                <small
+                  *ngIf="possuiFiltrosAplicados"
+                >
+                  Tente alterar ou limpar os filtros aplicados.
+                </small>
+
+                <small
+                  *ngIf="!possuiFiltrosAplicados"
+                >
+                  Cadastre a primeira regra para iniciar
+                  a configuração das manutenções preventivas.
+                </small>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      <!-- =================================================
+           PAGINAÇÃO
+           ================================================= -->
+
+      <div
+        class="table-pagination-footer"
+        *ngIf="totalRegistrosFiltrados > 0"
+      >
+
+        <div class="pagination-info">
+
+          Mostrando
+
+          <strong>
+            {{ indiceInicialPagina }}
+          </strong>
+
+          a
+
+          <strong>
+            {{ indiceFinalPagina }}
+          </strong>
+
+          de
+
+          <strong>
+            {{ totalRegistrosFiltrados }}
+          </strong>
+
+          registro(s)
+
+        </div>
+
+
+        <div class="pagination-size">
+
+          <label for="itensPorPaginaRegras">
+            Exibir
+          </label>
+
+          <select
+            id="itensPorPaginaRegras"
+            class="form-select
+                   form-select-sm"
+            [(ngModel)]="itensPorPagina"
+            (ngModelChange)="aoAlterarItensPorPagina()"
+          >
+
+            <option
+              *ngFor="
+                let opcao of opcoesItensPorPagina
+              "
+              [ngValue]="opcao"
+            >
+              {{ opcao }}
+            </option>
+
+          </select>
+
+          <span>
+            por página
+          </span>
+
+        </div>
+
+
+        <div class="pagination-actions">
+
+          <button
+            type="button"
+            class="btn btn-sm
+                   btn-outline-secondary"
+            [disabled]="paginaAtual === 1"
+            (click)="paginaAnterior()"
+          >
+            <i class="bi bi-chevron-left"></i>
+            Anterior
+          </button>
+
+
+          <button
+            type="button"
+            class="btn btn-sm
+                   page-number-button"
+            *ngFor="
+              let pagina of paginasVisiveis()
+            "
+            [class.active-page]="pagina === paginaAtual"
+            (click)="irParaPagina(pagina)"
+          >
+            {{ pagina }}
+          </button>
+
+
+          <button
+            type="button"
+            class="btn btn-sm
+                   btn-outline-secondary"
+            [disabled]="paginaAtual === totalPaginas"
+            (click)="proximaPagina()"
+          >
+            Próxima
+            <i class="bi bi-chevron-right"></i>
+          </button>
+
+        </div>
+
+      </div>
+
+    </ng-container>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+     MODAL CADASTRO / EDIÇÃO
+     ======================================================= -->
+
+<div
+  class="modal fade"
+  id="modalRegraManutencao"
+  tabindex="-1"
+  aria-hidden="true"
+>
+
+  <div
+    class="modal-dialog
+           modal-xl
+           modal-dialog-centered
+           modal-dialog-scrollable"
+  >
+
+    <div class="modal-content">
+
+      <div class="modal-header modal-header-clinicar">
+
+        <div>
+
+          <h5 class="modal-title mb-0">
+
+            <i
+              class="bi me-1"
+              [ngClass]="
+                modoFormulario === 'cadastro'
+                  ? 'bi-plus-circle'
+                  : 'bi-pencil-square'
+              "
+            ></i>
+
+            {{
+              modoFormulario === 'cadastro'
+                ? 'Nova Regra de Manutenção'
+                : 'Editar Regra de Manutenção'
+            }}
+
+          </h5>
+
+
+          <small>
+
+            {{
+              modoFormulario === 'cadastro'
+                ? 'Defina quando a manutenção preventiva deverá ser recomendada.'
+                : 'Atualize os critérios da regra selecionada.'
+            }}
+
+          </small>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <!-- ERRO -->
+
+        <div
+          *ngIf="mensagemErroModal"
+          class="alert alert-danger"
+        >
+
+          <i
+            class="bi bi-exclamation-triangle
+                   me-1"
+          ></i>
+
+          {{ mensagemErroModal }}
+
+        </div>
+
+
+        <!-- =============================================
+             IDENTIFICAÇÃO
+             ============================================= -->
+
+        <div class="form-section">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-card-list me-1"
+            ></i>
+
+            Identificação da regra
+
+          </div>
+
+
+          <div class="row g-3">
+
+            <div class="col-12 col-lg-4">
+
+              <label class="form-label">
+                Grupo de manutenção
+                <span class="required">*</span>
+              </label>
+
+
+              <input
+                type="text"
+                class="form-control"
+                list="listaGruposManutencao"
+                [(ngModel)]="formulario.grupoManutencao"
+                (change)="ajustarGrupoFormulario()"
+                placeholder="Ex.: TROCA_OLEO"
+              />
+
+
+              <datalist id="listaGruposManutencao">
+
+                <option
+                  *ngFor="
+                    let grupo of gruposSugeridos
+                  "
+                  [value]="grupo"
+                >
+                  {{ formatarGrupo(grupo) }}
+                </option>
+
+              </datalist>
+
+
+              <small class="form-text text-muted">
+                O grupo identifica o tipo de manutenção
+                para evitar previsões duplicadas.
+              </small>
+
+            </div>
+
+
+            <div class="col-12 col-lg-6">
+
+              <label class="form-label">
+                Descrição
+                <span class="required">*</span>
+              </label>
+
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="formulario.descricao"
+                maxlength="200"
+                placeholder="Ex.: Troca de óleo sintético"
+              />
+
+            </div>
+
+
+            <div class="col-12 col-lg-2">
+
+              <label class="form-label">
+                Prioridade
+              </label>
+
+              <input
+                type="number"
+                class="form-control"
+                [(ngModel)]="formulario.prioridade"
+                min="0"
+                step="1"
+              />
+
+              <small class="form-text text-muted">
+                Menor = maior prioridade.
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+             VÍNCULOS
+             ============================================= -->
+
+        <div class="form-section">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-link-45deg me-1"
+            ></i>
+
+            Serviço e peça relacionados
+
+          </div>
+
+
+          <div
+            class="alert alert-info
+                   py-2"
+          >
+
+            <i
+              class="bi bi-info-circle me-1"
+            ></i>
+
+            Os vínculos ajudam o sistema a identificar
+            qual serviço e/ou peça deverá ser considerado
+            na manutenção prevista.
+
+          </div>
+
+
+          <div class="row g-3">
+
+            <div class="col-12 col-md-6">
+
+              <label class="form-label">
+                Serviço
+              </label>
+
+              <select
+                class="form-select"
+                [(ngModel)]="formulario.idServico"
+              >
+
+                <option [ngValue]="null">
+                  Nenhum serviço vinculado
+                </option>
+
+                <option
+                  *ngFor="let servico of servicos"
+                  [ngValue]="servico.id"
+                >
+                  {{ nomeServico(servico) }}
+
+                  <ng-container
+                    *ngIf="servico.categoria"
+                  >
+                    — {{ servico.categoria }}
+                  </ng-container>
+
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="col-12 col-md-6">
+
+              <label class="form-label">
+                Peça
+              </label>
+
+              <select
+                class="form-select"
+                [(ngModel)]="formulario.idPeca"
+              >
+
+                <option [ngValue]="null">
+                  Nenhuma peça vinculada
+                </option>
+
+                <option
+                  *ngFor="let peca of pecas"
+                  [ngValue]="peca.id"
+                >
+                  {{ nomePeca(peca) }}
+
+                  <ng-container
+                    *ngIf="peca.fabricante"
+                  >
+                    — {{ peca.fabricante }}
+                  </ng-container>
+
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+             PERIODICIDADE
+             ============================================= -->
+
+        <div class="form-section">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-speedometer2 me-1"
+            ></i>
+
+            Critérios de periodicidade
+
+          </div>
+
+
+          <div class="row g-3">
+
+            <div class="col-12 col-md-4">
+
+              <label class="form-label">
+                Intervalo em quilômetros
+              </label>
+
+              <div class="input-group">
+
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="formulario.intervaloKm"
+                  min="1"
+                  step="1"
+                  placeholder="Ex.: 10000"
+                />
+
+                <span class="input-group-text">
+                  km
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="col-12 col-md-4">
+
+              <label class="form-label">
+                Intervalo em dias
+              </label>
+
+              <div class="input-group">
+
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="formulario.intervaloDias"
+                  min="1"
+                  step="1"
+                  placeholder="Ex.: 365"
+                />
+
+                <span class="input-group-text">
+                  dias
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="col-12 col-md-4">
+
+              <label class="form-label">
+                Tipo/origem do óleo
+              </label>
+
+              <select
+                class="form-select"
+                [(ngModel)]="formulario.origemOleo"
+                [disabled]="!ehRegraTrocaOleoFormulario()"
+              >
+
+                <option [ngValue]="null">
+                  {{
+                    ehRegraTrocaOleoFormulario()
+                      ? 'Selecione'
+                      : 'Não se aplica'
+                  }}
+                </option>
+
+                <option
+                  *ngFor="let origem of origensOleo"
+                  [value]="origem"
+                >
+                  {{ formatarOrigemOleo(origem) }}
+                </option>
+
+              </select>
+
+
+              <small
+                *ngIf="ehRegraTrocaOleoFormulario()"
+                class="form-text text-muted"
+              >
+                Obrigatório para regras de troca de óleo.
+              </small>
+
+            </div>
+
+
+            <div class="col-12">
+
+              <div
+                class="periodicity-example"
+              >
+
+                <i
+                  class="bi bi-lightbulb me-1"
+                ></i>
+
+                <strong>
+                  Como funciona:
+                </strong>
+
+                se forem informados quilômetros e dias,
+                a manutenção poderá ser prevista quando
+                um dos critérios atingir o limite.
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+             COMPLEMENTOS
+             ============================================= -->
+
+        <div class="form-section mb-0">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-chat-left-text me-1"
+            ></i>
+
+            Complementos
+
+          </div>
+
+
+          <div class="row g-3">
+
+            <div class="col-12">
+
+              <label class="form-label">
+                Observações
+              </label>
+
+              <textarea
+                class="form-control"
+                rows="3"
+                maxlength="500"
+                [(ngModel)]="formulario.observacoes"
+                placeholder="Informações adicionais sobre esta regra..."
+              ></textarea>
+
+            </div>
+
+
+            <div class="col-12">
+
+              <div
+                class="status-switch-wrapper"
+              >
+
+                <div>
+
+                  <div class="fw-semibold">
+                    Regra ativa
+                  </div>
+
+                  <small class="text-muted">
+                    Somente regras ativas devem participar
+                    dos cálculos e previsões de manutenção.
+                  </small>
+
+                </div>
+
+
+                <div class="form-check form-switch">
+
+                  <input
+                    id="regraAtivaFormulario"
+                    class="form-check-input
+                           status-switch"
+                    type="checkbox"
+                    role="switch"
+                    [(ngModel)]="formulario.ativo"
+                  />
+
+                  <label
+                    class="form-check-label"
+                    for="regraAtivaFormulario"
+                  >
+                    {{
+                      formulario.ativo
+                        ? 'Ativa'
+                        : 'Inativa'
+                    }}
+                  </label>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          [disabled]="salvando"
+        >
+          Cancelar
+        </button>
+
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="salvando"
+          (click)="salvar()"
+        >
+
+          <span
+            *ngIf="salvando"
+            class="spinner-border
+                   spinner-border-sm
+                   me-1"
+          ></span>
+
+          <i
+            *ngIf="!salvando"
+            class="bi bi-check-circle me-1"
+          ></i>
+
+          {{
+            salvando
+              ? 'Salvando...'
+              : (
+                  modoFormulario === 'cadastro'
+                    ? 'Cadastrar Regra'
+                    : 'Salvar Alterações'
+                )
+          }}
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+     MODAL DETALHES
+     ======================================================= -->
+
+<div
+  class="modal fade"
+  id="modalDetalhesRegraManutencao"
+  tabindex="-1"
+  aria-hidden="true"
+>
+
+  <div
+    class="modal-dialog
+           modal-lg
+           modal-dialog-centered
+           modal-dialog-scrollable"
+  >
+
+    <div class="modal-content">
+
+      <div class="modal-header modal-header-clinicar">
+
+        <div>
+
+          <h5 class="modal-title mb-0">
+
+            <i
+              class="bi bi-eye me-1"
+            ></i>
+
+            Detalhes da Regra
+
+          </h5>
+
+          <small>
+            Critérios utilizados na manutenção preventiva.
+          </small>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+
+      </div>
+
+
+      <div
+        class="modal-body"
+        *ngIf="regraDetalhe"
+      >
+
+        <div class="details-card">
+
+          <div
+            class="d-flex
+                   flex-wrap
+                   justify-content-between
+                   align-items-start
+                   gap-2"
+          >
+
+            <div>
+
+              <div class="details-label">
+                Descrição
+              </div>
+
+              <div class="details-main-value">
+                {{ regraDetalhe.descricao }}
+              </div>
+
+            </div>
+
+
+            <span
+              *ngIf="regraAtiva(regraDetalhe)"
+              class="badge status-active"
+            >
+              <i
+                class="bi bi-check-circle me-1"
+              ></i>
+              Ativa
+            </span>
+
+
+            <span
+              *ngIf="!regraAtiva(regraDetalhe)"
+              class="badge status-inactive"
+            >
+              <i
+                class="bi bi-pause-circle me-1"
+              ></i>
+              Inativa
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="row g-3 mt-1">
+
+          <div class="col-12 col-md-6">
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Grupo
+              </div>
+
+              <span
+                class="badge regra-grupo-badge"
+                [ngClass]="
+                  classeGrupo(
+                    regraDetalhe.grupoManutencao
+                  )
+                "
+              >
+                {{
+                  formatarGrupo(
+                    regraDetalhe.grupoManutencao
+                  )
+                }}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="col-12 col-md-6">
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Prioridade
+              </div>
+
+              <div class="details-value">
+                {{
+                  formatarPrioridade(
+                    regraDetalhe.prioridade
+                  )
+                }}
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="col-12 col-md-6">
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Serviço vinculado
+              </div>
+
+              <div class="details-value">
+
+                <i
+                  class="bi bi-wrench-adjustable-circle
+                         me-1
+                         text-primary"
+                ></i>
+
+                {{ servicoRegra(regraDetalhe) }}
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="col-12 col-md-6">
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Peça vinculada
+              </div>
+
+              <div class="details-value">
+
+                <i
+                  class="bi bi-gear
+                         me-1
+                         text-secondary"
+                ></i>
+
+                {{ pecaRegra(regraDetalhe) }}
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="col-12 col-md-4">
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Intervalo em KM
+              </div>
+
+              <div class="details-value">
+
+                {{
+                  regraDetalhe.intervaloKm
+                    ? (
+                        formatarNumero(
+                          regraDetalhe.intervaloKm
+                        ) + ' km'
+                      )
+                    : '—'
+                }}
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="col-12 col-md-4">
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Intervalo em dias
+              </div>
+
+              <div class="details-value">
+
+                {{
+                  regraDetalhe.intervaloDias
+                    ? (
+                        formatarNumero(
+                          regraDetalhe.intervaloDias
+                        ) + ' dias'
+                      )
+                    : '—'
+                }}
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="col-12 col-md-4">
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Tipo/origem do óleo
+              </div>
+
+              <div class="details-value">
+
+                {{
+                  formatarOrigemOleo(
+                    regraDetalhe.origemOleo
+                  )
+                }}
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="col-12"
+            *ngIf="regraDetalhe.observacoes"
+          >
+
+            <div class="details-card">
+
+              <div class="details-label">
+                Observações
+              </div>
+
+              <div class="details-text">
+                {{ regraDetalhe.observacoes }}
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="col-12 col-md-6"
+            *ngIf="regraDetalhe.criadoEm"
+          >
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Criada em
+              </div>
+
+              <div class="details-value">
+                {{
+                  formatarDataHora(
+                    regraDetalhe.criadoEm
+                  )
+                }}
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="col-12 col-md-6"
+            *ngIf="regraDetalhe.atualizadoEm"
+          >
+
+            <div class="details-card h-100">
+
+              <div class="details-label">
+                Última atualização
+              </div>
+
+              <div class="details-value">
+                {{
+                  formatarDataHora(
+                    regraDetalhe.atualizadoEm
+                  )
+                }}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+        >
+          Fechar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+     MODAL CONFIRMAÇÃO
+     ======================================================= -->
+
+<div
+  class="modal fade"
+  id="modalConfirmacaoRegraManutencao"
+  tabindex="-1"
+  aria-hidden="true"
+>
+
+  <div
+    class="modal-dialog
+           modal-dialog-centered"
+  >
+
+    <div class="modal-content">
+
+      <div class="modal-header modal-header-clinicar">
+
+        <h5 class="modal-title">
+
+          <i
+            class="bi me-1"
+            [ngClass]="iconeConfirmacao"
+          ></i>
+
+          {{ tituloConfirmacao }}
+
+        </h5>
+
+
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <div class="confirmation-content">
+
+          <div
+            class="confirmation-icon"
+            [class.confirmation-danger]="
+              tipoConfirmacao === 'excluir'
+            "
+          >
+
+            <i
+              class="bi"
+              [ngClass]="iconeConfirmacao"
+            ></i>
+
+          </div>
+
+
+          <div>
+
+            <div class="fw-semibold mb-1">
+              {{ mensagemConfirmacao }}
+            </div>
+
+
+            <small
+              class="text-muted"
+              *ngIf="regraAcao"
+            >
+              Grupo:
+              {{
+                formatarGrupo(
+                  regraAcao.grupoManutencao
+                )
+              }}
+            </small>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+
+
+        <button
+          type="button"
+          class="btn"
+          [ngClass]="{
+            'btn-success':
+              tipoConfirmacao === 'ativar',
+
+            'btn-warning':
+              tipoConfirmacao === 'desativar',
+
+            'btn-danger':
+              tipoConfirmacao === 'excluir'
+          }"
+          (click)="confirmarAcao()"
+        >
+
+          <i
+            class="bi me-1"
+            [ngClass]="iconeConfirmacao"
+          ></i>
+
+          Confirmar
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

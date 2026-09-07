@@ -1,9 +1,15 @@
 package com.clinicar.backend.mapper;
 
 import com.clinicar.backend.dto.AtendimentoResponse;
-import com.clinicar.backend.model.*;
+import com.clinicar.backend.model.Agendamento;
+import com.clinicar.backend.model.Atendimento;
+import com.clinicar.backend.model.Fornecedor;
+import com.clinicar.backend.model.Servico;
+import com.clinicar.backend.model.Usuario;
+import com.clinicar.backend.model.Veiculo;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Component
@@ -86,17 +92,17 @@ public class AtendimentoMapper {
         response.setObservacoesInternas(atendimento.getObservacoesInternas());
         response.setRecomendacoesCliente(atendimento.getRecomendacoesCliente());
 
-        response.setNecessitaRetorno(atendimento.getNecessitaRetorno());
+        response.setNecessitaRetorno(valorBooleanoComDefault(atendimento.getNecessitaRetorno(), false));
         response.setDataRetornoSugerida(atendimento.getDataRetornoSugerida());
         response.setGarantiaDias(atendimento.getGarantiaDias());
 
-        response.setValorMaoObra(atendimento.getValorMaoObra());
-        response.setValorPecas(atendimento.getValorPecas());
-        response.setValorTerceiros(atendimento.getValorTerceiros());
-        response.setDesconto(atendimento.getDesconto());
-        response.setValorTotal(atendimento.getValorTotal());
+        response.setValorMaoObra(valorOuZero(atendimento.getValorMaoObra()));
+        response.setValorPecas(valorOuZero(atendimento.getValorPecas()));
+        response.setValorTerceiros(valorOuZero(atendimento.getValorTerceiros()));
+        response.setDesconto(valorOuZero(atendimento.getDesconto()));
+        response.setValorTotal(valorOuZero(atendimento.getValorTotal()));
 
-        response.setAprovado(atendimento.getAprovado());
+        response.setAprovado(valorBooleanoComDefault(atendimento.getAprovado(), false));
         response.setAprovadoEm(atendimento.getAprovadoEm());
 
         response.setFinalizadoEm(atendimento.getFinalizadoEm());
@@ -105,7 +111,7 @@ public class AtendimentoMapper {
         response.setMotivoCancelamento(atendimento.getMotivoCancelamento());
 
         response.setOsPdfGeradaEm(atendimento.getOsPdfGeradaEm());
-        response.setOsEnviadaEmail(atendimento.getOsEnviadaEmail());
+        response.setOsEnviadaEmail(valorBooleanoComDefault(atendimento.getOsEnviadaEmail(), false));
         response.setOsEnviadaEmailEm(atendimento.getOsEnviadaEmailEm());
         response.setOsEmailDestino(atendimento.getOsEmailDestino());
         response.setOsUltimoErro(atendimento.getOsUltimoErro());
@@ -113,21 +119,28 @@ public class AtendimentoMapper {
         response.setCriadoEm(atendimento.getCriadoEm());
         response.setAtualizadoEm(atendimento.getAtualizadoEm());
 
-        response.setEstoqueBaixado(atendimento.getEstoqueBaixado());
-
-        response.setEstoqueBaixadoEm(
-            atendimento.getEstoqueBaixadoEm() != null
-                ? atendimento.getEstoqueBaixadoEm().toString()
-                : null
-        );
+        response.setEstoqueBaixado(valorBooleanoComDefault(atendimento.getEstoqueBaixado(), false));
+        response.setEstoqueBaixadoEm(atendimento.getEstoqueBaixadoEm());
 
         return response;
     }
 
     public List<AtendimentoResponse> toResponseList(List<Atendimento> atendimentos) {
+        if (atendimentos == null || atendimentos.isEmpty()) {
+            return List.of();
+        }
+
         return atendimentos
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private BigDecimal valorOuZero(BigDecimal valor) {
+        return valor != null ? valor : BigDecimal.ZERO;
+    }
+
+    private Boolean valorBooleanoComDefault(Boolean valor, boolean padrao) {
+        return valor != null ? valor : padrao;
     }
 }

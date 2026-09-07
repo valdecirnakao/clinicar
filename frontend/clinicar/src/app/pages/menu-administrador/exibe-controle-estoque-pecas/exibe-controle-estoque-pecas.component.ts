@@ -204,19 +204,33 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
     const localSelecionado = this.normalizarTexto(this.filtroLocal);
 
     const filtrados = this.todos.filter(item => {
-      const status = (item.statusEstoque || '').toUpperCase();
+      const statusCalculado = this.statusCalculadoEstoque(item);
+      const statusOriginal = (item.statusEstoque || '').toUpperCase().trim();
 
-      const atendeStatus = !statusSelecionado || status === statusSelecionado;
-      const atendeLocal = !localSelecionado || this.normalizarTexto(item.nomeLocalEstoque) === localSelecionado;
+      const atendeStatus = !statusSelecionado
+        || statusCalculado === statusSelecionado
+        || statusOriginal === statusSelecionado;
 
-      const atendeTexto = !texto ||
-        this.normalizarTexto(item.nomePeca).includes(texto) ||
-        this.normalizarTexto(item.fabricantePeca).includes(texto) ||
-        this.normalizarTexto(item.modeloPeca).includes(texto) ||
-        this.normalizarTexto(item.nomeLocalEstoque).includes(texto) ||
-        this.normalizarTexto(item.localizacaoFisica).includes(texto) ||
-        this.normalizarTexto(item.statusEstoque).includes(texto) ||
-        this.onlyDigits(item.idPeca).includes(textoNumerico);
+      const atendeLocal = !localSelecionado
+        || this.normalizarTexto(item.nomeLocalEstoque) === localSelecionado;
+
+      const textoItem = [
+        item.nomePeca,
+        item.fabricantePeca,
+        item.modeloPeca,
+        item.nomeLocalEstoque,
+        item.localizacaoFisica,
+        item.statusEstoque,
+        statusCalculado,
+        this.formatarStatus(statusCalculado),
+        this.quantidadeAtualEstoque(item),
+        this.quantidadeReservadaEstoque(item),
+        this.quantidadeDisponivelEstoque(item)
+      ].join(' ');
+
+      const atendeTexto = !texto
+        || this.normalizarTexto(textoItem).includes(texto)
+        || (!!textoNumerico && this.onlyDigits(item.idPeca).includes(textoNumerico));
 
       return atendeStatus && atendeLocal && atendeTexto;
     });
@@ -225,14 +239,16 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
     this.ajustarPaginaAtual();
   }
 
+
   private atualizarResumo(): void {
     this.resumo.total = this.todos.length;
-    this.resumo.normal = this.todos.filter(e => e.statusEstoque === 'NORMAL').length;
-    this.resumo.atencao = this.todos.filter(e => e.statusEstoque === 'ATENCAO').length;
-    this.resumo.critico = this.todos.filter(e => e.statusEstoque === 'CRITICO').length;
-    this.resumo.zerado = this.todos.filter(e => e.statusEstoque === 'ZERADO').length;
+    this.resumo.normal = this.todos.filter(e => this.statusCalculadoEstoque(e) === 'NORMAL').length;
+    this.resumo.atencao = this.todos.filter(e => this.statusCalculadoEstoque(e) === 'ATENCAO').length;
+    this.resumo.critico = this.todos.filter(e => this.statusCalculadoEstoque(e) === 'CRITICO').length;
+    this.resumo.zerado = this.todos.filter(e => this.statusCalculadoEstoque(e) === 'ZERADO').length;
     this.resumo.alertasAbertos = this.alertasAbertos.length;
   }
+
 
   get locaisDisponiveisFiltro(): string[] {
     return Array.from(
@@ -303,6 +319,33 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
   get progressoEdicaoEstoque(): number {
     return this.calcularProgressoEstoque(this.edit, false);
+  }
+
+  get totalNormal(): number {
+    return this.estoques.filter(item =>
+      this.statusCalculadoEstoque(item) === 'NORMAL'
+    ).length;
+  }
+
+
+  get totalAtencao(): number {
+    return this.estoques.filter(item =>
+      this.statusCalculadoEstoque(item) === 'ATENCAO'
+    ).length;
+  }
+
+
+  get totalCritico(): number {
+    return this.estoques.filter(item =>
+      this.statusCalculadoEstoque(item) === 'CRITICO'
+    ).length;
+  }
+
+
+  get totalZerado(): number {
+    return this.estoques.filter(item =>
+      this.statusCalculadoEstoque(item) === 'ZERADO'
+    ).length;
   }
 
   aoAlterarFiltros(): void {
@@ -433,22 +476,26 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   }
 
   saldoDisponivel(item: Partial<EstoquePeca>): number {
-    const atual = Number(this.converterQuantidadeParaBackend(item.quantidadeAtual));
-    const reservada = Number(this.converterQuantidadeParaBackend(item.quantidadeReservada));
-
-    return Math.max(0, atual - reservada);
+    return this.quantidadeDisponivelEstoque(item);
   }
 
-  percentualSaldoMinimo(item: Partial<EstoquePeca>): number {
-    const atual = Number(this.converterQuantidadeParaBackend(item.quantidadeAtual));
-    const minimo = Number(this.converterQuantidadeParaBackend(item.estoqueMinimo));
 
-    if (!minimo || minimo <= 0 || Number.isNaN(atual) || Number.isNaN(minimo)) {
+  percentualSaldoMinimo(item: Partial<EstoquePeca>): number {
+    const disponivel = this.quantidadeDisponivelEstoque(item);
+    const minimo = this.numeroEstoque(
+      (item as any)?.estoqueMinimo ??
+      (item as any)?.estoque_minimo ??
+      (item as any)?.minimo ??
+      0
+    );
+
+    if (!minimo || minimo <= 0 || Number.isNaN(disponivel) || Number.isNaN(minimo)) {
       return 100;
     }
 
-    return Math.max(0, Math.min(100, Math.round((atual / minimo) * 100)));
+    return Math.max(0, Math.min(100, Math.round((disponivel / minimo) * 100)));
   }
+
 
   estoqueCampoInvalido(model: Partial<EstoquePeca>, campo: string, validarPecaELocal = true): boolean {
     if (campo === 'idPeca') {
@@ -520,12 +567,25 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   }
 
   private valorOrdenacao(item: EstoquePeca, coluna: ColunaOrdenacaoEstoque): string | number {
-    if (coluna === 'quantidadeAtual' || coluna === 'quantidadeReservada' || coluna === 'estoqueMinimo' || coluna === 'custoMedio') {
-      return Number(this.converterQuantidadeParaBackend((item as any)[coluna])) || 0;
+    if (coluna === 'quantidadeAtual') {
+      return this.quantidadeAtualEstoque(item);
+    }
+
+    if (coluna === 'quantidadeReservada') {
+      return this.quantidadeReservadaEstoque(item);
+    }
+
+    if (coluna === 'estoqueMinimo' || coluna === 'custoMedio') {
+      return this.numeroEstoque((item as any)[coluna]);
+    }
+
+    if (coluna === 'statusEstoque') {
+      return this.statusCalculadoEstoque(item);
     }
 
     return this.normalizarTexto((item as any)[coluna]);
   }
+
 
   private calcularProgressoEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean): number {
     const verificacoes = [
@@ -725,10 +785,10 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
   }
 
   private validarRegrasNumericasEstoque(model: Partial<EstoquePeca>): string | null {
-    const atual = Number(this.converterQuantidadeParaBackend(model.quantidadeAtual));
-    const reservada = Number(this.converterQuantidadeParaBackend(model.quantidadeReservada));
-    const minimo = Number(this.converterQuantidadeParaBackend(model.estoqueMinimo));
-    const critico = Number(this.converterQuantidadeParaBackend(model.estoqueCritico));
+    const atual = this.quantidadeAtualEstoque(model);
+    const reservada = this.quantidadeReservadaEstoque(model);
+    const minimo = this.numeroEstoque((model as any).estoqueMinimo);
+    const critico = this.numeroEstoque((model as any).estoqueCritico);
 
     if (Number.isNaN(atual) || atual < 0) {
       return 'A quantidade atual não pode ser negativa.';
@@ -756,6 +816,7 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
     return null;
   }
+
 
   private validarReposicaoEstoque(model: Partial<EstoquePeca>): string | null {
     const minimo = Number(this.converterQuantidadeParaBackend(model.estoqueMinimo));
@@ -792,7 +853,7 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
       return true;
     }
 
-    const numero = Number(this.converterQuantidadeParaBackend(valor));
+    const numero = this.numeroEstoque(valor);
 
     if (Number.isNaN(numero)) {
       return true;
@@ -800,6 +861,7 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
     return permitirZero ? numero < 0 : numero <= 0;
   }
+
 
   private direcionarAbaErroEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean, modo: 'cadastro' | 'edicao'): void {
     let aba: AbaEstoque = 'identificacao';
@@ -1203,7 +1265,7 @@ motivoPadraoMovimentacao(): string {
       return 'Informe a quantidade da movimentação.';
     }
 
-    const quantidade = Number(this.converterQuantidadeParaBackend(this.movimento.quantidade));
+    const quantidade = this.numeroEstoque(this.movimento.quantidade);
 
     if (Number.isNaN(quantidade) || quantidade <= 0) {
       return 'A quantidade da movimentação deve ser maior que zero.';
@@ -1213,15 +1275,16 @@ motivoPadraoMovimentacao(): string {
       this.tipoMovimentacaoSelecionado === 'SAIDA' ||
       this.tipoMovimentacaoSelecionado === 'AJUSTE_SAIDA'
     ) {
-      const saldoAtual = Number(this.converterQuantidadeParaBackend(this.estoqueSelecionado?.quantidadeAtual));
+      const disponivel = this.quantidadeDisponivelEstoque(this.estoqueSelecionado);
 
-      if (quantidade > saldoAtual) {
+      if (quantidade > disponivel) {
         return 'A quantidade informada é maior que o saldo disponível.';
       }
     }
 
     return null;
   }
+
 
   private montarPayloadMovimentacao(): MovimentacaoEstoquePecaRequest {
   return {
@@ -1294,8 +1357,9 @@ motivoPadraoMovimentacao(): string {
       return '';
     }
 
-    return `${this.estoqueSelecionado.nomePeca} | Saldo atual: ${this.formatarQuantidade(this.estoqueSelecionado.quantidadeAtual, this.estoqueSelecionado.unidadePeca)}`;
+    return `${this.estoqueSelecionado.nomePeca} | Atual: ${this.formatarQuantidade(this.quantidadeAtualEstoque(this.estoqueSelecionado), this.unidadeEstoque(this.estoqueSelecionado))} | Reservada: ${this.formatarQuantidade(this.quantidadeReservadaEstoque(this.estoqueSelecionado), this.unidadeEstoque(this.estoqueSelecionado))} | Disponível: ${this.formatarQuantidade(this.quantidadeDisponivelEstoque(this.estoqueSelecionado), this.unidadeEstoque(this.estoqueSelecionado))}`;
   }
+
 
   exibirCampoValorUnitario(): boolean {
     return (
@@ -1403,15 +1467,7 @@ motivoPadraoMovimentacao(): string {
   // ======================================================
 
   formatarQuantidade(valor: any, unidade?: string | null): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return `0 ${unidade || 'un.'}`;
-    }
-
-    const numero = Number(valor);
-
-    if (Number.isNaN(numero)) {
-      return `${valor} ${unidade || 'un.'}`;
-    }
+    const numero = this.numeroEstoque(valor);
 
     const texto = numero.toLocaleString('pt-BR', {
       minimumFractionDigits: 0,
@@ -1421,22 +1477,16 @@ motivoPadraoMovimentacao(): string {
     return `${texto} ${unidade || 'un.'}`;
   }
 
+
   formatarQuantidadeSemUnidade(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '0';
-    }
-
-    const numero = Number(valor);
-
-    if (Number.isNaN(numero)) {
-      return valor.toString();
-    }
+    const numero = this.numeroEstoque(valor);
 
     return numero.toLocaleString('pt-BR', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 3
     });
   }
+
 
   formatarMoedaBR(valor: any): string {
     if (valor === null || valor === undefined || valor === '') {
@@ -1725,4 +1775,110 @@ motivoPadraoMovimentacao(): string {
 
     return mensagemPadrao;
   }
+
+  quantidadeAtualEstoque(item: any): number {
+    return this.numeroEstoque(
+      item?.quantidadeAtual ??
+      item?.quantidade_atual ??
+      item?.atual ??
+      0
+    );
+  }
+
+
+  quantidadeReservadaEstoque(item: any): number {
+    return this.numeroEstoque(
+      item?.quantidadeReservada ??
+      item?.quantidade_reservada ??
+      item?.reservada ??
+      0
+    );
+  }
+
+
+  quantidadeDisponivelEstoque(item: any): number {
+    const disponivelBackend = item?.quantidadeDisponivel
+      ?? item?.quantidade_disponivel
+      ?? item?.disponivel;
+
+    if (disponivelBackend !== null && disponivelBackend !== undefined && disponivelBackend !== '') {
+      return Math.max(0, this.numeroEstoque(disponivelBackend));
+    }
+
+    const atual = this.quantidadeAtualEstoque(item);
+    const reservada = this.quantidadeReservadaEstoque(item);
+
+    return Math.max(0, atual - reservada);
+  }
+
+
+  private numeroEstoque(valor: any): number {
+    if (valor === null || valor === undefined || valor === '') {
+      return 0;
+    }
+
+    if (typeof valor === 'number') {
+      return Number.isNaN(valor) ? 0 : valor;
+    }
+
+    let texto = String(valor)
+      .replace('R$', '')
+      .replace(/\s/g, '')
+      .trim();
+
+    if (/^-?\d+\.\d{1,4}$/.test(texto)) {
+      return Number(texto);
+    }
+
+    if (texto.includes(',')) {
+      texto = texto.replace(/\./g, '').replace(',', '.');
+    }
+
+    const numero = Number(texto);
+
+    return Number.isNaN(numero) ? 0 : numero;
+  }
+
+
+  unidadeEstoque(item: any): string {
+    return item?.unidadePeca
+      || item?.unidadeMedida
+      || item?.unidade_medida
+      || item?.unidade
+      || item?.peca?.unidade
+      || 'un.';
+  }
+
+  statusCalculadoEstoque(item: any): string {
+    const disponivel = this.quantidadeDisponivelEstoque(item);
+
+    const minimo = this.numeroEstoque(
+      item?.estoqueMinimo ??
+      item?.estoque_minimo ??
+      item?.minimo ??
+      0
+    );
+
+    const critico = this.numeroEstoque(
+      item?.estoqueCritico ??
+      item?.estoque_critico ??
+      item?.critico ??
+      0
+    );
+
+    if (disponivel <= 0) {
+      return 'ZERADO';
+    }
+
+    if (critico > 0 && disponivel <= critico) {
+      return 'CRITICO';
+    }
+
+    if (minimo > 0 && disponivel <= minimo) {
+      return 'ATENCAO';
+    }
+
+    return 'NORMAL';
+  }
+
 }

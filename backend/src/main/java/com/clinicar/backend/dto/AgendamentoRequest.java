@@ -2,6 +2,8 @@ package com.clinicar.backend.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class AgendamentoRequest {
 
@@ -14,6 +16,8 @@ public class AgendamentoRequest {
 
     private String dataHoraInicio;
     private String dataHoraFim;
+
+    private Integer duracaoEstimadaMinutos;
 
     private String statusAgendamento;
 
@@ -32,4 +36,6 @@ public class AgendamentoRequest {
 
     private Boolean requerConfirmacao;
     private Boolean confirmado;
+
+    private List<AgendamentoPecaPrevistaRequest> pecasPrevistas;
 }

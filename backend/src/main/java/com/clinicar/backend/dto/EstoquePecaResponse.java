@@ -37,4 +37,6 @@ public class EstoquePecaResponse {
 
     private LocalDateTime criadoEm;
     private LocalDateTime atualizadoEm;
+
+    private BigDecimal quantidadeDisponivel;
 }

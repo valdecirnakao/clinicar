@@ -18,10 +18,14 @@ public interface EstoquePecaRepository extends JpaRepository<EstoquePeca, Long> 
     );
 
     List<EstoquePeca> findByAtivoTrue();
-
     List<EstoquePeca> findByStatusEstoqueIn(List<String> status);
+    List<EstoquePeca> findByPeca_Id(Long pecaId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EstoquePeca e WHERE e.id = :id")
     Optional<EstoquePeca> buscarComLockPorId(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from EstoquePeca e where e.id = :id")
+    Optional<EstoquePeca> buscarPorIdComLock(@Param("id") Long id);
 }

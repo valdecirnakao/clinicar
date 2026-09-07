@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,26 +19,26 @@ public class AtendimentoServicoExecutado {
     @Column(name = "id", columnDefinition = "BIGINT UNSIGNED")
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_atendimento", nullable = false, columnDefinition = "BIGINT UNSIGNED")
     private Atendimento atendimento;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_servico", nullable = false, columnDefinition = "BIGINT UNSIGNED")
     private Servico servico;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_responsavel", columnDefinition = "BIGINT UNSIGNED")
     private Usuario responsavel;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_fornecedor", columnDefinition = "BIGINT UNSIGNED")
     private Fornecedor fornecedor;
 
     @Column(name = "tipo_execucao", nullable = false, length = 30)
     private String tipoExecucao = "INTERNO";
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "quantidade", nullable = false, precision = 10, scale = 2)
     private BigDecimal quantidade = BigDecimal.ONE;
 
     @Column(name = "unidade_cobranca", length = 50)
@@ -55,7 +56,7 @@ public class AtendimentoServicoExecutado {
     @Column(name = "valor_terceiro", nullable = false, precision = 10, scale = 2)
     private BigDecimal valorTerceiro = BigDecimal.ZERO;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "desconto", nullable = false, precision = 10, scale = 2)
     private BigDecimal desconto = BigDecimal.ZERO;
 
     @Column(name = "valor_total", nullable = false, precision = 10, scale = 2)
@@ -64,7 +65,7 @@ public class AtendimentoServicoExecutado {
     @Column(name = "status_item", nullable = false, length = 30)
     private String statusItem = "EXECUTADO";
 
-    @Column(length = 500)
+    @Column(name = "observacoes", length = 500)
     private String observacoes;
 
     @Column(name = "criado_em", nullable = false)
@@ -94,38 +95,62 @@ public class AtendimentoServicoExecutado {
     private void aplicarDefaults() {
         if (tipoExecucao == null || tipoExecucao.isBlank()) {
             tipoExecucao = "INTERNO";
+        } else {
+            tipoExecucao = tipoExecucao.trim().toUpperCase();
         }
 
-        if (quantidade == null) {
+        if (quantidade == null || quantidade.compareTo(BigDecimal.ZERO) <= 0) {
             quantidade = BigDecimal.ONE;
         }
 
-        if (valorMaoObra == null) {
-            valorMaoObra = BigDecimal.ZERO;
-        }
+        quantidade = quantidade.setScale(2, RoundingMode.HALF_UP);
 
-        if (valorTerceiro == null) {
-            valorTerceiro = BigDecimal.ZERO;
-        }
+        valorMaoObra = valorOuZero(valorMaoObra);
+        valorTerceiro = valorOuZero(valorTerceiro);
+        desconto = valorOuZero(desconto);
 
-        if (desconto == null) {
-            desconto = BigDecimal.ZERO;
+        if ("INTERNO".equals(tipoExecucao)) {
+            valorTerceiro = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
 
         if (statusItem == null || statusItem.isBlank()) {
             statusItem = "EXECUTADO";
+        } else {
+            statusItem = statusItem.trim().toUpperCase();
         }
     }
 
     private void recalcularTotal() {
-        BigDecimal total = valorMaoObra
-                .add(valorTerceiro)
-                .subtract(desconto);
+        /*
+         * Regra:
+         * valorTotal = quantidade * valorMaoObra + valorTerceiro - desconto
+         *
+         * Exemplo:
+         * quantidade = 2
+         * valorMaoObra = 95.50
+         * valorTerceiro = 0
+         * desconto = 0
+         * total = 191.00
+         */
+        BigDecimal totalMaoObra = valorOuZero(quantidade)
+                .multiply(valorOuZero(valorMaoObra))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal total = totalMaoObra
+                .add(valorOuZero(valorTerceiro))
+                .subtract(valorOuZero(desconto))
+                .setScale(2, RoundingMode.HALF_UP);
 
         if (total.compareTo(BigDecimal.ZERO) < 0) {
-            total = BigDecimal.ZERO;
+            total = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
 
         valorTotal = total;
+    }
+
+    private BigDecimal valorOuZero(BigDecimal valor) {
+        return valor == null
+                ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                : valor.setScale(2, RoundingMode.HALF_UP);
     }
 }

@@ -82,5 +82,5 @@ public class AtendimentoResponse {
     private LocalDateTime atualizadoEm;
 
     private Boolean estoqueBaixado;
-    private String estoqueBaixadoEm;
+    private LocalDateTime estoqueBaixadoEm;
 }

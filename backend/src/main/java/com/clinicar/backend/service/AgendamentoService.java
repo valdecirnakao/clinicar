@@ -1,4 +1,5 @@
 package com.clinicar.backend.service;
+
 import com.clinicar.backend.dto.AgendamentoCancelamentoRequest;
 import com.clinicar.backend.dto.AgendamentoRequest;
 import com.clinicar.backend.model.*;
@@ -16,7 +17,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class AgendamentoService {
 
@@ -27,39 +30,33 @@ public class AgendamentoService {
             "CONCLUIDO",
             "CANCELADO",
             "NAO_COMPARECEU",
-            "REAGENDADO"
-    );
+            "REAGENDADO");
 
     private static final Set<String> CANAIS_VALIDOS = Set.of(
             "SISTEMA",
             "TELEFONE",
             "WHATSAPP",
             "PRESENCIAL",
-            "SITE"
-    );
+            "SITE");
 
     private static final Set<String> PRIORIDADES_VALIDAS = Set.of(
             "BAIXA",
             "NORMAL",
             "ALTA",
-            "URGENTE"
-    );
+            "URGENTE");
 
     private static final Set<String> TIPOS_ATENDIMENTO_VALIDOS = Set.of(
             "PRESENCIAL",
             "RETIRADA_ENTREGA",
-            "GUINCHO"
-    );
+            "GUINCHO");
 
     private static final Set<String> TIPOS_CLIENTE_VALIDOS = Set.of(
             "CLIENTE",
-            "ADMINISTRADOR"
-    );
+            "ADMINISTRADOR");
 
     private static final Set<String> TIPOS_RESPONSAVEL_VALIDOS = Set.of(
             "COLABORADOR",
-            "ADMINISTRADOR"
-    );
+            "ADMINISTRADOR");
 
     private final AtendimentoService atendimentoService;
     private final AgendamentoRepository agendamentoRepository;
@@ -67,16 +64,21 @@ public class AgendamentoService {
     private final VeiculoRepository veiculoRepository;
     private final ServicoRepository servicoRepository;
     private final FornecedorRepository fornecedorRepository;
+    private final AgendamentoPecaPrevistaService agendamentoPecaPrevistaService;
+    private final ReservaEstoqueAgendamentoService reservaEstoqueAgendamentoService;
 
     public AgendamentoService(
             AtendimentoService atendimentoService,
+            AgendamentoPecaPrevistaService agendamentoPecaPrevistaService,
+            ReservaEstoqueAgendamentoService reservaEstoqueAgendamentoService,
             AgendamentoRepository agendamentoRepository,
             UsuarioRepository usuarioRepository,
             VeiculoRepository veiculoRepository,
             ServicoRepository servicoRepository,
-            FornecedorRepository fornecedorRepository
-    ) {
+            FornecedorRepository fornecedorRepository) {
         this.atendimentoService = atendimentoService;
+        this.agendamentoPecaPrevistaService = agendamentoPecaPrevistaService;
+        this.reservaEstoqueAgendamentoService = reservaEstoqueAgendamentoService;
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.veiculoRepository = veiculoRepository;
@@ -87,15 +89,16 @@ public class AgendamentoService {
     public record ResultadoInicioAgendamento(
             Agendamento agendamento,
             Atendimento atendimento,
-            boolean atendimentoCriado
-    ) {
+            boolean atendimentoCriado) {
     }
-
-    
 
     @Transactional
     public Agendamento criar(AgendamentoRequest request) {
         validarRequest(request);
+
+        log.info(
+                "[AGENDAMENTO-SERVICE] Criando agendamento. Peças previstas recebidas: {}",
+                request.getPecasPrevistas() != null ? request.getPecasPrevistas().size() : 0);
 
         Agendamento agendamento = new Agendamento();
 
@@ -103,7 +106,21 @@ public class AgendamentoService {
 
         preencherDados(agendamento, request, null);
 
-        return agendamentoRepository.save(agendamento);
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+
+        agendamentoPecaPrevistaService.substituirPecasDoAgendamento(
+                salvo,
+                request.getPecasPrevistas());
+
+        log.info(
+                "[AGENDAMENTO-SERVICE] Peças previstas processadas para o agendamento ID {}.",
+                salvo.getId());
+
+        if ("CONFIRMADO".equalsIgnoreCase(salvo.getStatusAgendamento())) {
+            reservaEstoqueAgendamentoService.reservarPecasDoAgendamento(salvo.getId());
+        }
+
+        return salvo;
     }
 
     @Transactional
@@ -112,17 +129,46 @@ public class AgendamentoService {
 
         Agendamento agendamento = buscarPorId(id);
 
-        if ("CANCELADO".equals(agendamento.getStatusAgendamento())) {
+        if ("CANCELADO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
             throw new IllegalArgumentException("Não é possível alterar um agendamento cancelado.");
         }
 
-        if ("CONCLUIDO".equals(agendamento.getStatusAgendamento())) {
+        if ("CONCLUIDO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
             throw new IllegalArgumentException("Não é possível alterar um agendamento concluído.");
+        }
+
+        String statusAntes = agendamento.getStatusAgendamento();
+
+        boolean possuiaReservaAntes = statusPossuiReservaEstoque(statusAntes);
+
+        if (possuiaReservaAntes) {
+            reservaEstoqueAgendamentoService.liberarReservasDoAgendamento(id);
         }
 
         preencherDados(agendamento, request, id);
 
-        return agendamentoRepository.save(agendamento);
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+
+        log.info(
+                "[AGENDAMENTO] Atualizando agendamento ID {}. Peças previstas recebidas no PUT: {}",
+                salvo.getId(),
+                request.getPecasPrevistas() != null ? request.getPecasPrevistas().size() : null);
+
+        if (request.getPecasPrevistas() != null) {
+            agendamentoPecaPrevistaService.substituirPecasDoAgendamento(
+                    salvo,
+                    request.getPecasPrevistas());
+
+            log.info(
+                    "[AGENDAMENTO] Peças previstas substituídas para o agendamento ID {}.",
+                    salvo.getId());
+        }
+
+        if (statusPossuiReservaEstoque(salvo.getStatusAgendamento())) {
+            reservaEstoqueAgendamentoService.reservarPecasDoAgendamento(salvo.getId());
+        }
+
+        return salvo;
     }
 
     public List<Agendamento> listarTodos() {
@@ -190,13 +236,17 @@ public class AgendamentoService {
         agendamento.setConfirmado(true);
         agendamento.setConfirmadoEm(LocalDateTime.now());
 
-        return agendamentoRepository.save(agendamento);
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+
+        reservaEstoqueAgendamentoService.reservarPecasDoAgendamento(salvo.getId());
+
+        return salvo;
     }
 
     @Transactional
-public Agendamento iniciarAtendimento(Long id) {
-    return iniciarComAtendimento(id).agendamento();
-}
+    public Agendamento iniciarAtendimento(Long id) {
+        return iniciarComAtendimento(id).agendamento();
+    }
 
     @Transactional
     public Agendamento concluir(Long id) {
@@ -220,6 +270,8 @@ public Agendamento iniciarAtendimento(Long id) {
         if ("CONCLUIDO".equals(agendamento.getStatusAgendamento())) {
             throw new IllegalArgumentException("Não é possível cancelar um agendamento concluído.");
         }
+
+        reservaEstoqueAgendamentoService.liberarReservasDoAgendamento(id);
 
         agendamento.setStatusAgendamento("CANCELADO");
         agendamento.setCanceladoEm(LocalDateTime.now());
@@ -245,6 +297,7 @@ public Agendamento iniciarAtendimento(Long id) {
             throw new IllegalArgumentException("Agendamento cancelado não pode ser marcado como não compareceu.");
         }
 
+        reservaEstoqueAgendamentoService.liberarReservasDoAgendamento(id);
         agendamento.setStatusAgendamento("NAO_COMPARECEU");
 
         return agendamentoRepository.save(agendamento);
@@ -686,50 +739,59 @@ public Agendamento iniciarAtendimento(Long id) {
         if ("CONCLUIDO".equalsIgnoreCase(agendamento.getStatusAgendamento())) {
             throw new IllegalArgumentException("Não é possível excluir um agendamento concluído.");
         }
-
+        reservaEstoqueAgendamentoService.liberarReservasDoAgendamento(id);
+        agendamentoPecaPrevistaService.substituirPecasDoAgendamento(
+                agendamento,
+                List.of());
         agendamentoRepository.delete(agendamento);
     }
 
-@Transactional
-public ResultadoInicioAgendamento iniciarComAtendimento(Long id) {
-    if (id == null) {
-        throw new IllegalArgumentException("ID do agendamento não informado.");
+    @Transactional
+    public ResultadoInicioAgendamento iniciarComAtendimento(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID do agendamento não informado.");
+        }
+
+        Agendamento agendamento = buscarPorId(id);
+
+        String statusAtual = agendamento.getStatusAgendamento();
+
+        if ("CANCELADO".equalsIgnoreCase(statusAtual)) {
+            throw new IllegalArgumentException("Agendamento cancelado não pode ser iniciado.");
+        }
+
+        if ("CONCLUIDO".equalsIgnoreCase(statusAtual)) {
+            throw new IllegalArgumentException("Agendamento concluído não pode ser iniciado.");
+        }
+
+        if ("NAO_COMPARECEU".equalsIgnoreCase(statusAtual)) {
+            throw new IllegalArgumentException("Agendamento marcado como não compareceu não pode ser iniciado.");
+        }
+
+        LocalDateTime agora = LocalDateTime.now();
+
+        agendamento.setStatusAgendamento("EM_ATENDIMENTO");
+
+        if (!Boolean.TRUE.equals(agendamento.getConfirmado())) {
+            agendamento.setConfirmado(true);
+            agendamento.setConfirmadoEm(agora);
+        }
+
+        Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
+
+        reservaEstoqueAgendamentoService.reservarPecasDoAgendamento(
+                agendamentoSalvo.getId());
+        AtendimentoService.AtendimentoAutomaticoResultado resultadoAtendimento = atendimentoService
+                .criarAutomaticamenteAPartirDoAgendamento(agendamentoSalvo);
+
+        return new ResultadoInicioAgendamento(
+                agendamentoSalvo,
+                resultadoAtendimento.atendimento(),
+                resultadoAtendimento.criado());
     }
 
-    Agendamento agendamento = buscarPorId(id);
-
-    String statusAtual = agendamento.getStatusAgendamento();
-
-    if ("CANCELADO".equalsIgnoreCase(statusAtual)) {
-        throw new IllegalArgumentException("Agendamento cancelado não pode ser iniciado.");
+    private boolean statusPossuiReservaEstoque(String status) {
+        return "CONFIRMADO".equalsIgnoreCase(status)
+                || "EM_ATENDIMENTO".equalsIgnoreCase(status);
     }
-
-    if ("CONCLUIDO".equalsIgnoreCase(statusAtual)) {
-        throw new IllegalArgumentException("Agendamento concluído não pode ser iniciado.");
-    }
-
-    if ("NAO_COMPARECEU".equalsIgnoreCase(statusAtual)) {
-        throw new IllegalArgumentException("Agendamento marcado como não compareceu não pode ser iniciado.");
-    }
-
-    LocalDateTime agora = LocalDateTime.now();
-
-    agendamento.setStatusAgendamento("EM_ATENDIMENTO");
-
-    if (!Boolean.TRUE.equals(agendamento.getConfirmado())) {
-        agendamento.setConfirmado(true);
-        agendamento.setConfirmadoEm(agora);
-    }
-
-    Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
-
-    AtendimentoService.AtendimentoAutomaticoResultado resultadoAtendimento =
-            atendimentoService.criarAutomaticamenteAPartirDoAgendamento(agendamentoSalvo);
-
-    return new ResultadoInicioAgendamento(
-            agendamentoSalvo,
-            resultadoAtendimento.atendimento(),
-            resultadoAtendimento.criado()
-    );
-}
 }

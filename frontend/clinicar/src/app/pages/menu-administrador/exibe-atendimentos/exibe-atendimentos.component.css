@@ -458,9 +458,18 @@
   color: #35689b;
 }
 
+#modalEdicaoAtendimento {
+  z-index: 1055;
+}
+
 #modalPecasAtendimento,
 #modalServicosAtendimento {
   z-index: 1065;
+}
+
+#modalEdicaoAtendimento .modal-body {
+  max-height: 72vh;
+  overflow-y: auto;
 }
 
 .badge {
@@ -574,4 +583,69 @@
   .toolbar-actions .btn {
     flex: 1 1 100%;
   }
+}
+
+.clinicar-edit-progress {
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: .65rem .75rem;
+  color: #35689b;
+}
+
+.cadastro-progress {
+  height: 14px;
+  border-radius: 999px;
+  background-color: #eaf3ff;
+  border: 1px solid #d0e2f2;
+  overflow: hidden;
+}
+
+.cadastro-progress-bar {
+  background-color: #35689b;
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 14px;
+}
+
+.modal-footer-totais .btn-primary-clinicar:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.progress-percent-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 28px;
+  padding: 0 .65rem;
+  border-radius: 999px;
+  border: 1px solid #d0e2f2;
+  background: #ffffff;
+  color: #35689b;
+  font-weight: 800;
+  font-size: .82rem;
+  box-shadow: 0 1px 3px rgba(53,104,155,.08);
+}
+
+.pending-edit-note,
+.readonly-values-note {
+  border: 1px solid #d0e2f2;
+  border-radius: 8px;
+  background: #eef6ff;
+  color: #35689b;
+  padding: .45rem .65rem;
+  font-size: .84rem;
+}
+
+.readonly-values-note {
+  background: #f8fbff;
+}
+
+.item-modal .form-control[readonly],
+.item-modal .form-select:disabled {
+  color: #35689b;
+  background-color: #f8fbff;
+  opacity: 1;
 }

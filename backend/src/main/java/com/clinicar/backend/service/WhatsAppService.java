@@ -52,6 +52,17 @@ public class WhatsAppService {
     @Value("${meta.whatsapp.templates.alerta-atualiza-veiculo}")
     private String templateAlertaAtualizaVeiculo;
 
+    /*
+     * Campos usados apenas se o alerta de estoque for enviado por este service.
+     * Se o seu fluxo estiver usando WhatsappEstoqueService, estes campos podem
+     * permanecer configurados como compatibilidade, mas o envio real ficará no outro service.
+     */
+    @Value("${meta.whatsapp.templates.alerta-estoque:alerta_estoque_peca}")
+    private String templateAlertaEstoque;
+
+    @Value("${meta.whatsapp.estoque.telefone-administrador:}")
+    private String telefoneAdministradorEstoque;
+
     public String enviarMensagemTemplate(String telefoneDestino) {
         return enviarTemplateComParametros(
                 telefoneDestino,
@@ -73,43 +84,44 @@ public class WhatsAppService {
         );
     }
 
-public String enviarMensagemCadastroVeiculo(
-        String telefoneDestino,
-        String nomeUsuario,
-        String veiculoFabricante,
-        String veiculoModelo,
-        String veiculoPlaca
-) {
-    String nome = nomeNotificacao(nomeUsuario);
-    String fabricante = valorSeguro(veiculoFabricante, "");
-    String modelo = valorSeguro(veiculoModelo, "");
-    String placa = veiculoPlaca;
-    String descricaoVeiculo = (fabricante + " " + modelo).trim();
+    public String enviarMensagemCadastroVeiculo(
+            String telefoneDestino,
+            String nomeUsuario,
+            String veiculoFabricante,
+            String veiculoModelo,
+            String veiculoPlaca
+    ) {
+        String nome = nomeNotificacao(nomeUsuario);
+        String fabricante = valorSeguro(veiculoFabricante, "");
+        String modelo = valorSeguro(veiculoModelo, "");
+        String placa = formatarPlacaParaMensagem(veiculoPlaca);
 
-    if (descricaoVeiculo.isBlank()) {
-        descricaoVeiculo = "Veículo";
+        String descricaoVeiculo = (fabricante + " " + modelo).trim();
+
+        if (descricaoVeiculo.isBlank()) {
+            descricaoVeiculo = "Veículo";
+        }
+
+        if (!placa.isBlank()) {
+            descricaoVeiculo += " - Placa " + placa;
+        }
+
+        log.info(
+                "WhatsAppService cadastro veículo - {{1}}={}, {{2}}={}",
+                nome,
+                descricaoVeiculo
+        );
+
+        return enviarTemplateComParametros(
+                telefoneDestino,
+                templateCadastroVeiculoName,
+                templateLanguage,
+                List.of(
+                        nome,
+                        descricaoVeiculo
+                )
+        );
     }
-
-    if (placa != null && !placa.isBlank()) {
-        descricaoVeiculo += " - Placa " + placa.substring(0, 3) + "-" + placa.substring(3);
-    }
-
-    log.info(
-            "WhatsAppService cadastro veículo - {{1}}={}, {{2}}={}",
-            nome,
-            descricaoVeiculo
-    );
-
-    return enviarTemplateComParametros(
-            telefoneDestino,
-            templateCadastroVeiculoName,
-            templateLanguage,
-            List.of(
-                    nome,
-                    descricaoVeiculo
-            )
-    );
-}
 
     public void enviarAlertaAtualizacaoUsuario(
             String telefone,
@@ -175,6 +187,70 @@ public String enviarMensagemCadastroVeiculo(
                 List.of(
                         nomeFormatado,
                         descricaoVeiculo
+                )
+        );
+    }
+
+    /**
+     * Envia alerta de estoque usando o template configurado em application.properties.
+     *
+     * Importante:
+     * O template atual tem 6 variáveis:
+     * {{1}} nome do administrador
+     * {{2}} nome da peça
+     * {{3}} nível do alerta
+     * {{4}} saldo considerado no alerta
+     * {{5}} estoque mínimo
+     * {{6}} local
+     *
+     * Como a regra de alerta agora considera quantidade disponível, o parâmetro {{4}}
+     * recebe a quantidade disponível. Assim o WhatsApp reflete o motivo real do alerta.
+     */
+    public String enviarAlertaEstoque(
+            String nomePeca,
+            String nivelAlerta,
+            String quantidadeAtual,
+            String quantidadeReservada,
+            String quantidadeDisponivel,
+            String estoqueMinimo,
+            String local
+    ) {
+        if (telefoneAdministradorEstoque == null || telefoneAdministradorEstoque.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Telefone do administrador de estoque não configurado. "
+                            + "Configure meta.whatsapp.estoque.telefone-administrador."
+            );
+        }
+
+        String nomeAdministrador = "Administrador";
+        String pecaFormatada = valorSeguro(nomePeca, "Peça não identificada");
+        String nivelFormatado = valorSeguro(nivelAlerta, "ATENCAO");
+        String saldoDisponivelFormatado = valorSeguro(quantidadeDisponivel, valorSeguro(quantidadeAtual, "0"));
+        String minimoFormatado = valorSeguro(estoqueMinimo, "0");
+        String localFormatado = valorSeguro(local, "Local não informado");
+
+        log.info(
+                "WhatsAppService alerta estoque - peça={}, nível={}, atual={}, reservada={}, disponível={}, mínimo={}, local={}",
+                pecaFormatada,
+                nivelFormatado,
+                valorSeguro(quantidadeAtual, "0"),
+                valorSeguro(quantidadeReservada, "0"),
+                saldoDisponivelFormatado,
+                minimoFormatado,
+                localFormatado
+        );
+
+        return enviarTemplateComParametros(
+                telefoneAdministradorEstoque,
+                templateAlertaEstoque,
+                templateLanguage,
+                List.of(
+                        nomeAdministrador,
+                        pecaFormatada,
+                        nivelFormatado,
+                        saldoDisponivelFormatado,
+                        minimoFormatado,
+                        localFormatado
                 )
         );
     }
@@ -320,7 +396,18 @@ public String enviarMensagemCadastroVeiculo(
         return placa
                 .trim()
                 .toUpperCase()
-                .replaceAll("\\s+", "");
+                .replaceAll("\\s+", "")
+                .replaceAll("[^A-Z0-9]", "");
+    }
+
+    private String formatarPlacaParaMensagem(String placa) {
+        String normalizada = normalizarPlaca(placa);
+
+        if (normalizada.length() == 7) {
+            return normalizada.substring(0, 3) + "-" + normalizada.substring(3);
+        }
+
+        return normalizada;
     }
 
     private String valorSeguro(

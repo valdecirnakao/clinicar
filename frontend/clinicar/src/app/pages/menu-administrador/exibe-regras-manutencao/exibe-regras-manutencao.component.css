@@ -1,0 +1,886 @@
+/* =========================================================
+   PÁGINA
+   ========================================================= */
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.regras-page {
+  color: #35689b;
+  padding-bottom: 24px;
+}
+
+
+/* =========================================================
+   CABEÇALHO
+   ========================================================= */
+
+.clinicar-header-card {
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  background: #eef6ff;
+  color: #35689b;
+  box-shadow: 0 2px 6px rgba(53, 104, 155, 0.06);
+}
+
+.clinicar-header-card .card-body {
+  padding: 16px 18px;
+}
+
+.clinicar-header-card h4 {
+  color: #35689b;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.clinicar-header-card small {
+  color: #6d879e;
+}
+
+.header-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+  border: 1px solid #d0e2f2;
+
+  color: #35689b;
+  font-size: 1.25rem;
+}
+
+
+/* =========================================================
+   CARDS DE RESUMO
+   ========================================================= */
+
+.summary-card {
+  height: 100%;
+  min-height: 86px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  background: #ffffff;
+
+  border: 1px solid #dce8f3;
+  border-radius: 10px;
+
+  box-shadow: 0 2px 7px rgba(41, 72, 104, 0.05);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 4px 10px
+    rgba(41, 72, 104, 0.08);
+}
+
+.summary-icon {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #eef6ff;
+  color: #35689b;
+
+  font-size: 1.2rem;
+}
+
+.summary-success {
+  background: #edf8f1;
+  color: #287a49;
+}
+
+.summary-secondary {
+  background: #f2f4f6;
+  color: #697681;
+}
+
+.summary-warning {
+  background: #fff7e7;
+  color: #a36d14;
+}
+
+.summary-label {
+  color: #7b8996;
+  font-size: 0.78rem;
+  line-height: 1.15;
+}
+
+.summary-value {
+  margin-top: 2px;
+
+  color: #35689b;
+
+  font-size: 1.45rem;
+  font-weight: 700;
+
+  line-height: 1.15;
+}
+
+
+/* =========================================================
+   FILTROS
+   ========================================================= */
+
+.filter-card {
+  border: 1px solid #dce8f3;
+  border-radius: 10px;
+
+  box-shadow:
+    0 2px 7px
+    rgba(41, 72, 104, 0.04);
+}
+
+.filter-card .card-body {
+  padding: 14px 16px;
+}
+
+.filter-title {
+  color: #35689b;
+  font-weight: 600;
+}
+
+.form-label {
+  margin-bottom: 5px;
+
+  color: #4a657d;
+
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+  border-color: #cfdde9;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #81a9cc;
+
+  box-shadow:
+    0 0 0 0.18rem
+    rgba(53, 104, 155, 0.12);
+}
+
+.input-group-text {
+  color: #527997;
+  background: #f7fbff;
+}
+
+
+/* =========================================================
+   TABELA
+   ========================================================= */
+
+.table-card {
+  overflow: visible;
+
+  border: 1px solid #dce8f3;
+  border-radius: 10px;
+
+  box-shadow:
+    0 2px 7px
+    rgba(41, 72, 104, 0.05);
+}
+
+.table-card > .card-header {
+  padding: 12px 16px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e1ebf3;
+
+  color: #35689b;
+}
+
+.table-wrapper {
+  max-height: 55vh;
+
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.regras-table {
+  min-width: 1160px;
+
+  font-size: 0.84rem;
+
+  color: #3e5366;
+}
+
+.regras-table thead th {
+  position: sticky;
+  top: 0;
+
+  z-index: 5;
+
+  padding: 11px 10px;
+
+  border-bottom: 1px solid #d0e2f2;
+
+  background: #eef6ff;
+  color: #35689b;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.regras-table tbody td {
+  padding: 10px;
+
+  border-color: #edf2f6;
+
+  vertical-align: middle;
+}
+
+.regras-table tbody tr:hover td {
+  background: #f8fbfe;
+}
+
+.regra-inativa {
+  opacity: 0.72;
+}
+
+.regra-inativa td {
+  background: #fafafa;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background: #e4f1fc !important;
+}
+
+.prioridade-column {
+  width: 95px;
+  text-align: center;
+}
+
+.descricao-column {
+  min-width: 230px;
+}
+
+.actions-column {
+  width: 125px;
+}
+
+.rule-description {
+  color: #344f66;
+  font-weight: 600;
+
+  max-width: 300px;
+}
+
+.table-observation {
+  display: block;
+
+  margin-top: 2px;
+
+  max-width: 280px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.interval-cell {
+  min-width: 120px;
+
+  font-size: 0.8rem;
+}
+
+.interval-cell > div + div {
+  margin-top: 2px;
+}
+
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 34px;
+
+  padding: 4px 7px;
+
+  border: 1px solid #d4e4f2;
+  border-radius: 6px;
+
+  background: #f6faff;
+  color: #35689b;
+
+  font-weight: 600;
+}
+
+.regra-grupo-badge {
+  padding: 5px 8px;
+
+  border: 1px solid transparent;
+
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+.badge-grupo-oleo {
+  background: #edf5ff;
+  color: #2e69a0;
+
+  border-color: #cae0f4;
+}
+
+.badge-grupo-filtro {
+  background: #eef8f1;
+  color: #347451;
+
+  border-color: #cde8d7;
+}
+
+.badge-grupo-freio {
+  background: #fff4eb;
+  color: #9b5b24;
+
+  border-color: #f1d8c3;
+}
+
+.badge-grupo-outro {
+  background: #f3f3f6;
+  color: #616b76;
+
+  border-color: #dedfe4;
+}
+
+.oil-badge {
+  padding: 5px 8px;
+
+  background: #f2f0ff;
+  color: #5d51a3;
+
+  border: 1px solid #dad4f8;
+}
+
+.status-active {
+  padding: 5px 8px;
+
+  background: #eaf7ef;
+  color: #277849;
+
+  border: 1px solid #c5e7d2;
+}
+
+.status-inactive {
+  padding: 5px 8px;
+
+  background: #f1f3f5;
+  color: #687580;
+
+  border: 1px solid #dce0e4;
+}
+
+
+/* =========================================================
+   CARREGAMENTO / VAZIO
+   ========================================================= */
+
+.loading-container {
+  min-height: 180px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  color: #71889c;
+}
+
+.empty-icon {
+  font-size: 2rem;
+
+  color: #aac0d3;
+}
+
+
+/* =========================================================
+   PAGINAÇÃO
+   ========================================================= */
+
+.table-pagination-footer {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  flex-wrap: wrap;
+
+  padding: 10px 14px;
+
+  border-top: 1px solid #e1ebf3;
+
+  background: #fbfdff;
+}
+
+.pagination-info {
+  color: #708598;
+
+  font-size: 0.8rem;
+}
+
+.pagination-size {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  color: #708598;
+
+  font-size: 0.8rem;
+}
+
+.pagination-size .form-select {
+  width: 72px;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+}
+
+.page-number-button {
+  min-width: 32px;
+
+  color: #53738e;
+
+  background: #ffffff;
+
+  border: 1px solid #d3e0eb;
+}
+
+.page-number-button:hover {
+  color: #35689b;
+
+  background: #eef6ff;
+}
+
+.page-number-button.active-page {
+  color: #ffffff;
+
+  background: #35689b;
+
+  border-color: #35689b;
+}
+
+
+/* =========================================================
+   MENU DE AÇÕES
+   ========================================================= */
+
+.action-menu {
+  min-width: 155px;
+
+  border: 1px solid #dce6ee;
+
+  box-shadow:
+    0 6px 18px
+    rgba(38, 62, 83, 0.12);
+
+  font-size: 0.84rem;
+}
+
+.action-menu .dropdown-item {
+  padding: 7px 12px;
+}
+
+.action-menu .dropdown-item:active {
+  background: #35689b;
+}
+
+
+/* =========================================================
+   MODAIS
+   ========================================================= */
+
+.modal-content {
+  overflow: hidden;
+
+  border: 0;
+  border-radius: 12px;
+
+  box-shadow:
+    0 12px 38px
+    rgba(31, 53, 73, 0.24);
+}
+
+.modal-header-clinicar {
+  border-bottom: 0;
+
+  background: #35689b;
+  color: #ffffff;
+}
+
+.modal-header-clinicar small {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.82
+    );
+}
+
+.modal-body {
+  background: #fbfdff;
+}
+
+.modal-footer {
+  border-top: 1px solid #e2eaf1;
+
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   SEÇÕES DO FORMULÁRIO
+   ========================================================= */
+
+.form-section {
+  margin-bottom: 18px;
+  padding: 15px;
+
+  background: #ffffff;
+
+  border: 1px solid #dce8f3;
+  border-radius: 10px;
+}
+
+.section-title {
+  margin-bottom: 13px;
+  padding-bottom: 8px;
+
+  border-bottom: 1px solid #e8eff5;
+
+  color: #35689b;
+
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.required {
+  color: #c94a4a;
+}
+
+.form-text {
+  font-size: 0.72rem;
+}
+
+
+/* =========================================================
+   EXPLICAÇÃO DA PERIODICIDADE
+   ========================================================= */
+
+.periodicity-example {
+  padding: 10px 12px;
+
+  border: 1px solid #d8e7f3;
+  border-radius: 8px;
+
+  background: #f4f9fd;
+  color: #58758d;
+
+  font-size: 0.8rem;
+}
+
+
+/* =========================================================
+   STATUS SWITCH
+   ========================================================= */
+
+.status-switch-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 12px 14px;
+
+  border: 1px solid #dce8f3;
+  border-radius: 8px;
+
+  background: #f9fcff;
+}
+
+.status-switch {
+  width: 2.6rem;
+  height: 1.3rem;
+
+  cursor: pointer;
+}
+
+.status-switch:checked {
+  background-color: #35689b;
+  border-color: #35689b;
+}
+
+
+/* =========================================================
+   DETALHES
+   ========================================================= */
+
+.details-card {
+  padding: 13px 14px;
+
+  background: #ffffff;
+
+  border: 1px solid #dce8f3;
+  border-radius: 9px;
+}
+
+.details-label {
+  margin-bottom: 4px;
+
+  color: #8799a9;
+
+  font-size: 0.72rem;
+  font-weight: 600;
+
+  text-transform: uppercase;
+  letter-spacing: 0.025rem;
+}
+
+.details-main-value {
+  color: #35689b;
+
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.details-value {
+  color: #40596e;
+
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.details-text {
+  color: #566d80;
+
+  font-size: 0.88rem;
+
+  white-space: pre-wrap;
+}
+
+
+/* =========================================================
+   CONFIRMAÇÃO
+   ========================================================= */
+
+.confirmation-content {
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 5px;
+}
+
+.confirmation-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #fff4dd;
+  color: #a97619;
+
+  font-size: 1.35rem;
+}
+
+.confirmation-icon.confirmation-danger {
+  background: #fdecec;
+  color: #b84545;
+}
+
+
+/* =========================================================
+   BOTÕES
+   ========================================================= */
+
+.btn-primary {
+  background-color: #35689b;
+  border-color: #35689b;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #2c5a86;
+  border-color: #2c5a86;
+}
+
+.btn-outline-primary {
+  color: #35689b;
+  border-color: #7ea3c3;
+}
+
+.btn-outline-primary:hover {
+  color: #ffffff;
+
+  background: #35689b;
+  border-color: #35689b;
+}
+
+
+/* =========================================================
+   SCROLL
+   ========================================================= */
+
+.table-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: #f3f7fa;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+
+  background: #bdcedd;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #9fb8cc;
+}
+
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+@media (max-width: 991.98px) {
+
+  .table-wrapper {
+    max-height: none;
+  }
+
+  .table-pagination-footer {
+    justify-content: center;
+  }
+
+  .pagination-info {
+    width: 100%;
+
+    text-align: center;
+  }
+
+}
+
+
+@media (max-width: 767.98px) {
+
+  .clinicar-header-card .card-body {
+    padding: 14px;
+  }
+
+  .summary-card {
+    padding: 12px;
+  }
+
+  .summary-icon {
+    width: 37px;
+    height: 37px;
+
+    font-size: 1rem;
+  }
+
+  .summary-value {
+    font-size: 1.2rem;
+  }
+
+  .summary-label {
+    font-size: 0.7rem;
+  }
+
+  .status-switch-wrapper {
+    align-items: flex-start;
+    flex-direction: column;
+
+    gap: 10px;
+  }
+
+  .pagination-actions {
+    width: 100%;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+  }
+
+}
+
+
+@media (max-width: 575.98px) {
+
+  .header-icon {
+    width: 37px;
+    height: 37px;
+  }
+
+  .clinicar-header-card h4 {
+    font-size: 1.05rem;
+  }
+
+  .form-section {
+    padding: 12px;
+  }
+
+}

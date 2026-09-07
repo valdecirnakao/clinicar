@@ -55,6 +55,13 @@ export class ExibeAtendimentosComponent implements OnInit {
   pecasAtendimento: AtendimentoPeca[] = [];
   servicosAtendimento: AtendimentoServicoExecutado[] = [];
 
+  pecasAtendimentoOriginais: AtendimentoPeca[] = [];
+  servicosAtendimentoOriginais: AtendimentoServicoExecutado[] = [];
+  pecasAtendimentoRemovidasIds: number[] = [];
+  servicosAtendimentoRemovidosIds: number[] = [];
+  pecasAtendimentoAlteradasIds: number[] = [];
+  servicosAtendimentoAlteradosIds: number[] = [];
+
   pecasNovoAtendimento: AtendimentoPeca[] = [];
   servicosNovoAtendimento: AtendimentoServicoExecutado[] = [];
 
@@ -79,12 +86,20 @@ export class ExibeAtendimentosComponent implements OnInit {
   mensagemErro = '';
 
   mensagemErroModal = '';
+  mensagemErroEdicao = '';
+  carregandoModalEdicao = false;
+  sincronizandoServicoPrincipal = false;
+  edicaoItensAlterada = false;
+  salvandoEdicaoAtendimento = false;
+  etapaSalvamentoEdicao = '';
 
   abaNovoAtendimento: 'atendimento' | 'itens' | 'adicionais' = 'atendimento';
+  abaEdicaoAtendimento: 'resumo' | 'pecas' | 'servicos' = 'resumo';
 
   modoItensAtendimento: 'novo' | 'existente' = 'existente';
 
   modalCadastro: any;
+  modalEdicao: any;
   modalPecas: any;
   modalServicos: any;
   modalDetalhes: any;
@@ -421,6 +436,10 @@ export class ExibeAtendimentosComponent implements OnInit {
     this.abaNovoAtendimento = aba;
   }
 
+  trocarAbaEdicaoAtendimento(aba: 'resumo' | 'pecas' | 'servicos'): void {
+    this.abaEdicaoAtendimento = aba;
+  }
+
   abrirModalCadastro(): void {
     this.abaNovoAtendimento = 'atendimento';
     this.mensagemErroModal = '';
@@ -629,6 +648,390 @@ export class ExibeAtendimentosComponent implements OnInit {
     });
   }
 
+
+  abrirModalEdicao(item: Atendimento): void {
+    if (!item.id) return;
+
+    if (!this.podeEditarItensAtendimento(item)) {
+      alert('Os itens do atendimento só podem ser editados depois que o atendimento for iniciado e antes da aprovação.');
+      return;
+    }
+
+    this.abaEdicaoAtendimento = 'resumo';
+    this.mensagemErroEdicao = '';
+    this.carregandoModalEdicao = true;
+    this.sincronizandoServicoPrincipal = false;
+    this.edicaoItensAlterada = false;
+    this.salvandoEdicaoAtendimento = false;
+    this.etapaSalvamentoEdicao = '';
+    this.atendimentoSelecionado = item;
+    this.pecasAtendimento = [];
+    this.servicosAtendimento = [];
+    this.pecasAtendimentoOriginais = [];
+    this.servicosAtendimentoOriginais = [];
+    this.pecasAtendimentoRemovidasIds = [];
+    this.servicosAtendimentoRemovidosIds = [];
+    this.pecasAtendimentoAlteradasIds = [];
+    this.servicosAtendimentoAlteradosIds = [];
+    this.resetarPecaForm();
+    this.resetarServicoForm();
+
+    const el = document.getElementById('modalEdicaoAtendimento');
+
+    if (!el) {
+      console.error('Modal modalEdicaoAtendimento não encontrado.');
+      return;
+    }
+
+    this.modalEdicao = bootstrap.Modal.getOrCreateInstance(el, {
+      backdrop: 'static',
+      keyboard: false
+    });
+    this.modalEdicao.show();
+
+    forkJoin({
+      atendimento: this.service.buscarPorId(item.id),
+      pecas: this.service.listarPecasAtendimento(item.id).pipe(catchError((erro) => {
+        console.warn('Não foi possível carregar peças do atendimento:', erro);
+        return of([] as AtendimentoPeca[]);
+      })),
+      servicos: this.service.listarServicosAtendimento(item.id).pipe(catchError((erro) => {
+        console.warn('Não foi possível carregar serviços do atendimento:', erro);
+        return of([] as AtendimentoServicoExecutado[]);
+      }))
+    }).subscribe({
+      next: (resposta) => {
+        this.atendimentoSelecionado = resposta.atendimento;
+
+        const pecas = resposta.pecas ?? [];
+        const servicos = resposta.servicos ?? [];
+
+        this.pecasAtendimentoOriginais = this.clonarPecasAtendimento(pecas);
+        this.servicosAtendimentoOriginais = this.clonarServicosAtendimento(servicos);
+
+        this.pecasAtendimento = this.clonarPecasAtendimento(pecas);
+        this.servicosAtendimento = this.clonarServicosAtendimento(servicos);
+
+        this.pecasAtendimentoRemovidasIds = [];
+        this.servicosAtendimentoRemovidosIds = [];
+        this.pecasAtendimentoAlteradasIds = [];
+        this.servicosAtendimentoAlteradosIds = [];
+        this.edicaoItensAlterada = false;
+        this.carregandoModalEdicao = false;
+
+        this.garantirServicoPrincipalDoAtendimento();
+        this.recalcularTotaisEdicaoAtendimento();
+      },
+      error: (erro) => {
+        this.mensagemErroEdicao = this.extrairMensagemErro(erro, 'Erro ao carregar dados do atendimento para edição.');
+        this.carregandoModalEdicao = false;
+      }
+    });
+  }
+
+
+  progressoEdicaoAtendimento(): number {
+    return this.carregandoModalEdicao || !this.atendimentoSelecionado ? 0 : 100;
+  }
+
+  rotuloProgressoEdicaoAtendimento(): string {
+    if (this.carregandoModalEdicao || !this.atendimentoSelecionado) {
+      return 'Carregando dados do atendimento...';
+    }
+
+    if (this.haAlteracoesEdicaoItens()) {
+      return 'Atendimento com alterações pendentes para salvar.';
+    }
+
+    return 'Atendimento pronto para edição.';
+  }
+
+  haAlteracoesEdicaoItens(): boolean {
+    return this.edicaoItensAlterada;
+  }
+
+  quantidadeAlteracoesEdicaoItens(): number {
+    const novasPecas = this.pecasAtendimento.filter(item => Number(item.id) < 0).length;
+    const novosServicos = this.servicosAtendimento.filter(item => Number(item.id) < 0).length;
+
+    return novasPecas
+      + novosServicos
+      + this.pecasAtendimentoRemovidasIds.length
+      + this.servicosAtendimentoRemovidosIds.length;
+  }
+
+  textoBotaoSalvarPeca(): string {
+    if (this.modoItensAtendimento === 'novo') {
+      return this.editandoPecaId !== null ? 'Atualizar Peça' : 'Adicionar Peça';
+    }
+
+    return this.editandoPecaId !== null ? 'Atualizar na edição' : 'Adicionar à edição';
+  }
+
+  textoBotaoSalvarServico(): string {
+    if (this.modoItensAtendimento === 'novo') {
+      return this.editandoServicoId !== null ? 'Atualizar Serviço' : 'Adicionar Serviço';
+    }
+
+    return 'Adicionar à edição';
+  }
+
+  fecharModalEdicaoAtendimento(): void {
+    if (this.salvandoEdicaoAtendimento) {
+      return;
+    }
+
+    if (this.haAlteracoesEdicaoItens()) {
+      const confirmar = confirm('Existem alterações não salvas em peças ou serviços. Deseja descartar as alterações?');
+
+      if (!confirmar) {
+        return;
+      }
+    }
+
+    this.limparEstadoEdicaoAtendimento();
+    this.modalEdicao?.hide();
+  }
+
+  salvarEdicaoAtendimento(): void {
+    const atendimentoId = this.atendimentoSelecionado?.id;
+
+    if (!atendimentoId) {
+      return;
+    }
+
+    if (!this.podeEditarItensAtendimento(this.atendimentoSelecionado)) {
+      alert('As peças e os serviços só podem ser salvos após o atendimento ser iniciado e antes da aprovação.');
+      return;
+    }
+
+    if (!this.haAlteracoesEdicaoItens()) {
+      this.modalEdicao?.hide();
+      return;
+    }
+
+    const erroValidacaoItens = this.validarItensEdicaoAntesDeSalvar();
+
+    if (erroValidacaoItens) {
+      this.mensagemErroEdicao = erroValidacaoItens;
+      alert(erroValidacaoItens);
+      return;
+    }
+
+    const requisicoes = this.montarRequisicoesSalvarEdicao(atendimentoId);
+
+    if (requisicoes.length === 0) {
+      this.edicaoItensAlterada = false;
+      this.modalEdicao?.hide();
+      return;
+    }
+
+    this.salvandoEdicaoAtendimento = true;
+    this.etapaSalvamentoEdicao = 'Preparando gravação das alterações...';
+    this.mensagemErroEdicao = '';
+
+    from(requisicoes).pipe(
+      concatMap((requisicao, indice) => {
+        this.etapaSalvamentoEdicao = `Salvando alteração ${indice + 1} de ${requisicoes.length}...`;
+        return requisicao;
+      }),
+      toArray()
+    ).subscribe({
+      next: () => {
+        this.etapaSalvamentoEdicao = 'Atualizando dados do atendimento...';
+        this.edicaoItensAlterada = false;
+        this.pecasAtendimentoRemovidasIds = [];
+        this.servicosAtendimentoRemovidosIds = [];
+        this.pecasAtendimentoAlteradasIds = [];
+        this.servicosAtendimentoAlteradosIds = [];
+        this.salvandoEdicaoAtendimento = false;
+        this.etapaSalvamentoEdicao = '';
+
+        this.carregarPecasDoAtendimento(atendimentoId);
+        this.carregarServicosDoAtendimento(atendimentoId);
+        this.atualizarAtendimentoSelecionado(atendimentoId);
+        this.recarregar();
+        this.modalEdicao?.hide();
+        alert('Edição do atendimento salva com sucesso.');
+      },
+      error: (erro) => {
+        this.salvandoEdicaoAtendimento = false;
+        this.etapaSalvamentoEdicao = '';
+        this.mensagemErroEdicao = this.extrairMensagemErro(erro, 'Erro ao salvar alterações do atendimento.');
+      }
+    });
+  }
+
+  private montarRequisicoesSalvarEdicao(atendimentoId: number): Observable<any>[] {
+    const requisicoes: Observable<any>[] = [];
+
+    this.pecasAtendimentoRemovidasIds
+      .filter(id => Number(id) > 0)
+      .forEach(id => requisicoes.push(
+        this.service.removerPecaAtendimento(atendimentoId, Number(id))
+      ));
+
+    this.servicosAtendimentoRemovidosIds
+      .filter(id => Number(id) > 0)
+      .forEach(id => requisicoes.push(
+        this.service.removerServicoAtendimento(atendimentoId, Number(id))
+      ));
+
+    this.pecasAtendimento.forEach(item => {
+      const payload = this.montarPayloadPecaSalva(item);
+      const idItem = Number(item.id);
+
+      if (idItem > 0 && this.pecasAtendimentoAlteradasIds.includes(idItem)) {
+        requisicoes.push(this.service.atualizarPecaAtendimento(atendimentoId, idItem, payload));
+      }
+
+      if (!(idItem > 0)) {
+        requisicoes.push(this.service.adicionarPecaAtendimento(atendimentoId, payload));
+      }
+    });
+
+    this.servicosAtendimento.forEach(item => {
+      const payload = this.montarPayloadServicoSalvo(item);
+      const idItem = Number(item.id);
+
+      if (idItem > 0 && this.servicosAtendimentoAlteradosIds.includes(idItem)) {
+        requisicoes.push(this.service.atualizarServicoAtendimento(atendimentoId, idItem, payload));
+      }
+
+      if (!(idItem > 0)) {
+        requisicoes.push(this.service.adicionarServicoAtendimento(atendimentoId, payload));
+      }
+    });
+
+    return requisicoes;
+  }
+
+  private validarItensEdicaoAntesDeSalvar(): string | null {
+    for (const item of this.pecasAtendimento) {
+      const idItem = Number(item.id);
+
+      if (idItem > 0 && this.pecasAtendimentoRemovidasIds.includes(idItem)) {
+        continue;
+      }
+
+      const idPeca = Number(item.idPeca);
+      const quantidade = this.moedaParaNumero(item.quantidade);
+
+      if (!idPeca) {
+        return 'Existe uma peça utilizada sem peça vinculada. Remova o item ou selecione uma peça válida.';
+      }
+
+      if (quantidade <= 0) {
+        return `Informe uma quantidade maior que zero para a peça ${item.nomePeca || item.descricaoPeca || idPeca}.`;
+      }
+    }
+
+    for (const item of this.servicosAtendimento) {
+      const idItem = Number(item.id);
+
+      if (idItem > 0 && this.servicosAtendimentoRemovidosIds.includes(idItem)) {
+        continue;
+      }
+
+      const idServico = Number(item.idServico);
+      const tipoExecucao = String(item.tipoExecucao || 'INTERNO').trim().toUpperCase();
+
+      if (!idServico) {
+        return 'Existe um serviço executado sem serviço vinculado. Remova o item ou selecione um serviço válido.';
+      }
+
+      if (!['INTERNO', 'TERCEIRO', 'MISTO'].includes(tipoExecucao)) {
+        return `Tipo de execução inválido para o serviço ${item.nomeServico || idServico}.`;
+      }
+
+      if ((tipoExecucao === 'TERCEIRO' || tipoExecucao === 'MISTO') && !Number(item.idFornecedor)) {
+        return `Informe o fornecedor para o serviço ${item.nomeServico || idServico}, pois o tipo de execução é ${tipoExecucao}.`;
+      }
+    }
+
+    return null;
+  }
+
+  private limparEstadoEdicaoAtendimento(): void {
+    this.pecasAtendimento = [];
+    this.servicosAtendimento = [];
+    this.pecasAtendimentoOriginais = [];
+    this.servicosAtendimentoOriginais = [];
+    this.pecasAtendimentoRemovidasIds = [];
+    this.servicosAtendimentoRemovidosIds = [];
+    this.pecasAtendimentoAlteradasIds = [];
+    this.servicosAtendimentoAlteradosIds = [];
+    this.edicaoItensAlterada = false;
+    this.salvandoEdicaoAtendimento = false;
+    this.etapaSalvamentoEdicao = '';
+    this.mensagemErroEdicao = '';
+    this.resetarPecaForm();
+    this.resetarServicoForm();
+  }
+
+  abrirModalPecasEdicao(): void {
+    if (!this.atendimentoSelecionado?.id) return;
+
+    if (!this.podeEditarItensAtendimento(this.atendimentoSelecionado)) {
+      alert('As peças só podem ser alteradas depois que o atendimento for iniciado e antes da aprovação.');
+      return;
+    }
+
+    this.modoItensAtendimento = 'existente';
+    this.resetarPecaForm();
+
+    const el = document.getElementById('modalPecasAtendimento');
+
+    if (!el) return;
+
+    this.modalPecas = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalPecas.show();
+  }
+
+  abrirModalEditarPecaEdicao(item: AtendimentoPeca): void {
+    if (!this.atendimentoSelecionado?.id) return;
+
+    if (!this.podeEditarItensAtendimento(this.atendimentoSelecionado)) {
+      alert('As peças só podem ser alteradas depois que o atendimento for iniciado e antes da aprovação.');
+      return;
+    }
+
+    this.modoItensAtendimento = 'existente';
+    this.editarPecaAtendimento(item);
+
+    const el = document.getElementById('modalPecasAtendimento');
+
+    if (!el) return;
+
+    this.modalPecas = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalPecas.show();
+  }
+
+  abrirModalServicosEdicao(): void {
+    if (!this.atendimentoSelecionado?.id) return;
+
+    if (!this.podeEditarItensAtendimento(this.atendimentoSelecionado)) {
+      alert('Os serviços só podem ser alterados depois que o atendimento for iniciado e antes da aprovação.');
+      return;
+    }
+
+    this.modoItensAtendimento = 'existente';
+    this.resetarServicoForm();
+
+    const el = document.getElementById('modalServicosAtendimento');
+
+    if (!el) return;
+
+    this.modalServicos = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalServicos.show();
+  }
+
+  abrirModalEditarServicoEdicao(item: AtendimentoServicoExecutado): void {
+    if (!item) return;
+
+    alert('Em atendimentos já iniciados, serviços podem ser incluídos ou removidos. Para alterar um serviço, remova o item e adicione o serviço correto novamente.');
+  }
+
   abrirModalPecasNovoAtendimento(): void {
     this.modoItensAtendimento = 'novo';
     this.atendimentoSelecionado = null;
@@ -715,15 +1118,239 @@ export class ExibeAtendimentosComponent implements OnInit {
 
   private carregarPecasDoAtendimento(atendimentoId: number): void {
     this.service.listarPecasAtendimento(atendimentoId).subscribe({
-      next: (lista) => this.pecasAtendimento = lista ?? [],
+      next: (lista) => {
+        const pecas = lista ?? [];
+        this.pecasAtendimentoOriginais = this.clonarPecasAtendimento(pecas);
+        this.pecasAtendimento = this.clonarPecasAtendimento(pecas);
+        this.pecasAtendimentoRemovidasIds = [];
+        this.pecasAtendimentoAlteradasIds = [];
+        this.recalcularTotaisEdicaoAtendimento();
+      },
       error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao carregar peças do atendimento.'))
     });
   }
 
   private carregarServicosDoAtendimento(atendimentoId: number): void {
     this.service.listarServicosAtendimento(atendimentoId).subscribe({
-      next: (lista) => this.servicosAtendimento = lista ?? [],
+      next: (lista) => {
+        const servicos = lista ?? [];
+        this.servicosAtendimentoOriginais = this.clonarServicosAtendimento(servicos);
+        this.servicosAtendimento = this.clonarServicosAtendimento(servicos);
+        this.servicosAtendimentoRemovidosIds = [];
+        this.servicosAtendimentoAlteradosIds = [];
+        this.garantirServicoPrincipalDoAtendimento();
+        this.recalcularTotaisEdicaoAtendimento();
+      },
       error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao carregar serviços do atendimento.'))
+    });
+  }
+
+  sincronizarServicoPrincipalDoAtendimento(): void {
+    this.garantirServicoPrincipalDoAtendimento(true);
+  }
+
+  podeSincronizarServicoPrincipalDoAtendimento(): boolean {
+    const atendimento = this.atendimentoSelecionado;
+
+    if (!atendimento?.id || !atendimento.idServico) {
+      return false;
+    }
+
+    if (!this.podeEditarItensAtendimento(atendimento)) {
+      return false;
+    }
+
+    return !this.existeServicoPrincipalRegistrado(atendimento);
+  }
+
+  private garantirServicoPrincipalDoAtendimento(exibirMensagemErro = false): void {
+    const atendimento = this.atendimentoSelecionado;
+
+    if (!this.podeSincronizarServicoPrincipalDoAtendimento()) {
+      return;
+    }
+
+    if (!atendimento?.id) {
+      return;
+    }
+
+    const servicoVisual = this.montarServicoPrincipalVisualDoAtendimento(atendimento);
+
+    if (!servicoVisual?.idServico) {
+      if (exibirMensagemErro) {
+        alert('Não foi possível montar o serviço principal do atendimento.');
+      }
+
+      return;
+    }
+
+    this.servicosAtendimento = [...this.servicosAtendimento, servicoVisual];
+    this.registrarAlteracaoEdicaoItens();
+
+    if (exibirMensagemErro) {
+      alert('Serviço principal do agendamento incluído na edição. Clique em Salvar edição para gravar no atendimento.');
+    }
+  }
+
+  private montarServicoPrincipalVisualDoAtendimento(
+    atendimento: Atendimento
+  ): AtendimentoServicoExecutado {
+    const payload = this.montarPayloadServicoPrincipalDoAtendimento(atendimento);
+
+    const servicoCatalogo = this.servicosCatalogo.find(servico =>
+      Number(servico.id) === Number(atendimento.idServico)
+    );
+
+    const valorMaoObra = this.moedaParaNumero(payload.valorMaoObra);
+    const valorTerceiro = this.moedaParaNumero(payload.valorTerceiro);
+    const desconto = this.moedaParaNumero(payload.desconto);
+    const quantidade = Math.max(this.moedaParaNumero(payload.quantidade) || 1, 0);
+    const valorTotal = Math.max((quantidade * valorMaoObra) + valorTerceiro - desconto, 0);
+
+    return {
+      id: this.tempServicoId--,
+      idAtendimento: atendimento.id,
+      codigoAtendimento: atendimento.codigoAtendimento,
+      idServico: payload.idServico ?? atendimento.idServico,
+      nomeServico: atendimento.nomeServico || this.textoCampo(servicoCatalogo, ['nome', 'descricao'], 'Serviço principal'),
+      descricaoServico: atendimento.nomeServico || this.textoCampo(servicoCatalogo, ['descricao', 'nome'], 'Serviço principal'),
+      categoriaServico: atendimento.categoriaServico || this.textoCampo(servicoCatalogo, ['categoria'], ''),
+      idResponsavel: payload.idResponsavel ?? atendimento.idResponsavel ?? null,
+      nomeResponsavel: atendimento.nomeResponsavel || this.nomeResponsavelPorId(payload.idResponsavel),
+      idFornecedor: payload.idFornecedor ?? null,
+      razaoSocialFornecedor: payload.idFornecedor ? this.nomeFornecedorPorId(payload.idFornecedor) : '',
+      tipoExecucao: payload.tipoExecucao || atendimento.tipoExecucao || 'INTERNO',
+      quantidade: payload.quantidade || '1',
+      unidadeCobranca: payload.unidadeCobranca || 'SERVICO',
+      tempoExecucao: payload.tempoExecucao || null,
+      unidadeTempo: payload.unidadeTempo || 'HORA',
+      valorMaoObra,
+      valorTerceiro,
+      desconto,
+      valorTotal,
+      statusItem: payload.statusItem || 'EXECUTADO',
+      observacoes: payload.observacoes || 'Serviço principal importado do agendamento.'
+    };
+  }
+
+  private existeServicoPrincipalRegistrado(atendimento: Atendimento): boolean {
+    const idServicoAtendimento = Number(atendimento.idServico);
+
+    if (!idServicoAtendimento) {
+      return true;
+    }
+
+    return this.servicosAtendimento.some(item =>
+      Number(item.idServico) === idServicoAtendimento
+      && this.normalizar(item.statusItem) !== 'cancelado'
+    );
+  }
+
+  private montarPayloadServicoPrincipalDoAtendimento(
+    atendimento: Atendimento
+  ): AtendimentoServicoExecutadoRequest {
+    const servicoCatalogo = this.servicosCatalogo.find(servico =>
+      Number(servico.id) === Number(atendimento.idServico)
+    );
+
+    const tipoExecucao = atendimento.tipoExecucao || this.tipoExecucaoPadraoDoServico(servicoCatalogo);
+    const tipoNormalizado = String(tipoExecucao || 'INTERNO').toUpperCase();
+
+    const valorBaseCatalogo = servicoCatalogo
+      ? this.moedaParaNumero(this.valorPadraoServico(servicoCatalogo))
+      : 0;
+
+    /*
+     * Regra profissional:
+     * o valor do serviço executado não deve ser reaproveitado do total do atendimento,
+     * porque atendimento.valorMaoObra pode representar a soma de vários serviços.
+     * Para o item do serviço, usamos o valor-base do cadastro do serviço.
+     */
+    const valorBase = valorBaseCatalogo;
+
+    const valorTerceiro = tipoNormalizado === 'TERCEIRO'
+      ? valorBase
+      : 0;
+
+    const valorMaoObra = tipoNormalizado === 'TERCEIRO'
+      ? 0
+      : valorBase;
+
+    const idFornecedorServico = servicoCatalogo
+      ? this.idFornecedorObjeto(servicoCatalogo)
+      : undefined;
+
+    const idFornecedor = tipoNormalizado === 'INTERNO'
+      ? null
+      : (atendimento.idFornecedor ?? idFornecedorServico ?? null);
+
+    const unidadeCobranca = servicoCatalogo
+      ? this.textoCampo(servicoCatalogo, ['unidadeCobranca', 'unidade_cobranca'], 'SERVICO')
+      : 'SERVICO';
+
+    const tempoExecucao = servicoCatalogo
+      ? this.textoCampo(
+          servicoCatalogo,
+          ['duracaoEstimada', 'duracao_estimada', 'duracao', 'tempoExecucao', 'tempo_execucao', 'tempoEstimado', 'tempo_estimado'],
+          ''
+        )
+      : '';
+
+    const unidadeTempo = servicoCatalogo
+      ? this.textoCampo(servicoCatalogo, ['unidadeDuracao', 'unidade_duracao', 'unidadeTempo', 'unidade_tempo'], 'HORA')
+      : 'HORA';
+
+    return {
+      idServico: atendimento.idServico ? Number(atendimento.idServico) : null,
+      idResponsavel: atendimento.idResponsavel ? Number(atendimento.idResponsavel) : null,
+      idFornecedor,
+      tipoExecucao: tipoNormalizado,
+      quantidade: '1',
+      unidadeCobranca,
+      tempoExecucao,
+      unidadeTempo,
+      valorMaoObra: valorMaoObra.toFixed(2),
+      valorTerceiro: valorTerceiro.toFixed(2),
+      desconto: '0.00',
+      statusItem: 'EXECUTADO',
+      observacoes: atendimento.codigoAgendamento
+        ? `Serviço principal importado do agendamento ${atendimento.codigoAgendamento}.`
+        : 'Serviço principal importado do atendimento.'
+    };
+  }
+
+  private tipoExecucaoPadraoDoServico(servico?: ServicoResumo): string {
+    if (!servico) {
+      return 'INTERNO';
+    }
+
+    const tipoPrestador = this.normalizar(
+      this.textoCampo(servico, ['tipoPrestador', 'tipoDoPrestador', 'tipo_do_prestador', 'tipo_prestador'], '')
+    );
+
+    if (tipoPrestador.includes('terceir')) {
+      return 'TERCEIRO';
+    }
+
+    if (tipoPrestador.includes('misto')) {
+      return 'MISTO';
+    }
+
+    return 'INTERNO';
+  }
+
+  private atualizarAtendimentoSelecionado(atendimentoId: number): void {
+    this.service.buscarPorId(atendimentoId).subscribe({
+      next: (atendimento) => {
+        this.atendimentoSelecionado = atendimento;
+
+        const indice = this.atendimentos.findIndex(item => Number(item.id) === Number(atendimentoId));
+
+        if (indice >= 0) {
+          this.atendimentos[indice] = atendimento;
+        }
+      },
+      error: (erro) => console.warn('Não foi possível atualizar resumo do atendimento:', erro)
     });
   }
 
@@ -883,22 +1510,22 @@ export class ExibeAtendimentosComponent implements OnInit {
 
     if (!this.atendimentoSelecionado?.id) return;
 
-    const atendimentoId = this.atendimentoSelecionado.id;
-    const payload = this.montarPayloadPecaSalva(payloadVisual);
+    if (this.editandoPecaId !== null) {
+      this.pecasAtendimento = this.pecasAtendimento.map(item =>
+        item.id === this.editandoPecaId ? payloadVisual : item
+      );
 
-    const request$ = this.editandoPecaId !== null
-      ? this.service.atualizarPecaAtendimento(atendimentoId, this.editandoPecaId, payload)
-      : this.service.adicionarPecaAtendimento(atendimentoId, payload);
+      if (Number(this.editandoPecaId) > 0 && !this.pecasAtendimentoAlteradasIds.includes(Number(this.editandoPecaId))) {
+        this.pecasAtendimentoAlteradasIds.push(Number(this.editandoPecaId));
+      }
+    } else {
+      this.pecasAtendimento = [...this.pecasAtendimento, payloadVisual];
+    }
 
-    request$.subscribe({
-      next: () => {
-        this.resetarPecaForm();
-        this.carregarPecasDoAtendimento(atendimentoId);
-        this.recarregar();
-        this.modalPecas?.hide();
-      },
-      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao salvar peça do atendimento.'))
-    });
+    this.registrarAlteracaoEdicaoItens();
+    this.modalPecas?.hide();
+    this.resetarPecaForm();
+    this.abaEdicaoAtendimento = 'pecas';
   }
 
 
@@ -1142,15 +1769,13 @@ private extrairLista<T>(resposta: any): T[] {
 
     if (!this.atendimentoSelecionado?.id) return;
 
-    const atendimentoId = this.atendimentoSelecionado.id;
+    if (Number(item.id) > 0 && !this.pecasAtendimentoRemovidasIds.includes(Number(item.id))) {
+      this.pecasAtendimentoRemovidasIds.push(Number(item.id));
+    }
 
-    this.service.removerPecaAtendimento(atendimentoId, item.id).subscribe({
-      next: () => {
-        this.carregarPecasDoAtendimento(atendimentoId);
-        this.recarregar();
-      },
-      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao remover peça do atendimento.'))
-    });
+    this.pecasAtendimentoAlteradasIds = this.pecasAtendimentoAlteradasIds.filter(id => id !== Number(item.id));
+    this.pecasAtendimento = this.pecasAtendimento.filter(p => p.id !== item.id);
+    this.registrarAlteracaoEdicaoItens();
   }
 
   resetarServicoForm(): void {
@@ -1236,10 +1861,24 @@ private extrairLista<T>(resposta: any): T[] {
       }
     }
 
+    if (this.modoItensAtendimento === 'existente') {
+      this.servicoForm.quantidade = '1';
+      this.servicoForm.statusItem = 'EXECUTADO';
+
+      if (this.atendimentoSelecionado?.idResponsavel) {
+        this.servicoForm.idResponsavel = Number(this.atendimentoSelecionado.idResponsavel);
+      }
+    }
+
     this.recalcularTotalServicoForm();
   }
 
   aoAlterarTipoExecucaoServico(): void {
+    if (this.modoItensAtendimento === 'existente') {
+      this.recalcularTotalServicoForm();
+      return;
+    }
+
     const tipo = this.servicoForm.tipoExecucao || 'INTERNO';
 
     const maoObra = this.moedaParaNumero(this.servicoForm.valorMaoObra);
@@ -1261,11 +1900,12 @@ private extrairLista<T>(resposta: any): T[] {
   }
 
   recalcularTotalServicoForm(): void {
+    const quantidade = Math.max(this.moedaParaNumero(this.servicoForm.quantidade) || 1, 0);
     const maoObra = this.moedaParaNumero(this.servicoForm.valorMaoObra);
     const terceiro = this.moedaParaNumero(this.servicoForm.valorTerceiro);
     const desconto = this.moedaParaNumero(this.servicoForm.desconto);
 
-    const total = Math.max(maoObra + terceiro - desconto, 0);
+    const total = Math.max((quantidade * maoObra) + terceiro - desconto, 0);
 
     this.servicoForm.valorTotal = this.formatarMoedaBR(total);
   }
@@ -1279,6 +1919,11 @@ private extrairLista<T>(resposta: any): T[] {
   }
 
   salvarServicoAtendimento(): void {
+    if (this.modoItensAtendimento === 'existente' && this.editandoServicoId !== null) {
+      alert('Para alterar um serviço executado, remova o item atual e adicione o serviço correto novamente.');
+      return;
+    }
+
     if (!this.servicoForm.idServico) {
       alert('Selecione um serviço.');
       return;
@@ -1290,6 +1935,12 @@ private extrairLista<T>(resposta: any): T[] {
     }
 
     const tipo = this.servicoForm.tipoExecucao || 'INTERNO';
+
+    if (this.modoItensAtendimento === 'existente') {
+      this.servicoForm.quantidade = '1';
+      this.servicoForm.statusItem = 'EXECUTADO';
+      this.recalcularTotalServicoForm();
+    }
 
     if ((tipo === 'TERCEIRO' || tipo === 'MISTO') && !this.servicoForm.idFornecedor) {
       alert('Selecione um fornecedor para serviço terceiro ou misto.');
@@ -1344,22 +1995,22 @@ private extrairLista<T>(resposta: any): T[] {
 
     if (!this.atendimentoSelecionado?.id) return;
 
-    const atendimentoId = this.atendimentoSelecionado.id;
-    const payload = this.montarPayloadServicoSalvo(payloadVisual);
+    if (this.editandoServicoId !== null) {
+      this.servicosAtendimento = this.servicosAtendimento.map(item =>
+        item.id === this.editandoServicoId ? payloadVisual : item
+      );
 
-    const request$ = this.editandoServicoId !== null
-      ? this.service.atualizarServicoAtendimento(atendimentoId, this.editandoServicoId, payload)
-      : this.service.adicionarServicoAtendimento(atendimentoId, payload);
+      if (Number(this.editandoServicoId) > 0 && !this.servicosAtendimentoAlteradosIds.includes(Number(this.editandoServicoId))) {
+        this.servicosAtendimentoAlteradosIds.push(Number(this.editandoServicoId));
+      }
+    } else {
+      this.servicosAtendimento = [...this.servicosAtendimento, payloadVisual];
+    }
 
-    request$.subscribe({
-      next: () => {
-        this.resetarServicoForm();
-        this.carregarServicosDoAtendimento(atendimentoId);
-        this.recarregar();
-        this.modalServicos?.hide();
-      },
-      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao salvar serviço do atendimento.'))
-    });
+    this.registrarAlteracaoEdicaoItens();
+    this.modalServicos?.hide();
+    this.resetarServicoForm();
+    this.abaEdicaoAtendimento = 'servicos';
   }
 
   editarServicoAtendimento(item: AtendimentoServicoExecutado): void {
@@ -1403,15 +2054,13 @@ private extrairLista<T>(resposta: any): T[] {
 
     if (!this.atendimentoSelecionado?.id) return;
 
-    const atendimentoId = this.atendimentoSelecionado.id;
+    if (Number(item.id) > 0 && !this.servicosAtendimentoRemovidosIds.includes(Number(item.id))) {
+      this.servicosAtendimentoRemovidosIds.push(Number(item.id));
+    }
 
-    this.service.removerServicoAtendimento(atendimentoId, item.id).subscribe({
-      next: () => {
-        this.carregarServicosDoAtendimento(atendimentoId);
-        this.recarregar();
-      },
-      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao remover serviço do atendimento.'))
-    });
+    this.servicosAtendimentoAlteradosIds = this.servicosAtendimentoAlteradosIds.filter(id => id !== Number(item.id));
+    this.servicosAtendimento = this.servicosAtendimento.filter(s => s.id !== item.id);
+    this.registrarAlteracaoEdicaoItens();
   }
 
   abrirDetalhes(item: Atendimento): void {
@@ -1530,8 +2179,15 @@ private extrairLista<T>(resposta: any): T[] {
   }
 
   podeGerenciarItens(item: Atendimento): boolean {
-    return item.statusAtendimento !== 'CANCELADO'
-      && item.statusAtendimento !== 'ENTREGUE';
+    return this.podeEditarItensAtendimento(item);
+  }
+
+  podeEditarItensAtendimento(item?: Atendimento | null): boolean {
+    if (!item?.id) return false;
+
+    return item.statusAtendimento === 'EM_EXECUCAO'
+      && item.aprovado !== true
+      && item.estoqueBaixado !== true;
   }
 
   podeIniciar(item: Atendimento): boolean {
@@ -1689,6 +2345,49 @@ private extrairLista<T>(resposta: any): T[] {
     this.recalcularTotaisNovoAtendimento();
   }
 
+
+  private clonarPecasAtendimento(pecas: AtendimentoPeca[]): AtendimentoPeca[] {
+    return (pecas || []).map(item => ({ ...item }));
+  }
+
+  private clonarServicosAtendimento(servicos: AtendimentoServicoExecutado[]): AtendimentoServicoExecutado[] {
+    return (servicos || []).map(item => ({ ...item }));
+  }
+
+  private registrarAlteracaoEdicaoItens(): void {
+    this.edicaoItensAlterada = true;
+    this.recalcularTotaisEdicaoAtendimento();
+  }
+
+  private recalcularTotaisEdicaoAtendimento(): void {
+    if (!this.atendimentoSelecionado) {
+      return;
+    }
+
+    const valorPecas = this.pecasAtendimento.reduce((total, item) => {
+      return total + this.moedaParaNumero(item.valorTotal);
+    }, 0);
+
+    const valorMaoObra = this.servicosAtendimento.reduce((total, item) => {
+      if (this.normalizar(item.statusItem) === 'cancelado') return total;
+      const quantidade = Math.max(this.moedaParaNumero(item.quantidade) || 1, 0);
+      return total + (quantidade * this.moedaParaNumero(item.valorMaoObra));
+    }, 0);
+
+    const valorTerceiros = this.servicosAtendimento.reduce((total, item) => {
+      if (this.normalizar(item.statusItem) === 'cancelado') return total;
+      return total + this.moedaParaNumero(item.valorTerceiro);
+    }, 0);
+
+    const desconto = this.moedaParaNumero(this.atendimentoSelecionado.desconto);
+    const total = Math.max(valorPecas + valorMaoObra + valorTerceiros - desconto, 0);
+
+    this.atendimentoSelecionado.valorPecas = this.formatarMoedaBR(valorPecas);
+    this.atendimentoSelecionado.valorMaoObra = this.formatarMoedaBR(valorMaoObra);
+    this.atendimentoSelecionado.valorTerceiros = this.formatarMoedaBR(valorTerceiros);
+    this.atendimentoSelecionado.valorTotal = this.formatarMoedaBR(total);
+  }
+
   private moedaParaNumero(valor: any): number {
     if (valor === null || valor === undefined || valor === '') {
       return 0;
@@ -1755,7 +2454,8 @@ private extrairLista<T>(resposta: any): T[] {
 
     const valorMaoObra = this.servicosNovoAtendimento.reduce((total, item) => {
       if (item.statusItem === 'CANCELADO') return total;
-      return total + this.moedaParaNumero(item.valorMaoObra);
+      const quantidade = Math.max(this.moedaParaNumero(item.quantidade) || 1, 0);
+      return total + (quantidade * this.moedaParaNumero(item.valorMaoObra));
     }, 0);
 
     const valorTerceiros = this.servicosNovoAtendimento.reduce((total, item) => {
@@ -1823,24 +2523,61 @@ private extrairLista<T>(resposta: any): T[] {
   }
 
   private montarPayloadServicoSalvo(item: AtendimentoServicoExecutado): AtendimentoServicoExecutadoRequest {
+    const servicoCatalogo = this.servicosCatalogo.find(servico =>
+      Number(servico.id) === Number(item.idServico)
+    );
+
+    const tipoExecucao = String(
+      item.tipoExecucao || this.tipoExecucaoPadraoDoServico(servicoCatalogo) || 'INTERNO'
+    ).trim().toUpperCase();
+
+    const idFornecedorCatalogo = servicoCatalogo
+      ? this.idFornecedorObjeto(servicoCatalogo)
+      : undefined;
+
+    let idFornecedor: number | null = item.idFornecedor
+      ? Number(item.idFornecedor)
+      : (idFornecedorCatalogo ? Number(idFornecedorCatalogo) : null);
+
+    if (tipoExecucao === 'INTERNO') {
+      idFornecedor = null;
+    }
+
+    /*
+     * Regra profissional:
+     * valores não são editados no atendimento. Ao salvar, enviamos o valor do catálogo
+     * apenas como apoio de compatibilidade; o backend também deve recalcular pelo cadastro.
+     */
+    const valorMaoObraCatalogo = servicoCatalogo
+      ? this.moedaParaNumero(this.valorPadraoServico(servicoCatalogo))
+      : 0;
+
+    const valorMaoObra = tipoExecucao === 'TERCEIRO'
+      ? 0
+      : valorMaoObraCatalogo;
+
+    const valorTerceiro = tipoExecucao === 'TERCEIRO'
+      ? valorMaoObraCatalogo
+      : 0;
+
     return {
       idServico: item.idServico ? Number(item.idServico) : null,
       idResponsavel: item.idResponsavel ? Number(item.idResponsavel) : null,
-      idFornecedor: item.idFornecedor ? Number(item.idFornecedor) : null,
+      idFornecedor,
 
-      tipoExecucao: item.tipoExecucao || 'INTERNO',
+      tipoExecucao,
 
-      quantidade: String(item.quantidade || '1'),
-      unidadeCobranca: this.limparOpcional(item.unidadeCobranca),
+      quantidade: '1',
+      unidadeCobranca: this.limparOpcional(item.unidadeCobranca) || 'SERVICO',
 
       tempoExecucao: item.tempoExecucao ? String(item.tempoExecucao) : '',
       unidadeTempo: this.limparOpcional(item.unidadeTempo),
 
-      valorMaoObra: this.converterMoedaOpcionalParaNumero(item.valorMaoObra),
-      valorTerceiro: this.converterMoedaOpcionalParaNumero(item.valorTerceiro),
-      desconto: this.converterMoedaOpcionalParaNumero(item.desconto),
+      valorMaoObra: valorMaoObra.toFixed(2),
+      valorTerceiro: valorTerceiro.toFixed(2),
+      desconto: '0.00',
 
-      statusItem: item.statusItem || 'EXECUTADO',
+      statusItem: 'EXECUTADO',
       observacoes: this.limparOpcional(item.observacoes)
     };
   }
@@ -2148,9 +2885,11 @@ private extrairLista<T>(resposta: any): T[] {
   }
 
   extrairMensagemErro(erro: any, mensagemPadrao: string): string {
-    if (typeof erro?.error === 'string') return erro.error;
-    if (typeof erro?.error?.mensagem === 'string') return erro.error.mensagem;
-    if (typeof erro?.message === 'string') return erro.message;
+    if (typeof erro?.error === 'string' && erro.error.trim()) return erro.error;
+    if (typeof erro?.error?.mensagem === 'string' && erro.error.mensagem.trim()) return erro.error.mensagem;
+    if (typeof erro?.error?.message === 'string' && erro.error.message.trim()) return erro.error.message;
+    if (typeof erro?.error?.erro === 'string' && erro.error.erro.trim()) return erro.error.erro;
+    if (typeof erro?.message === 'string' && erro.message.trim()) return erro.message;
     return mensagemPadrao;
   }
 }

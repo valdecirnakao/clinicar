@@ -1,19 +1,21 @@
 package com.clinicar.backend.service;
-
 import com.clinicar.backend.dto.AtendimentoCancelamentoRequest;
 import com.clinicar.backend.dto.AtendimentoRequest;
 import com.clinicar.backend.model.Agendamento;
+import com.clinicar.backend.model.AgendamentoPecaPrevista;
 import com.clinicar.backend.model.Atendimento;
+import com.clinicar.backend.model.AtendimentoPecaUtilizada;
 import com.clinicar.backend.model.Fornecedor;
 import com.clinicar.backend.model.Servico;
 import com.clinicar.backend.model.Usuario;
+import com.clinicar.backend.repository.AgendamentoPecaPrevistaRepository;
 import com.clinicar.backend.repository.AgendamentoRepository;
+import com.clinicar.backend.repository.AtendimentoPecaUtilizadaRepository;
 import com.clinicar.backend.repository.AtendimentoRepository;
 import com.clinicar.backend.repository.FornecedorRepository;
 import com.clinicar.backend.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.Normalizer;
@@ -22,9 +24,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Service
 public class AtendimentoService {
 
@@ -59,6 +63,12 @@ public class AtendimentoService {
     private final FornecedorRepository fornecedorRepository;
     private final OrdemServicoEnvioService ordemServicoEnvioService;
     private final AtendimentoEstoqueService atendimentoEstoqueService;
+    private final AgendamentoPecaPrevistaRepository agendamentoPecaPrevistaRepository;
+    private final AtendimentoPecaUtilizadaRepository atendimentoPecaUtilizadaRepository;
+    private final ReservaEstoqueAgendamentoService reservaEstoqueAgendamentoService;
+    private final AtendimentoTotaisService atendimentoTotaisService;
+    private final AtendimentoServicoExecutadoService atendimentoServicoExecutadoService;
+    private final PrevisaoManutencaoService previsaoManutencaoService;
 
     public AtendimentoService(
             AtendimentoRepository atendimentoRepository,
@@ -66,13 +76,25 @@ public class AtendimentoService {
             UsuarioRepository usuarioRepository,
             FornecedorRepository fornecedorRepository,
             OrdemServicoEnvioService ordemServicoEnvioService,
-            AtendimentoEstoqueService atendimentoEstoqueService) {
+            AtendimentoEstoqueService atendimentoEstoqueService,
+            AgendamentoPecaPrevistaRepository agendamentoPecaPrevistaRepository,
+            AtendimentoPecaUtilizadaRepository atendimentoPecaUtilizadaRepository,
+            AtendimentoServicoExecutadoService atendimentoServicoExecutadoService,
+            PrevisaoManutencaoService previsaoManutencaoService,
+            AtendimentoTotaisService atendimentoTotaisService,
+            ReservaEstoqueAgendamentoService reservaEstoqueAgendamentoService) {
         this.atendimentoRepository = atendimentoRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.fornecedorRepository = fornecedorRepository;
         this.ordemServicoEnvioService = ordemServicoEnvioService;
         this.atendimentoEstoqueService = atendimentoEstoqueService;
+        this.agendamentoPecaPrevistaRepository = agendamentoPecaPrevistaRepository;
+        this.atendimentoPecaUtilizadaRepository = atendimentoPecaUtilizadaRepository;
+        this.reservaEstoqueAgendamentoService = reservaEstoqueAgendamentoService;
+        this.atendimentoTotaisService = atendimentoTotaisService;
+        this.atendimentoServicoExecutadoService = atendimentoServicoExecutadoService;
+        this.previsaoManutencaoService = previsaoManutencaoService;
     }
 
     @Transactional
@@ -82,6 +104,8 @@ public class AtendimentoService {
         Long idAgendamento = validarIdObrigatorio(
                 request.getIdAgendamento(),
                 "Agendamento");
+
+        log.info("[ATENDIMENTO] Iniciando criação de atendimento para agendamento ID {}.", idAgendamento);
 
         if (atendimentoRepository.existsByAgendamento_Id(idAgendamento)) {
             throw new IllegalArgumentException("Já existe atendimento para este agendamento.");
@@ -114,7 +138,22 @@ public class AtendimentoService {
             agendamentoRepository.save(agendamento);
         }
 
-        return atendimentoRepository.save(atendimento);
+        /*
+         * Se o atendimento for criado manualmente a partir de um agendamento com
+         * peças previstas, garantimos a reserva e copiamos essas peças para o
+         * atendimento. Assim a baixa definitiva poderá ocorrer em concluir().
+         */
+        reservaEstoqueAgendamentoService.reservarPecasDoAgendamento(agendamento.getId());
+
+        Atendimento salvo = atendimentoRepository.save(atendimento);
+
+        atendimentoServicoExecutadoService.garantirServicoPrincipalDoAtendimento(salvo);
+
+        importarPecasPrevistasParaAtendimento(
+                agendamento,
+                salvo);
+
+        return recalcularTotaisComSeguranca(salvo);
     }
 
     @Transactional
@@ -127,7 +166,9 @@ public class AtendimentoService {
 
         preencherDadosEditaveis(atendimento, request);
 
-        return atendimentoRepository.save(atendimento);
+        Atendimento salvo = atendimentoRepository.save(atendimento);
+
+        return recalcularTotaisComSeguranca(salvo);
     }
 
     public List<Atendimento> listarTodos() {
@@ -274,6 +315,8 @@ public class AtendimentoService {
 
     @Transactional
     public Atendimento concluir(Long id) {
+        log.info("[ATENDIMENTO] Iniciando conclusão do atendimento ID {}.", id);
+
         Atendimento atendimento = buscarPorId(id);
 
         if ("CANCELADO".equals(atendimento.getStatusAtendimento())) {
@@ -288,14 +331,38 @@ public class AtendimentoService {
             return atendimento;
         }
 
-        atendimentoEstoqueService.baixarPecasDoAtendimento(atendimento);
-
         LocalDateTime agora = LocalDateTime.now();
 
         if (atendimento.getDataEntrada() != null && agora.isBefore(atendimento.getDataEntrada())) {
             throw new IllegalArgumentException(
                     "Não é possível concluir o atendimento antes da data de entrada.");
         }
+
+        atendimentoServicoExecutadoService.garantirServicoPrincipalDoAtendimento(atendimento);
+
+        Agendamento agendamento = atendimento.getAgendamento();
+
+        if (agendamento != null && agendamento.getId() != null) {
+            log.info(
+                    "[ATENDIMENTO] Importando peças previstas do agendamento ID {} para o atendimento ID {} antes da baixa.",
+                    agendamento.getId(),
+                    atendimento.getId());
+
+            importarPecasPrevistasParaAtendimento(
+                    agendamento,
+                    atendimento);
+
+            atendimento = recalcularTotaisComSeguranca(atendimento);
+        }
+
+        log.info("[ATENDIMENTO] Iniciando baixa de estoque do atendimento ID {}.", atendimento.getId());
+
+        /*
+         * A baixa definitiva deve ocorrer ao concluir o atendimento.
+         * O AtendimentoEstoqueService deve reduzir a quantidade atual e também
+         * reduzir a quantidade reservada das peças utilizadas.
+         */
+        atendimentoEstoqueService.baixarPecasDoAtendimento(atendimento);
 
         atendimento.setStatusAtendimento("CONCLUIDO");
 
@@ -312,14 +379,28 @@ public class AtendimentoService {
 
         atendimento.setFinalizadoEm(agora);
 
-        Agendamento agendamento = atendimento.getAgendamento();
-
         if (agendamento != null) {
             agendamento.setStatusAgendamento("CONCLUIDO");
             agendamentoRepository.save(agendamento);
+
+            reservaEstoqueAgendamentoService.marcarReservasComoConsumidas(
+                    agendamento.getId());
         }
 
-        return atendimentoRepository.save(atendimento);
+        Atendimento salvo = atendimentoRepository.save(atendimento);
+        Atendimento recalculado = recalcularTotaisComSeguranca(salvo);
+
+        try {
+            previsaoManutencaoService.gerarPrevisoesDoAtendimento(salvo.getId());
+        } catch (Exception e) {
+            log.warn(
+                    "[ATENDIMENTO] Atendimento ID {} foi concluído, mas não foi possível gerar previsões de manutenção preventiva: {}",
+                    salvo.getId(),
+                    e.getMessage()
+            );
+        }
+
+        return recalculado;
     }
 
     @Transactional
@@ -386,6 +467,9 @@ public class AtendimentoService {
 
         if (agendamento != null
                 && !"CONCLUIDO".equals(agendamento.getStatusAgendamento())) {
+            reservaEstoqueAgendamentoService.liberarReservasDoAgendamento(
+                    agendamento.getId());
+
             agendamento.setStatusAgendamento("CANCELADO");
             agendamento.setCanceladoEm(LocalDateTime.now());
 
@@ -797,10 +881,29 @@ public class AtendimentoService {
             throw new IllegalArgumentException("Agendamento não informado.");
         }
 
+        /*
+         * Garantia defensiva: se o agendamento foi iniciado sem passar antes pelo
+         * botão Confirmar, as peças previstas também precisam ficar reservadas.
+         * O service de reserva é idempotente e ignora itens já reservados.
+         */
+        reservaEstoqueAgendamentoService.reservarPecasDoAgendamento(
+                agendamento.getId());
+
         return atendimentoRepository.findByAgendamento_Id(agendamento.getId())
-                .map(atendimentoExistente -> new AtendimentoAutomaticoResultado(
-                        atendimentoExistente,
-                        false))
+                .map(atendimentoExistente -> {
+                    atendimentoServicoExecutadoService.garantirServicoPrincipalDoAtendimento(atendimentoExistente);
+
+                    importarPecasPrevistasParaAtendimento(
+                            agendamento,
+                            atendimentoExistente);
+
+                    Atendimento recalculado = recalcularTotaisComSeguranca(
+                            atendimentoExistente);
+
+                    return new AtendimentoAutomaticoResultado(
+                            recalculado,
+                            false);
+                })
                 .orElseGet(() -> {
                     Atendimento atendimento = new Atendimento();
 
@@ -854,9 +957,144 @@ public class AtendimentoService {
 
                     Atendimento salvo = atendimentoRepository.save(atendimento);
 
+                    atendimentoServicoExecutadoService.garantirServicoPrincipalDoAtendimento(salvo);
+
+                    importarPecasPrevistasParaAtendimento(
+                            agendamento,
+                            salvo);
+
+                    Atendimento recalculado = recalcularTotaisComSeguranca(salvo);
+
                     return new AtendimentoAutomaticoResultado(
-                            salvo,
+                            recalculado,
                             true);
                 });
+    }
+
+    private void importarPecasPrevistasParaAtendimento(
+            Agendamento agendamento,
+            Atendimento atendimento) {
+        if (agendamento == null || agendamento.getId() == null) {
+            return;
+        }
+
+        if (atendimento == null || atendimento.getId() == null) {
+            return;
+        }
+
+        List<AgendamentoPecaPrevista> pecasPrevistas =
+                agendamentoPecaPrevistaRepository.findByAgendamento_Id(
+                        agendamento.getId());
+
+        log.info(
+                "[ATENDIMENTO] Peças previstas encontradas para o agendamento ID {}: {}.",
+                agendamento.getId(),
+                pecasPrevistas.size());
+
+        if (pecasPrevistas.isEmpty()) {
+            return;
+        }
+
+        List<AtendimentoPecaUtilizada> pecasJaUtilizadas =
+                atendimentoPecaUtilizadaRepository.findByAtendimento_Id(
+                        atendimento.getId());
+
+        for (AgendamentoPecaPrevista prevista : pecasPrevistas) {
+            if (prevista.getPeca() == null || prevista.getPeca().getId() == null) {
+                log.warn(
+                        "[ATENDIMENTO] Peça prevista ID {} ignorada porque não possui peça vinculada.",
+                        prevista.getId());
+                continue;
+            }
+
+            boolean jaExiste = pecasJaUtilizadas.stream().anyMatch(item -> {
+                Long idPecaItem = item.getPeca() != null
+                        ? item.getPeca().getId()
+                        : null;
+
+                Long idPecaPrevista = prevista.getPeca().getId();
+
+                Long idEstoqueItem = item.getEstoquePeca() != null
+                        ? item.getEstoquePeca().getId()
+                        : null;
+
+                Long idEstoquePrevisto = prevista.getEstoquePeca() != null
+                        ? prevista.getEstoquePeca().getId()
+                        : null;
+
+                return Objects.equals(idPecaItem, idPecaPrevista)
+                        && Objects.equals(idEstoqueItem, idEstoquePrevisto);
+            });
+
+            if (jaExiste) {
+                log.info(
+                        "[ATENDIMENTO] Peça prevista já importada. atendimentoId={}, pecaId={}.",
+                        atendimento.getId(),
+                        prevista.getPeca().getId());
+                continue;
+            }
+
+            AtendimentoPecaUtilizada utilizada = new AtendimentoPecaUtilizada();
+
+            utilizada.setAtendimento(atendimento);
+            utilizada.setPeca(prevista.getPeca());
+            utilizada.setEstoquePeca(prevista.getEstoquePeca());
+            utilizada.setFornecedor(prevista.getFornecedor());
+
+            utilizada.setQuantidade(prevista.getQuantidade());
+            utilizada.setValorUnitario(
+                    prevista.getValorUnitario() != null
+                            ? prevista.getValorUnitario()
+                            : BigDecimal.ZERO);
+            utilizada.setValorTotal(
+                    prevista.getValorTotal() != null
+                            ? prevista.getValorTotal()
+                            : valorOuZero(prevista.getQuantidade())
+                                    .multiply(
+                                            prevista.getValorUnitario() != null
+                                                    ? prevista.getValorUnitario()
+                                                    : BigDecimal.ZERO)
+                                    .setScale(2, RoundingMode.HALF_UP));
+            utilizada.setUnidadeMedida(prevista.getUnidadeMedida());
+
+            utilizada.setObservacoes(
+                    prevista.getObservacoes() != null && !prevista.getObservacoes().isBlank()
+                            ? prevista.getObservacoes()
+                            : "Peça prevista no agendamento " + agendamento.getCodigoAgendamento());
+
+            AtendimentoPecaUtilizada salva =
+                    atendimentoPecaUtilizadaRepository.save(utilizada);
+
+            pecasJaUtilizadas.add(salva);
+
+            log.info(
+                    "[ATENDIMENTO] Peça prevista importada. atendimentoId={}, pecaId={}, quantidade={}, valorTotal={}.",
+                    atendimento.getId(),
+                    prevista.getPeca().getId(),
+                    salva.getQuantidade(),
+                    salva.getValorTotal());
+        }
+    }
+
+    private Atendimento recalcularTotaisComSeguranca(Atendimento atendimento) {
+        if (atendimento == null || atendimento.getId() == null) {
+            return atendimento;
+        }
+
+        try {
+            return atendimentoTotaisService.recalcularTotais(atendimento.getId());
+        } catch (Exception e) {
+            log.warn(
+                    "[ATENDIMENTO] Não foi possível recalcular totais do atendimento ID {}. Mantendo atendimento salvo.",
+                    atendimento.getId(),
+                    e);
+
+            return atendimentoRepository.findById(atendimento.getId())
+                    .orElse(atendimento);
+        }
+    }
+
+    private BigDecimal valorOuZero(BigDecimal valor) {
+        return valor != null ? valor : BigDecimal.ZERO;
     }
 }

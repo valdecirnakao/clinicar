@@ -953,3 +953,23 @@ textarea {
   justify-content: center;
   }
 }
+
+
+/* Quantidades calculadas com reserva de estoque */
+.estoque-qtd-principal {
+  color: #35689b;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.estoque-qtd-secundaria {
+  display: block;
+  font-size: .78rem;
+  color: #6c87a4;
+  margin-top: .1rem;
+}
+
+.estoque-reserva-alerta {
+  color: #b56a00;
+  font-weight: 800;
+}

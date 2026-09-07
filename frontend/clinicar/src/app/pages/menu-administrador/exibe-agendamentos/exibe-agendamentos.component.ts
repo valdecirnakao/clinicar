@@ -891,9 +891,16 @@ export class ExibeAgendamentosComponent implements OnInit {
       if (nomeFornecedor) {
         this.pecaForm.razaoSocialFornecedor = nomeFornecedor;
       }
+
+      const idEstoquePeca = this.idEstoquePecaObjeto(fornecimento);
+
+      if (idEstoquePeca) {
+        (this.pecaForm as any).idEstoquePeca = idEstoquePeca;
+      }
     } else {
       this.pecaForm.unidadeMedida = this.unidadePadraoPeca(peca);
       this.pecaForm.valorUnitario = this.formatarMoedaBR(0);
+      (this.pecaForm as any).idEstoquePeca = undefined;
     }
 
     this.recalcularTotalPecaForm();
@@ -951,6 +958,8 @@ export class ExibeAgendamentosComponent implements OnInit {
       observacoes: this.pecaForm.observacoes || ''
     };
 
+    (item as any).idEstoquePeca = this.numeroOuNull((this.pecaForm as any).idEstoquePeca);
+
     this.inserirOuSomarPeca(item);
     this.recalcularValoresAgendamento();
     this.modalPeca?.hide();
@@ -978,11 +987,18 @@ export class ExibeAgendamentosComponent implements OnInit {
       const valorUnitario = this.moedaParaNumero(existente.valorUnitario || novaPeca.valorUnitario);
       const valorTotal = quantidadeFinal * valorUnitario;
 
-      this.pecasNovoAgendamento[indiceDuplicado] = {
+      const itemAtualizado: AgendamentoPecaSelecionada = {
         ...existente,
         quantidade: quantidadeFinal,
         valorTotal: valorTotal.toFixed(2)
       };
+
+      (itemAtualizado as any).idEstoquePeca = this.numeroOuNull(
+        this.obterCampo(existente, ['idEstoquePeca', 'id_estoque_peca', 'estoquePeca.id'])
+        || this.obterCampo(novaPeca, ['idEstoquePeca', 'id_estoque_peca', 'estoquePeca.id'])
+      );
+
+      this.pecasNovoAgendamento[indiceDuplicado] = itemAtualizado;
 
       if (indiceAtual >= 0) {
         this.pecasNovoAgendamento.splice(indiceAtual, 1);
@@ -1016,6 +1032,10 @@ export class ExibeAgendamentosComponent implements OnInit {
       valorTotal: this.formatarMoedaBR(item.valorTotal),
       observacoes: item.observacoes || ''
     };
+
+    (this.pecaForm as any).idEstoquePeca = this.numeroOuNull(
+      this.obterCampo(item, ['idEstoquePeca', 'id_estoque_peca', 'estoquePeca.id'])
+    );
   }
 
   removerPecaAgendamento(item: AgendamentoPecaSelecionada): void {
@@ -1146,7 +1166,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   private montarPayloadAgendamento(): AgendamentoRequest {
-    return {
+    const payload: AgendamentoRequest & { pecasPrevistas?: any[] } = {
       idCliente: this.novoAgendamento.idCliente ? Number(this.novoAgendamento.idCliente) : null,
       idVeiculo: this.novoAgendamento.idVeiculo ? Number(this.novoAgendamento.idVeiculo) : null,
       idServico: this.novoAgendamento.idServico ? Number(this.novoAgendamento.idServico) : null,
@@ -1165,6 +1185,11 @@ export class ExibeAgendamentosComponent implements OnInit {
       quilometragemAtual: this.quilometragemAtualParaNumero(),
       queixaCliente: this.limparOpcional(this.novoAgendamento.queixaCliente),
       diagnosticoPrevio: this.limparOpcional(this.novoAgendamento.diagnosticoPrevio),
+
+      /*
+       * Mantido temporariamente para compatibilidade com a visualização já existente.
+       * A nova regra de reserva de estoque deve usar pecasPrevistas, abaixo.
+       */
       observacoes: this.montarObservacoesComPecas(),
 
       valorEstimado: this.converterMoedaOpcionalParaNumero(this.novoAgendamento.valorEstimado),
@@ -1173,6 +1198,76 @@ export class ExibeAgendamentosComponent implements OnInit {
       requerConfirmacao: !!this.novoAgendamento.requerConfirmacao,
       confirmado: !!this.novoAgendamento.confirmado
     };
+
+    payload.pecasPrevistas = this.montarPecasPrevistasPayload();
+
+    console.log('Payload agendamento enviado ao backend:', payload);
+
+    return payload;
+  }
+
+  private montarPecasPrevistasPayload(): any[] {
+    return (this.pecasNovoAgendamento || [])
+      .map(item => {
+        const idPeca = this.numeroOuNull(
+          this.obterCampo(item, [
+            'idPeca',
+            'id_peca',
+            'pecaId',
+            'peca_id',
+            'peca.id'
+          ])
+        );
+
+        if (!idPeca) {
+          return null;
+        }
+
+        const quantidade = this.quantidadeInteiraMinima(item.quantidade || 1);
+        const valorUnitario = this.moedaParaNumero(item.valorUnitario || 0);
+
+        return {
+          idPeca,
+          idEstoquePeca: this.numeroOuNull(
+            this.obterCampo(item, [
+              'idEstoquePeca',
+              'id_estoque_peca',
+              'estoquePecaId',
+              'estoque_peca_id',
+              'estoquePeca.id',
+              'estoque.id'
+            ])
+          ),
+          idFornecedor: this.numeroOuNull(
+            this.obterCampo(item, [
+              'idFornecedor',
+              'id_fornecedor',
+              'fornecedorId',
+              'fornecedor_id',
+              'fornecedor.id'
+            ])
+          ),
+          quantidade: this.numeroParaBackend(quantidade),
+          unidadeMedida: this.limparOpcional(item.unidadeMedida || 'UNIDADE') || 'UNIDADE',
+          valorUnitario: this.numeroParaBackend(valorUnitario),
+          observacoes: this.limparOpcional(item.observacoes)
+        };
+      })
+      .filter((item): item is any => item !== null);
+  }
+
+  private numeroParaBackend(valor: any): string {
+    return this.moedaParaNumero(valor).toFixed(2);
+  }
+
+  private numeroOuNull(valor: any): number | null {
+    if (valor === null || valor === undefined || valor === '') {
+      return null;
+    }
+
+    const numero = Number(valor);
+
+    return Number.isNaN(numero) || numero <= 0 ? null : numero;
   }
 
   private montarObservacoesComPecas(): string {
@@ -1739,6 +1834,26 @@ export class ExibeAgendamentosComponent implements OnInit {
     return Number.isNaN(numero) ? undefined : numero;
   }
 
+  private idEstoquePecaObjeto(objeto: any): number | undefined {
+    const valor = this.obterCampo(
+      objeto,
+      [
+        'idEstoquePeca',
+        'id_estoque_peca',
+        'estoquePecaId',
+        'estoque_peca_id',
+        'estoquePeca.id',
+        'estoque.id'
+      ]
+    );
+
+    if (valor === null || valor === undefined || valor === '') return undefined;
+
+    const numero = Number(valor);
+
+    return Number.isNaN(numero) || numero <= 0 ? undefined : numero;
+  }
+
   private idFornecedorObjeto(objeto: any): number | undefined {
     const valor = this.obterCampo(objeto, ['idFornecedor', 'id_fornecedor', 'fornecedor.id']);
 
@@ -2168,9 +2283,9 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   alternarFiltroStatus(event: Event): void {
-  event.stopPropagation();
-  this.statusFiltroAberto = !this.statusFiltroAberto;
-}
+    event.stopPropagation();
+    this.statusFiltroAberto = !this.statusFiltroAberto;
+  }
 
   selecionarFiltroStatus(status: string): void {
     this.filtroStatus = status;
@@ -2187,26 +2302,26 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   formatarTelefone(telefone: string | null | undefined): string {
-    if(!telefone) return '-';
+    if (!telefone) return '-';
     const numero = telefone.replaceAll(/\D/g, '');
     const codigoPais = '55';
-    if(numero.length >= 11) {
+    if (numero.length >= 11) {
       const ddd = numero.slice(-11, -9);
       const parte1 = numero.slice(-9, -4);
       const parte2 = numero.slice(-4);
-      telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
+      telefone = `+${codigoPais} (${ddd}) ${parte1} -${parte2}`;
     }
     else if (numero.length >= 10) {
       const ddd = numero.slice(0, 2);
       const parte1 = numero.slice(2, 6);
       const parte2 = numero.slice(6, 10);
-      telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
+      telefone = `+${codigoPais} (${ddd}) ${parte1} -${parte2}`;
     }
     else if (numero.length >= 8) {
       const ddd = '11';
       const parte1 = numero.slice(0, -4);
       const parte2 = numero.slice(-4);
-      telefone = `+${ codigoPais } (${ ddd }) ${ parte1 } -${ parte2 }`;
+      telefone = `+${codigoPais} (${ddd}) ${parte1} -${parte2}`;
     }
     return telefone;
   }
@@ -2231,54 +2346,54 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   private iniciarAgendamentoComAtendimento(agendamento: any): void {
-  const id = Number(agendamento?.id);
+    const id = Number(agendamento?.id);
 
-  if (!id) {
-    this.mensagemErro = 'Agendamento inválido para iniciar atendimento.';
-    return;
-  }
+    if (!id) {
+      this.mensagemErro = 'Agendamento inválido para iniciar atendimento.';
+      return;
+    }
 
-  this.carregando = true;
+    this.carregando = true;
 
-  this.service.iniciar(id).subscribe({
-    next: (resposta) => {
-      this.carregando = false;
+    this.service.iniciar(id).subscribe({
+      next: (resposta) => {
+        this.carregando = false;
 
-      this.mensagemSucesso =
-        resposta?.mensagem ||
-        'Agendamento iniciado com sucesso.';
+        this.mensagemSucesso =
+          resposta?.mensagem ||
+          'Agendamento iniciado com sucesso.';
 
-      this.recarregar();
+        this.recarregar();
 
-      const atendimentoId = resposta?.atendimento?.id;
+        const atendimentoId = resposta?.atendimento?.id;
 
-      if (atendimentoId) {
-        console.log(
-          'Atendimento gerado automaticamente a partir do agendamento:',
-          atendimentoId
+        if (atendimentoId) {
+          console.log(
+            'Atendimento gerado automaticamente a partir do agendamento:',
+            atendimentoId
+          );
+          this.router.navigate(
+            ['/menuAdministrador/exibeAtendimentos'],
+            {
+              queryParams: {
+                atendimentoId
+              }
+            }
+          );
+        }
+
+        this.fecharModalConfirmacaoAcao();
+      },
+      error: (erro) => {
+        this.carregando = false;
+
+        console.error('Erro ao iniciar agendamento:', erro);
+
+        this.mensagemErro = this.extrairMensagemErro(
+          erro,
+          'Erro ao iniciar agendamento e gerar atendimento.'
         );
-        this.router.navigate(
-    ['/menuAdministrador/exibeAtendimentos'],
-    {
-      queryParams: {
-        atendimentoId
       }
-    }
-  );
-      }
-
-      this.fecharModalConfirmacaoAcao();
-    },
-    error: (erro) => {
-      this.carregando = false;
-
-      console.error('Erro ao iniciar agendamento:', erro);
-
-      this.mensagemErro = this.extrairMensagemErro(
-        erro,
-        'Erro ao iniciar agendamento e gerar atendimento.'
-      );
-    }
-  });
-}
+    });
+  }
 }

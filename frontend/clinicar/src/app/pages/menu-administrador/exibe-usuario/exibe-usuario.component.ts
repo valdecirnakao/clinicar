@@ -1785,7 +1785,7 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   whatsappDescricao(telefone: string | null | undefined): string {
-    return this.telefoneWhatsappValido(telefone) ? 'WhatsApp válido' : 'Verificar telefone';
+    return this.telefoneWhatsappValido(telefone) ? 'WhatsApp' : 'Verificar telefone';
   }
 
   whatsappBadgeClass(telefone: string | null | undefined): string {
