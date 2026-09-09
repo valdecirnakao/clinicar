@@ -23,6 +23,8 @@ export const routes: Routes = [
   { path: 'esqueci-senha', component: EsqueciSenhaComponent },
   { path: 'redefinir-senha', component: RedefinirSenhaComponent },
   { path: 'login', component: LoginComponent },
+  { path: 'primeiro-acesso', loadComponent: () => import('./pages/primeiro-acesso/primeiro-acesso.component').then(m => m.PrimeiroAcessoComponent) },
+  { path: 'ativar-conta', loadComponent: () => import('./pages/ativar-conta/ativar-conta.component').then(m => m.AtivarContaComponent) },
   { path: 'verificar-2fa', component: Verificar2faComponent },
   { path: 'cadastraCliente', component: CadastraClienteComponent },
   { path: 'menuAdministrador', component: MenuAdministradorComponent,  // precisa ter <router-outlet> no template

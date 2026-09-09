@@ -57,6 +57,19 @@ public class AuthSessionInterceptor implements HandlerInterceptor {
     }
 
     private boolean rotaPublica(String uri, String metodo) {
+        // Primeiro acesso: a autorização é o estado transacional do setup/token.
+        if ("GET".equalsIgnoreCase(metodo)
+                && (uri.equals("/api/setup/status")
+                    || uri.equals("/api/setup/ativacao/validar"))) {
+            return true;
+        }
+        if ("POST".equalsIgnoreCase(metodo)
+                && (uri.equals("/api/setup/administrador")
+                    || uri.equals("/api/setup/ativacao/definir-senha")
+                    || uri.equals("/api/setup/ativacao/reenviar"))) {
+            return true;
+        }
+
         /*
          * Login inicial: público.
          */

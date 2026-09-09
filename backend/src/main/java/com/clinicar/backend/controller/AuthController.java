@@ -74,7 +74,7 @@ public class AuthController {
 
     @GetMapping("/me")
         public ResponseEntity<UsuarioResponse> me(
-        @CookieValue(name = "CLINICAR_SESSION", required = false) String token
+        @CookieValue(name = "${clinicar.session.cookie-name}", required = false) String token
     ) {
         return sessionService.validarSessao(token)
             .map(ResponseEntity::ok)

@@ -32,7 +32,7 @@
           </div>
 
           <div *ngIf="erroLogin"  class="alert alert-danger mt-3">
-            E-mail ou senha inválidos.
+            {{ mensagemErro }}
           </div>
         </div>
 
@@ -41,6 +41,15 @@
           <h4>Ainda não tenho cadastro</h4>
           <p>Clique abaixo para se cadastrar:</p>
           <a routerLink="/cadastraCliente" class="btn btn-success ">Clique aqui</a>
+        </div>
+        <div class="col-12 mt-4 border-top pt-3">
+          <button type="button" class="btn btn-link setup-link p-0" (click)="primeiroAcesso()" [disabled]="consultandoSetup">
+            {{ consultandoSetup ? 'Consultando...' : 'Primeiro acesso?' }}
+          </button>
+          <div *ngIf="mensagemSetup" class="alert alert-info mt-3" role="status">
+            {{ mensagemSetup }}
+            <a *ngIf="aguardandoAtivacao" routerLink="/primeiro-acesso" class="d-block mt-2">Consultar orientações e reenviar ativação</a>
+          </div>
         </div>
       </div>
     </div>

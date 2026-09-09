@@ -20,6 +20,7 @@ public class Usuario {
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
     
+    @JsonIgnore
     private String senha;
     private String cpf;
     private LocalDate nascimento;       

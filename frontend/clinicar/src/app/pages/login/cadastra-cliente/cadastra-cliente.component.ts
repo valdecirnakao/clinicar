@@ -14,7 +14,7 @@ type AmcApiKey = 'anoModeloCombustivel' | 'ano_modelo_combustivel';
 const AMC_KEY: AmcApiKey = 'anoModeloCombustivel';
 
 // Base do backend (troque para environment se preferir)
-const API_BASE = 'http://localhost:8080';
+const API_BASE = '';
 
 /** ================ MODELOS =================== */
 

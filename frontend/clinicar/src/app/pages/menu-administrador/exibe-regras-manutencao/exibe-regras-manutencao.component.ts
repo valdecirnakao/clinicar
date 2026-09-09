@@ -20,7 +20,7 @@ import { forkJoin } from 'rxjs';
 
 declare var bootstrap: any;
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = '';
 
 type ModoFormulario = 'cadastro' | 'edicao';
 

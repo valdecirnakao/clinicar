@@ -1,17 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { LoginService, UsuarioLogado } from '../login.service';
 
-interface MfaPendente {
-  mfaToken: string;
-  mfaSetupNecessario: boolean;
-  qrCodeDataUrl?: string;
-  chaveManual?: string;
-  mensagem?: string;
-  email?: string;
-}
+import { MfaPendente, MfaPendenteService } from '../../../services/mfa-pendente.service';
 
 @Component({
   selector: 'app-verificar-doisfa',
@@ -24,7 +17,7 @@ interface MfaPendente {
   templateUrl: './verificar-doisfa.component.html',
   styleUrls: ['./verificar-doisfa.component.css']
 })
-export class Verificar2faComponent implements OnInit {
+export class Verificar2faComponent implements OnInit, OnDestroy {
 
   mfaPendente: MfaPendente | null = null;
   codigo = '';
@@ -34,21 +27,21 @@ export class Verificar2faComponent implements OnInit {
 
   constructor(
     private readonly router: Router,
-    private readonly loginService: LoginService
+    private readonly loginService: LoginService,
+    private readonly mfaState: MfaPendenteService
   ) {}
 
   ngOnInit(): void {
-    const bruto = sessionStorage.getItem('mfaPendente');
-    if (!bruto) {
+    this.mfaPendente = this.mfaState.retirar();
+    if (!this.mfaPendente) {
       this.mensagemErro = 'Nenhuma verificação em duas etapas foi iniciada. Faça login novamente.';
-      return;
     }
-    try {
-      this.mfaPendente = JSON.parse(bruto);
-    } catch {
-      this.mensagemErro = 'Dados de verificação inválidos. Faça login novamente.';
-      sessionStorage.removeItem('mfaPendente');
-    }
+  }
+
+  ngOnDestroy(): void {
+    this.mfaPendente = null;
+    this.codigo = '';
+    this.mfaState.limpar();
   }
 
   validarCodigo(): void {
@@ -72,11 +65,12 @@ export class Verificar2faComponent implements OnInit {
       next: (usuario) => {
         this.carregando = false;
         this.mensagemSucesso = 'Verificação concluída com sucesso.';
-        sessionStorage.removeItem('mfaPendente');
+        this.mfaState.limpar();
+        this.mfaPendente = null;
+        this.codigo = '';
         this.finalizarLogin(usuario);
       },
       error: (erro) => {
-        console.error('Erro ao validar MFA:', erro);
         this.carregando = false;
         this.mensagemErro = this.extrairMensagemErro(
           erro,
@@ -87,7 +81,9 @@ export class Verificar2faComponent implements OnInit {
   }
 
   cancelar(): void {
-    sessionStorage.removeItem('mfaPendente');
+    this.mfaState.limpar();
+        this.mfaPendente = null;
+        this.codigo = '';
     this.router.navigate(['/login']);
   }
 

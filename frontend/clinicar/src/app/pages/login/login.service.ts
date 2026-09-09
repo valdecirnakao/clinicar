@@ -33,8 +33,8 @@ export interface MfaValidarRequest {
 })
 export class LoginService {
 
-  private readonly usuarioApiUrl = 'http://localhost:8080/api/usuario';
-  private readonly authApiUrl = 'http://localhost:8080/api/auth';
+  private readonly usuarioApiUrl = '/api/usuario';
+  private readonly authApiUrl = '/api/auth';
 
   constructor(private readonly http: HttpClient) {}
 

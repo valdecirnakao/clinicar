@@ -1,8 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { Router, RouterLink, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { SetupService, mensagemSetupErro } from '../../services/setup.service';
+import { MfaPendenteService } from '../../services/mfa-pendente.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { LoginService, LoginResponse, UsuarioLogado } from '../login/login.service';
 
 
@@ -17,6 +20,29 @@ import { LoginService, LoginResponse, UsuarioLogado } from '../login/login.servi
 
 export class LoginComponent {
 
+  private readonly destroyRef = inject(DestroyRef);
+  consultandoSetup = false;
+  aguardandoAtivacao = false;
+  mensagemSetup = '';
+
+  primeiroAcesso(): void {
+    if (this.consultandoSetup) return;
+    this.consultandoSetup = true;
+    this.mensagemSetup = '';
+    this.aguardandoAtivacao = false;
+    this.setupService.consultarStatus().pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.consultandoSetup = false)).subscribe({
+      next: status => {
+        if (status.estado === 'NAO_INICIADO') {
+          void this.router.navigate(['/primeiro-acesso']);
+        } else {
+          this.mensagemSetup = status.mensagem;
+          this.aguardandoAtivacao = status.estado === 'AGUARDANDO_ATIVACAO';
+        }
+      },
+      error: (erro: unknown) => this.mensagemSetup = mensagemSetupErro(erro, 'Não foi possível consultar o primeiro acesso. Tente novamente.')
+    });
+  }
+
   email: string = '';
   senha: string = '';
   erroLogin: boolean = false;
@@ -27,7 +53,8 @@ export class LoginComponent {
   constructor(
     private readonly router: Router,
     private readonly loginService: LoginService,
-    private readonly http: HttpClient
+    private readonly setupService: SetupService,
+    private readonly mfaState: MfaPendenteService
   ) {}
 
   login(): void {
@@ -48,14 +75,20 @@ export class LoginComponent {
       next: (resposta: LoginResponse) => {
         this.carregandoLogin = false;
         if (resposta.mfaRequerido) {
-          sessionStorage.setItem('mfaPendente', JSON.stringify({
+          if (!resposta.mfaToken) {
+            this.erroLogin = true;
+            this.mensagemErro = 'Não foi possível iniciar a verificação em duas etapas.';
+            return;
+          }
+          this.senha = '';
+          this.mfaState.guardar({
             mfaToken: resposta.mfaToken,
-            mfaSetupNecessario: resposta.mfaSetupNecessario,
+            mfaSetupNecessario: resposta.mfaSetupNecessario ?? false,
             qrCodeDataUrl: resposta.qrCodeDataUrl,
             chaveManual: resposta.chaveManual,
             mensagem: resposta.mensagem,
             email: emailTratado
-          }));
+          });
           this.router.navigate(['/verificar-2fa']);
           return;
         }
@@ -67,7 +100,6 @@ export class LoginComponent {
         this.erroLogin = true;
       },
       error: (erro) => {
-        console.error('Erro ao realizar login:', erro);
         this.carregandoLogin = false;
         this.erroLogin = true;
         this.mensagemErro = 'E-mail ou senha inválidos.';

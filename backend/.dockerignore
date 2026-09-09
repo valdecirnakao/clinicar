@@ -1,0 +1,12 @@
+target
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+*.log
+*.tmp
+*.bak
+*.patch
+.DS_Store
+Thumbs.db

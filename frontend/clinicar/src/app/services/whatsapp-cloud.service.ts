@@ -38,7 +38,7 @@ export interface WhatsAppCadastroVeiculoRequest {
 })
 export class WhatsappCloudService {
 
-  private readonly apiUrl = 'http://localhost:8080/api/whatsapp';
+  private readonly apiUrl = '/api/whatsapp';
 
   constructor(
     private readonly http: HttpClient

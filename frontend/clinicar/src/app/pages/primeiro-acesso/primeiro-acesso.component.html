@@ -1,0 +1,851 @@
+<main class="setup-page primeiro-acesso">
+
+  <section
+    class="card setup-card shadow-sm mx-auto"
+    aria-labelledby="titulo"
+  >
+
+    <!-- CABEÇALHO -->
+    <header class="cadastro-header">
+
+      <div class="header-identidade">
+
+        <img
+          src="assets/img/LogoClinicar.png"
+          class="setup-logo img-fluid"
+          alt="CliniCar"
+        >
+
+        <div>
+          <h1 id="titulo" class="h4 mb-1">
+            <i
+              class="bi bi-person-plus me-2"
+              aria-hidden="true"
+            ></i>
+            Primeiro acesso
+          </h1>
+
+          <p class="mb-0">
+            Configure a conta do administrador inicial do CliniCar.
+          </p>
+        </div>
+
+      </div>
+
+    </header>
+
+    <!-- CONTEÚDO -->
+    <div class="cadastro-body">
+
+      <div
+        *ngIf="carregando"
+        class="estado-carregamento"
+        role="status"
+      >
+        <span
+          class="spinner-border spinner-border-sm me-2"
+          aria-hidden="true"
+        ></span>
+
+        Consultando configuração...
+      </div>
+
+      <div
+        *ngIf="erro"
+        class="alert alert-danger py-2 mb-3"
+        role="alert"
+      >
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        {{ erro }}
+      </div>
+
+      <div
+        *ngIf="mensagem"
+        class="alert alert-success py-2 mb-3"
+        role="status"
+      >
+        <i class="bi bi-check-circle me-2"></i>
+        {{ mensagem }}
+      </div>
+
+      <ng-container *ngIf="!carregando && status">
+
+        <!-- ========================================================= -->
+        <!-- SETUP AINDA DISPONÍVEL -->
+        <!-- ========================================================= -->
+
+        <form
+          *ngIf="status.estado === 'NAO_INICIADO'"
+          #form="ngForm"
+          (ngSubmit)="cadastrar(form)"
+          novalidate
+          class="wizard-form"
+        >
+
+          <!-- GUIAS -->
+          <nav
+            class="wizard-nav nav nav-pills"
+            aria-label="Etapas do primeiro acesso"
+          >
+
+            <button
+              *ngFor="let etapa of etapas"
+              type="button"
+              class="nav-link wizard-tab"
+              [class.active]="etapaAtual === etapa.numero"
+              [class.concluida]="etapaConcluida(etapa.numero)"
+              [disabled]="!etapaDisponivel(etapa.numero)"
+              [attr.aria-current]="
+                etapaAtual === etapa.numero
+                  ? 'step'
+                  : null
+              "
+              (click)="irParaEtapa(etapa.numero)"
+            >
+
+              <span class="wizard-numero">
+
+                <i
+                  *ngIf="etapaConcluida(etapa.numero)"
+                  class="bi bi-check-lg"
+                  aria-hidden="true"
+                ></i>
+
+                <span
+                  *ngIf="!etapaConcluida(etapa.numero)"
+                >
+                  {{ etapa.numero }}
+                </span>
+
+              </span>
+
+              <span class="wizard-texto">
+                {{ etapa.titulo }}
+              </span>
+
+            </button>
+
+          </nav>
+
+          <fieldset
+            [disabled]="enviando"
+            class="wizard-fieldset"
+          >
+
+            <!-- ===================================================== -->
+            <!-- ETAPAS 1, 2 E 3 -->
+            <!-- ===================================================== -->
+
+            <section
+              *ngIf="
+                etapaAtual >= 1 &&
+                etapaAtual <= 3
+              "
+              class="usuario-form-section-card wizard-content"
+              [attr.aria-labelledby]="
+                'etapa-' + etapaAtual
+              "
+            >
+
+              <div class="section-card-header">
+
+                <div class="section-title-wrap">
+
+                  <span class="section-icon">
+                    <i
+                      class="bi"
+                      [ngClass]="etapaSelecionada.icone"
+                      aria-hidden="true"
+                    ></i>
+                  </span>
+
+                  <div>
+                    <h2
+                      [id]="'etapa-' + etapaAtual"
+                      class="h6 mb-1"
+                    >
+                      {{ etapaSelecionada.titulo }}
+                    </h2>
+
+                    <small>
+                      {{ etapaSelecionada.descricao }}
+                    </small>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div class="row g-2">
+
+                <div
+                  *ngFor="let campo of camposEtapaAtual()"
+                  class="col-12"
+                  [ngClass]="campo.largura"
+                >
+
+                  <label
+                    [for]="campo.nome"
+                    class="form-label"
+                  >
+                    {{ campo.rotulo }}
+                    {{ campo.obrigatorio ? ' *' : '' }}
+                  </label>
+
+                  <div class="input-group input-group-sm">
+
+                    <!-- PREFIXO TELEFONE -->
+                    <span
+                      *ngIf="campo.nome === 'telefone'"
+                      class="input-group-text"
+                    >
+                      <i
+                        class="bi bi-telephone me-1"
+                        aria-hidden="true"
+                      ></i>
+                      +55
+                    </span>
+
+                    <input
+                      #entrada
+                      class="form-control form-control-sm"
+                      [id]="campo.nome"
+                      [name]="campo.nome"
+                      [type]="campo.tipo"
+
+                      [ngModel]="dados[campo.nome]"
+
+                      (ngModelChange)="
+                        atualizarCampo(
+                          campo.nome,
+                          $event,
+                          entrada
+                        )
+                      "
+
+                      (blur)="validarCampo(campo.nome)"
+
+                      [required]="!!campo.obrigatorio"
+
+                      [email]="
+                        campo.tipo === 'email'
+                      "
+
+                      [attr.autocomplete]="
+                        campo.autocomplete
+                      "
+
+                      [maxlength]="
+                        campo.nome === 'cpf'
+                          ? 14
+                          : campo.nome === 'telefone'
+                          ? 15
+                          : campo.nome === 'cep'
+                          ? 9
+                          : campo.nome === 'estado'
+                          ? 2
+                          : 255
+                      "
+
+                      [attr.inputmode]="
+                        ['cpf', 'cep', 'telefone']
+                          .includes(campo.nome)
+                          ? 'numeric'
+                          : null
+                      "
+
+                      [placeholder]="
+                        campo.nome === 'cpf'
+                          ? '000.000.000-00'
+                          : campo.nome === 'cep'
+                          ? '00000-000'
+                          : campo.nome === 'telefone'
+                          ? '(11) 99999-9999'
+                          : ''
+                      "
+
+                      [class.is-invalid]="
+                        !!errosCampos[campo.nome]
+                      "
+
+                      [attr.aria-invalid]="
+                        !!errosCampos[campo.nome]
+                      "
+
+                      [attr.aria-describedby]="
+                        campo.nome + '-ajuda'
+                      "
+                    >
+
+                    <!-- CONSULTA CEP -->
+                    <button
+                      *ngIf="campo.nome === 'cep'"
+                      type="button"
+                      class="btn btn-outline-primary"
+                      aria-label="Consultar CEP"
+                      (click)="buscarCep(true)"
+                      [disabled]="
+                        cepCarregando ||
+                        dados.cep.length !== 9
+                      "
+                    >
+
+                      <span
+                        *ngIf="cepCarregando"
+                        class="
+                          spinner-border
+                          spinner-border-sm
+                        "
+                        aria-hidden="true"
+                      ></span>
+
+                      <i
+                        *ngIf="!cepCarregando"
+                        class="bi bi-search"
+                        aria-hidden="true"
+                      ></i>
+
+                    </button>
+
+                    <div
+                      *ngIf="errosCampos[campo.nome]"
+                      class="invalid-feedback"
+                    >
+                      {{ errosCampos[campo.nome] }}
+                    </div>
+
+                  </div>
+
+                  <div
+                    class="campo-ajuda"
+                    [id]="campo.nome + '-ajuda'"
+                  >
+
+                    <small
+                      *ngIf="campo.nome === 'telefone'"
+                      class="text-muted"
+                    >
+                      Informe o DDD e o telefone fixo ou celular.
+                    </small>
+
+                    <small
+                      *ngIf="campo.nome === 'cep'"
+                      class="text-muted"
+                      role="status"
+                    >
+                      {{
+                        cepCarregando
+                          ? 'Consultando endereço...'
+                          : cepMensagem ||
+                            'Consulta automática ao completar os 8 dígitos.'
+                      }}
+                    </small>
+
+                    <small
+                      *ngIf="campo.nome === 'numeroEndereco'"
+                      class="text-muted"
+                    >
+                      Informe manualmente o número ou S/N.
+                    </small>
+
+                    <small
+                      *ngIf="
+                        campo.nome === 'nomeSocial' ||
+                        campo.nome === 'complementoEndereco'
+                      "
+                      class="text-muted"
+                    >
+                      Opcional.
+                    </small>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <!-- AVISO DA ETAPA DE CONTATO -->
+              <div
+                *ngIf="etapaAtual === 2"
+                class="acesso-info mt-3"
+              >
+
+                <i
+                  class="bi bi-shield-lock"
+                  aria-hidden="true"
+                ></i>
+
+                <div>
+
+                  <strong>
+                    Como será realizado o acesso?
+                  </strong>
+
+                  <small>
+                    Após o cadastro, enviaremos um link para
+                    o e-mail informado. Por esse link você
+                    definirá sua senha. A autenticação em
+                    duas etapas será configurada no primeiro
+                    login.
+                  </small>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            <!-- ===================================================== -->
+            <!-- ETAPA 4 - REVISÃO -->
+            <!-- ===================================================== -->
+
+            <section
+              *ngIf="etapaAtual === 4"
+              class="wizard-content revisao-section"
+              aria-labelledby="etapa-revisao"
+            >
+
+              <div class="section-card-header">
+
+                <div class="section-title-wrap">
+
+                  <span class="section-icon">
+                    <i
+                      class="bi bi-clipboard-check"
+                      aria-hidden="true"
+                    ></i>
+                  </span>
+
+                  <div>
+                    <h2
+                      id="etapa-revisao"
+                      class="h6 mb-1"
+                    >
+                      Revisão dos dados
+                    </h2>
+
+                    <small>
+                      Confira as informações antes de criar
+                      o administrador inicial.
+                    </small>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div class="review-grid">
+
+                <!-- DADOS PESSOAIS -->
+                <article class="review-card">
+
+                  <div class="review-card-header">
+
+                    <div>
+                      <i
+                        class="bi bi-person-vcard me-1"
+                        aria-hidden="true"
+                      ></i>
+                      Dados pessoais
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-link review-edit"
+                      (click)="editarEtapa(1)"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Editar
+                    </button>
+
+                  </div>
+
+                  <dl class="review-list">
+
+                    <div>
+                      <dt>Nome</dt>
+                      <dd>{{ dados.nome }}</dd>
+                    </div>
+
+                    <div>
+                      <dt>Nome social</dt>
+                      <dd>
+                        {{
+                          valorOuNaoInformado(
+                            dados.nomeSocial
+                          )
+                        }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt>CPF</dt>
+                      <dd>{{ dados.cpf }}</dd>
+                    </div>
+
+                    <div>
+                      <dt>Nascimento</dt>
+                      <dd>
+                        {{ nascimentoFormatado() }}
+                      </dd>
+                    </div>
+
+                  </dl>
+
+                </article>
+
+                <!-- CONTATO -->
+                <article class="review-card">
+
+                  <div class="review-card-header">
+
+                    <div>
+                      <i
+                        class="bi bi-envelope-at me-1"
+                        aria-hidden="true"
+                      ></i>
+                      Contato e Acesso
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-link review-edit"
+                      (click)="editarEtapa(2)"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Editar
+                    </button>
+
+                  </div>
+
+                  <dl class="review-list">
+
+                    <div>
+                      <dt>E-mail</dt>
+                      <dd>{{ dados.email }}</dd>
+                    </div>
+
+                    <div>
+                      <dt>Telefone</dt>
+                      <dd>+55 {{ dados.telefone }}</dd>
+                    </div>
+
+                  </dl>
+
+                </article>
+
+                <!-- ENDEREÇO -->
+                <article class="review-card">
+
+                  <div class="review-card-header">
+
+                    <div>
+                      <i
+                        class="bi bi-geo-alt me-1"
+                        aria-hidden="true"
+                      ></i>
+                      Endereço
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-link review-edit"
+                      (click)="editarEtapa(3)"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Editar
+                    </button>
+
+                  </div>
+
+                  <dl class="review-list">
+
+                    <div>
+                      <dt>CEP</dt>
+                      <dd>{{ dados.cep }}</dd>
+                    </div>
+
+                    <div>
+                      <dt>Endereço</dt>
+                      <dd>
+                        {{ enderecoResumo() }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt>Complemento</dt>
+                      <dd>
+                        {{
+                          valorOuNaoInformado(
+                            dados.complementoEndereco
+                          )
+                        }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt>Bairro</dt>
+                      <dd>{{ dados.bairro }}</dd>
+                    </div>
+
+                    <div>
+                      <dt>Cidade / UF</dt>
+                      <dd>
+                        {{ dados.cidade }}
+                        /
+                        {{ dados.estado }}
+                      </dd>
+                    </div>
+
+                  </dl>
+
+                </article>
+
+              </div>
+
+              <div class="revisao-aviso">
+
+                <i
+                  class="bi bi-envelope-check"
+                  aria-hidden="true"
+                ></i>
+
+                <span>
+                  Após o cadastro, será enviado um link de
+                  ativação para
+                  <strong>{{ dados.email }}</strong>.
+                </span>
+
+              </div>
+
+            </section>
+
+            <!-- ===================================================== -->
+            <!-- AÇÕES DO WIZARD -->
+            <!-- ===================================================== -->
+
+            <div class="wizard-actions">
+
+              <div class="wizard-actions-left">
+
+                <a
+                  *ngIf="etapaAtual === 1"
+                  routerLink="/login"
+                  class="btn btn-outline-primary"
+                >
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar ao login
+                </a>
+
+                <button
+                  *ngIf="etapaAtual > 1"
+                  type="button"
+                  class="btn btn-outline-primary"
+                  (click)="voltar()"
+                >
+                  <i class="bi bi-chevron-left me-1"></i>
+                  Anterior
+                </button>
+
+              </div>
+
+              <div class="wizard-actions-right">
+
+                <button
+                  *ngIf="etapaAtual < 3"
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="avancar()"
+                >
+                  Próximo
+                  <i class="bi bi-chevron-right ms-1"></i>
+                </button>
+
+                <button
+                  *ngIf="etapaAtual === 3"
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="avancar()"
+                >
+                  <i
+                    class="bi bi-clipboard-check me-1"
+                  ></i>
+                  Revisar dados
+                </button>
+
+                <button
+                  *ngIf="etapaAtual === 4"
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="enviando"
+                >
+
+                  <span
+                    *ngIf="enviando"
+                    class="
+                      spinner-border
+                      spinner-border-sm
+                      me-1
+                    "
+                    aria-hidden="true"
+                  ></span>
+
+                  <i
+                    *ngIf="!enviando"
+                    class="bi bi-check-circle me-1"
+                    aria-hidden="true"
+                  ></i>
+
+                  {{
+                    enviando
+                      ? 'Cadastrando...'
+                      : 'Cadastrar administrador inicial'
+                  }}
+
+                </button>
+
+              </div>
+
+            </div>
+
+          </fieldset>
+
+        </form>
+
+        <!-- ========================================================= -->
+        <!-- AGUARDANDO ATIVAÇÃO -->
+        <!-- ========================================================= -->
+
+        <div
+          *ngIf="
+            status.estado ===
+            'AGUARDANDO_ATIVACAO'
+          "
+          class="setup-info setup-status-card"
+        >
+
+          <div class="status-icon">
+            <i class="bi bi-envelope-check"></i>
+          </div>
+
+          <div class="status-content">
+
+            <h2 class="h5">
+              Aguardando ativação
+            </h2>
+
+            <p>
+              {{ status.mensagem }}
+            </p>
+
+            <p class="text-muted">
+              Confira também a pasta de spam. Um novo envio
+              invalida os links anteriores.
+            </p>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="reenviar()"
+              [disabled]="enviando"
+            >
+              {{
+                enviando
+                  ? 'Solicitando...'
+                  : 'Reenviar ativação'
+              }}
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- SETUP CONCLUÍDO -->
+        <!-- ========================================================= -->
+
+        <div
+          *ngIf="
+            status.estado ===
+            'CONCLUIDO'
+          "
+          class="setup-info setup-status-card"
+        >
+
+          <div class="status-icon sucesso">
+            <i class="bi bi-check-circle"></i>
+          </div>
+
+          <div class="status-content">
+
+            <h2 class="h5">
+              Configuração concluída
+            </h2>
+
+            <p>
+              A configuração inicial do CliniCar já foi
+              concluída.
+            </p>
+
+            <a
+              routerLink="/login"
+              class="btn btn-primary"
+            >
+              Ir para o login
+            </a>
+
+          </div>
+
+        </div>
+
+        <!-- ESTADO INESPERADO -->
+        <div
+          *ngIf="
+            ![
+              'NAO_INICIADO',
+              'AGUARDANDO_ATIVACAO',
+              'CONCLUIDO'
+            ].includes(status.estado)
+          "
+          class="alert alert-warning"
+        >
+          A configuração não está disponível neste momento.
+        </div>
+
+      </ng-container>
+
+    </div>
+
+    <!-- RODAPÉ PARA ESTADOS FORA DO WIZARD -->
+    <footer
+      *ngIf="
+        !carregando &&
+        status &&
+        status.estado !== 'NAO_INICIADO'
+      "
+      class="cadastro-footer"
+    >
+
+      <a
+        routerLink="/login"
+        class="btn btn-outline-primary"
+      >
+        <i class="bi bi-arrow-left me-1"></i>
+        Voltar ao login
+      </a>
+
+      <button
+        type="button"
+        class="btn btn-link"
+        (click)="consultar()"
+        [disabled]="carregando || enviando"
+      >
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Atualizar situação
+      </button>
+
+    </footer>
+
+  </section>
+
+</main>

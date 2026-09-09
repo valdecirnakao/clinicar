@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = '';
 
 export interface Agendamento {
   id?: number;

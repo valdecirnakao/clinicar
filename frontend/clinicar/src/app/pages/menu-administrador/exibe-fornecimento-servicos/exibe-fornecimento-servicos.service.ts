@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = '';
 
 export interface FornecimentoServico {
   id?: number;

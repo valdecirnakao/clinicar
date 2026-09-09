@@ -31,6 +31,25 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioResponse criar(UsuarioRequest request) {
+        return criarComPerfil(request, "CLIENTE", "ATIVO");
+    }
+
+    @Transactional
+    public UsuarioResponse criarPorAdministrador(UsuarioRequest request) {
+        String tipoAcesso = normalizarTipoAcesso(request.getTipo_do_acesso());
+        String status = normalizarStatus(request.getStatus());
+
+        if (!java.util.Set.of("CLIENTE", "COLABORADOR", "ADMINISTRADOR").contains(tipoAcesso)) {
+            throw new IllegalArgumentException("Tipo de acesso inválido.");
+        }
+        if (!java.util.Set.of("ATIVO", "INATIVO").contains(status)) {
+            throw new IllegalArgumentException("Status de usuário inválido.");
+        }
+
+        return criarComPerfil(request, tipoAcesso, status);
+    }
+
+    private UsuarioResponse criarComPerfil(UsuarioRequest request, String tipoAcesso, String status) {
         String emailNormalizado = normalizarEmail(request.getEmail());
 
         validarEmailUnico(emailNormalizado, null);
@@ -38,6 +57,12 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
 
         preencherDadosUsuario(usuario, request, emailNormalizado);
+
+        usuario.setTipo_do_acesso(tipoAcesso);
+        usuario.setStatus(status);
+        usuario.setMfaAtivo(false);
+        usuario.setMfaTipo(null);
+        usuario.setMfaSecret(null);
 
         if (request.getSenha() != null && !request.getSenha().isBlank()) {
             usuario.setSenha(passwordEncoder.encode(request.getSenha()));
@@ -51,13 +76,23 @@ public class UsuarioService {
     }
 
     @Transactional
-    public UsuarioResponse atualizar(Long id, UsuarioRequest request) {
+    public UsuarioResponse atualizarProprio(Long id, UsuarioRequest request) {
+        return atualizarComPermissoes(id, request, false);
+    }
+
+    @Transactional
+    public UsuarioResponse atualizarPorAdministrador(Long id, UsuarioRequest request) {
+        return atualizarComPermissoes(id, request, true);
+    }
+
+    private UsuarioResponse atualizarComPermissoes(Long id, UsuarioRequest request, boolean administrador) {
         log.info("UsuarioService.atualizar iniciado para usuário ID {}.", id);
 
         Usuario usuario = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
-        String emailNormalizado = normalizarEmail(request.getEmail());
+        String emailNormalizado = administrador
+                ? normalizarEmail(request.getEmail()) : usuario.getEmail();
 
         validarEmailUnico(emailNormalizado, id);
 
@@ -66,13 +101,29 @@ public class UsuarioService {
 
         log.info("Usuário ID {} antes da atualização: {}", id, assinaturaAntes);
 
-        preencherDadosUsuario(usuario, request, emailNormalizado);
+        if (administrador) {
+            String tipoAcesso = request.getTipo_do_acesso() == null
+                    ? normalizarTipoAcesso(usuario.getTipo_do_acesso()) : normalizarTipoAcesso(request.getTipo_do_acesso());
+            String status = request.getStatus() == null
+                    ? usuario.getStatus() : normalizarStatus(request.getStatus());
+            if (!java.util.Set.of("CLIENTE", "COLABORADOR", "ADMINISTRADOR").contains(tipoAcesso)) {
+                throw new IllegalArgumentException("Tipo de acesso inválido.");
+            }
+            if (request.getStatus() != null && !java.util.Set.of("ATIVO", "INATIVO").contains(status)) {
+                throw new IllegalArgumentException("Status de usuário inválido.");
+            }
+            preencherDadosUsuario(usuario, request, emailNormalizado);
+            usuario.setTipo_do_acesso(tipoAcesso);
+            usuario.setStatus(status);
+        } else {
+            preencherPerfilProprio(usuario, request);
+        }
 
         /*
-         * Só altera a senha se uma nova senha for informada.
+         * Só o administrador altera a senha aqui, se uma nova senha for informada.
          * Se vier null ou vazia, mantém a senha atual.
          */
-        if (request.getSenha() != null && !request.getSenha().isBlank()) {
+        if (administrador && request.getSenha() != null && !request.getSenha().isBlank()) {
             usuario.setSenha(passwordEncoder.encode(request.getSenha()));
         }
 
@@ -161,28 +212,12 @@ public class UsuarioService {
         Usuario usuario = usuarioOpt.get();
         String senhaSalva = usuario.getSenha();
 
-        boolean senhaValida;
-
-        if (senhaEstaCriptografadaComBCrypt(senhaSalva)) {
-            senhaValida = passwordEncoder.matches(senhaDigitada, senhaSalva);
-        } else {
-            /*
-             * Compatibilidade temporária com usuários antigos
-             * que ainda estão com senha em texto puro no banco.
-             */
-            senhaValida = senhaDigitada.equals(senhaSalva);
-
-            /*
-             * Se a senha antiga em texto puro estiver correta,
-             * converte automaticamente para BCrypt.
-             */
-            if (senhaValida) {
-                usuario.setSenha(passwordEncoder.encode(senhaDigitada));
-                repo.save(usuario);
-            }
+        if (!"ATIVO".equalsIgnoreCase(usuario.getStatus())
+                || senhaSalva == null || senhaSalva.isBlank()) {
+            return Optional.empty();
         }
 
-        if (!senhaValida) {
+        if (!passwordEncoder.matches(senhaDigitada, senhaSalva)) {
             return Optional.empty();
         }
 
@@ -206,9 +241,22 @@ public class UsuarioService {
         usuario.setEstado(normalizarEstado(request.getEstado()));
         usuario.setComplemento_endereco(limparTexto(request.getComplemento_endereco()));
         usuario.setNumero_endereco(limparTexto(request.getNumero_endereco()));
-        usuario.setTipo_do_acesso(normalizarTipoAcesso(request.getTipo_do_acesso()));
-        usuario.setStatus(normalizarStatus(request.getStatus()));
         usuario.setNascimento(parseNascimento(request.getNascimento()));
+    }
+
+    private void preencherPerfilProprio(Usuario usuario, UsuarioRequest request) {
+        // Campos omitidos são preservados. Identificadores, senha, perfil, status e MFA não são copiados.
+        if (request.getNome() != null) usuario.setNome(limparTexto(request.getNome()));
+        if (request.getNome_social() != null) usuario.setNome_social(limparTexto(request.getNome_social()));
+        if (request.getTelefone() != null) usuario.setTelefone(soDigitos(request.getTelefone()));
+        if (request.getNascimento() != null) usuario.setNascimento(parseNascimento(request.getNascimento()));
+        if (request.getCep() != null) usuario.setCep(soDigitos(request.getCep()));
+        if (request.getLogradouro() != null) usuario.setLogradouro(limparTexto(request.getLogradouro()));
+        if (request.getBairro() != null) usuario.setBairro(limparTexto(request.getBairro()));
+        if (request.getCidade() != null) usuario.setCidade(limparTexto(request.getCidade()));
+        if (request.getEstado() != null) usuario.setEstado(normalizarEstado(request.getEstado()));
+        if (request.getComplemento_endereco() != null) usuario.setComplemento_endereco(limparTexto(request.getComplemento_endereco()));
+        if (request.getNumero_endereco() != null) usuario.setNumero_endereco(limparTexto(request.getNumero_endereco()));
     }
 
     private UsuarioResponse toResponse(Usuario salvo) {
@@ -284,15 +332,6 @@ public class UsuarioService {
         } catch (DateTimeParseException ignored) {
             return null;
         }
-    }
-
-    private boolean senhaEstaCriptografadaComBCrypt(String senhaSalva) {
-        return senhaSalva != null &&
-                (
-                        senhaSalva.startsWith("$2a$") ||
-                        senhaSalva.startsWith("$2b$") ||
-                        senhaSalva.startsWith("$2y$")
-                );
     }
 
     private String soDigitos(String valor) {

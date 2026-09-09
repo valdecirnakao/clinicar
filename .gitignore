@@ -1,0 +1,22 @@
+.env
+.env.local
+
+*.bak
+*.patch
+*.tmp
+*.log
+
+.DS_Store
+Thumbs.db
+
+backend/target/
+
+frontend/clinicar/node_modules/
+frontend/clinicar/dist/
+frontend/clinicar/.angular/
+
+# Arquivos temporarios de autenticacao
+cookies-validacao*.txt
+
+# Dependencias locais da raiz
+/node_modules/

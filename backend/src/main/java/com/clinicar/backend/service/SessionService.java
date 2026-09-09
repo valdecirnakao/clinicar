@@ -7,6 +7,10 @@ import com.clinicar.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import com.clinicar.backend.dto.UsuarioResponse;
 import com.clinicar.backend.mapper.UsuarioMapper;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +23,9 @@ import java.util.Optional;
 
 @Service
 public class SessionService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final AuthSessionRepository authSessionRepository;
     private final UsuarioRepository usuarioRepository;
@@ -45,9 +52,17 @@ public class SessionService {
         this.usuarioMapper = usuarioMapper;
     }
 
+    @Transactional
     public ResponseCookie criarSessaoCookie(Long usuarioId) {
         if (usuarioId == null) {
             throw new IllegalArgumentException("ID do usuário inválido para criação de sessão.");
+        }
+        Usuario usuario = entityManager.find(Usuario.class, usuarioId, LockModeType.PESSIMISTIC_WRITE);
+        if (usuario == null || !"ATIVO".equalsIgnoreCase(usuario.getStatus())
+                || !Boolean.TRUE.equals(usuario.getMfaAtivo())
+                || !"TOTP".equalsIgnoreCase(usuario.getMfaTipo())
+                || usuario.getMfaSecret() == null || usuario.getMfaSecret().isBlank()) {
+            throw new IllegalArgumentException("Não foi possível concluir a autenticação.");
         }
         String tokenOriginal = gerarTokenSeguro();
         String tokenHash = gerarHash(tokenOriginal);
@@ -80,6 +95,7 @@ public class SessionService {
                 .build();
     }
 
+    @Transactional
     public Optional<UsuarioResponse> validarSessao(String tokenOriginal) {
         if (tokenOriginal == null || tokenOriginal.isBlank()) {
             return Optional.empty();
@@ -96,7 +112,10 @@ public class SessionService {
 
         AuthSession session = sessionOpt.get();
 
-        if (session.getExpiraEm().isBefore(LocalDateTime.now())) {
+        if (!Boolean.FALSE.equals(session.getRevogado())
+                || session.getExpiraEm() == null
+                || !session.getExpiraEm().isAfter(LocalDateTime.now())
+                || session.getUsuarioId() == null) {
             session.setRevogado(true);
             authSessionRepository.save(session);
             return Optional.empty();
@@ -104,7 +123,7 @@ public class SessionService {
 
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(session.getUsuarioId());
 
-        if (usuarioOpt.isEmpty()) {
+        if (usuarioOpt.isEmpty() || !"ATIVO".equalsIgnoreCase(usuarioOpt.get().getStatus())) {
             session.setRevogado(true);
             authSessionRepository.save(session);
             return Optional.empty();
@@ -117,6 +136,7 @@ public class SessionService {
         return Optional.of(usuarioMapper.toResponse(usuario));
     }
 
+    @Transactional
     public void revogarSessao(String tokenOriginal) {
         if (tokenOriginal == null || tokenOriginal.isBlank()) {
             return;

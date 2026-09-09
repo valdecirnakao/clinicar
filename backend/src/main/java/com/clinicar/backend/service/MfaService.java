@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +27,16 @@ import java.util.Base64;
 @Slf4j
 @Service
 public class MfaService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    // Somente rejeições esperadas de MFA preservam o contador e a invalidação do challenge.
+    private static class FalhaValidacaoMfa extends IllegalArgumentException {
+        private FalhaValidacaoMfa(String mensagem) {
+            super(mensagem);
+        }
+    }
 
     private static final String TIPO_SETUP = "SETUP";
     private static final String TIPO_LOGIN = "LOGIN";
@@ -68,9 +81,19 @@ public class MfaService {
 
         invalidarChallengesAnteriores(usuario.getId());
 
+        usuario = entityManager.find(Usuario.class, usuario.getId(), LockModeType.PESSIMISTIC_WRITE);
+        if (usuario == null || !"ATIVO".equalsIgnoreCase(usuario.getStatus())) {
+            throw new IllegalArgumentException("Não foi possível iniciar a autenticação.");
+        }
+
         boolean mfaAtivo = Boolean.TRUE.equals(usuario.getMfaAtivo())
                 && usuario.getMfaSecret() != null
                 && !usuario.getMfaSecret().isBlank();
+
+        if (Boolean.TRUE.equals(usuario.getMfaAtivo())
+                && (!mfaAtivo || !"TOTP".equalsIgnoreCase(usuario.getMfaTipo()))) {
+            throw new IllegalArgumentException("Não foi possível iniciar a autenticação.");
+        }
 
         if (mfaAtivo) {
             return criarChallengeLogin(usuario);
@@ -79,39 +102,59 @@ public class MfaService {
         return criarChallengeSetup(usuario);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = FalhaValidacaoMfa.class)
     public UsuarioResponse validarMfa(String mfaToken, String codigo) {
         if (mfaToken == null || mfaToken.isBlank()) {
-            throw new IllegalArgumentException("Token MFA não informado.");
-        }
-
-        if (codigo == null || !codigo.matches("\\d{6}")) {
-            throw new IllegalArgumentException("Informe um código de 6 dígitos.");
+            throw new FalhaValidacaoMfa("Verificação MFA inválida ou expirada.");
         }
 
         String tokenHash = gerarHash(mfaToken);
 
         MfaChallenge challenge = challengeRepository
                 .findByTokenHashAndUsadoFalse(tokenHash)
-                .orElseThrow(() -> new IllegalArgumentException("Verificação MFA inválida ou expirada."));
+                .orElseThrow(() -> new FalhaValidacaoMfa("Verificação MFA inválida ou expirada."));
 
-        if (challenge.getExpiraEm().isBefore(LocalDateTime.now())) {
+        if (!Boolean.FALSE.equals(challenge.getUsado())
+                || challenge.getExpiraEm() == null
+                || !challenge.getExpiraEm().isAfter(LocalDateTime.now())) {
             challenge.setUsado(true);
             challengeRepository.save(challenge);
 
-            throw new IllegalArgumentException("Verificação MFA expirada. Faça login novamente.");
+            throw new FalhaValidacaoMfa("Verificação MFA inválida ou expirada.");
         }
 
         if (challenge.getTentativas() != null && challenge.getTentativas() >= MAX_TENTATIVAS) {
             challenge.setUsado(true);
             challengeRepository.save(challenge);
 
-            throw new IllegalArgumentException("Número máximo de tentativas excedido. Faça login novamente.");
+            throw new FalhaValidacaoMfa("Verificação MFA inválida ou expirada.");
         }
 
-        Usuario usuario = usuarioRepository
-                .findById(challenge.getUsuarioId())
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        Usuario usuario = challenge.getUsuarioId() == null ? null
+                : entityManager.find(Usuario.class, challenge.getUsuarioId(), LockModeType.PESSIMISTIC_WRITE);
+        if (usuario == null || !"ATIVO".equalsIgnoreCase(usuario.getStatus())
+                || !challenge.getExpiraEm().isAfter(LocalDateTime.now())) {
+            challenge.setUsado(true);
+            challengeRepository.save(challenge);
+            throw new FalhaValidacaoMfa("Verificação MFA inválida ou expirada.");
+        }
+
+        boolean mfaConfigurado = Boolean.TRUE.equals(usuario.getMfaAtivo())
+                && "TOTP".equalsIgnoreCase(usuario.getMfaTipo())
+                && usuario.getMfaSecret() != null && !usuario.getMfaSecret().isBlank();
+        boolean setupValido = TIPO_SETUP.equals(challenge.getTipo())
+                && !Boolean.TRUE.equals(usuario.getMfaAtivo())
+                && challenge.getSecretTemporario() != null && !challenge.getSecretTemporario().isBlank();
+        if (!(setupValido || (TIPO_LOGIN.equals(challenge.getTipo()) && mfaConfigurado))) {
+            challenge.setUsado(true);
+            challengeRepository.save(challenge);
+            throw new FalhaValidacaoMfa("Verificação MFA inválida ou expirada.");
+        }
+
+        if (codigo == null || !codigo.matches("\\d{6}")) {
+            registrarTentativaInvalida(challenge);
+            throw new FalhaValidacaoMfa("Código inválido.");
+        }
 
         boolean codigoValido;
 
@@ -129,37 +172,32 @@ public class MfaService {
             }
 
         } else if (TIPO_LOGIN.equals(challenge.getTipo())) {
-            if (usuario.getMfaSecret() == null || usuario.getMfaSecret().isBlank()) {
-                throw new IllegalArgumentException(
-                        "MFA não configurado para este usuário. Faça login novamente para configurar o aplicativo autenticador.");
-            }
-
             String secretBase32 = cryptoService.descriptografar(usuario.getMfaSecret());
 
             codigoValido = totpService.validarCodigo(secretBase32, codigo);
 
         } else {
-            throw new IllegalArgumentException("Tipo de verificação MFA inválido.");
+            throw new FalhaValidacaoMfa("Verificação MFA inválida ou expirada.");
         }
 
         if (!codigoValido) {
-            int tentativas = challenge.getTentativas() == null ? 0 : challenge.getTentativas();
-
-            challenge.setTentativas(tentativas + 1);
-
-            if (challenge.getTentativas() >= MAX_TENTATIVAS) {
-                challenge.setUsado(true);
-            }
-
-            challengeRepository.save(challenge);
-
-            throw new IllegalArgumentException("Código inválido.");
+            registrarTentativaInvalida(challenge);
+            throw new FalhaValidacaoMfa("Código inválido.");
         }
 
         challenge.setUsado(true);
         challengeRepository.save(challenge);
 
         return usuarioMapper.toResponse(usuario);
+    }
+
+    private void registrarTentativaInvalida(MfaChallenge challenge) {
+        int tentativas = challenge.getTentativas() == null ? 0 : Math.max(0, challenge.getTentativas());
+        challenge.setTentativas(tentativas + 1);
+        if (challenge.getTentativas() >= MAX_TENTATIVAS) {
+            challenge.setUsado(true);
+        }
+        challengeRepository.save(challenge);
     }
 
     private LoginResponse criarChallengeLogin(Usuario usuario) {
@@ -266,8 +304,11 @@ public class MfaService {
             throw new IllegalArgumentException("ID do usuário não informado.");
         }
 
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        invalidarChallengesAnteriores(usuarioId);
+        Usuario usuario = entityManager.find(Usuario.class, usuarioId, LockModeType.PESSIMISTIC_WRITE);
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não encontrado.");
+        }
 
         usuario.setMfaAtivo(false);
         usuario.setMfaTipo(null);
@@ -275,12 +316,9 @@ public class MfaService {
 
         Usuario salvo = usuarioRepository.save(usuario);
 
-        invalidarChallengesAnteriores(usuarioId);
-
         log.info(
-                "MFA resetado para usuário ID {}. Publicando UsuarioMfaResetadoEvent. telefone={}",
-                salvo.getId(),
-                salvo.getTelefone());
+                "MFA resetado para usuário ID {}. Publicando UsuarioMfaResetadoEvent.",
+                salvo.getId());
 
         eventPublisher.publishEvent(
                 new UsuarioMfaResetadoEvent(

@@ -17,7 +17,7 @@ export interface RedefinirSenhaRequest {
 })
 export class AuthService {
 
-  private readonly apiUrl = 'http://localhost:8080/api/auth';
+  private readonly apiUrl = '/api/auth';
 
   constructor(private readonly http: HttpClient) {}
 

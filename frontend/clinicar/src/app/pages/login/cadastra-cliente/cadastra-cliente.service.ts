@@ -10,12 +10,12 @@ export class CadastraClienteService {
   private readonly base = '/api/usuario'; // relativo
 
 
-  private readonly apiUrl = 'http://localhost:8080/api/usuario'; // URL do backend
+  private readonly apiUrl = '/api/usuario'; // URL do backend
 
   constructor(private readonly http: HttpClient) { }
 
   cadastrar(usuario: any) {
-    return this.http.post('http://localhost:8080/api/usuario', usuario);
+    return this.http.post('/api/usuario', usuario);
   }
 
   buscarClientes(): Observable<any[]> {
