@@ -3,10 +3,10 @@ name: clinicar
 services:
 
   # ==========================================================
-  # MYSQL
+  # MYSQL - imagem publicada no Docker Hub
   # ==========================================================
   mysql:
-    image: mysql:8.0.42
+    image: nakaohideki/mysql-clinicar:1.0.0
     container_name: clinicar-mysql
     restart: unless-stopped
 
@@ -14,16 +14,15 @@ services:
       MYSQL_DATABASE: clinicar
       MYSQL_USER: clinicar_app
 
-      # Valores abaixo sao apenas fallbacks do ambiente local/TCC.
-      # Um arquivo .env pode sobrescreve-los.
-      MYSQL_PASSWORD: "${MYSQL_APP_PASSWORD:-ClinicarLocalApp_2026}"
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-ClinicarLocalRoot_2026}"
+      # Fallbacks destinados exclusivamente ao ambiente academico/local.
+      # Um arquivo .env pode sobrescrever estes valores.
+      MYSQL_PASSWORD: "${MYSQL_APP_PASSWORD:-ClinicarEntregaApp_2026}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-ClinicarEntregaRoot_2026}"
 
       TZ: America/Sao_Paulo
 
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./bd/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
 
     healthcheck:
       test:
@@ -63,14 +62,10 @@ services:
 
 
   # ==========================================================
-  # BACKEND SPRING BOOT
+  # BACKEND SPRING BOOT - imagem publicada no Docker Hub
   # ==========================================================
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-
-    image: clinicar-backend:local
+    image: nakaohideki/backend-clinicar:1.0.0
     container_name: clinicar-backend
     restart: unless-stopped
 
@@ -78,7 +73,7 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/clinicar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo&characterEncoding=UTF-8"
 
       SPRING_DATASOURCE_USERNAME: clinicar_app
-      SPRING_DATASOURCE_PASSWORD: "${MYSQL_APP_PASSWORD:-ClinicarLocalApp_2026}"
+      SPRING_DATASOURCE_PASSWORD: "${MYSQL_APP_PASSWORD:-ClinicarEntregaApp_2026}"
 
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_JPA_SHOW_SQL: "false"
@@ -97,9 +92,9 @@ services:
 
       SETUP_TOKEN_MINUTES: "60"
 
-      # Chave publica propositalmente reservada ao ambiente local academico.
-      # Um .env real deve sobrescreve-la.
-      MFA_ENCRYPTION_KEY: "${MFA_ENCRYPTION_KEY:-2bo80B/E9obAIHBIJcITMfj13y6pkl8PYjuFeD5G6cs=}"
+      # Chave publica propositalmente reservada ao ambiente academico/local.
+      # Em producao, deve ser substituida por segredo proprio.
+      MFA_ENCRYPTION_KEY: "${MFA_ENCRYPTION_KEY:-Q2xpbmljYXJFbnRyZWdhUGFyY2lhbE1GQUtleTIwMjY=}"
 
       SESSION_COOKIE_SECURE: "false"
       SESSION_COOKIE_SAME_SITE: Lax
@@ -138,14 +133,10 @@ services:
 
 
   # ==========================================================
-  # FRONTEND ANGULAR + NGINX
+  # FRONTEND ANGULAR + NGINX - imagem publicada no Docker Hub
   # ==========================================================
   frontend:
-    build:
-      context: ./frontend/clinicar
-      dockerfile: Dockerfile
-
-    image: clinicar-frontend:local
+    image: nakaohideki/frontend-clinicar:1.0.0
     container_name: clinicar-frontend
     restart: unless-stopped
 
