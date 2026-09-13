@@ -1106,7 +1106,7 @@ CREATE TABLE IF NOT EXISTS previsao_manutencao_veiculo (
 -- Em um container MySQL oficial, monte este arquivo em:
 -- /docker-entrypoint-initdb.d/01-init.sql
 --
--- Exemplo no docker-compose.yml:
+-- Exemplo no compose.yaml:
 --
 -- services:
 --   db:
