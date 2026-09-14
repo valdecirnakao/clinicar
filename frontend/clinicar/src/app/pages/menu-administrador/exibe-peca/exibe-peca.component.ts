@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { Peca, PecaService } from './exibe-peca.service';
 
 declare var bootstrap: any;
@@ -16,12 +18,17 @@ type ColunaOrdenacaoPeca =
   | 'norma'
   | 'unidade';
 
-type CampoObrigatorioPeca = 'nome' | 'fabricante' | 'unidade';
+type CampoObrigatorioPeca =
+  'nome'
+  | 'fabricante'
+  | 'tipo'
+  | 'unidade'
+  | 'origemOleo';
 
 @Component({
   selector: 'app-exibe-peca',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-peca.component.html',
   styleUrls: ['./exibe-peca.component.css']
 })
@@ -62,12 +69,18 @@ export class ExibePecaComponent implements OnInit {
 
   readonly tiposPeca = [
     'Peça automotiva',
+    'Óleo de motor',
     'Lubrificante',
     'Fluido automotivo',
     'Consumível',
     'Acessório',
     'Ferramenta e equipamento',
     'Outro'
+  ];
+
+  readonly origensOleo = [
+    { valor: 'MINERAL', rotulo: 'Mineral' },
+    { valor: 'SINTETICO', rotulo: 'Sintético' }
   ];
 
   readonly unidadesMedida = [
@@ -142,7 +155,7 @@ export class ExibePecaComponent implements OnInit {
       .map(p => this.capitalizarTexto(p.tipo))
       .filter(Boolean);
 
-    return Array.from(new Set([...this.tiposPeca, ...existentes]))
+    return this.removerDuplicadosNormalizados([...this.tiposPeca, ...existentes])
       .sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
@@ -151,7 +164,7 @@ export class ExibePecaComponent implements OnInit {
       .map(p => this.capitalizarTexto(p.unidade))
       .filter(Boolean);
 
-    return Array.from(new Set([...this.unidadesMedida, ...existentes]))
+    return this.removerDuplicadosNormalizados([...this.unidadesMedida, ...existentes])
       .sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
@@ -529,10 +542,22 @@ export class ExibePecaComponent implements OnInit {
   }
 
   classificacaoIncompleta(model: Partial<Peca>): boolean {
-    return !String(model.tipo || '').trim() ||
-      !String(model.especificacao || '').trim() ||
-      !String(model.modelo || '').trim() ||
-      !String(model.norma || '').trim();
+  return this.campoTextoInvalido(model.tipo) ||
+    (
+      this.ehOleoMotor(model) &&
+      this.campoTextoInvalido(model.origemOleo)
+    );
+  }
+
+  ehOleoMotor(model: Partial<Peca>): boolean {
+    return this.normalizarTexto(model.tipo) === 'oleo de motor';
+  }
+
+  aoAlterarTipoPeca(model: Partial<Peca>): void {
+    if (!this.ehOleoMotor(model)) {
+      model.origemOleo = '';
+      this.camposInvalidos = this.camposInvalidos.filter(campo => campo !== 'origemOleo');
+    }
   }
 
   normalizarCampoCapitalizado(model: Partial<Peca>, campo: keyof Peca): void {
@@ -630,6 +655,7 @@ export class ExibePecaComponent implements OnInit {
     return {
       nome: '',
       tipo: '',
+      origemOleo: '',
       especificacao: '',
       fabricante: '',
       modelo: '',
@@ -639,51 +665,83 @@ export class ExibePecaComponent implements OnInit {
   }
 
   private validarPeca(model: Partial<Peca>): string | null {
-    if (this.campoTextoInvalido(model.nome)) {
-      return 'Informe o nome da peça ou insumo.';
-    }
-
-    if (this.campoTextoInvalido(model.fabricante)) {
-      return 'Informe o fabricante da peça ou insumo.';
-    }
-
-    if (this.campoTextoInvalido(model.unidade)) {
-      return 'Selecione a unidade de medida.';
-    }
-
-    return null;
+  if (this.campoTextoInvalido(model.nome)) {
+    return 'Informe o nome da peça ou insumo.';
   }
 
-  private camposObrigatoriosInvalidos(model: Partial<Peca>): CampoObrigatorioPeca[] {
-    const campos: CampoObrigatorioPeca[] = ['nome', 'fabricante', 'unidade'];
-
-    return campos.filter(campo => this.campoTextoInvalido(model[campo]));
+  if (this.campoTextoInvalido(model.fabricante)) {
+    return 'Informe o fabricante da peça ou insumo.';
   }
+
+  if (this.campoTextoInvalido(model.tipo)) {
+    return 'Selecione o tipo da peça ou insumo.';
+  }
+
+  if (this.campoTextoInvalido(model.unidade)) {
+    return 'Selecione a unidade de medida.';
+  }
+
+  if (
+    this.ehOleoMotor(model) &&
+    this.campoTextoInvalido(model.origemOleo)
+  ) {
+    return 'Selecione a origem do óleo de motor: mineral ou sintético.';
+  }
+
+  return null;
+}
+
+  private camposObrigatoriosInvalidos(
+  model: Partial<Peca>
+): CampoObrigatorioPeca[] {
+
+  const campos: CampoObrigatorioPeca[] = [
+    'nome',
+    'fabricante',
+    'tipo',
+    'unidade'
+  ];
+
+  if (this.ehOleoMotor(model)) {
+    campos.push('origemOleo');
+  }
+
+  return campos.filter(
+    campo => this.campoTextoInvalido(model[campo])
+  );
+}
 
   private campoTextoInvalido(valor: any): boolean {
     return !String(valor ?? '').trim();
   }
 
   private calcularProgressoPeca(model: Partial<Peca>): number {
-    const campos = [
-      model.nome,
-      model.fabricante,
-      model.unidade,
-      model.tipo,
-      model.especificacao,
-      model.modelo,
-      model.norma
-    ];
+    if (this.validarPeca(model) === null) {
+      return 100;
+    }
 
-    const preenchidos = campos.filter(valor => !!String(valor ?? '').trim()).length;
+    const obrigatorios: CampoObrigatorioPeca[] = [
+  'nome',
+  'fabricante',
+  'tipo',
+  'unidade'
+];
 
-    return Math.round((preenchidos / campos.length) * 100);
+    if (this.ehOleoMotor(model)) {
+      obrigatorios.push('origemOleo');
+    }
+
+    const validos = obrigatorios.filter(campo => !this.campoTextoInvalido(model[campo])).length;
+    const percentual = Math.round((validos / obrigatorios.length) * 100);
+
+    return Math.max(0, Math.min(99, percentual));
   }
 
   private montarPayloadCadastro(model: Partial<Peca>): Omit<Peca, 'id'> {
     return {
       nome: this.capitalizarTexto(model.nome),
       tipo: this.capitalizarTexto(model.tipo),
+      origemOleo: this.ehOleoMotor(model) ? String(model.origemOleo || '').trim().toUpperCase() : '',
       especificacao: this.caixaAltaTexto(model.especificacao),
       fabricante: this.capitalizarTexto(model.fabricante),
       modelo: this.capitalizarTexto(model.modelo),
@@ -696,6 +754,7 @@ export class ExibePecaComponent implements OnInit {
     return {
       nome: this.capitalizarTexto(model.nome),
       tipo: this.capitalizarTexto(model.tipo),
+      origemOleo: this.ehOleoMotor(model) ? String(model.origemOleo || '').trim().toUpperCase() : '',
       especificacao: this.caixaAltaTexto(model.especificacao),
       fabricante: this.capitalizarTexto(model.fabricante),
       modelo: this.capitalizarTexto(model.modelo),
@@ -709,6 +768,7 @@ export class ExibePecaComponent implements OnInit {
       ...peca,
       nome: this.capitalizarTexto(peca.nome),
       tipo: this.capitalizarTexto(peca.tipo),
+      origemOleo: String(peca.origemOleo || '').trim().toUpperCase(),
       especificacao: this.caixaAltaTexto(peca.especificacao),
       fabricante: this.capitalizarTexto(peca.fabricante),
       modelo: this.capitalizarTexto(peca.modelo),
@@ -743,6 +803,21 @@ export class ExibePecaComponent implements OnInit {
 
   private caixaAltaTexto(valor: string | null | undefined): string {
     return (valor ?? '').toString().replace(/\s+/g, ' ').trim().toUpperCase();
+  }
+
+  private removerDuplicadosNormalizados(valores: string[]): string[] {
+    const vistos = new Set<string>();
+
+    return valores.filter(valor => {
+      const chave = this.normalizarTexto(valor);
+
+      if (!chave || vistos.has(chave)) {
+        return false;
+      }
+
+      vistos.add(chave);
+      return true;
+    });
   }
 
   private normalizarTexto(valor: any): string {

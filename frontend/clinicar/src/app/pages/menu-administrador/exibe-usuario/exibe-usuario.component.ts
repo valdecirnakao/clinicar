@@ -1,6 +1,8 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { HttpClient } from '@angular/common/http';
 import { UsuarioService } from '../exibe-usuario/exibe-usuario.service';
 import { WhatsappCloudService } from '../../../services/whatsapp-cloud.service';
@@ -60,7 +62,7 @@ interface AcaoConfirmacao {
 @Component({
   selector: 'app-exibe-usuario',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-usuario.component.html',
   styleUrls: ['./exibe-usuario.component.css']
 })
@@ -1188,36 +1190,37 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   get progressoCadastroPercentual(): number {
-    /*
-     * A barra de progresso deve refletir a validação real do cadastro,
-     * e não apenas a quantidade bruta de campos preenchidos.
-     *
-     * Quando o formulário já pode ser salvo, a barra precisa chegar a 100%,
-     * mesmo que algum cálculo intermediário de preenchimento não acompanhe
-     * imediatamente a última alteração feita pelo usuário.
-     */
     if (this.cadastroProntoParaSalvar) {
       return 100;
     }
 
     const obrigatorios = this.camposObrigatoriosCadastro();
     const totalObrigatorios = obrigatorios.length || 1;
+    const validos = obrigatorios.filter(campo => this.campoCadastroValidoParaProgresso(campo)).length;
+    const percentual = Math.round((validos / totalObrigatorios) * 100);
 
-    const preenchidos = obrigatorios.filter(campo =>
-      String(this.novoUsuario[campo] ?? '').trim().length > 0
-    ).length;
+    return Math.max(0, Math.min(99, percentual));
+  }
 
-    const percentualPreenchimento = Math.round((preenchidos / totalObrigatorios) * 100);
-
-    /*
-     * Se existem campos preenchidos, mas inválidos, reduzimos um pouco o avanço
-     * para que a barra não indique conclusão total antes de o formulário ficar válido.
-     */
-    const pendencias = this.quantidadePendenciasCadastro;
-    const descontoPorPendencias = Math.min(25, pendencias * 5);
-    const percentualAjustado = percentualPreenchimento - descontoPorPendencias;
-
-    return Math.max(0, Math.min(99, percentualAjustado));
+  private campoCadastroValidoParaProgresso(campo: keyof Usuario): boolean {
+    switch (campo) {
+      case 'cpf':
+        return [11, 14].includes(this.onlyDigits(this.novoUsuario.cpf).length);
+      case 'telefone':
+        return this.telefoneWhatsappValido(this.novoUsuario.telefone);
+      case 'email':
+        return this.emailValido(String(this.novoUsuario.email || '').trim());
+      case 'cep':
+        return this.onlyDigits(this.novoUsuario.cep).length === 8;
+      case 'estado':
+        return String(this.novoUsuario.estado || '').trim().length === 2;
+      case 'senha':
+        return this.senhaCadastroAtendePolitica();
+      case 'confirmarSenha':
+        return !!String(this.novoUsuario.confirmarSenha || '') && !this.senhasCadastroDiferentes();
+      default:
+        return String(this.novoUsuario[campo] ?? '').trim().length > 0;
+    }
   }
 
   get quantidadePendenciasCadastro(): number {

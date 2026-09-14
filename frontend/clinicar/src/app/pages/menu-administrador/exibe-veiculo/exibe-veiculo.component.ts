@@ -1,6 +1,8 @@
 import { Component, ElementRef, HostListener, OnInit, TrackByFunction } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -45,7 +47,7 @@ const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
 @Component({
   selector: 'app-exibe-veiculo',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-veiculo.component.html',
   styleUrls: ['./exibe-veiculo.component.css']
 })
@@ -588,25 +590,37 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   get progressoCadastroVeiculo(): number {
-    let pontos = 0;
-    if (!this.placaCadastroInvalida()) pontos++;
-    if (!this.fabricanteCadastroInvalido()) pontos++;
-    if (!this.modeloCadastroInvalido()) pontos++;
-    if (!this.anoCadastroInvalido()) pontos++;
-    if (!this.corCadastroInvalida()) pontos++;
-    if (!this.proprietarioCadastroInvalido()) pontos++;
-    return Math.round((pontos / 6) * 100);
+    if (this.validarCadastroVeiculo() === null) {
+      return 100;
+    }
+
+    const checks = [
+      !this.placaCadastroInvalida(),
+      !this.fabricanteCadastroInvalido(),
+      !this.modeloCadastroInvalido(),
+      !this.anoCadastroInvalido(),
+      !this.corCadastroInvalida(),
+      !this.proprietarioCadastroInvalido()
+    ];
+
+    return Math.min(99, Math.round((checks.filter(Boolean).length / checks.length) * 100));
   }
 
   get progressoEdicaoVeiculo(): number {
-    let pontos = 0;
-    if (!this.placaEdicaoInvalida()) pontos++;
-    if (!this.fabricanteEdicaoInvalido()) pontos++;
-    if (!this.modeloEdicaoInvalido()) pontos++;
-    if (!this.anoEdicaoInvalido()) pontos++;
-    if (!this.corEdicaoInvalida()) pontos++;
-    if (!this.proprietarioEdicaoInvalido()) pontos++;
-    return Math.round((pontos / 6) * 100);
+    if (this.validarEdicaoVeiculo() === null) {
+      return 100;
+    }
+
+    const checks = [
+      !this.placaEdicaoInvalida(),
+      !this.fabricanteEdicaoInvalido(),
+      !this.modeloEdicaoInvalido(),
+      !this.anoEdicaoInvalido(),
+      !this.corEdicaoInvalida(),
+      !this.proprietarioEdicaoInvalido()
+    ];
+
+    return Math.min(99, Math.round((checks.filter(Boolean).length / checks.length) * 100));
   }
 
   get cadastroVeiculoProntoParaSalvar(): boolean {

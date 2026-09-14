@@ -7,7 +7,9 @@ import com.clinicar.backend.repository.PecaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class PecaService {
@@ -73,5 +75,38 @@ public class PecaService {
         if (request.getNome() == null || request.getNome().trim().isBlank()) {
             throw new IllegalArgumentException("Nome da peça é obrigatório.");
         }
+
+        if (request.getFabricante() == null || request.getFabricante().trim().isBlank()) {
+            throw new IllegalArgumentException("Fabricante da peça é obrigatório.");
+        }
+
+        if (request.getTipo() == null || request.getTipo().trim().isBlank()) {
+    throw new IllegalArgumentException(
+        "Tipo da peça é obrigatório."
+    );
+}
+
+        if (request.getUnidade() == null || request.getUnidade().trim().isBlank()) {
+            throw new IllegalArgumentException("Unidade de medida da peça é obrigatória.");
+        }
+
+        if (ehOleoMotor(request.getTipo())
+                && (request.getOrigemOleo() == null || request.getOrigemOleo().trim().isBlank())) {
+            throw new IllegalArgumentException("Origem do óleo de motor é obrigatória. Informe MINERAL ou SINTETICO.");
+        }
+    }
+
+    private boolean ehOleoMotor(String tipo) {
+        if (tipo == null || tipo.isBlank()) {
+            return false;
+        }
+
+        String normalizado = Normalizer
+                .normalize(tipo, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .trim();
+
+        return "oleo de motor".equals(normalizado);
     }
 }

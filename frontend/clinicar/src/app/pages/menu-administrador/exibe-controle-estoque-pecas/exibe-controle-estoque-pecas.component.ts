@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 
 import {
   AlertaEstoquePeca,
@@ -35,7 +37,7 @@ type OrigemModalPeca = 'cadastro' | 'edicao' | null;
 @Component({
   selector: 'app-exibe-controle-estoque-pecas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-controle-estoque-pecas.component.html',
   styleUrls: ['./exibe-controle-estoque-pecas.component.css']
 })
@@ -588,20 +590,30 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
 
   private calcularProgressoEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean): number {
-    const verificacoes = [
-      !this.estoqueCampoInvalido(model, 'idPeca', validarPecaELocal),
-      !this.estoqueCampoInvalido(model, 'idLocalEstoque', validarPecaELocal),
-      !this.estoqueCampoInvalido(model, 'quantidadeAtual', false),
-      !this.estoqueCampoInvalido(model, 'quantidadeReservada', false),
-      !this.estoqueCampoInvalido(model, 'estoqueMinimo', false),
-      !this.estoqueCampoInvalido(model, 'estoqueCritico', false),
-      !this.validarRegrasNumericasEstoque(model),
-      !this.validarReposicaoEstoque(model)
-    ];
+    if (this.validarEstoque(model, validarPecaELocal) === null) {
+      return 100;
+    }
 
-    const concluidos = verificacoes.filter(Boolean).length;
+    const verificacoesObrigatorias = validarPecaELocal
+      ? [
+          !this.estoqueCampoInvalido(model, 'idPeca', true),
+          !this.estoqueCampoInvalido(model, 'idLocalEstoque', true),
+          !this.estoqueCampoInvalido(model, 'quantidadeAtual', false),
+          !this.estoqueCampoInvalido(model, 'quantidadeReservada', false),
+          !this.estoqueCampoInvalido(model, 'estoqueMinimo', false),
+          !this.estoqueCampoInvalido(model, 'estoqueCritico', false)
+        ]
+      : [
+          !this.estoqueCampoInvalido(model, 'quantidadeAtual', false),
+          !this.estoqueCampoInvalido(model, 'quantidadeReservada', false),
+          !this.estoqueCampoInvalido(model, 'estoqueMinimo', false),
+          !this.estoqueCampoInvalido(model, 'estoqueCritico', false)
+        ];
 
-    return Math.round((concluidos / verificacoes.length) * 100);
+    const validos = verificacoesObrigatorias.filter(Boolean).length;
+    const percentual = Math.round((validos / verificacoesObrigatorias.length) * 100);
+
+    return Math.max(0, Math.min(99, percentual));
   }
 
 

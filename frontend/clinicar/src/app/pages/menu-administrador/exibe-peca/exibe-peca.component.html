@@ -55,26 +55,16 @@
                 <span class="input-group-text">
                   <i class="bi bi-search"></i>
                 </span>
-                <input
-                  id="filtro-pecas"
-                  type="search"
-                  class="form-control"
-                  placeholder="Nome, tipo, especificação, fabricante, modelo"
-                  [(ngModel)]="filtroTexto"
-                  (ngModelChange)="aoAlterarFiltros()"
-                  autocomplete="off"
-                />
+                <input id="filtro-pecas" type="search" class="form-control"
+                  placeholder="Nome, tipo, especificação, fabricante, modelo" [(ngModel)]="filtroTexto"
+                  (ngModelChange)="aoAlterarFiltros()" autocomplete="off" />
               </div>
             </div>
 
             <div class="col-lg-2 col-md-3">
               <label class="form-label fw-bold" for="filtro-tipo">Tipo</label>
-              <select
-                id="filtro-tipo"
-                class="form-select"
-                [(ngModel)]="filtroTipo"
-                (ngModelChange)="aoAlterarFiltros()"
-              >
+              <select id="filtro-tipo" class="form-select" [(ngModel)]="filtroTipo"
+                (ngModelChange)="aoAlterarFiltros()">
                 <option value="">Todos</option>
                 <option *ngFor="let tipo of tiposParaFiltro" [value]="tipo">
                   {{ tipo }}
@@ -84,12 +74,8 @@
 
             <div class="col-lg-1 col-md-3">
               <label class="form-label fw-bold" for="filtro-unidade">Unidade</label>
-              <select
-                id="filtro-unidade"
-                class="form-select"
-                [(ngModel)]="filtroUnidade"
-                (ngModelChange)="aoAlterarFiltros()"
-              >
+              <select id="filtro-unidade" class="form-select" [(ngModel)]="filtroUnidade"
+                (ngModelChange)="aoAlterarFiltros()">
                 <option value="">Todas</option>
                 <option *ngFor="let unidade of unidadesParaFiltro" [value]="unidade">
                   {{ unidade }}
@@ -97,41 +83,25 @@
               </select>
             </div>
             <div class="col-lg-1 col-md-3">
-                              <button
-                  class="btn btn-outline-secondary btn-md"
-                  type="button"
-                  (click)="limparFiltros()"
-                  [disabled]="!possuiFiltrosAplicados"
-                >
-                  <i class="bi bi-eraser me-1"></i>
-                  Limpar Filtros
-                </button>
+              <button class="btn btn-outline-secondary btn-md" type="button" (click)="limparFiltros()"
+                [disabled]="!possuiFiltrosAplicados">
+                <i class="bi bi-eraser me-1"></i>
+                Limpar Filtros
+              </button>
             </div>
 
             <div class="col-lg-5 col-md-12">
               <div class="toolbar-actions">
-                <button
-                  class="btn btn-primary btn-md"
-                  type="button"
-                  (click)="abrirModalCadastro()"
-                >
+                <button class="btn btn-primary btn-md" type="button" (click)="abrirModalCadastro()">
                   <i class="bi bi-plus-circle me-1"></i>
                   Nova Peça
                 </button>
 
-                <button
-                  class="btn btn-outline-primary btn-md"
-                  type="button"
-                  (click)="recarregar()"
-                >
+                <button class="btn btn-outline-primary btn-md" type="button" (click)="recarregar()">
                   <i class="bi bi-arrow-clockwise me-1"></i>
                   Atualizar
                 </button>
-                <button
-                  class="btn btn-outline-secondary btn-md"
-                  type="button"
-                  (click)="voltar()"
-                >
+                <button class="btn btn-outline-secondary btn-md" type="button" (click)="voltar()">
                   <i class="bi bi-arrow-left me-1"></i>
                   Voltar
                 </button>
@@ -152,7 +122,8 @@
 
             <span class="filter-chip" *ngIf="filtroUnidade">
               Unidade: {{ filtroUnidade }}
-              <button type="button" (click)="filtroUnidade = ''; aoAlterarFiltros()" aria-label="Remover unidade">×</button>
+              <button type="button" (click)="filtroUnidade = ''; aoAlterarFiltros()"
+                aria-label="Remover unidade">×</button>
             </span>
           </div>
 
@@ -222,33 +193,18 @@
                     <td class="text-center ">
                       <div class="btn-group btn-group-sm table-actions" style="gap: .25rem; border-radius: 3px;">
 
-                        <button
-                          class="btn btn-outline-info"
-                          type="button"
-                          title="Visualizar detalhes"
-                          (click)="abrirDetalhes(p)"
-                          style="border-radius: 3px;"
-                        >
+                        <button class="btn btn-outline-info" type="button" title="Visualizar detalhes"
+                          (click)="abrirDetalhes(p)" style="border-radius: 3px;">
                           <i class="bi bi-eye"></i>
                         </button>
 
-                        <button
-                          class="btn btn-outline-primary"
-                          type="button"
-                          title="Editar peça"
-                          (click)="abrirModalEdicao(p)"
-                          style="border-radius: 3px;"
-                        >
+                        <button class="btn btn-outline-primary" type="button" title="Editar peça"
+                          (click)="abrirModalEdicao(p)" style="border-radius: 3px;">
                           <i class="bi bi-pencil-square"></i>
                         </button>
 
-                        <button
-                          class="btn btn-outline-danger"
-                          type="button"
-                          title="Excluir peça"
-                          (click)="abrirConfirmacaoExclusao(p)"
-                          style="border-radius: 3px;"
-                        >
+                        <button class="btn btn-outline-danger" type="button" title="Excluir peça"
+                          (click)="abrirConfirmacaoExclusao(p)" style="border-radius: 3px;">
                           <i class="bi bi-trash"></i>
                         </button>
                       </div>
@@ -277,12 +233,8 @@
 
               <div class="pagination-size">
                 <label for="itensPorPagina">Exibir</label>
-                <select
-                  id="itensPorPagina"
-                  class="form-select form-select-sm"
-                  [(ngModel)]="itensPorPagina"
-                  (ngModelChange)="aoAlterarItensPorPagina()"
-                >
+                <select id="itensPorPagina" class="form-select form-select-sm" [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()">
                   <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
                     {{ opcao }}
                   </option>
@@ -291,33 +243,20 @@
               </div>
 
               <div class="pagination-actions">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  [disabled]="paginaAtual === 1"
-                  (click)="paginaAnterior()"
-                >
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === 1"
+                  (click)="paginaAnterior()">
                   <i class="bi bi-chevron-left"></i>
                   Anterior
                 </button>
 
-                <button
-                  type="button"
-                  class="btn btn-sm"
-                  *ngFor="let pagina of paginasVisiveis()"
-                  [class.btn-primary]="paginaAtual === pagina"
-                  [class.btn-outline-primary]="paginaAtual !== pagina"
-                  (click)="irParaPagina(pagina)"
-                >
+                <button type="button" class="btn btn-sm" *ngFor="let pagina of paginasVisiveis()"
+                  [class.btn-primary]="paginaAtual === pagina" [class.btn-outline-primary]="paginaAtual !== pagina"
+                  (click)="irParaPagina(pagina)">
                   {{ pagina }}
                 </button>
 
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  [disabled]="paginaAtual === totalPaginas"
-                  (click)="proximaPagina()"
-                >
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAtual === totalPaginas"
+                  (click)="proximaPagina()">
                   Próxima
                   <i class="bi bi-chevron-right"></i>
                 </button>
@@ -336,7 +275,8 @@
               </div>
 
               <div class="mobile-record-line"><strong>Modelo:</strong> {{ exibirCapitalizado(p.modelo) }}</div>
-              <div class="mobile-record-line"><strong>Especificação:</strong> {{ exibirCaixaAlta(p.especificacao) }}</div>
+              <div class="mobile-record-line"><strong>Especificação:</strong> {{ exibirCaixaAlta(p.especificacao) }}
+              </div>
               <div class="mobile-record-line"><strong>Norma:</strong> {{ exibirCaixaAlta(p.norma) }}</div>
               <div class="mobile-record-line"><strong>Unidade:</strong> {{ exibirCapitalizado(p.unidade) }}</div>
 
@@ -369,7 +309,8 @@
 </div>
 
 <!-- Modal Cadastro -->
-<div class="modal fade" id="modalCadastroPeca" tabindex="-1" aria-labelledby="modalCadastroPecaLabel" aria-hidden="true">
+<div class="modal fade" id="modalCadastroPeca" tabindex="-1" aria-labelledby="modalCadastroPecaLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered peca-modal-dialog">
     <div class="modal-content peca-modal-content">
       <div class="modal-header modal-header-clinicar">
@@ -398,9 +339,13 @@
             </div>
           </div>
 
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."></app-field-help-panel>
+
           <ul class="nav nav-pills clinicar-tabs">
             <li class="nav-item">
-              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'dados'" (click)="trocarAbaCadastroPeca('dados')">
+              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'dados'"
+                (click)="trocarAbaCadastroPeca('dados')">
                 <i class="bi bi-box-seam me-1"></i>
                 Dados principais
                 <span class="tab-alert" *ngIf="dadosPecaPendentes(novaPeca)">!</span>
@@ -408,14 +353,17 @@
             </li>
 
             <li class="nav-item">
-              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'classificacao'" (click)="trocarAbaCadastroPeca('classificacao')">
+              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'classificacao'"
+                (click)="trocarAbaCadastroPeca('classificacao')">
                 <i class="bi bi-tags me-1"></i>
                 Classificação
+                <span class="tab-alert" *ngIf="classificacaoIncompleta(novaPeca)">!</span>
               </button>
             </li>
 
             <li class="nav-item">
-              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'revisao'" (click)="trocarAbaCadastroPeca('revisao')">
+              <button class="nav-link" type="button" [class.active]="abaCadastroPeca === 'revisao'"
+                (click)="trocarAbaCadastroPeca('revisao')">
                 <i class="bi bi-clipboard-check me-1"></i>
                 Revisão
               </button>
@@ -434,42 +382,31 @@
               <div class="row g-3">
                 <div class="col-md-4">
                   <label class="form-label" for="nomePecaCadastro">Nome *</label>
-                  <input
-                    id="nomePecaCadastro"
-                    class="form-control"
-                    [(ngModel)]="novaPeca.nome"
+                  <input id="nomePecaCadastro" class="form-control" [(ngModel)]="novaPeca.nome"
                     (blur)="normalizarCampoCapitalizado(novaPeca, 'nome')"
-                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'nome')"
-                    autocomplete="off"
-                  />
-                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'nome')">Informe o nome da peça ou insumo.</div>
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'nome')" autocomplete="off" />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'nome')">Informe o nome da
+                    peça ou insumo.</div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="fabricantePecaCadastro">Fabricante *</label>
-                  <input
-                    id="fabricantePecaCadastro"
-                    class="form-control"
-                    [(ngModel)]="novaPeca.fabricante"
+                  <input id="fabricantePecaCadastro" class="form-control" [(ngModel)]="novaPeca.fabricante"
                     (blur)="normalizarCampoCapitalizado(novaPeca, 'fabricante')"
-                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'fabricante')"
-                    autocomplete="off"
-                  />
-                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'fabricante')">Informe o fabricante.</div>
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'fabricante')" autocomplete="off" />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'fabricante')">Informe o
+                    fabricante.</div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="unidadePecaCadastro">Unidade *</label>
-                  <select
-                    id="unidadePecaCadastro"
-                    class="form-select"
-                    [(ngModel)]="novaPeca.unidade"
-                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'unidade')"
-                  >
+                  <select id="unidadePecaCadastro" class="form-select" [(ngModel)]="novaPeca.unidade"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'unidade')">
                     <option value="">Selecione...</option>
                     <option *ngFor="let unidade of unidadesMedida" [ngValue]="unidade">{{ unidade }}</option>
                   </select>
-                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'unidade')">Selecione a unidade de medida.</div>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'unidade')">Selecione a
+                    unidade de medida.</div>
                 </div>
 
                 <div class="col-md-8">
@@ -488,7 +425,8 @@
                   <div class="info-card h-100">
                     <div class="preview-title">Orientação</div>
                     <div class="details-line">
-                      Use este cadastro para peças instaladas no veículo e também para insumos controlados em estoque, como óleos, fluidos e consumíveis.
+                      Use este cadastro para peças instaladas no veículo e também para insumos controlados em estoque,
+                      como óleos, fluidos e consumíveis.
                     </div>
                   </div>
                 </div>
@@ -505,47 +443,63 @@
 
               <div class="row g-3">
                 <div class="col-md-4">
-                  <label class="form-label" for="tipoPecaCadastro">Tipo</label>
-                  <select id="tipoPecaCadastro" class="form-select" [(ngModel)]="novaPeca.tipo">
+                  <label class="form-label" for="tipoPecaCadastro">
+                    Tipo *
+                  </label>
+
+                  <select id="tipoPecaCadastro"
+                    data-help="Classifique o item para facilitar filtros, estoque, orçamentos e regras específicas. Este campo é obrigatório. Para óleo de motor, selecione Óleo de motor."
+                    class="form-select" [(ngModel)]="novaPeca.tipo" (ngModelChange)="aoAlterarTipoPeca(novaPeca)"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'tipo')">
                     <option value="">Selecione...</option>
-                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">{{ tipo }}</option>
+
+                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">
+                      {{ tipo }}
+                    </option>
                   </select>
-                  <small class="text-muted">Classifique o item como peça, lubrificante, fluido ou consumível.</small>
+
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'tipo')">
+                    Selecione o tipo da peça ou insumo.
+                  </div>
+
+                  <small class="text-muted">
+                    Classifique o item como peça, lubrificante,
+                    fluido ou consumível.
+                  </small>
+                </div>
+
+                <div class="col-md-4" *ngIf="ehOleoMotor(novaPeca)">
+                  <label class="form-label" for="origemOleoPecaCadastro">Origem do óleo *</label>
+                  <select id="origemOleoPecaCadastro"
+                    data-help="Para óleo de motor, informe obrigatoriamente se a origem é mineral ou sintética."
+                    class="form-select" [(ngModel)]="novaPeca.origemOleo"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'origemOleo')">
+                    <option value="">Selecione...</option>
+                    <option *ngFor="let origem of origensOleo" [ngValue]="origem.valor">{{ origem.rotulo }}</option>
+                  </select>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'origemOleo')">
+                    Informe se o óleo é mineral ou sintético.
+                  </div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="modeloPecaCadastro">Modelo</label>
-                  <input
-                    id="modeloPecaCadastro"
-                    class="form-control"
-                    [(ngModel)]="novaPeca.modelo"
-                    (blur)="normalizarCampoCapitalizado(novaPeca, 'modelo')"
-                    autocomplete="off"
-                  />
+                  <input id="modeloPecaCadastro" class="form-control" [(ngModel)]="novaPeca.modelo"
+                    (blur)="normalizarCampoCapitalizado(novaPeca, 'modelo')" autocomplete="off" />
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="normaPecaCadastro">Norma</label>
-                  <input
-                    id="normaPecaCadastro"
-                    class="form-control"
-                    [(ngModel)]="novaPeca.norma"
-                    (blur)="normalizarCampoCaixaAlta(novaPeca, 'norma')"
-                    placeholder="Ex.: SAE 5W30, DOT 4, NBR"
-                    autocomplete="off"
-                  />
+                  <input id="normaPecaCadastro" class="form-control" [(ngModel)]="novaPeca.norma"
+                    (blur)="normalizarCampoCaixaAlta(novaPeca, 'norma')" placeholder="Ex.: SAE 5W30, DOT 4, NBR"
+                    autocomplete="off" />
                 </div>
 
                 <div class="col-12">
                   <label class="form-label" for="especificacaoPecaCadastro">Especificação</label>
-                  <input
-                    id="especificacaoPecaCadastro"
-                    class="form-control"
-                    [(ngModel)]="novaPeca.especificacao"
+                  <input id="especificacaoPecaCadastro" class="form-control" [(ngModel)]="novaPeca.especificacao"
                     (blur)="normalizarCampoCaixaAlta(novaPeca, 'especificacao')"
-                    placeholder="Ex.: 1.0 FLEX, 5W30 SINTÉTICO, DOT 4"
-                    autocomplete="off"
-                  />
+                    placeholder="Ex.: 1.0 FLEX, 5W30 SINTÉTICO, DOT 4" autocomplete="off" />
                 </div>
               </div>
             </div>
@@ -572,6 +526,8 @@
                   <div class="review-card h-100">
                     <div class="review-label">Classificação</div>
                     <div class="details-line">Tipo: {{ novaPeca.tipo || '—' }}</div>
+                    <div class="details-line" *ngIf="ehOleoMotor(novaPeca)">Origem do óleo: {{ novaPeca.origemOleo ===
+                      'MINERAL' ? 'Mineral' : (novaPeca.origemOleo === 'SINTETICO' ? 'Sintético' : '—') }}</div>
                     <div class="details-line">Modelo: {{ novaPeca.modelo || '—' }}</div>
                     <div class="details-line">Norma: {{ novaPeca.norma || '—' }}</div>
                     <div class="details-line">Especificação: {{ novaPeca.especificacao || '—' }}</div>
@@ -597,23 +553,20 @@
 
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-        <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroPeca !== 'dados'" (click)="abaAnteriorCadastro()">
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroPeca !== 'dados'"
+          (click)="abaAnteriorCadastro()">
           <i class="bi bi-chevron-left me-1"></i>
           Anterior
         </button>
 
-        <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroPeca !== 'revisao'" (click)="proximaAbaCadastro()">
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaCadastroPeca !== 'revisao'"
+          (click)="proximaAbaCadastro()">
           Próximo
           <i class="bi bi-chevron-right ms-1"></i>
         </button>
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="!cadastroPecaProntoParaSalvar"
-          [title]="mensagemBloqueioCadastro || 'Salvar peça'"
-          (click)="salvarNovaPeca()"
-        >
+        <button type="button" class="btn btn-primary" [disabled]="!cadastroPecaProntoParaSalvar"
+          [title]="mensagemBloqueioCadastro || 'Salvar peça'" (click)="salvarNovaPeca()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar peça
         </button>
@@ -633,7 +586,8 @@
             Editar Peça / Insumo
           </h5>
           <small>
-            ID #{{ editId || '—' }} · {{ edit.nome || 'Nome não informado' }} · {{ edit.fabricante || 'Fabricante não informado' }}
+            ID #{{ editId || '—' }} · {{ edit.nome || 'Nome não informado' }} · {{ edit.fabricante || 'Fabricante não
+            informado' }}
           </small>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -652,9 +606,13 @@
             </div>
           </div>
 
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."></app-field-help-panel>
+
           <ul class="nav nav-pills clinicar-tabs">
             <li class="nav-item">
-              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'dados'" (click)="trocarAbaEdicaoPeca('dados')">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'dados'"
+                (click)="trocarAbaEdicaoPeca('dados')">
                 <i class="bi bi-box-seam me-1"></i>
                 Dados principais
                 <span class="tab-alert" *ngIf="dadosPecaPendentes(edit)">!</span>
@@ -662,14 +620,17 @@
             </li>
 
             <li class="nav-item">
-              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'classificacao'" (click)="trocarAbaEdicaoPeca('classificacao')">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'classificacao'"
+                (click)="trocarAbaEdicaoPeca('classificacao')">
                 <i class="bi bi-tags me-1"></i>
                 Classificação
+                <span class="tab-alert" *ngIf="classificacaoIncompleta(edit)">!</span>
               </button>
             </li>
 
             <li class="nav-item">
-              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'revisao'" (click)="trocarAbaEdicaoPeca('revisao')">
+              <button class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'revisao'"
+                (click)="trocarAbaEdicaoPeca('revisao')">
                 <i class="bi bi-clipboard-check me-1"></i>
                 Revisão
               </button>
@@ -688,24 +649,33 @@
               <div class="row g-3">
                 <div class="col-md-4">
                   <label class="form-label" for="nomePecaEdicao">Nome *</label>
-                  <input id="nomePecaEdicao" class="form-control" [(ngModel)]="edit.nome" (blur)="normalizarCampoCapitalizado(edit, 'nome')" [class.is-invalid]="campoMarcadoInvalido(edit, 'nome')" autocomplete="off" />
-                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'nome')">Informe o nome da peça ou insumo.</div>
+                  <input id="nomePecaEdicao" class="form-control" [(ngModel)]="edit.nome"
+                    (blur)="normalizarCampoCapitalizado(edit, 'nome')"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'nome')" autocomplete="off" />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'nome')">Informe o nome da
+                    peça ou insumo.</div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="fabricantePecaEdicao">Fabricante *</label>
-                  <input id="fabricantePecaEdicao" class="form-control" [(ngModel)]="edit.fabricante" (blur)="normalizarCampoCapitalizado(edit, 'fabricante')" [class.is-invalid]="campoMarcadoInvalido(edit, 'fabricante')" autocomplete="off" />
-                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'fabricante')">Informe o fabricante.</div>
+                  <input id="fabricantePecaEdicao" class="form-control" [(ngModel)]="edit.fabricante"
+                    (blur)="normalizarCampoCapitalizado(edit, 'fabricante')"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'fabricante')" autocomplete="off" />
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'fabricante')">Informe o
+                    fabricante.</div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="unidadePecaEdicao">Unidade *</label>
-                  <select id="unidadePecaEdicao" class="form-select" [(ngModel)]="edit.unidade" [class.is-invalid]="campoMarcadoInvalido(edit, 'unidade')">
+                  <select id="unidadePecaEdicao" class="form-select" [(ngModel)]="edit.unidade"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'unidade')">
                     <option value="">Selecione...</option>
-                    <option *ngIf="unidadeForaDaLista(edit.unidade)" [ngValue]="edit.unidade">{{ edit.unidade }}</option>
+                    <option *ngIf="unidadeForaDaLista(edit.unidade)" [ngValue]="edit.unidade">{{ edit.unidade }}
+                    </option>
                     <option *ngFor="let unidade of unidadesMedida" [ngValue]="unidade">{{ unidade }}</option>
                   </select>
-                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'unidade')">Selecione a unidade de medida.</div>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'unidade')">Selecione a
+                    unidade de medida.</div>
                 </div>
 
                 <div class="col-12">
@@ -732,27 +702,60 @@
 
               <div class="row g-3">
                 <div class="col-md-4">
-                  <label class="form-label" for="tipoPecaEdicao">Tipo</label>
-                  <select id="tipoPecaEdicao" class="form-select" [(ngModel)]="edit.tipo">
+                  <label class="form-label" for="tipoPecaEdicao">
+                    Tipo *
+                  </label>
+
+                  <select id="tipoPecaEdicao"
+                    data-help="Classifique o item para facilitar filtros, estoque, orçamentos e regras específicas. Este campo é obrigatório. Para óleo de motor, selecione Óleo de motor."
+                    class="form-select" [(ngModel)]="edit.tipo" (ngModelChange)="aoAlterarTipoPeca(edit)"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'tipo')">
                     <option value="">Selecione...</option>
-                    <option *ngIf="tipoForaDaLista(edit.tipo)" [ngValue]="edit.tipo">{{ edit.tipo }}</option>
-                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">{{ tipo }}</option>
+
+                    <option *ngIf="tipoForaDaLista(edit.tipo)" [ngValue]="edit.tipo">
+                      {{ edit.tipo }}
+                    </option>
+
+                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">
+                      {{ tipo }}
+                    </option>
                   </select>
+
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'tipo')">
+                    Selecione o tipo da peça ou insumo.
+                  </div>
+                </div>
+
+                <div class="col-md-4" *ngIf="ehOleoMotor(edit)">
+                  <label class="form-label" for="origemOleoPecaEdicao">Origem do óleo *</label>
+                  <select id="origemOleoPecaEdicao"
+                    data-help="Para óleo de motor, informe obrigatoriamente se a origem é mineral ou sintética."
+                    class="form-select" [(ngModel)]="edit.origemOleo"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'origemOleo')">
+                    <option value="">Selecione...</option>
+                    <option *ngFor="let origem of origensOleo" [ngValue]="origem.valor">{{ origem.rotulo }}</option>
+                  </select>
+                  <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'origemOleo')">
+                    Informe se o óleo é mineral ou sintético.
+                  </div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="modeloPecaEdicao">Modelo</label>
-                  <input id="modeloPecaEdicao" class="form-control" [(ngModel)]="edit.modelo" (blur)="normalizarCampoCapitalizado(edit, 'modelo')" autocomplete="off" />
+                  <input id="modeloPecaEdicao" class="form-control" [(ngModel)]="edit.modelo"
+                    (blur)="normalizarCampoCapitalizado(edit, 'modelo')" autocomplete="off" />
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="normaPecaEdicao">Norma</label>
-                  <input id="normaPecaEdicao" class="form-control" [(ngModel)]="edit.norma" (blur)="normalizarCampoCaixaAlta(edit, 'norma')" autocomplete="off" />
+                  <input id="normaPecaEdicao" class="form-control" [(ngModel)]="edit.norma"
+                    (blur)="normalizarCampoCaixaAlta(edit, 'norma')" autocomplete="off" />
                 </div>
 
                 <div class="col-12">
                   <label class="form-label" for="especificacaoPecaEdicao">Especificação</label>
-                  <input id="especificacaoPecaEdicao" class="form-control" [(ngModel)]="edit.especificacao" (blur)="normalizarCampoCaixaAlta(edit, 'especificacao')" autocomplete="off" />
+                  <input id="especificacaoPecaEdicao" class="form-control" [(ngModel)]="edit.especificacao"
+                    (blur)="normalizarCampoCaixaAlta(edit, 'especificacao')" autocomplete="off" />
                 </div>
               </div>
             </div>
@@ -779,6 +782,8 @@
                   <div class="review-card h-100">
                     <div class="review-label">Classificação</div>
                     <div class="details-line">Tipo: {{ edit.tipo || '—' }}</div>
+                    <div class="details-line" *ngIf="ehOleoMotor(edit)">Origem do óleo: {{ edit.origemOleo === 'MINERAL'
+                      ? 'Mineral' : (edit.origemOleo === 'SINTETICO' ? 'Sintético' : '—') }}</div>
                     <div class="details-line">Modelo: {{ edit.modelo || '—' }}</div>
                     <div class="details-line">Norma: {{ edit.norma || '—' }}</div>
                     <div class="details-line">Especificação: {{ edit.especificacao || '—' }}</div>
@@ -804,23 +809,20 @@
 
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-        <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoPeca !== 'dados'" (click)="abaAnteriorEdicao()">
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoPeca !== 'dados'"
+          (click)="abaAnteriorEdicao()">
           <i class="bi bi-chevron-left me-1"></i>
           Anterior
         </button>
 
-        <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoPeca !== 'revisao'" (click)="proximaAbaEdicao()">
+        <button type="button" class="btn btn-outline-primary" *ngIf="abaEdicaoPeca !== 'revisao'"
+          (click)="proximaAbaEdicao()">
           Próximo
           <i class="bi bi-chevron-right ms-1"></i>
         </button>
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="!edicaoPecaProntaParaSalvar"
-          [title]="mensagemBloqueioEdicao || 'Salvar alterações'"
-          (click)="salvarEdicaoModal()"
-        >
+        <button type="button" class="btn btn-primary" [disabled]="!edicaoPecaProntaParaSalvar"
+          [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar alterações
         </button>
@@ -830,7 +832,8 @@
 </div>
 
 <!-- Modal Detalhes -->
-<div class="modal fade" id="modalDetalhesPeca" tabindex="-1" aria-labelledby="modalDetalhesPecaLabel" aria-hidden="true">
+<div class="modal fade" id="modalDetalhesPeca" tabindex="-1" aria-labelledby="modalDetalhesPecaLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content details-modal-content" *ngIf="pecaSelecionada">
       <div class="modal-header modal-header-clinicar">
@@ -869,7 +872,8 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" (click)="abrirModalEdicao(pecaSelecionada)">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+          (click)="abrirModalEdicao(pecaSelecionada)">
           <i class="bi bi-pencil-square me-1"></i>
           Editar
         </button>
@@ -879,7 +883,8 @@
 </div>
 
 <!-- Modal Confirmação Exclusão -->
-<div class="modal fade" id="modalConfirmacaoExclusaoPeca" tabindex="-1" aria-labelledby="modalConfirmacaoExclusaoPecaLabel" aria-hidden="true">
+<div class="modal fade" id="modalConfirmacaoExclusaoPeca" tabindex="-1"
+  aria-labelledby="modalConfirmacaoExclusaoPecaLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" *ngIf="pecaParaExcluir">
       <div class="modal-header modal-header-clinicar">
@@ -894,7 +899,8 @@
         <div class="confirm-box">
           <div class="fw-bold mb-2">Deseja excluir esta peça / insumo?</div>
           <div>{{ pecaParaExcluir.nome }}</div>
-          <small>{{ pecaParaExcluir.fabricante || 'Fabricante não informado' }} · {{ pecaParaExcluir.unidade || 'Unidade não informada' }}</small>
+          <small>{{ pecaParaExcluir.fabricante || 'Fabricante não informado' }} · {{ pecaParaExcluir.unidade || 'Unidade
+            não informada' }}</small>
           <div class="alert alert-warning py-2 mt-3 mb-0">
             <i class="bi bi-info-circle me-1"></i>
             Esta ação não poderá ser desfeita.

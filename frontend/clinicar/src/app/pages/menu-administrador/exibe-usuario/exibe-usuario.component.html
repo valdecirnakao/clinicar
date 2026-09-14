@@ -658,7 +658,11 @@
               <span *ngIf="alterouStatusEdicao()">Status alterado. </span>
             </div>
 
-            <ul class="nav nav-pills usuario-modal-tabs">
+            <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills usuario-modal-tabs">
               <li class="nav-item">
                 <button type="button" class="nav-link" [class.active]="abaEdicaoUsuario === 'dados'"
                   (click)="trocarAbaEdicaoUsuario('dados')">
@@ -1034,7 +1038,11 @@
               {{ mensagemErroCadastro }}
             </div>
 
-            <ul class="nav nav-pills usuario-modal-tabs usuario-cadastro-tabs mb-0">
+            <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills usuario-modal-tabs usuario-cadastro-tabs mb-0">
               <li class="nav-item">
                 <button type="button" class="nav-link" [class.active]="abaCadastroUsuario === 'dados'"
                   (click)="trocarAbaCadastroUsuario('dados')">

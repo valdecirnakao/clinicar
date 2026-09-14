@@ -415,6 +415,10 @@
             </div>
           </div>
 
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
           <ul class="nav nav-pills clinicar-tabs">
             <li class="nav-item">
               <button class="nav-link" type="button" [class.active]="abaCadastroServico === 'dados'" (click)="trocarAbaCadastroServico('dados')">
@@ -537,7 +541,7 @@
                 <div class="col-md-3">
                   <label class="form-label" for="duracaoCadastro">Duração Estimada *</label>
                   <input
-                    id="duracaoCadastro"
+                    id="duracaoCadastro" data-help="Tempo normalmente necessário para executar o serviço. A unidade de duração deve ser selecionada no campo correspondente."
                     class="form-control"
                     type="text"
                     [(ngModel)]="novoServico.duracaoEstimada"
@@ -580,7 +584,7 @@
                 <div class="col-md-3">
                   <label class="form-label" for="garantiaCadastro">Garantia em dias *</label>
                   <input
-                    id="garantiaCadastro"
+                    id="garantiaCadastro" data-help="Quantidade de dias de garantia oferecida para o serviço. Use 0 quando o serviço não possuir garantia."
                     class="form-control"
                     type="number"
                     min="0"
@@ -765,6 +769,10 @@
             </div>
           </div>
 
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
           <ul class="nav nav-pills clinicar-tabs">
             <li class="nav-item">
               <button class="nav-link" type="button" [class.active]="abaEdicaoServico === 'dados'" (click)="trocarAbaEdicaoServico('dados')">
@@ -846,7 +854,7 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label" for="duracaoEdicao">Duração Estimada *</label>
-                  <input id="duracaoEdicao" class="form-control" type="text" [(ngModel)]="edit.duracaoEstimada" (ngModelChange)="limparCampoInvalido('duracaoEstimada')" [class.is-invalid]="campoMarcadoInvalido(edit, 'duracaoEstimada')" />
+                  <input id="duracaoEdicao" data-help="Tempo normalmente necessário para executar o serviço. A unidade de duração deve ser selecionada no campo correspondente." class="form-control" type="text" [(ngModel)]="edit.duracaoEstimada" (ngModelChange)="limparCampoInvalido('duracaoEstimada')" [class.is-invalid]="campoMarcadoInvalido(edit, 'duracaoEstimada')" />
                   <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'duracaoEstimada')">Informe uma duração maior que zero.</div>
                 </div>
 
@@ -872,7 +880,7 @@
 
                 <div class="col-md-3">
                   <label class="form-label" for="garantiaEdicao">Garantia em dias *</label>
-                  <input id="garantiaEdicao" class="form-control" type="number" min="0" [(ngModel)]="edit.garantiaDias" (ngModelChange)="limparCampoInvalido('garantiaDias')" (blur)="normalizarGarantia(edit)" [class.is-invalid]="campoMarcadoInvalido(edit, 'garantiaDias')" />
+                  <input id="garantiaEdicao" data-help="Quantidade de dias de garantia oferecida para o serviço. Use 0 quando o serviço não possuir garantia." class="form-control" type="number" min="0" [(ngModel)]="edit.garantiaDias" (ngModelChange)="limparCampoInvalido('garantiaDias')" (blur)="normalizarGarantia(edit)" [class.is-invalid]="campoMarcadoInvalido(edit, 'garantiaDias')" />
                   <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'garantiaDias')">Informe uma garantia válida.</div>
                 </div>
 

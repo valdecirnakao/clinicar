@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 
 import {
   ExibeServicoService,
@@ -44,7 +46,7 @@ type CampoObrigatorioServico =
 @Component({
   selector: 'app-exibe-servico',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-servico.component.html',
   styleUrls: ['./exibe-servico.component.css']
 })
@@ -794,9 +796,14 @@ export class ExibeServicoComponent implements OnInit {
   }
 
   private calcularProgresso(model: Partial<Servico>): number {
-    const preenchidos = this.camposObrigatorios.filter(campo => !this.campoInvalido(model, campo)).length;
-    const percentual = Math.round((preenchidos / this.camposObrigatorios.length) * 100);
-    return Math.max(0, Math.min(100, percentual));
+    if (this.validarServico(model, false) === null) {
+      return 100;
+    }
+
+    const validos = this.camposObrigatorios.filter(campo => !this.campoInvalido(model, campo)).length;
+    const percentual = Math.round((validos / this.camposObrigatorios.length) * 100);
+
+    return Math.max(0, Math.min(99, percentual));
   }
 
   private pendenciasAba(model: Partial<Servico>, aba: AbaServico): number {

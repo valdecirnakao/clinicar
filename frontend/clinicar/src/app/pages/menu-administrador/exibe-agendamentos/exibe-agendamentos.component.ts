@@ -1,6 +1,8 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { catchError, forkJoin, of } from 'rxjs';
 import { Router } from '@angular/router';
 import {
@@ -53,7 +55,7 @@ interface ConfirmacaoAgendamento {
 @Component({
   selector: 'app-exibe-agendamentos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-agendamentos.component.html',
   styleUrl: './exibe-agendamentos.component.css'
 })
@@ -272,28 +274,22 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   get progressoAgendamentoPercentual(): number {
-    /*
-     * A barra de progresso acompanha a validação real do agendamento.
-     * Quando todos os campos obrigatórios estão válidos, o progresso chega a 100%.
-     */
     if (this.agendamentoProntoParaSalvar) {
       return 100;
     }
 
-    const obrigatorios = this.camposObrigatoriosAgendamento();
-    const totalObrigatorios = obrigatorios.length || 1;
+    const checks = [
+      !this.clienteInvalido(),
+      !this.veiculoInvalido(),
+      !this.servicoPrevistoInvalido(),
+      !this.quilometragemAtualInvalida(),
+      !!this.novoAgendamento.dataHoraInicio,
+      !!this.novoAgendamento.dataHoraFim,
+      !!this.novoAgendamento.idResponsavel && !this.responsavelDisponivelInvalido()
+    ];
 
-    const preenchidos = obrigatorios.filter(campo =>
-      this.campoAgendamentoPreenchido(campo)
-    ).length;
-
-    const percentualPreenchimento = Math.round((preenchidos / totalObrigatorios) * 100);
-
-    const pendencias = this.quantidadePendenciasAgendamento;
-    const descontoPorPendencias = Math.min(25, pendencias * 5);
-    const percentualAjustado = percentualPreenchimento - descontoPorPendencias;
-
-    return Math.max(0, Math.min(99, percentualAjustado));
+    const percentual = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+    return Math.max(0, Math.min(99, percentual));
   }
 
   get quantidadePendenciasAgendamento(): number {

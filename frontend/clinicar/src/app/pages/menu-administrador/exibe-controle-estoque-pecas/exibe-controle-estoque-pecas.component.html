@@ -388,6 +388,10 @@
             max="100"
           >{{ progressoCadastroEstoque }}%</progress>
 
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
           <ul class="nav nav-pills clinicar-tabs">
             <li class="nav-item">
               <button class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'identificacao'"
@@ -499,7 +503,7 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label" for="quantidade-atual">Quantidade Atual *</label>
-                  <input id="quantidade-atual" class="form-control" [(ngModel)]="novoEstoque.quantidadeAtual"
+                  <input id="quantidade-atual" data-help="Saldo físico atualmente disponível no estoque. Para movimentações normais, prefira registrar entradas e saídas para manter o histórico auditável." class="form-control" [(ngModel)]="novoEstoque.quantidadeAtual"
                     [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)" placeholder="0" />
                   <div class="invalid-feedback d-block"
                     *ngIf="estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)">Informe um valor válido.</div>
@@ -507,7 +511,7 @@
 
                 <div class="col-md-3">
                   <label class="form-label" for="quantidade-reservada">Quantidade Reservada *</label>
-                  <input id="quantidade-reservada" class="form-control" [(ngModel)]="novoEstoque.quantidadeReservada"
+                  <input id="quantidade-reservada" data-help="Quantidade já comprometida com agendamentos ou atendimentos e, portanto, indisponível para novos usos." class="form-control" [(ngModel)]="novoEstoque.quantidadeReservada"
                     [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'quantidadeReservada', false)"
                     placeholder="0" />
                   <div class="invalid-feedback d-block"
@@ -517,7 +521,7 @@
 
                 <div class="col-md-3">
                   <label class="form-label" for="estoque-minimo">Estoque Mínimo *</label>
-                  <input id="estoque-minimo" class="form-control" [(ngModel)]="novoEstoque.estoqueMinimo"
+                  <input id="estoque-minimo" data-help="Limite de atenção do estoque. Quando o saldo disponível atingir ou ficar abaixo deste valor, o item deve entrar em atenção para reposição." class="form-control" [(ngModel)]="novoEstoque.estoqueMinimo"
                     [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'estoqueMinimo', false)"
                     placeholder="Ex.: 5" />
                   <div class="invalid-feedback d-block"
@@ -526,7 +530,7 @@
 
                 <div class="col-md-3">
                   <label class="form-label" for="estoque-critico">Estoque Crítico *</label>
-                  <input id="estoque-critico" class="form-control" [(ngModel)]="novoEstoque.estoqueCritico"
+                  <input id="estoque-critico" data-help="Limite crítico do estoque. Deve ser menor ou igual ao estoque mínimo e representa uma situação de reposição urgente." class="form-control" [(ngModel)]="novoEstoque.estoqueCritico"
                     [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'estoqueCritico', false)"
                     placeholder="Ex.: 2" />
                   <div class="invalid-feedback d-block"
@@ -554,19 +558,19 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label" for="estoque-maximo">Estoque Máximo</label>
-                  <input id="estoque-maximo" class="form-control" [(ngModel)]="$any(novoEstoque).estoqueMaximo"
+                  <input id="estoque-maximo" data-help="Limite superior desejado após a reposição. É usado para planejamento e não altera o saldo atual. Deve ser maior ou igual ao estoque mínimo." class="form-control" [(ngModel)]="$any(novoEstoque).estoqueMaximo"
                     placeholder="Ex.: 30" />
                 </div>
 
                 <div class="col-md-3">
                   <label class="form-label" for="ponto-reposicao">Ponto de Reposição</label>
-                  <input id="ponto-reposicao" class="form-control" [(ngModel)]="$any(novoEstoque).pontoReposicao"
+                  <input id="ponto-reposicao" data-help="Saldo em que uma nova compra ou reposição deve ser iniciada para evitar falta do item." class="form-control" [(ngModel)]="$any(novoEstoque).pontoReposicao"
                     placeholder="Ex.: 6" />
                 </div>
 
                 <div class="col-md-3">
                   <label class="form-label" for="quantidade-reposicao-sugerida">Qtd. Reposição Sugerida</label>
-                  <input id="quantidade-reposicao-sugerida" class="form-control"
+                  <input id="quantidade-reposicao-sugerida" data-help="Quantidade normalmente recomendada em uma compra de reposição. É uma referência e não movimenta o estoque automaticamente." class="form-control"
                     [(ngModel)]="$any(novoEstoque).quantidadeReposicaoSugerida" placeholder="Ex.: 15" />
                 </div>
 
@@ -704,6 +708,10 @@
             </div>
           </div>
 
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
           <ul class="nav nav-pills clinicar-tabs">
             <li class="nav-item"><button class="nav-link" type="button"
                 [class.active]="abaEdicaoEstoque === 'identificacao'"
@@ -755,27 +763,27 @@
               <div class="section-card-title"><i class="bi bi-123 me-1"></i>Quantidades e limites</div>
               <div class="row g-3">
                 <div class="col-md-3"><label class="form-label" for="quantidade-atual-edit">Quantidade Atual
-                    *</label><input id="quantidade-atual-edit" class="form-control" [(ngModel)]="edit.quantidadeAtual"
+                    *</label><input id="quantidade-atual-edit" data-help="Saldo físico atual. Alterações de saldo devem preferencialmente ser feitas por movimentações de entrada, saída ou ajuste para preservar o histórico." class="form-control" [(ngModel)]="edit.quantidadeAtual"
                     [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeAtual', false)" />
                   <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(edit, 'quantidadeAtual', false)">
                     Informe um valor válido.</div><small class="text-muted">Use movimentação para entrada/saída
                     normal.</small>
                 </div>
                 <div class="col-md-3"><label class="form-label" for="quantidade-reservada-edit">Quantidade Reservada
-                    *</label><input id="quantidade-reservada-edit" class="form-control"
+                    *</label><input id="quantidade-reservada-edit" data-help="Quantidade comprometida com reservas. Em uma evolução do controle, este saldo deve ser administrado automaticamente pelas reservas do sistema." class="form-control"
                     [(ngModel)]="edit.quantidadeReservada"
                     [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeReservada', false)" />
                   <div class="invalid-feedback d-block"
                     *ngIf="estoqueCampoInvalido(edit, 'quantidadeReservada', false)">Informe um valor válido.</div>
                 </div>
                 <div class="col-md-3"><label class="form-label" for="estoque-minimo-edit">Estoque Mínimo *</label><input
-                    id="estoque-minimo-edit" class="form-control" [(ngModel)]="edit.estoqueMinimo"
+                    id="estoque-minimo-edit" data-help="Limite de atenção do estoque. Quando o saldo disponível atingir ou ficar abaixo deste valor, o item deve entrar em atenção para reposição." class="form-control" [(ngModel)]="edit.estoqueMinimo"
                     [class.is-invalid]="estoqueCampoInvalido(edit, 'estoqueMinimo', false)" />
                   <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(edit, 'estoqueMinimo', false)">
                     Informe o mínimo.</div>
                 </div>
                 <div class="col-md-3"><label class="form-label" for="estoque-critico-edit">Estoque Crítico
-                    *</label><input id="estoque-critico-edit" class="form-control" [(ngModel)]="edit.estoqueCritico"
+                    *</label><input id="estoque-critico-edit" data-help="Limite crítico do estoque. Deve ser menor ou igual ao estoque mínimo e indica reposição urgente." class="form-control" [(ngModel)]="edit.estoqueCritico"
                     [class.is-invalid]="estoqueCampoInvalido(edit, 'estoqueCritico', false)" />
                   <div class="invalid-feedback d-block" *ngIf="estoqueCampoInvalido(edit, 'estoqueCritico', false)">
                     Informe o crítico.</div>
@@ -794,19 +802,19 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label" for="estoque-maximo-edit">Estoque Máximo</label>
-                  <input id="estoque-maximo-edit" class="form-control" [(ngModel)]="$any(edit).estoqueMaximo"
+                  <input id="estoque-maximo-edit" data-help="Limite superior desejado após reposição. Não representa o saldo atual e deve ser maior ou igual ao estoque mínimo." class="form-control" [(ngModel)]="$any(edit).estoqueMaximo"
                     placeholder="Ex.: 30" />
                 </div>
 
                 <div class="col-md-3">
                   <label class="form-label" for="ponto-reposicao-edit">Ponto de Reposição</label>
-                  <input id="ponto-reposicao-edit" class="form-control" [(ngModel)]="$any(edit).pontoReposicao"
+                  <input id="ponto-reposicao-edit" data-help="Saldo que deve disparar o planejamento de uma nova reposição do item." class="form-control" [(ngModel)]="$any(edit).pontoReposicao"
                     placeholder="Ex.: 6" />
                 </div>
 
                 <div class="col-md-3">
                   <label class="form-label" for="quantidade-reposicao-edit">Qtd. Reposição Sugerida</label>
-                  <input id="quantidade-reposicao-edit" class="form-control"
+                  <input id="quantidade-reposicao-edit" data-help="Quantidade sugerida para a próxima reposição. Serve como referência de compra." class="form-control"
                     [(ngModel)]="$any(edit).quantidadeReposicaoSugerida" placeholder="Ex.: 15" />
                 </div>
 

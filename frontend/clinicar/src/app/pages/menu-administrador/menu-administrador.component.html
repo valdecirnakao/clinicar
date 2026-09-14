@@ -1,116 +1,140 @@
-<!-- NAVBAR (pills centralizadas com dropdowns) -->
-<nav class="navbar navbar-expand-md bg-white sticky-top m-0 p-0" style="border-bottom:1px solid #dbe7f5; height: 14vh;">
+<nav class="navbar navbar-expand-md bg-white sticky-top m-0 p-0 top-nav-clinicar">
   <div class="container-fluid">
-    <!-- Marca/Logo à esquerda -->
     <a class="navbar-brand d-flex align-items-center" routerLink="/">
       <img src="assets/img/LogoClinicar.png" alt="CliniCar" class="m-0 p-0 logo-clinicar">
     </a>
 
-    <!-- Toggle só aparece no < md por causa do navbar-expand-md -->
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#topNav"
-      aria-controls="topNav" aria-expanded="false" aria-label="Alternar navegação">
+    <button
+      class="navbar-toggler border-0"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#topNav"
+      aria-controls="topNav"
+      aria-expanded="false"
+      aria-label="Alternar navegação"
+    >
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <!-- em md+ centralizado; em sm fica normal (e colapsado) -->
     <div class="collapse navbar-collapse justify-content-md-center" id="topNav">
       <ul class="navbar-nav nav nav-pills gap-2 align-items-md-center flex-column flex-md-row w-auto w-md-auto">
 
-        <!-- 1: Usuario -->
-        <!-- <li class="nav-item dropdown" data-bs-display="static"> -->
-          <button class="nav-link btn px-3 pill-btn" type="button"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;"
-                  routerLink="exibeUsuario">
+        <li class="nav-item">
+          <button
+            class="nav-link btn px-3 pill-btn"
+            type="button"
+            routerLink="exibeUsuario"
+            routerLinkActive="nav-active"
+            ariaCurrentWhenActive="page"
+          >
             Usuários
           </button>
+        </li>
 
-        <!-- 2: Veículo -->
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;"
-                  routerLink="exibeVeiculo">
+        <li class="nav-item">
+          <button
+            class="nav-link btn px-3 pill-btn"
+            type="button"
+            routerLink="exibeVeiculo"
+            routerLinkActive="nav-active"
+            ariaCurrentWhenActive="page"
+          >
             Veículos
           </button>
-        <!-- 3: Fornecedor -->
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;"
-                  routerLink="exibeFornecedor">
+        </li>
+
+        <li class="nav-item">
+          <button
+            class="nav-link btn px-3 pill-btn"
+            type="button"
+            routerLink="exibeFornecedor"
+            routerLinkActive="nav-active"
+            ariaCurrentWhenActive="page"
+          >
             Fornecedores
           </button>
         </li>
 
-        <!-- 4: Peça -->
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+        <li class="nav-item dropdown" data-bs-display="static" routerLinkActive="nav-group-active">
+          <button
+            class="nav-link dropdown-toggle btn btn-link px-3 pill-btn"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
             Peças
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibePeca">Cadastros</a></li>
-            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeControleEstoquePecas">Estoque</a></li>
-            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeFornecimentoPecas">Fornecimentos</a></li>
+            <li><a class="dropdown-item" routerLink="exibePeca" routerLinkActive="dropdown-active">Cadastros</a></li>
+            <li><a class="dropdown-item" routerLink="exibeControleEstoquePecas" routerLinkActive="dropdown-active">Estoque</a></li>
+            <li><a class="dropdown-item" routerLink="exibeFornecimentoPecas" routerLinkActive="dropdown-active">Fornecimentos</a></li>
           </ul>
         </li>
 
-        <!-- 5: Serviço -->
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+        <li class="nav-item dropdown" data-bs-display="static" routerLinkActive="nav-group-active">
+          <button
+            class="nav-link dropdown-toggle btn btn-link px-3 pill-btn"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
             Serviços
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeServico">Cadastros</a></li>
-            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="exibeFornecimentoServicos">Fornecimentos</a></li>
+            <li><a class="dropdown-item" routerLink="exibeServico" routerLinkActive="dropdown-active">Cadastros</a></li>
+            <li><a class="dropdown-item" routerLink="exibeFornecimentoServicos" routerLinkActive="dropdown-active">Fornecimentos</a></li>
           </ul>
         </li>
 
-        <!-- 6: Agendamentos -->
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link btn btn-link px-3 pill-btn" type="button"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;"
-                  routerLink="exibeAgendamentos">
-            Agendamentos
-          </button>
-        </li>
-
-        <!-- 7: Atendimentos -->
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link btn px-3 pill-btn" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;"
-                  routerLink="exibeAtendimentos">
-            Atendimentos
-          </button>
-        </li>
-
-        <!-- 8: Manutencao -->
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link btn px-3 pill-btn" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;"
-                  routerLink="exibeRegrasManutencao">
+        <li class="nav-item">
+          <button
+            class="nav-link btn px-3 pill-btn"
+            type="button"
+            routerLink="exibeRegrasManutencao"
+            routerLinkActive="nav-active"
+            ariaCurrentWhenActive="page"
+          >
             Manutenção
           </button>
         </li>
 
-        <!-- 8: Encerrar -->
+        <li class="nav-item">
+          <button
+            class="nav-link btn px-3 pill-btn"
+            type="button"
+            routerLink="exibeAgendamentos"
+            routerLinkActive="nav-active"
+            ariaCurrentWhenActive="page"
+          >
+            Agendamentos
+          </button>
+        </li>
+
+        <li class="nav-item">
+          <button
+            class="nav-link btn px-3 pill-btn"
+            type="button"
+            routerLink="exibeAtendimentos"
+            routerLinkActive="nav-active"
+            ariaCurrentWhenActive="page"
+          >
+            Atendimentos
+          </button>
+        </li>
+
         <li class="nav-item dropdown" data-bs-display="static">
-          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  style="text-decoration:none;color:#35689b;border:1px solid #d0e2f2;background:#eef6ff;">
+          <button
+            class="nav-link dropdown-toggle btn btn-link px-3 pill-btn"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
             Encerrar
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" style = "color:#35689b;" routerLink="/" (click)="logout()">Sessão</a></li>
+            <li><a class="dropdown-item" routerLink="/" (click)="logout()">Sessão</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-danger">Fechar</a></li>
+            <li><button class="dropdown-item text-danger" type="button">Fechar</button></li>
           </ul>
         </li>
 
@@ -119,52 +143,6 @@
   </div>
 </nav>
 
-<!-- CONTEÚDO DAS ROTAS RENDERIZA AQUI, ABAIXO DA NAVBAR -->
-<main class="container-fluid py-3" style="height: 86vh">
+<main class="container-fluid py-3 conteudo-clinicar">
   <router-outlet></router-outlet>
 </main>
-
-<style>
-  .btn-link.nav-link { text-decoration: none; }
-  .dropdown-menu { z-index: 2000; }
-
-  /* Base (telas grandes/xxl+) */
-  .logo-clinicar { height: 100px; }
-  .pill-btn { text-decoration: none; }
-
-  /* ===== TELA PEQUENA (sm < md): colunar + botões 100% ===== */
-  @media (max-width: 767.98px) {
-    .logo-clinicar { height: 72px; }
-
-    #topNav .navbar-nav { width: 100%; }
-    #topNav .nav-item { width: 100%; }
-    .pill-btn { width: 100%; text-align: left; }
-
-    /* dropdown encaixado abaixo do botão (melhor no mobile) */
-    #topNav .dropdown-menu {
-      position: static;
-      width: 100%;
-      margin-top: .25rem;
-    }
-  }
-
-  /* ===== TELA MÉDIA/GRANDE (md até xl/xxl-): mesmo layout, menor ===== */
-  @media (min-width: 768px) and (max-width: 1399.98px) {
-    .logo-clinicar { height: 80px; }      /* escala menor que 100px */
-    .navbar-nav.gap-2 { gap: .35rem !important; }
-
-    .pill-btn {
-      padding-left: .75rem !important;
-      padding-right: .75rem !important;
-      padding-top: .35rem !important;
-      padding-bottom: .35rem !important;
-      font-size: .92rem;
-    }
-
-    .dropdown-menu .dropdown-item {
-      font-size: .92rem;
-      padding-top: .4rem;
-      padding-bottom: .4rem;
-    }
-  }
-</style>
