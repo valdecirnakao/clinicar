@@ -8,7 +8,11 @@ export interface Peca {
   id?: number;
   nome: string;
   tipo?: string;
-  origemOleo?: 'MINERAL' | 'SINTETICO' | string;
+  origemOleo?: 'MINERAL' | 'SEMISSINTETICO' | 'SINTETICO' | string;
+  viscosidadeSae?: string;
+  classificacaoApi?: string;
+  classificacaoAcea?: string;
+  normaOem?: string;
   especificacao?: string;
   fabricante: string;
   modelo?: string;

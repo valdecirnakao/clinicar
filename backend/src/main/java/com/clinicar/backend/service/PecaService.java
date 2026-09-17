@@ -72,28 +72,49 @@ public class PecaService {
             throw new IllegalArgumentException("Dados da peça não informados.");
         }
 
-        if (request.getNome() == null || request.getNome().trim().isBlank()) {
+        if (textoVazio(request.getNome())) {
             throw new IllegalArgumentException("Nome da peça é obrigatório.");
         }
 
-        if (request.getFabricante() == null || request.getFabricante().trim().isBlank()) {
+        if (textoVazio(request.getFabricante())) {
             throw new IllegalArgumentException("Fabricante da peça é obrigatório.");
         }
 
-        if (request.getTipo() == null || request.getTipo().trim().isBlank()) {
-    throw new IllegalArgumentException(
-        "Tipo da peça é obrigatório."
-    );
-}
+        if (textoVazio(request.getTipo())) {
+            throw new IllegalArgumentException("Tipo da peça é obrigatório.");
+        }
 
-        if (request.getUnidade() == null || request.getUnidade().trim().isBlank()) {
+        if (textoVazio(request.getUnidade())) {
             throw new IllegalArgumentException("Unidade de medida da peça é obrigatória.");
         }
 
-        if (ehOleoMotor(request.getTipo())
-                && (request.getOrigemOleo() == null || request.getOrigemOleo().trim().isBlank())) {
-            throw new IllegalArgumentException("Origem do óleo de motor é obrigatória. Informe MINERAL ou SINTETICO.");
+        if (ehOleoMotor(request.getTipo())) {
+            if (textoVazio(request.getOrigemOleo())) {
+                throw new IllegalArgumentException(
+                        "Origem do óleo de motor é obrigatória. Informe MINERAL, SEMISSINTETICO ou SINTETICO."
+                );
+            }
+
+            if (textoVazio(request.getViscosidadeSae())) {
+                throw new IllegalArgumentException("Viscosidade SAE do óleo de motor é obrigatória.");
+            }
+
+            if (!possuiEspecificacaoTecnica(request)) {
+                throw new IllegalArgumentException(
+                        "Informe ao menos uma especificação técnica do óleo: classificação API, classificação ACEA ou norma/aprovação OEM."
+                );
+            }
         }
+    }
+
+    private boolean possuiEspecificacaoTecnica(PecaRequest request) {
+        return !textoVazio(request.getClassificacaoApi())
+                || !textoVazio(request.getClassificacaoAcea())
+                || !textoVazio(request.getNormaOem());
+    }
+
+    private boolean textoVazio(String valor) {
+        return valor == null || valor.trim().isBlank();
     }
 
     private boolean ehOleoMotor(String tipo) {

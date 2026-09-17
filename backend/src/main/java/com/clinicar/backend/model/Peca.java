@@ -29,6 +29,18 @@ public class Peca {
     @Column(name = "origem_oleo", length = 30)
     private String origemOleo;
 
+    @Column(name = "viscosidade_sae", length = 30)
+    private String viscosidadeSae;
+
+    @Column(name = "classificacao_api", length = 50)
+    private String classificacaoApi;
+
+    @Column(name = "classificacao_acea", length = 80)
+    private String classificacaoAcea;
+
+    @Column(name = "norma_oem", length = 200)
+    private String normaOem;
+
     @Column(name = "especificacao", length = 200)
     private String especificacao;
 

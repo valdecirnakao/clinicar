@@ -442,65 +442,120 @@
               </div>
 
               <div class="row g-3">
-                <div class="col-md-4">
-                  <label class="form-label" for="tipoPecaCadastro">
-                    Tipo *
-                  </label>
-
+                <div class="col-md-3">
+                  <label class="form-label" for="tipoPecaCadastro">Tipo *</label>
                   <select id="tipoPecaCadastro"
                     data-help="Classifique o item para facilitar filtros, estoque, orçamentos e regras específicas. Este campo é obrigatório. Para óleo de motor, selecione Óleo de motor."
                     class="form-select" [(ngModel)]="novaPeca.tipo" (ngModelChange)="aoAlterarTipoPeca(novaPeca)"
                     [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'tipo')">
                     <option value="">Selecione...</option>
-
-                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">
-                      {{ tipo }}
-                    </option>
+                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">{{ tipo }}</option>
                   </select>
-
                   <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'tipo')">
                     Selecione o tipo da peça ou insumo.
                   </div>
-
-                  <small class="text-muted">
-                    Classifique o item como peça, lubrificante,
-                    fluido ou consumível.
-                  </small>
+                  <small class="text-muted">Classifique o item como peça, óleo, lubrificante, fluido ou consumível.</small>
                 </div>
 
-                <div class="col-md-4" *ngIf="ehOleoMotor(novaPeca)">
+                <div class="col-md-3" *ngIf="ehOleoMotor(novaPeca)">
                   <label class="form-label" for="origemOleoPecaCadastro">Origem do óleo *</label>
                   <select id="origemOleoPecaCadastro"
-                    data-help="Para óleo de motor, informe obrigatoriamente se a origem é mineral ou sintética."
+                    data-help="Informe a base do óleo de motor. Para o cadastro técnico do CliniCar, escolha Mineral, Semissintético ou Sintético."
                     class="form-select" [(ngModel)]="novaPeca.origemOleo"
                     [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'origemOleo')">
                     <option value="">Selecione...</option>
                     <option *ngFor="let origem of origensOleo" [ngValue]="origem.valor">{{ origem.rotulo }}</option>
                   </select>
                   <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'origemOleo')">
-                    Informe se o óleo é mineral ou sintético.
+                    Informe se o óleo é mineral, semissintético ou sintético.
                   </div>
                 </div>
 
-                <div class="col-md-4">
-                  <label class="form-label" for="modeloPecaCadastro">Modelo</label>
-                  <input id="modeloPecaCadastro" class="form-control" [(ngModel)]="novaPeca.modelo"
+                <div class="col-md-3">
+                  <label class="form-label" for="modeloPecaCadastro">Linha / modelo</label>
+                  <input id="modeloPecaCadastro"
+                    data-help="Informe a linha comercial ou modelo do produto, quando houver. Exemplo: Magnatec."
+                    class="form-control" [(ngModel)]="novaPeca.modelo"
                     (blur)="normalizarCampoCapitalizado(novaPeca, 'modelo')" autocomplete="off" />
                 </div>
 
-                <div class="col-md-4">
-                  <label class="form-label" for="normaPecaCadastro">Norma</label>
-                  <input id="normaPecaCadastro" class="form-control" [(ngModel)]="novaPeca.norma"
-                    (blur)="normalizarCampoCaixaAlta(novaPeca, 'norma')" placeholder="Ex.: SAE 5W30, DOT 4, NBR"
-                    autocomplete="off" />
-                </div>
+                <ng-container *ngIf="ehOleoMotor(novaPeca); else classificacaoGenericaCadastro">
+                  <div class="col-md-4">
+                    <label class="form-label" for="viscosidadeSaePecaCadastro">Viscosidade SAE *</label>
+                    <input id="viscosidadeSaePecaCadastro"
+                      data-help="Informe o grau de viscosidade SAE do óleo. Exemplo: 5W-40. O CliniCar aceita a digitação 5W40 e padroniza para 5W-40."
+                      class="form-control" [(ngModel)]="novaPeca.viscosidadeSae"
+                      (blur)="normalizarViscosidadeSae(novaPeca)"
+                      [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'viscosidadeSae')"
+                      list="viscosidadesSaeCadastro" placeholder="Ex.: 5W-40" autocomplete="off" />
+                    <datalist id="viscosidadesSaeCadastro">
+                      <option *ngFor="let viscosidade of viscosidadesSaeComuns" [value]="viscosidade"></option>
+                    </datalist>
+                    <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(novaPeca, 'viscosidadeSae')">
+                      Informe a viscosidade SAE do óleo.
+                    </div>
+                  </div>
 
-                <div class="col-12">
-                  <label class="form-label" for="especificacaoPecaCadastro">Especificação</label>
-                  <input id="especificacaoPecaCadastro" class="form-control" [(ngModel)]="novaPeca.especificacao"
-                    (blur)="normalizarCampoCaixaAlta(novaPeca, 'especificacao')"
-                    placeholder="Ex.: 1.0 FLEX, 5W30 SINTÉTICO, DOT 4" autocomplete="off" />
-                </div>
+                  <div class="col-12">
+                    <div class="alert alert-info py-2 mb-0">
+                      <i class="bi bi-info-circle me-1"></i>
+                      <strong>Especificação técnica *</strong> — informe pelo menos um dos campos: API, ACEA ou norma/aprovação OEM.
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label" for="classificacaoApiPecaCadastro">Classificação API</label>
+                    <input id="classificacaoApiPecaCadastro"
+                      data-help="Classificação de desempenho API do óleo. Exemplos: API SP, SN PLUS ou SN. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="novaPeca.classificacaoApi"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'classificacaoApi')"
+                      placeholder="Ex.: SP" autocomplete="off" />
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label" for="classificacaoAceaPecaCadastro">Classificação ACEA</label>
+                    <input id="classificacaoAceaPecaCadastro"
+                      data-help="Classificação europeia ACEA. Exemplos: A3/B4 ou C3. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="novaPeca.classificacaoAcea"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'classificacaoAcea')"
+                      placeholder="Ex.: C3" autocomplete="off" />
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="normaOemPecaCadastro">Norma / aprovação OEM</label>
+                    <input id="normaOemPecaCadastro"
+                      data-help="Informe uma aprovação ou especificação do fabricante do veículo quando aplicável. Exemplo: VW 502 00 / 505 00. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="novaPeca.normaOem"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'normaOem')"
+                      placeholder="Ex.: VW 502 00 / 505 00" autocomplete="off" />
+                    <div class="alert alert-warning py-2 mt-2 mb-0"
+                      *ngIf="especificacaoTecnicaMarcadaInvalida(novaPeca)">
+                      <i class="bi bi-exclamation-triangle me-1"></i>
+                      Informe pelo menos uma especificação técnica: API, ACEA ou norma/aprovação OEM.
+                    </div>
+                    <small class="text-muted">Para óleo de motor, pelo menos um dos três campos técnicos acima deve ser informado.</small>
+                  </div>
+                </ng-container>
+
+                <ng-template #classificacaoGenericaCadastro>
+                  <div class="col-md-4">
+                    <label class="form-label" for="normaPecaCadastro">Norma</label>
+                    <input id="normaPecaCadastro"
+                      data-help="Informe uma norma técnica aplicável à peça ou insumo, quando houver."
+                      class="form-control" [(ngModel)]="novaPeca.norma"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'norma')"
+                      placeholder="Ex.: DOT 4, NBR" autocomplete="off" />
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="especificacaoPecaCadastro">Especificação</label>
+                    <input id="especificacaoPecaCadastro"
+                      data-help="Registre características técnicas complementares da peça ou insumo."
+                      class="form-control" [(ngModel)]="novaPeca.especificacao"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'especificacao')"
+                      placeholder="Ex.: aplicação, material ou característica técnica" autocomplete="off" />
+                  </div>
+                </ng-template>
               </div>
             </div>
           </ng-container>
@@ -526,11 +581,18 @@
                   <div class="review-card h-100">
                     <div class="review-label">Classificação</div>
                     <div class="details-line">Tipo: {{ novaPeca.tipo || '—' }}</div>
-                    <div class="details-line" *ngIf="ehOleoMotor(novaPeca)">Origem do óleo: {{ novaPeca.origemOleo ===
-                      'MINERAL' ? 'Mineral' : (novaPeca.origemOleo === 'SINTETICO' ? 'Sintético' : '—') }}</div>
-                    <div class="details-line">Modelo: {{ novaPeca.modelo || '—' }}</div>
-                    <div class="details-line">Norma: {{ novaPeca.norma || '—' }}</div>
-                    <div class="details-line">Especificação: {{ novaPeca.especificacao || '—' }}</div>
+                    <div class="details-line" *ngIf="ehOleoMotor(novaPeca)">Origem do óleo: {{ rotuloOrigemOleo(novaPeca.origemOleo) }}</div>
+                    <div class="details-line">Linha / modelo: {{ novaPeca.modelo || '—' }}</div>
+                    <ng-container *ngIf="ehOleoMotor(novaPeca); else revisaoGenericaCadastro">
+                      <div class="details-line">Viscosidade SAE: {{ novaPeca.viscosidadeSae || '—' }}</div>
+                      <div class="details-line">API: {{ novaPeca.classificacaoApi || '—' }}</div>
+                      <div class="details-line">ACEA: {{ novaPeca.classificacaoAcea || '—' }}</div>
+                      <div class="details-line">OEM: {{ novaPeca.normaOem || '—' }}</div>
+                    </ng-container>
+                    <ng-template #revisaoGenericaCadastro>
+                      <div class="details-line">Norma: {{ novaPeca.norma || '—' }}</div>
+                      <div class="details-line">Especificação: {{ novaPeca.especificacao || '—' }}</div>
+                    </ng-template>
                   </div>
                 </div>
               </div>
@@ -702,25 +764,15 @@
 
               <div class="row g-3">
                 <div class="col-md-4">
-                  <label class="form-label" for="tipoPecaEdicao">
-                    Tipo *
-                  </label>
-
+                  <label class="form-label" for="tipoPecaEdicao">Tipo *</label>
                   <select id="tipoPecaEdicao"
                     data-help="Classifique o item para facilitar filtros, estoque, orçamentos e regras específicas. Este campo é obrigatório. Para óleo de motor, selecione Óleo de motor."
                     class="form-select" [(ngModel)]="edit.tipo" (ngModelChange)="aoAlterarTipoPeca(edit)"
                     [class.is-invalid]="campoMarcadoInvalido(edit, 'tipo')">
                     <option value="">Selecione...</option>
-
-                    <option *ngIf="tipoForaDaLista(edit.tipo)" [ngValue]="edit.tipo">
-                      {{ edit.tipo }}
-                    </option>
-
-                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">
-                      {{ tipo }}
-                    </option>
+                    <option *ngIf="tipoForaDaLista(edit.tipo)" [ngValue]="edit.tipo">{{ edit.tipo }}</option>
+                    <option *ngFor="let tipo of tiposPeca" [ngValue]="tipo">{{ tipo }}</option>
                   </select>
-
                   <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'tipo')">
                     Selecione o tipo da peça ou insumo.
                   </div>
@@ -729,34 +781,100 @@
                 <div class="col-md-4" *ngIf="ehOleoMotor(edit)">
                   <label class="form-label" for="origemOleoPecaEdicao">Origem do óleo *</label>
                   <select id="origemOleoPecaEdicao"
-                    data-help="Para óleo de motor, informe obrigatoriamente se a origem é mineral ou sintética."
+                    data-help="Informe a base do óleo de motor. Para o cadastro técnico do CliniCar, escolha Mineral, Semissintético ou Sintético."
                     class="form-select" [(ngModel)]="edit.origemOleo"
                     [class.is-invalid]="campoMarcadoInvalido(edit, 'origemOleo')">
                     <option value="">Selecione...</option>
                     <option *ngFor="let origem of origensOleo" [ngValue]="origem.valor">{{ origem.rotulo }}</option>
                   </select>
                   <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'origemOleo')">
-                    Informe se o óleo é mineral ou sintético.
+                    Informe se o óleo é mineral, semissintético ou sintético.
                   </div>
                 </div>
 
                 <div class="col-md-4">
-                  <label class="form-label" for="modeloPecaEdicao">Modelo</label>
-                  <input id="modeloPecaEdicao" class="form-control" [(ngModel)]="edit.modelo"
+                  <label class="form-label" for="modeloPecaEdicao">Linha / modelo</label>
+                  <input id="modeloPecaEdicao"
+                    data-help="Informe a linha comercial ou modelo do produto, quando houver. Exemplo: Magnatec."
+                    class="form-control" [(ngModel)]="edit.modelo"
                     (blur)="normalizarCampoCapitalizado(edit, 'modelo')" autocomplete="off" />
                 </div>
 
-                <div class="col-md-4">
-                  <label class="form-label" for="normaPecaEdicao">Norma</label>
-                  <input id="normaPecaEdicao" class="form-control" [(ngModel)]="edit.norma"
-                    (blur)="normalizarCampoCaixaAlta(edit, 'norma')" autocomplete="off" />
-                </div>
+                <ng-container *ngIf="ehOleoMotor(edit); else classificacaoGenericaEdicao">
+                  <div class="col-md-4">
+                    <label class="form-label" for="viscosidadeSaePecaEdicao">Viscosidade SAE *</label>
+                    <input id="viscosidadeSaePecaEdicao"
+                      data-help="Informe o grau de viscosidade SAE do óleo. Exemplo: 5W-40. O CliniCar aceita a digitação 5W40 e padroniza para 5W-40."
+                      class="form-control" [(ngModel)]="edit.viscosidadeSae"
+                      (blur)="normalizarViscosidadeSae(edit)"
+                      [class.is-invalid]="campoMarcadoInvalido(edit, 'viscosidadeSae')"
+                      list="viscosidadesSaeEdicao" placeholder="Ex.: 5W-40" autocomplete="off" />
+                    <datalist id="viscosidadesSaeEdicao">
+                      <option *ngFor="let viscosidade of viscosidadesSaeComuns" [value]="viscosidade"></option>
+                    </datalist>
+                    <div class="invalid-feedback d-block" *ngIf="campoMarcadoInvalido(edit, 'viscosidadeSae')">
+                      Informe a viscosidade SAE do óleo.
+                    </div>
+                  </div>
 
-                <div class="col-12">
-                  <label class="form-label" for="especificacaoPecaEdicao">Especificação</label>
-                  <input id="especificacaoPecaEdicao" class="form-control" [(ngModel)]="edit.especificacao"
-                    (blur)="normalizarCampoCaixaAlta(edit, 'especificacao')" autocomplete="off" />
-                </div>
+                  <div class="col-12">
+                    <div class="alert alert-info py-2 mb-0">
+                      <i class="bi bi-info-circle me-1"></i>
+                      <strong>Especificação técnica *</strong> — informe pelo menos um dos campos: API, ACEA ou norma/aprovação OEM.
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label" for="classificacaoApiPecaEdicao">Classificação API</label>
+                    <input id="classificacaoApiPecaEdicao"
+                      data-help="Classificação de desempenho API do óleo. Exemplos: API SP, SN PLUS ou SN. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="edit.classificacaoApi"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'classificacaoApi')"
+                      placeholder="Ex.: SP" autocomplete="off" />
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label" for="classificacaoAceaPecaEdicao">Classificação ACEA</label>
+                    <input id="classificacaoAceaPecaEdicao"
+                      data-help="Classificação europeia ACEA. Exemplos: A3/B4 ou C3. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="edit.classificacaoAcea"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'classificacaoAcea')"
+                      placeholder="Ex.: C3" autocomplete="off" />
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="normaOemPecaEdicao">Norma / aprovação OEM</label>
+                    <input id="normaOemPecaEdicao"
+                      data-help="Informe uma aprovação ou especificação do fabricante do veículo quando aplicável. Exemplo: VW 502 00 / 505 00. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="edit.normaOem"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'normaOem')"
+                      placeholder="Ex.: VW 502 00 / 505 00" autocomplete="off" />
+                    <div class="alert alert-warning py-2 mt-2 mb-0"
+                      *ngIf="especificacaoTecnicaMarcadaInvalida(edit)">
+                      <i class="bi bi-exclamation-triangle me-1"></i>
+                      Informe pelo menos uma especificação técnica: API, ACEA ou norma/aprovação OEM.
+                    </div>
+                    <small class="text-muted">Para óleo de motor, pelo menos um dos três campos técnicos acima deve ser informado.</small>
+                  </div>
+                </ng-container>
+
+                <ng-template #classificacaoGenericaEdicao>
+                  <div class="col-md-4">
+                    <label class="form-label" for="normaPecaEdicao">Norma</label>
+                    <input id="normaPecaEdicao"
+                      data-help="Informe uma norma técnica aplicável à peça ou insumo, quando houver."
+                      class="form-control" [(ngModel)]="edit.norma"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'norma')" autocomplete="off" />
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="especificacaoPecaEdicao">Especificação</label>
+                    <input id="especificacaoPecaEdicao"
+                      data-help="Registre características técnicas complementares da peça ou insumo."
+                      class="form-control" [(ngModel)]="edit.especificacao"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'especificacao')" autocomplete="off" />
+                  </div>
+                </ng-template>
               </div>
             </div>
           </ng-container>
@@ -782,11 +900,18 @@
                   <div class="review-card h-100">
                     <div class="review-label">Classificação</div>
                     <div class="details-line">Tipo: {{ edit.tipo || '—' }}</div>
-                    <div class="details-line" *ngIf="ehOleoMotor(edit)">Origem do óleo: {{ edit.origemOleo === 'MINERAL'
-                      ? 'Mineral' : (edit.origemOleo === 'SINTETICO' ? 'Sintético' : '—') }}</div>
-                    <div class="details-line">Modelo: {{ edit.modelo || '—' }}</div>
-                    <div class="details-line">Norma: {{ edit.norma || '—' }}</div>
-                    <div class="details-line">Especificação: {{ edit.especificacao || '—' }}</div>
+                    <div class="details-line" *ngIf="ehOleoMotor(edit)">Origem do óleo: {{ rotuloOrigemOleo(edit.origemOleo) }}</div>
+                    <div class="details-line">Linha / modelo: {{ edit.modelo || '—' }}</div>
+                    <ng-container *ngIf="ehOleoMotor(edit); else revisaoGenericaEdicao">
+                      <div class="details-line">Viscosidade SAE: {{ edit.viscosidadeSae || '—' }}</div>
+                      <div class="details-line">API: {{ edit.classificacaoApi || '—' }}</div>
+                      <div class="details-line">ACEA: {{ edit.classificacaoAcea || '—' }}</div>
+                      <div class="details-line">OEM: {{ edit.normaOem || '—' }}</div>
+                    </ng-container>
+                    <ng-template #revisaoGenericaEdicao>
+                      <div class="details-line">Norma: {{ edit.norma || '—' }}</div>
+                      <div class="details-line">Especificação: {{ edit.especificacao || '—' }}</div>
+                    </ng-template>
                   </div>
                 </div>
               </div>
@@ -862,9 +987,18 @@
             <div class="details-card h-100">
               <div class="details-title">Classificação</div>
               <div class="details-line"><strong>Tipo:</strong> {{ pecaSelecionada.tipo || '—' }}</div>
-              <div class="details-line"><strong>Modelo:</strong> {{ pecaSelecionada.modelo || '—' }}</div>
-              <div class="details-line"><strong>Norma:</strong> {{ pecaSelecionada.norma || '—' }}</div>
-              <div class="details-line"><strong>Especificação:</strong> {{ pecaSelecionada.especificacao || '—' }}</div>
+              <div class="details-line"><strong>Linha / modelo:</strong> {{ pecaSelecionada.modelo || '—' }}</div>
+              <ng-container *ngIf="ehOleoMotor(pecaSelecionada); else detalheClassificacaoGenerica">
+                <div class="details-line"><strong>Origem:</strong> {{ rotuloOrigemOleo(pecaSelecionada.origemOleo) }}</div>
+                <div class="details-line"><strong>Viscosidade SAE:</strong> {{ pecaSelecionada.viscosidadeSae || '—' }}</div>
+                <div class="details-line"><strong>API:</strong> {{ pecaSelecionada.classificacaoApi || '—' }}</div>
+                <div class="details-line"><strong>ACEA:</strong> {{ pecaSelecionada.classificacaoAcea || '—' }}</div>
+                <div class="details-line"><strong>OEM:</strong> {{ pecaSelecionada.normaOem || '—' }}</div>
+              </ng-container>
+              <ng-template #detalheClassificacaoGenerica>
+                <div class="details-line"><strong>Norma:</strong> {{ pecaSelecionada.norma || '—' }}</div>
+                <div class="details-line"><strong>Especificação:</strong> {{ pecaSelecionada.especificacao || '—' }}</div>
+              </ng-template>
             </div>
           </div>
         </div>

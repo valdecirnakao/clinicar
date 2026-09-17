@@ -260,6 +260,10 @@ CREATE TABLE IF NOT EXISTS peca (
     descricao                       VARCHAR(500) NULL,
 
     origem_oleo                     VARCHAR(30) NULL,
+    viscosidade_sae                 VARCHAR(30) NULL,
+    classificacao_api               VARCHAR(50) NULL,
+    classificacao_acea              VARCHAR(80) NULL,
+    norma_oem                       VARCHAR(200) NULL,
 
     observacoes                     VARCHAR(500) NULL,
 
