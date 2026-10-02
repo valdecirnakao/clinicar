@@ -22,6 +22,12 @@ class VeiculoServiceTest {
     @Mock
     private VeiculoRepository repo;
 
+    @Mock
+    private com.clinicar.backend.repository.UsuarioRepository usuarioRepository;
+
+    @Mock
+    private WhatsAppService whatsAppService;
+
     @InjectMocks
     private VeiculoService service;
 
@@ -35,12 +41,14 @@ class VeiculoServiceTest {
         req.setAnoModeloCombustivel("2025/2026 Flex");
         req.setIdProprietario(42L);
 
-        when(repo.save(any(Veiculo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repo.saveAndFlush(any(Veiculo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        var dono = new com.clinicar.backend.model.Usuario(); dono.setId(42L); dono.setStatus("ATIVO");
+        when(usuarioRepository.findById(42L)).thenReturn(java.util.Optional.of(dono));
         Veiculo salvo = service.criar(req);
 
         ArgumentCaptor<Veiculo> captor = ArgumentCaptor.forClass(Veiculo.class);
-        verify(repo).save(captor.capture());
+        verify(repo).saveAndFlush(captor.capture());
 
         Veiculo veiculo = captor.getValue();
         assertEquals("ABC1234", veiculo.getPlaca());
@@ -53,15 +61,9 @@ class VeiculoServiceTest {
     }
 
     @Test
-    void criarMantemPlacaNulaQuandoEntradaNula() {
-        VeiculoRequest req = new VeiculoRequest();
-        req.setIdProprietario(1L);
-
-        when(repo.save(any(Veiculo.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Veiculo salvo = service.criar(req);
-
-        assertNull(salvo.getPlaca());
-        verify(repo).save(any(Veiculo.class));
+    void criarRejeitaPlacaNula() {
+        VeiculoRequest req = new VeiculoRequest(); req.setIdProprietario(1L);
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> service.criar(req));
+        org.mockito.Mockito.verify(repo, org.mockito.Mockito.never()).saveAndFlush(any(Veiculo.class));
     }
 }

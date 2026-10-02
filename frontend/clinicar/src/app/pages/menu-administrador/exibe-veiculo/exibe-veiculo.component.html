@@ -48,7 +48,7 @@
           <div class="summary-card">
             <div class="summary-icon summary-icon-whatsapp"><i class="bi bi-whatsapp"></i></div>
             <div>
-              <div class="summary-label">WhatsApp válido</div>
+              <div class="summary-label">WhatsApp</div>
               <div class="summary-value">{{ totalWhatsappValido }}</div>
             </div>
           </div>
@@ -84,7 +84,7 @@
                 <option value="">Todos</option>
                 <option value="com">Com proprietário</option>
                 <option value="sem">Sem proprietário</option>
-                <option value="whatsapp">WhatsApp válido</option>
+                <option value="whatsapp">WhatsApp</option>
               </select>
             </div>
             <div class="col-lg-1 col-md-6">
@@ -128,7 +128,7 @@
             <span class="filter-chip" *ngIf="filtroProprietario">
               Proprietário:
               {{ filtroProprietario === 'com' ? 'Com proprietário' : filtroProprietario === 'sem' ? 'Sem proprietário' :
-              'WhatsApp válido' }}
+              'WhatsApp' }}
               <button type="button" (click)="filtroProprietario = ''; aoAlterarFiltros()"><i
                   class="bi bi-x"></i></button>
             </span>
@@ -156,7 +156,7 @@
             </span>
             <span>
               <i class="bi bi-whatsapp me-1"></i>
-              {{ totalWhatsappValido }} proprietário(s) com WhatsApp válido
+              {{ totalWhatsappValido }} proprietário(s) com WhatsApp
             </span>
           </div>
 
@@ -217,15 +217,15 @@
                       <div>{{ proprietarioTelefone(v) }}</div>
                       <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(v)">
                         <i class="bi bi-whatsapp me-1"></i>
-                        WhatsApp válido
+                        WhatsApp
                       </span>
                       <span class="badge badge-soft-secondary" *ngIf="!whatsappValidoDoProprietario(v)">
-                        Sem WhatsApp válido
+                        Sem WhatsApp
                       </span>
                     </td>
 
                     <td class="text-center">
-                      <div class="table-actions">
+                      <div class="table-actions"><a class="btn btn-sm btn-outline-primary" [routerLink]="[&apos;/menuAdministrador/historicoVeicular&apos;]" [queryParams]="{veiculoId: v.id}" title="Consultar histórico veicular" aria-label="Consultar histórico veicular"><i class="bi bi-clock-history"></i></a>
                         <button class="btn btn-sm btn-outline-info" type="button" title="Visualizar"
                           (click)="abrirDetalhes(v)">
                           <i class="bi bi-eye"></i>
@@ -313,7 +313,7 @@
                 <span><strong>Contato:</strong> {{ proprietarioTelefone(v) }}</span>
               </div>
 
-              <div class="table-actions mt-2">
+              <div class="table-actions mt-2"><a class="btn btn-sm btn-outline-primary" [routerLink]="[&apos;/menuAdministrador/historicoVeicular&apos;]" [queryParams]="{veiculoId: v.id}"><i class="bi bi-clock-history me-1"></i>Histórico</a>
                 <button class="btn btn-sm btn-outline-info" type="button" (click)="abrirDetalhes(v)">
                   <i class="bi bi-eye me-1"></i> Visualizar
                 </button>
@@ -414,11 +414,11 @@
                   <div class="col-md-2">
                     <label class="form-label">Placa *</label>
                     <input class="form-control" [(ngModel)]="novoVeiculo.placa"
-                      (input)="novoVeiculo.placa = normalizarPlaca(novoVeiculo.placa)"
-                      (blur)="aplicarMascaraPlacaCadastro()" [class.is-invalid]="placaCadastroInvalida()" maxlength="8"
+                      (input)="novoVeiculo.placa = normalizarPlaca(novoVeiculo.placa); alterarPlaca('cadastro')"
+                      (blur)="verificarPlaca('cadastro')" [class.is-invalid]="placaCadastroInvalida()" maxlength="8"
                       placeholder="ABC-1D23" autocomplete="off" />
-                    <div class="invalid-feedback d-block" *ngIf="placaCadastroInvalida()">Informe uma placa válida.
-                    </div>
+                    <div class="invalid-feedback d-block" *ngIf="placaCadastroInvalida()">{{ mensagemPlaca('cadastro') }}
+                    </div><small class="text-muted d-block" *ngIf="consultaPlaca.cadastro.consultando" role="status">Verificando placa…</small><small class="text-muted d-block" *ngIf="consultaPlaca.cadastro.aviso">{{ consultaPlaca.cadastro.aviso }}</small>
                   </div>
 
                   <div class="col-md-3">
@@ -706,9 +706,9 @@
                   <div class="col-md-2">
                     <label class="form-label">Placa *</label>
                     <input class="form-control" [(ngModel)]="edit.placa"
-                      (input)="edit.placa = normalizarPlaca(edit.placa)" (blur)="aplicarMascaraPlacaEdicao()"
+                      (input)="edit.placa = normalizarPlaca(edit.placa); alterarPlaca('edicao')" (blur)="verificarPlaca('edicao')"
                       [class.is-invalid]="placaEdicaoInvalida()" maxlength="8" autocomplete="off" />
-                    <div class="invalid-feedback d-block" *ngIf="placaEdicaoInvalida()">Informe uma placa válida.</div>
+                    <div class="invalid-feedback d-block" *ngIf="placaEdicaoInvalida()">{{ mensagemPlaca('edicao') }}</div><small class="text-muted d-block" *ngIf="consultaPlaca.edicao.consultando" role="status">Verificando placa…</small><small class="text-muted d-block" *ngIf="consultaPlaca.edicao.aviso">{{ consultaPlaca.edicao.aviso }}</small>
                   </div>
 
                   <div class="col-md-3">
@@ -946,10 +946,9 @@
                 <div class="details-line"><strong>CPF:</strong> {{ proprietarioCpf(veiculoDetalhe!) }}</div>
                 <div class="details-line"><strong>E-mail:</strong> {{ proprietarioEmail(veiculoDetalhe) }}</div>
                 <div class="details-line"><strong>WhatsApp:</strong> {{ proprietarioTelefone(veiculoDetalhe) }}</div>
-                <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(veiculoDetalhe)">WhatsApp
-                  válido</span>
+                <span class="badge badge-soft-success" *ngIf="whatsappValidoDoProprietario(veiculoDetalhe)">WhatsApp</span>
                 <span class="badge badge-soft-secondary" *ngIf="!whatsappValidoDoProprietario(veiculoDetalhe)">Sem
-                  WhatsApp válido</span>
+                  WhatsApp</span>
               </div>
             </div>
           </div>

@@ -37,6 +37,7 @@ public class VeiculoService {
 
         validarCadastroVeiculo(req);
 
+        validarPlacaUnica(req.getPlaca(), null);
         Veiculo veiculo = new Veiculo();
 
         veiculo.setPlaca(normalizaPlaca(req.getPlaca()));
@@ -46,7 +47,7 @@ public class VeiculoService {
         veiculo.setAnoModeloCombustivel(limparTexto(req.getAnoModeloCombustivel()));
         veiculo.setIdProprietario(req.getIdProprietario());
 
-        Veiculo salvo = repo.save(veiculo);
+        Veiculo salvo = repo.saveAndFlush(veiculo);
 
         log.info(
                 "Veículo salvo: id={}, fabricante={}, modelo={}, placa={}, anoModeloCombustivel={}, idProprietario={}",
@@ -76,6 +77,7 @@ public class VeiculoService {
         Veiculo veiculo = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Veículo não encontrado."));
 
+        validarPlacaUnica(veiculoAtualizado.getPlaca(), id);
         String assinaturaAntes = assinaturaDadosVeiculo(veiculo);
 
         log.info("Veículo ID {} antes da atualização: {}", id, assinaturaAntes);
@@ -95,7 +97,7 @@ public class VeiculoService {
                 veiculo.getIdProprietario()
         );
 
-        Veiculo salvo = repo.save(veiculo);
+        Veiculo salvo = repo.saveAndFlush(veiculo);
 
         if (houveAlteracao) {
             Usuario proprietario = buscarProprietario(salvo);
@@ -267,8 +269,21 @@ public class VeiculoService {
         }
 
         return placa.trim()
-                .toUpperCase()
-                .replaceAll("\\s+", "");
+                .toUpperCase(java.util.Locale.ROOT)
+                .replaceAll("[^A-Z0-9]", "");
+    }
+
+    @Transactional(readOnly = true)
+    public boolean verificarPlacaCadastrada(String placa, Long ignorarId) {
+        String normalizada = normalizaPlaca(placa);
+        if (normalizada == null || normalizada.length() != 7) throw new IllegalArgumentException("Informe uma placa válida com 7 caracteres.");
+        if (ignorarId != null && ignorarId <= 0) throw new IllegalArgumentException("ID do veículo inválido.");
+        return repo.placaCadastrada(normalizada, ignorarId);
+    }
+
+    private void validarPlacaUnica(String placa, Long ignorarId) {
+        if (verificarPlacaCadastrada(placa, ignorarId)) throw new org.springframework.web.server.ResponseStatusException(
+            org.springframework.http.HttpStatus.CONFLICT, "Placa já cadastrada anteriormente.");
     }
 
     private void validarCadastroVeiculo(VeiculoRequest req) {

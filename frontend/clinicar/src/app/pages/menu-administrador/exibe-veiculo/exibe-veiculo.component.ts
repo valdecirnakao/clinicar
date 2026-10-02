@@ -1,10 +1,11 @@
-import { Component, ElementRef, HostListener, OnInit, TrackByFunction } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, OnDestroy, TrackByFunction } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
 import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 
 import { VeiculoService } from '../exibe-veiculo/exibe-veiculo.service';
 import { UsuarioService, Usuario } from '../exibe-usuario/exibe-usuario.service';
@@ -47,11 +48,11 @@ const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
 @Component({
   selector: 'app-exibe-veiculo',
   standalone: true,
-  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
+  imports: [CommonModule, FormsModule, RouterLink, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-veiculo.component.html',
   styleUrls: ['./exibe-veiculo.component.css']
 })
-export class ExibeVeiculoComponent implements OnInit {
+export class ExibeVeiculoComponent implements OnInit, OnDestroy {
   novoVeiculo: Partial<Veiculo> = this.criarVeiculoVazio();
   veiculos: Veiculo[] = [];
   private todos: Veiculo[] = [];
@@ -65,6 +66,33 @@ export class ExibeVeiculoComponent implements OnInit {
   errorMsg = '';
   mensagemSucesso = '';
   mensagemErroModal = '';
+  consultaPlaca = { cadastro: { duplicada: false, consultando: false, aviso: '' }, edicao: { duplicada: false, consultando: false, aviso: '' } };
+  private consultasPlaca: Partial<Record<'cadastro' | 'edicao', Subscription>> = {};
+  ngOnDestroy(): void { this.alterarPlaca('cadastro'); this.alterarPlaca('edicao'); }
+  alterarPlaca(modo: 'cadastro' | 'edicao'): void {
+    this.consultasPlaca[modo]?.unsubscribe();
+    this.consultaPlaca[modo] = { duplicada: false, consultando: false, aviso: '' };
+    if (this.mensagemErroModal === 'Placa já cadastrada anteriormente.') this.mensagemErroModal = '';
+  }
+  verificarPlaca(modo: 'cadastro' | 'edicao'): void {
+    this.alterarPlaca(modo);
+    const dados = modo === 'cadastro' ? this.novoVeiculo : this.edit;
+    const placa = this.normalizarPlaca(dados.placa);
+    dados.placa = this.formatarPlaca(placa);
+    if (!this.placaValida(placa)) return;
+    const id = modo === 'edicao' ? this.editId ?? undefined : undefined;
+    this.consultaPlaca[modo].consultando = true;
+    const atual = () => this.normalizarPlaca((modo === 'cadastro' ? this.novoVeiculo : this.edit).placa) === placa
+      && (modo !== 'edicao' || this.editId === id);
+    this.consultasPlaca[modo] = this.veiculoService.verificarPlacaCadastrada(placa, id).subscribe({
+      next: resposta => { if (atual()) { this.consultaPlaca[modo].consultando = false; this.consultaPlaca[modo].duplicada = resposta.cadastrada; } },
+      error: () => { if (atual()) { this.consultaPlaca[modo].consultando = false;
+        this.consultaPlaca[modo].aviso = 'Não foi possível consultar a placa agora. A verificação será feita ao salvar.'; } }
+    });
+  }
+  mensagemPlaca(modo: 'cadastro' | 'edicao'): string {
+    return this.consultaPlaca[modo].duplicada ? 'Placa já cadastrada anteriormente.' : 'Informe uma placa válida com 7 caracteres.';
+  }
 
   filtro = '';
   filtroFabricante = '';
@@ -445,6 +473,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   async abrirModalCadastroVeiculo(): Promise<void> {
+    this.alterarPlaca('cadastro');
     this.novoVeiculo = this.criarVeiculoVazio();
     this.mensagemErroModal = '';
     this.abaCadastroVeiculo = 'veiculo';
@@ -477,6 +506,7 @@ export class ExibeVeiculoComponent implements OnInit {
       return;
     }
 
+    this.alterarPlaca('edicao');
     this.modoProprietarioModal = 'edicao';
     this.editId = veiculo.id;
     this.edit = {
@@ -656,7 +686,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   placaCadastroInvalida(): boolean {
-    return !this.placaValida(this.novoVeiculo.placa);
+    return !this.placaValida(this.novoVeiculo.placa) || this.consultaPlaca.cadastro.duplicada;
   }
 
   fabricanteCadastroInvalido(): boolean {
@@ -685,7 +715,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   placaEdicaoInvalida(): boolean {
-    return !this.placaValida(this.edit.placa);
+    return !this.placaValida(this.edit.placa) || this.consultaPlaca.edicao.duplicada;
   }
 
   fabricanteEdicaoInvalido(): boolean {
@@ -714,7 +744,9 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   private validarCadastroVeiculo(): string | null {
-    if (this.placaCadastroInvalida()) return 'Informe uma placa válida com 7 caracteres.';
+    if (!this.placaValida(this.novoVeiculo.placa)) return 'Informe uma placa válida com 7 caracteres.';
+    if (this.consultaPlaca.cadastro.consultando) return 'Verificando se a placa já está cadastrada…';
+    if (this.consultaPlaca.cadastro.duplicada) return this.mensagemPlaca('cadastro');
     if (this.fabricanteCadastroInvalido()) return 'Selecione o fabricante do veículo.';
     if (this.modeloCadastroInvalido()) return 'Selecione o modelo do veículo.';
     if (this.anoCadastroInvalido()) return 'Selecione o ano-modelo e combustível.';
@@ -726,7 +758,9 @@ export class ExibeVeiculoComponent implements OnInit {
 
   private validarEdicaoVeiculo(): string | null {
     if (!this.editId) return 'Não foi possível identificar o veículo em edição.';
-    if (this.placaEdicaoInvalida()) return 'Informe uma placa válida com 7 caracteres.';
+    if (!this.placaValida(this.edit.placa)) return 'Informe uma placa válida com 7 caracteres.';
+    if (this.consultaPlaca.edicao.consultando) return 'Verificando se a placa já está cadastrada…';
+    if (this.consultaPlaca.edicao.duplicada) return this.mensagemPlaca('edicao');
     if (this.fabricanteEdicaoInvalido()) return 'Selecione o fabricante do veículo.';
     if (this.modeloEdicaoInvalido()) return 'Selecione o modelo do veículo.';
     if (this.anoEdicaoInvalido()) return 'Selecione o ano-modelo e combustível.';
@@ -768,6 +802,7 @@ export class ExibeVeiculoComponent implements OnInit {
       error: (err) => {
         console.error('Erro ao cadastrar veículo:', err);
         this.mensagemErroModal = this.extrairMensagemErro(err, 'Erro ao cadastrar veículo.');
+        if (this.mensagemErroModal === 'Placa já cadastrada anteriormente.') { this.consultaPlaca.cadastro.duplicada = true; this.abaCadastroVeiculo = 'veiculo'; }
       }
     });
   }
@@ -806,6 +841,7 @@ export class ExibeVeiculoComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.mensagemErroModal = this.extrairMensagemErro(err, 'Erro ao salvar alterações do veículo.');
+        if (this.mensagemErroModal === 'Placa já cadastrada anteriormente.') { this.consultaPlaca.edicao.duplicada = true; this.abaEdicaoVeiculo = 'veiculo'; }
       }
     });
   }
@@ -832,6 +868,7 @@ export class ExibeVeiculoComponent implements OnInit {
   }
 
   cancelarEdicao(): void {
+    this.alterarPlaca('edicao');
     this.editId = null;
     this.edit = {};
     this.dropdownOpenId = null;

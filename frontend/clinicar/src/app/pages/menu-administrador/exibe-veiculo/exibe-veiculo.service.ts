@@ -29,6 +29,12 @@ export class VeiculoService {
     return new HttpHeaders({ 'Content-Type': 'application/json' });
   }
 
+  verificarPlacaCadastrada(placa: string, ignorarId?: number): Observable<{ cadastrada: boolean }> {
+    const params: Record<string, string> = { placa: placa.toUpperCase().replace(/[^A-Z0-9]/g, '') };
+    if (ignorarId != null) params['ignorarId'] = String(ignorarId);
+    return this.http.get<{ cadastrada: boolean }>(this.baseUrl + '/verificar-placa', { params, withCredentials: true });
+  }
+
   listarTodos(): Observable<VeiculoUI[]> {
     return this.http.get<any>(this.baseUrl, { withCredentials: true }).pipe(
       map(resposta => this.extrairLista(resposta).map(v => this.fromApi(v))),
