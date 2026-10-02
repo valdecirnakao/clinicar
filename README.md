@@ -1,5 +1,7 @@
 # CliniCar
 
+Para a instalação atual em `C:\TG`, leia primeiro [o guia de atualização e recuperação](entrega-2026-09-30/LEIA-ME.md).
+
 Sistema web desenvolvido como Trabalho de Conclusão de Curso para apoio à gestão de oficinas mecânicas.
 
 O CliniCar reúne funcionalidades relacionadas a clientes, usuários, veículos, fornecedores, peças, serviços, estoque, agendamentos, atendimentos, manutenção preventiva e autenticação segura.
@@ -47,10 +49,12 @@ git clone https://github.com/valdecirnakao/clinicar
 cd clinicar
 ```
 
-Em seguida, inicie a aplicação:
+Antes de iniciar, configure o arquivo `.env` a partir de `.env.example`. Em instalações existentes, preserve o `.env` original e o volume MySQL.
+
+Para compilar o código local, use os dois arquivos Compose:
 
 ```powershell
-docker compose up --build
+docker compose --env-file .env -f compose.yaml -f compose.dev.yaml up -d --build
 ```
 
 Na primeira execução, o Docker realizará o download das imagens necessárias, compilará o backend e o frontend, criará o banco de dados e inicializará os serviços.
@@ -80,7 +84,7 @@ Em uma instalação nova:
 1. Acesse `http://localhost`.
 2. Na tela de login, clique em `Primeiro acesso?`.
 3. Preencha o cadastro do administrador inicial.
-4. Acesse o Mailpit em `http://localhost:8025`.
+4. Abra a caixa de e-mail do administrador (ou o Mailpit se `MAIL_HOST=mailpit`).
 5. Abra o e-mail de ativação recebido.
 6. Clique no link de ativação.
 7. Defina a senha do administrador.
@@ -148,35 +152,28 @@ docker compose down
 ## Iniciar novamente
 
 ```powershell
-docker compose up --build
+docker compose --env-file .env -f compose.yaml -f compose.dev.yaml up -d --build
 ```
 
 Os dados permanecem armazenados no volume Docker.
 
-## Reinicialização completa
+## Configuração obrigatória por `.env`
 
-Para remover também os dados persistidos e retornar ao estado de primeiro acesso:
+O Compose exige `MYSQL_ROOT_PASSWORD` e `MYSQL_APP_PASSWORD` no `.env`.
+Alterar esses valores não redefine contas em um volume já inicializado.
+Não versionar o `.env` nem senhas/tokens. Preserve a chave MFA da instalação.
 
-```powershell
-docker compose down -v
-docker compose up --build
-```
-
-> **Atenção:** a opção `-v` remove o volume do MySQL e, consequentemente, os dados cadastrados no ambiente Docker local.
-
-## Configuração opcional por `.env`
-
-O projeto possui valores padrão destinados exclusivamente ao ambiente acadêmico/local e pode ser iniciado sem um arquivo `.env`.
-
-Caso seja necessário utilizar valores próprios, utilize o arquivo `.env.example` como modelo.
-
-O arquivo `.env` real não deve ser versionado.
+Se MySQL estiver unhealthy com ERROR 1045, siga
+[documentacao/recuperacao-ambiente.md](documentacao/recuperacao-ambiente.md).
+O guia inclui diagnóstico e recuperação com backup integral, sem apagar o volume.
 
 ## E-mails no ambiente local
 
-Os e-mails gerados pela aplicação são enviados ao Mailpit.
+O servidor SMTP é configurado pelas variáveis `MAIL_*` do `.env`. Para Gmail use `smtp.gmail.com:587`, autenticação, STARTTLS e senha de app.
 
-Durante os testes locais eles não são enviados para um provedor externo e podem ser consultados em:
+Com `MAIL_HOST=mailpit`, os e-mails são capturados pelo Mailpit.
+
+Os e-mails capturados pelo Mailpit podem ser consultados em:
 
 ```text
 http://localhost:8025
