@@ -32,4 +32,8 @@ export class AuthService {
       responseType: 'text'
     });
   }
+
+  validarLinkRedefinicao(token: string): Observable<string> {
+    return this.http.get(`${this.apiUrl}/redefinir-senha/validar`, { params: { token }, responseType: 'text' });
+  }
 }

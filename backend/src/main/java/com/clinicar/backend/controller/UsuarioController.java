@@ -41,6 +41,27 @@ public class UsuarioController {
     private final MfaService mfaService;
     private final UsuarioMapper usuarioMapper;
     private final SessionService sessionService;
+    private final com.clinicar.backend.service.UsuarioExclusaoService usuarioExclusaoService;
+
+    @GetMapping("/validar-cpf")
+    public ResponseEntity<Map<String, Boolean>> validarCpf(
+            @org.springframework.web.bind.annotation.RequestParam String cpf,
+            @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
+        HttpStatus bloqueio = verificarAcesso(solicitante, true);
+        if (bloqueio != null) return ResponseEntity.status(bloqueio).build();
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(Map.of("cadastrado", usuarioService.cpfCadastrado(cpf)));
+    }
+
+    @GetMapping("/validar-email")
+    public ResponseEntity<Map<String, Boolean>> validarEmail(
+            @org.springframework.web.bind.annotation.RequestParam String email,
+            @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
+        HttpStatus bloqueio = verificarAcesso(solicitante, true);
+        if (bloqueio != null) return ResponseEntity.status(bloqueio).build();
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(Map.of("cadastrado", usuarioService.emailCadastrado(email)));
+    }
 
     @PostMapping
     public ResponseEntity<UsuarioResponse> criarUsuario(
@@ -134,12 +155,22 @@ public class UsuarioController {
         if (bloqueio != null) {
             return ResponseEntity.status(bloqueio).build();
         }
-        List<UsuarioResponse> usuarios = usuarioRepository.findAll()
+        var vinculados = usuarioExclusaoService.usuariosComVinculos();
+        var cadastros = usuarioRepository.findAll();
+        List<UsuarioResponse> usuarios = cadastros
                 .stream()
-                .map(usuarioMapper::toResponse)
+                .map(usuario -> {
+                    var resposta = usuarioMapper.toResponse(usuario);
+                    resposta.setPodeExcluir(usuarioExclusaoService.podeExcluir(usuario, solicitante.getId(), vinculados));
+                    String motivo = com.clinicar.backend.service.ProtecaoAdministrativaService
+                            .motivoBloqueio(usuario, solicitante.getId(), cadastros);
+                    resposta.setPodeInativar(motivo == null);
+                    resposta.setMotivoBloqueioInativacao(motivo);
+                    return resposta;
+                })
                 .toList();
 
-        return ResponseEntity.ok(usuarios);
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(usuarios);
     }
 
     @PutMapping("/{id}")
@@ -166,7 +197,7 @@ public class UsuarioController {
          * o evento que dispara o WhatsApp.
          */
         UsuarioResponse atualizado = administrador(solicitante)
-                ? usuarioService.atualizarPorAdministrador(id, request)
+                ? usuarioService.atualizarPorAdministrador(id, request, solicitante.getId())
                 : usuarioService.atualizarProprio(solicitante.getId(), request);
 
         return ResponseEntity.ok(atualizado);
@@ -175,6 +206,7 @@ public class UsuarioController {
     @PutMapping("/{id}/resetar-mfa")
     public ResponseEntity<Map<String, String>> resetarMfaUsuario(
             @PathVariable Long id,
+            @RequestBody(required = false) com.clinicar.backend.dto.ResetMfaRequest request,
             @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante
     ) {
         HttpStatus bloqueio = verificarAcesso(solicitante, true);
@@ -183,7 +215,7 @@ public class UsuarioController {
         }
         log.info("Recebida solicitação para resetar MFA do usuário ID {}.", id);
 
-        mfaService.resetarMfaUsuario(id);
+        mfaService.resetarMfaUsuario(id, solicitante.getId(), request == null ? null : request.justificativa());
 
         return ResponseEntity.ok(
                 Map.of("mensagem", "Autenticação em duas etapas resetada com sucesso.")
@@ -193,17 +225,14 @@ public class UsuarioController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removerUsuario(
             @PathVariable Long id,
+            @RequestBody(required = false) com.clinicar.backend.dto.ExcluirUsuarioRequest request,
             @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante
     ) {
         HttpStatus bloqueio = verificarAcesso(solicitante, true);
         if (bloqueio != null) {
             return ResponseEntity.status(bloqueio).build();
         }
-        if (!usuarioRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-
-        usuarioRepository.deleteById(id);
+        usuarioExclusaoService.excluir(id, solicitante.getId(), request == null ? null : request.justificativa());
 
         return ResponseEntity.noContent().build();
     }

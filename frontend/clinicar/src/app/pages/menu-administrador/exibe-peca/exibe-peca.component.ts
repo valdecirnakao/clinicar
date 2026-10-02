@@ -592,7 +592,48 @@ export class ExibePecaComponent implements OnInit {
   }
 
   ehOleoMotor(model: Partial<Peca>): boolean {
-    return this.normalizarTexto(model.tipo) === 'oleo de motor';
+    const tipoNormalizado = this.normalizarTexto(model.tipo)
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return tipoNormalizado === 'oleo de motor'
+      || tipoNormalizado === 'oleo motor';
+  }
+
+  resumoEspecificacaoTecnica(peca: Partial<Peca>): string {
+    const itens: string[] = [];
+
+    if (this.ehOleoMotor(peca)) {
+      const viscosidade = this.formatarViscosidadeSae(peca.viscosidadeSae);
+      const classificacaoApi = this.caixaAltaTexto(peca.classificacaoApi);
+      const classificacaoAcea = this.caixaAltaTexto(peca.classificacaoAcea);
+      const normaOem = this.caixaAltaTexto(peca.normaOem);
+
+      if (viscosidade) {
+        itens.push(this.adicionarPrefixoTecnico('SAE', viscosidade));
+      }
+
+      if (classificacaoApi) {
+        itens.push(this.adicionarPrefixoTecnico('API', classificacaoApi));
+      }
+
+      if (classificacaoAcea) {
+        itens.push(this.adicionarPrefixoTecnico('ACEA', classificacaoAcea));
+      }
+
+      if (normaOem) {
+        itens.push(this.adicionarPrefixoTecnico('OEM', normaOem));
+      }
+    }
+
+    const especificacao = this.caixaAltaTexto(peca.especificacao);
+
+    if (especificacao && !itens.includes(especificacao)) {
+      itens.push(especificacao);
+    }
+
+    return itens.join(' · ') || '—';
   }
 
   possuiEspecificacaoTecnica(model: Partial<Peca>): boolean {
@@ -726,6 +767,10 @@ export class ExibePecaComponent implements OnInit {
   }
 
   private valorOrdenacao(peca: Peca, coluna: ColunaOrdenacaoPeca): string {
+    if (coluna === 'especificacao') {
+      return this.resumoEspecificacaoTecnica(peca);
+    }
+
     return String((peca as any)[coluna] ?? '').trim();
   }
 
@@ -881,15 +926,43 @@ export class ExibePecaComponent implements OnInit {
   }
 
   private normalizarPecaExibicao(peca: Peca): Peca {
+    const respostaApi = peca as Peca & Record<string, unknown>;
+    const origemOleo = this.primeiroTextoInformado(
+      peca.origemOleo,
+      respostaApi['origem_oleo'],
+      respostaApi['origem']
+    );
+    const viscosidadeSae = this.primeiroTextoInformado(
+      peca.viscosidadeSae,
+      respostaApi['viscosidade_sae'],
+      respostaApi['viscosidadeSAE'],
+      respostaApi['viscosidade']
+    );
+    const classificacaoApi = this.primeiroTextoInformado(
+      peca.classificacaoApi,
+      respostaApi['classificacao_api'],
+      respostaApi['classificacaoAPI']
+    );
+    const classificacaoAcea = this.primeiroTextoInformado(
+      peca.classificacaoAcea,
+      respostaApi['classificacao_acea'],
+      respostaApi['classificacaoACEA']
+    );
+    const normaOem = this.primeiroTextoInformado(
+      peca.normaOem,
+      respostaApi['norma_oem'],
+      respostaApi['normaOEM']
+    );
+
     return {
       ...peca,
       nome: this.capitalizarTexto(peca.nome),
-      tipo: this.capitalizarTexto(peca.tipo),
-      origemOleo: String(peca.origemOleo || '').trim().toUpperCase(),
-      viscosidadeSae: this.formatarViscosidadeSae(peca.viscosidadeSae),
-      classificacaoApi: this.caixaAltaTexto(peca.classificacaoApi),
-      classificacaoAcea: this.caixaAltaTexto(peca.classificacaoAcea),
-      normaOem: this.caixaAltaTexto(peca.normaOem),
+      tipo: this.formatarTipoPeca(peca.tipo),
+      origemOleo: origemOleo.toUpperCase(),
+      viscosidadeSae: this.formatarViscosidadeSae(viscosidadeSae),
+      classificacaoApi: this.caixaAltaTexto(classificacaoApi),
+      classificacaoAcea: this.caixaAltaTexto(classificacaoAcea),
+      normaOem: this.caixaAltaTexto(normaOem),
       especificacao: this.caixaAltaTexto(peca.especificacao),
       fabricante: this.capitalizarTexto(peca.fabricante),
       modelo: this.capitalizarTexto(peca.modelo),
@@ -925,6 +998,55 @@ export class ExibePecaComponent implements OnInit {
     }
 
     return texto;
+  }
+
+  private adicionarPrefixoTecnico(prefixo: string, valor: string): string {
+    const texto = this.caixaAltaTexto(valor);
+
+    if (!texto) {
+      return '';
+    }
+
+    const prefixoNormalizado = this.caixaAltaTexto(prefixo);
+
+    if (
+      texto === prefixoNormalizado ||
+      texto.startsWith(`${prefixoNormalizado} `) ||
+      texto.startsWith(`${prefixoNormalizado}-`)
+    ) {
+      return texto;
+    }
+
+    return `${prefixoNormalizado} ${texto}`;
+  }
+
+  private formatarTipoPeca(valor: string | null | undefined): string {
+    const identificador = this.normalizarTexto(valor)
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (identificador === 'oleo de motor' || identificador === 'oleo motor') {
+      return 'Óleo de motor';
+    }
+
+    return this.capitalizarTexto(valor);
+  }
+
+  private primeiroTextoInformado(...valores: unknown[]): string {
+    for (const valor of valores) {
+      if (valor === null || valor === undefined) {
+        continue;
+      }
+
+      const texto = String(valor).trim();
+
+      if (texto) {
+        return texto;
+      }
+    }
+
+    return '';
   }
 
   private capitalizarTexto(valor: string | null | undefined): string {

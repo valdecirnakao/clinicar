@@ -5,22 +5,26 @@ import com.clinicar.backend.model.Atendimento;
 import com.clinicar.backend.model.Fornecedor;
 import com.clinicar.backend.model.Servico;
 import com.clinicar.backend.model.Usuario;
-import com.clinicar.backend.model.Veiculo;
 import org.openpdf.text.Document;
 import org.openpdf.text.DocumentException;
 import org.openpdf.text.Element;
 import org.openpdf.text.Font;
 import org.openpdf.text.FontFactory;
+import org.openpdf.text.Image;
 import org.openpdf.text.PageSize;
 import org.openpdf.text.Paragraph;
 import org.openpdf.text.Phrase;
 import org.openpdf.text.pdf.PdfPCell;
 import org.openpdf.text.pdf.PdfPTable;
 import org.openpdf.text.pdf.PdfWriter;
+import org.openpdf.text.pdf.PdfPageEventHelper;
+import org.openpdf.text.pdf.ColumnText;
+import org.openpdf.text.pdf.PdfContentByte;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -29,6 +33,10 @@ import java.util.Locale;
 
 @Service
 public class OrdemServicoPdfService {
+    private static final Color AZUL = new Color(53, 104, 155);
+    private static final Color AZUL_CLARO = new Color(238, 246, 255);
+    private static final Color BORDA = new Color(208, 226, 242);
+    private static final Color CINZA = new Color(80, 103, 124);
 
     private static final Locale LOCALE_BR = Locale.forLanguageTag("pt-BR");
 
@@ -39,8 +47,9 @@ public class OrdemServicoPdfService {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            Document document = new Document(PageSize.A4, 36, 36, 36, 36);
-            PdfWriter.getInstance(document, outputStream);
+            Document document = new Document(PageSize.A4, 42, 42, 48, 52);
+            PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+            writer.setPageEvent(new RodapePagina());
 
             document.open();
 
@@ -72,20 +81,35 @@ public class OrdemServicoPdfService {
             Document document,
             Atendimento atendimento
     ) throws DocumentException {
-        Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
-        Font subtituloFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
-
-        Paragraph titulo = new Paragraph("CliniCar - Ordem de Serviço Executada", tituloFont);
-        titulo.setAlignment(Element.ALIGN_CENTER);
-        document.add(titulo);
-
-        Paragraph subtitulo = new Paragraph(
-                "Documento gerado automaticamente pelo sistema CliniCar",
-                subtituloFont
-        );
-        subtitulo.setAlignment(Element.ALIGN_CENTER);
-        subtitulo.setSpacingAfter(12);
-        document.add(subtitulo);
+        PdfPTable faixa = new PdfPTable(new float[]{1.15f, 2.4f});
+        faixa.setWidthPercentage(100);
+        faixa.setSpacingAfter(18);
+        PdfPCell marca = new PdfPCell();
+        marca.setBorder(0);
+        marca.setPadding(0);
+        marca.setPaddingRight(12);
+        try (InputStream recurso = getClass().getResourceAsStream("/img/logo-clinicar.png")) {
+            if (recurso == null) throw new IllegalStateException("Logo CliniCar não encontrado no backend.");
+            Image logo = Image.getInstance(recurso.readAllBytes());
+            logo.scaleToFit(135, 65);
+            marca.addElement(logo);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Não foi possível carregar o logo CliniCar.", e);
+        }
+        faixa.addCell(marca);
+        PdfPCell identificacao = new PdfPCell();
+        identificacao.setBorder(0);
+        identificacao.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        identificacao.setPaddingLeft(12);
+        identificacao.setBorderColorLeft(BORDA);
+        identificacao.setBorderWidthLeft(1);
+        Paragraph titulo = new Paragraph("ORDEM DE SERVIÇO", fonte(FontFactory.HELVETICA_BOLD, 17, AZUL));
+        titulo.setSpacingAfter(4);
+        identificacao.addElement(titulo);
+        identificacao.addElement(new Paragraph("Atendimento executado  |  CliniCar Mecânica Geral",
+                fonte(FontFactory.HELVETICA, 9, CINZA)));
+        faixa.addCell(identificacao);
+        document.add(faixa);
 
         PdfPTable tabela = criarTabela(2);
 
@@ -108,16 +132,15 @@ public class OrdemServicoPdfService {
         PdfPTable tabela = criarTabela(2);
 
         Usuario cliente = atendimento.getCliente();
-        Veiculo veiculo = atendimento.getVeiculo();
 
         adicionarLinha(tabela, "Cliente", cliente == null ? "—" : valor(cliente.getNome()));
         adicionarLinha(tabela, "CPF", cliente == null ? "—" : formatarCpf(cliente.getCpf()));
         adicionarLinha(tabela, "Telefone", cliente == null ? "—" : valor(cliente.getTelefone()));
         adicionarLinha(tabela, "E-mail", cliente == null ? "—" : valor(cliente.getEmail()));
 
-        adicionarLinha(tabela, "Placa", veiculo == null ? "—" : formatarPlaca(veiculo.getPlaca()));
-        adicionarLinha(tabela, "Fabricante", veiculo == null ? "—" : valor(veiculo.getFabricante()));
-        adicionarLinha(tabela, "Modelo", veiculo == null ? "—" : valor(veiculo.getModelo()));
+        adicionarLinha(tabela, "Placa", formatarPlaca(atendimento.placaVeiculoDoAtendimento()));
+        adicionarLinha(tabela, "Fabricante", valor(atendimento.fabricanteVeiculoDoAtendimento()));
+        adicionarLinha(tabela, "Modelo", valor(atendimento.modeloVeiculoDoAtendimento()));
         adicionarLinha(tabela, "Km Entrada", valor(atendimento.getQuilometragemEntrada()));
         adicionarLinha(tabela, "Km Saída", valor(atendimento.getQuilometragemSaida()));
 
@@ -129,9 +152,13 @@ public class OrdemServicoPdfService {
             Document document,
             Atendimento atendimento
     ) throws DocumentException {
-        adicionarSecao(document, "Dados do Atendimento");
-
         PdfPTable tabela = criarTabela(2);
+        tabela.setSpacingBefore(10);
+        // O titulo pertence a tabela e se repete nas paginas de continuacao.
+        PdfPCell cabecalho = criarCelulaSecao("Dados do Atendimento");
+        cabecalho.setColspan(2);
+        tabela.addCell(cabecalho);
+        tabela.setHeaderRows(1);
 
         adicionarLinha(tabela, "Serviço", nomeServico(atendimento));
         adicionarLinha(tabela, "Categoria", categoriaServico(atendimento));
@@ -194,7 +221,7 @@ public class OrdemServicoPdfService {
         adicionarLinha(tabela, "Peças", formatarMoeda(atendimento.getValorPecas()));
         adicionarLinha(tabela, "Terceiros", formatarMoeda(atendimento.getValorTerceiros()));
         adicionarLinha(tabela, "Desconto", formatarMoeda(atendimento.getDesconto()));
-        adicionarLinha(tabela, "Valor Total", formatarMoeda(atendimento.getValorTotal()));
+        adicionarLinhaTotal(tabela, "Valor Total", formatarMoeda(atendimento.getValorTotal()));
 
         adicionarLinha(
                 tabela,
@@ -209,7 +236,7 @@ public class OrdemServicoPdfService {
     }
 
     private void adicionarRodape(Document document) throws DocumentException {
-        Font font = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9);
+        Font font = fonte(FontFactory.HELVETICA_OBLIQUE, 8, CINZA);
 
         Paragraph p = new Paragraph(
                 "Este documento representa a Ordem de Serviço executada no sistema CliniCar.",
@@ -217,16 +244,16 @@ public class OrdemServicoPdfService {
         );
 
         p.setAlignment(Element.ALIGN_CENTER);
-        p.setSpacingBefore(12);
+        p.setSpacingBefore(8);
 
         document.add(p);
     }
 
-    private PdfPTable criarTabela(int colunas) {
-        PdfPTable tabela = new PdfPTable(colunas);
+    private PdfPTable criarTabela(int colunas) throws DocumentException {
+        PdfPTable tabela = new PdfPTable(new float[]{1.3f, 2.7f});
         tabela.setWidthPercentage(100);
         tabela.setSpacingBefore(4);
-        tabela.setSpacingAfter(4);
+        tabela.setSpacingAfter(6);
         return tabela;
     }
 
@@ -234,13 +261,23 @@ public class OrdemServicoPdfService {
             Document document,
             String texto
     ) throws DocumentException {
-        Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13);
+        PdfPTable faixa = new PdfPTable(1);
+        faixa.setWidthPercentage(100);
+        faixa.setSpacingBefore(10);
+        faixa.setSpacingAfter(8);
+        faixa.addCell(criarCelulaSecao(texto));
+        document.add(faixa);
+    }
 
-        Paragraph p = new Paragraph(texto, font);
-        p.setSpacingBefore(8);
-        p.setSpacingAfter(6);
-
-        document.add(p);
+    private PdfPCell criarCelulaSecao(String texto) {
+        PdfPCell celula = new PdfPCell(new Phrase(texto.toUpperCase(LOCALE_BR),
+                fonte(FontFactory.HELVETICA_BOLD, 10, AZUL)));
+        celula.setPadding(9);
+        celula.setBackgroundColor(AZUL_CLARO);
+        celula.setBorder(0);
+        celula.setBorderColorLeft(AZUL);
+        celula.setBorderWidthLeft(3);
+        return celula;
     }
 
     private void adicionarLinha(
@@ -248,20 +285,35 @@ public class OrdemServicoPdfService {
             String label,
             String valor
     ) {
-        Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9);
-        Font valueFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
+        Font labelFont = fonte(FontFactory.HELVETICA_BOLD, 8.5f, CINZA);
+        Font valueFont = fonte(FontFactory.HELVETICA, 9, Color.BLACK);
 
         PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
-        labelCell.setPadding(6);
-        labelCell.setBackgroundColor(new Color(238, 246, 255));
+        labelCell.setPadding(7);
+        labelCell.setBackgroundColor(AZUL_CLARO);
+        labelCell.setBorderColor(BORDA);
 
         PdfPCell valueCell = new PdfPCell(
                 new Phrase(valor == null || valor.isBlank() ? "—" : valor, valueFont)
         );
-        valueCell.setPadding(6);
+        valueCell.setPadding(7);
+        valueCell.setBorderColor(BORDA);
 
         tabela.addCell(labelCell);
         tabela.addCell(valueCell);
+    }
+
+    private void adicionarLinhaTotal(PdfPTable tabela, String label, String valor) {
+        PdfPCell titulo = new PdfPCell(new Phrase(label,
+                fonte(FontFactory.HELVETICA_BOLD, 10, Color.WHITE)));
+        PdfPCell total = new PdfPCell(new Phrase(valor,
+                fonte(FontFactory.HELVETICA_BOLD, 11, Color.WHITE)));
+        for (PdfPCell celula : new PdfPCell[]{titulo, total}) {
+            celula.setPadding(10);
+            celula.setBackgroundColor(AZUL);
+            celula.setBorderColor(AZUL);
+            tabela.addCell(celula);
+        }
     }
 
     private void adicionarTextoLongo(
@@ -269,20 +321,44 @@ public class OrdemServicoPdfService {
             String titulo,
             String texto
     ) throws DocumentException {
-        Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-        Font textoFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
-
-        Paragraph tituloParagrafo = new Paragraph(titulo + ":", tituloFont);
-        tituloParagrafo.setSpacingBefore(6);
-        document.add(tituloParagrafo);
-
-        Paragraph textoParagrafo = new Paragraph(valor(texto), textoFont);
-        textoParagrafo.setSpacingAfter(4);
-        document.add(textoParagrafo);
+        PdfPTable bloco = new PdfPTable(1);
+        bloco.setWidthPercentage(100);
+        bloco.setSpacingAfter(7);
+        PdfPCell celula = new PdfPCell();
+        celula.setPadding(9);
+        celula.setBorderColor(BORDA);
+        Paragraph cabecalho = new Paragraph(titulo,
+                fonte(FontFactory.HELVETICA_BOLD, 9, AZUL));
+        cabecalho.setSpacingAfter(4);
+        celula.addElement(cabecalho);
+        celula.addElement(new Paragraph(valor(texto),
+                fonte(FontFactory.HELVETICA, 9, Color.BLACK)));
+        bloco.addCell(celula);
+        document.add(bloco);
     }
 
     private void adicionarEspaco(Document document) throws DocumentException {
-        document.add(new Paragraph(" "));
+        // O espaçamento entre blocos é controlado pelas próprias tabelas.
+    }
+
+    private Font fonte(String familia, float tamanho, Color cor) {
+        return FontFactory.getFont(familia, tamanho, cor);
+    }
+
+    private static final class RodapePagina extends PdfPageEventHelper {
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            PdfContentByte canvas = writer.getDirectContent();
+            canvas.setColorStroke(BORDA);
+            canvas.moveTo(document.left(), 41);
+            canvas.lineTo(document.right(), 41);
+            canvas.stroke();
+            Font font = FontFactory.getFont(FontFactory.HELVETICA, 8, CINZA);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT,
+                    new Phrase("CliniCar  |  Mecânica Geral", font), document.left(), 28, 0);
+            ColumnText.showTextAligned(canvas, Element.ALIGN_RIGHT,
+                    new Phrase("Página " + writer.getPageNumber(), font), document.right(), 28, 0);
+        }
     }
 
     private String codigoAgendamento(Atendimento atendimento) {

@@ -22,6 +22,8 @@ public class AgendamentoResponse {
     private String placaVeiculo;
     private String fabricanteVeiculo;
     private String modeloVeiculo;
+    private String corVeiculo;
+    private String anoModeloCombustivelVeiculo;
 
     private Long idServico;
     private String nomeServico;

@@ -1,5 +1,7 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule, Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
 import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
@@ -10,6 +12,9 @@ import { WhatsappCloudService } from '../../../services/whatsapp-cloud.service';
 declare var bootstrap: any;
 
 export interface Usuario {
+  podeExcluir?: boolean;
+  podeInativar?: boolean;
+  motivoBloqueioInativacao?: string;
   id?: number;
   cpf: string;
   nome: string;
@@ -37,7 +42,7 @@ export interface Usuario {
 
 type ColunaOrdenacao = 'cpf' | 'nome' | 'email' | 'telefone' | 'status' | 'mfa' | 'tipo';
 type DirecaoOrdenacao = 'asc' | 'desc';
-type TipoConfirmacao = 'resetar-mfa' | 'alterar-status' | 'whatsapp';
+type TipoConfirmacao = 'resetar-mfa' | 'alterar-status' | 'whatsapp' | 'excluir';
 type AbaEdicaoUsuario = 'dados' | 'contato' | 'endereco' | 'seguranca';
 type AbaCadastroUsuario = 'dados' | 'contato' | 'endereco' | 'seguranca';
 
@@ -62,11 +67,113 @@ interface AcaoConfirmacao {
 @Component({
   selector: 'app-exibe-usuario',
   standalone: true,
-  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent, RouterLink],
   templateUrl: './exibe-usuario.component.html',
   styleUrls: ['./exibe-usuario.component.css']
 })
-export class ExibeUsuarioComponent implements OnInit {
+export class ExibeUsuarioComponent implements OnInit, OnDestroy {
+  get bloqueioInativacaoEdicao(): string {
+    return this.editOriginal.status === 'ativo' && this.editOriginal.podeInativar === false
+      ? this.editOriginal.motivoBloqueioInativacao || 'Este usuário não pode ser inativado.' : '';
+  }
+  justificativaExclusao = '';
+  justificativaExclusaoErro = '';
+  exclusaoBloqueada = false;
+
+  get justificativaExclusaoValida(): boolean {
+    const tamanho = this.justificativaExclusao.trim().length;
+    return tamanho >= 10 && tamanho <= 1000;
+  }
+
+  rotuloAcaoUsuario(usuario: Usuario): string {
+    return usuario.podeExcluir === true ? 'Deletar usuário'
+      : usuario.status === 'inativo' ? 'Reativar usuário' : 'Inativar usuário';
+  }
+
+  iconeAcaoUsuario(usuario: Usuario): string {
+    return usuario.podeExcluir === true ? 'bi-trash text-danger'
+      : usuario.status === 'inativo' ? 'bi-person-check text-success' : 'bi-person-dash text-warning';
+  }
+  cpfCadastroDuplicado = false;
+  cpfCadastroConsultando = false;
+  cpfCadastroAviso = '';
+  private consultaCpf?: Subscription;
+  emailCadastroDuplicado = false;
+  emailCadastroConsultando = false;
+  emailCadastroAviso = '';
+  private consultaEmail?: Subscription;
+
+  ngOnDestroy(): void {
+    this.consultaCpf?.unsubscribe();
+    this.consultaEmail?.unsubscribe();
+  }
+
+  alterarEmailCadastro(): void {
+    this.consultaEmail?.unsubscribe();
+    this.emailCadastroDuplicado = false;
+    this.emailCadastroConsultando = false;
+    this.emailCadastroAviso = '';
+    this.limparCampoCadastroInvalido('email');
+  }
+
+  verificarEmailCadastro(): void {
+    this.alterarEmailCadastro();
+    this.normalizarEmailCadastro();
+    const email = String(this.novoUsuario.email || '');
+    if (!this.emailValido(email)) return;
+    this.emailCadastroConsultando = true;
+    this.consultaEmail = this.usuarioService.verificarEmailCadastrado(email).subscribe({
+      next: resposta => {
+        if (String(this.novoUsuario.email || '').trim().toLowerCase() !== email) return;
+        this.emailCadastroConsultando = false;
+        this.emailCadastroDuplicado = resposta.cadastrado;
+      },
+      error: () => {
+        if (String(this.novoUsuario.email || '').trim().toLowerCase() !== email) return;
+        this.emailCadastroConsultando = false;
+        this.emailCadastroAviso = 'Não foi possível consultar o e-mail agora. A verificação será feita ao salvar.';
+      }
+    });
+  }
+
+  get mensagemEmailCadastro(): string {
+    return this.emailCadastroDuplicado ? 'E-mail já cadastrado anteriormente.' : 'Informe um e-mail válido.';
+  }
+
+  alterarCpfCadastro(): void {
+    this.consultaCpf?.unsubscribe();
+    this.cpfCadastroDuplicado = false;
+    this.cpfCadastroConsultando = false;
+    this.cpfCadastroAviso = '';
+    this.limparCampoCadastroInvalido('cpf');
+  }
+
+  verificarCpfCadastro(): void {
+    this.alterarCpfCadastro();
+    this.formatarCpfCnpjCadastro();
+    const cpf = this.onlyDigits(this.novoUsuario.cpf);
+    if (![11, 14].includes(cpf.length)) return;
+    this.cpfCadastroConsultando = true;
+    this.consultaCpf = this.usuarioService.verificarCpfCadastrado(cpf).subscribe({
+      next: resposta => {
+        if (this.onlyDigits(this.novoUsuario.cpf) !== cpf) return;
+        this.cpfCadastroConsultando = false;
+        this.cpfCadastroDuplicado = resposta.cadastrado;
+      },
+      error: () => {
+        if (this.onlyDigits(this.novoUsuario.cpf) !== cpf) return;
+        this.cpfCadastroConsultando = false;
+        this.cpfCadastroAviso = 'Não foi possível consultar o documento agora. A verificação será feita ao salvar.';
+      }
+    });
+  }
+
+  get mensagemCpfCadastro(): string {
+    return this.cpfCadastroDuplicado
+      ? (this.onlyDigits(this.novoUsuario.cpf).length === 14
+          ? 'CNPJ já cadastrado anteriormente.' : 'CPF já cadastrado anteriormente.')
+      : 'Informe CPF com 11 dígitos ou CNPJ com 14 dígitos.';
+  }
   camposInvalidos: string[] = [];
   camposInvalidosEdicao: string[] = [];
 
@@ -89,6 +196,13 @@ export class ExibeUsuarioComponent implements OnInit {
   usuarioDetalhe: Usuario | null = null;
   confirmacao: AcaoConfirmacao | null = null;
   acaoEmExecucao = false;
+  justificativaResetMfa = '';
+  justificativaResetErro = '';
+
+  get justificativaResetValida(): boolean {
+    const tamanho = this.justificativaResetMfa.trim().length;
+    return tamanho >= 10 && tamanho <= 1000;
+  }
 
   usuarios: Usuario[] = [];
   private todos: Usuario[] = [];
@@ -809,6 +923,8 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   abrirModalCadastro(): void {
+    this.alterarCpfCadastro();
+    this.alterarEmailCadastro();
     this.camposInvalidos = [];
     this.mensagemErroCadastro = '';
     this.cepCadastroErro = '';
@@ -865,13 +981,6 @@ export class ExibeUsuarioComponent implements OnInit {
         this.modalCadastro?.hide();
         alert('Usuário cadastrado com sucesso.');
 
-        this.whatsappCloudService.enviarMensagemCadastroUsuario({
-          telefone: this.novoUsuario.telefone || '',
-          nome: this.novoUsuario.nome || ''
-        }).subscribe({
-          error: (err) => console.warn('Usuário cadastrado, mas houve falha ao enviar WhatsApp:', err)
-        });
-
         this.camposInvalidos = [];
         this.mensagemErroCadastro = '';
         this.recarregar();
@@ -904,7 +1013,7 @@ export class ExibeUsuarioComponent implements OnInit {
     this.abrirConfirmacaoAlterarStatus(usuario);
   }
 
-  abrirConfirmacaoAlterarStatus(usuario: Usuario): void {
+  abrirConfirmacaoAlterarStatus(usuario: Usuario, somenteStatus = false): void {
     if (!usuario?.id) {
       alert('Usuário inválido para alteração de status.');
       return;
@@ -913,6 +1022,20 @@ export class ExibeUsuarioComponent implements OnInit {
     this.fecharMenuAcoes();
 
     const usuarioAtivo = this.normalizarTexto(usuario.status) === 'ativo';
+    if (usuarioAtivo && usuario.podeInativar === false) {
+      alert(usuario.motivoBloqueioInativacao || 'Este usuário não pode ser inativado.');
+      return;
+    }
+    if (usuario.podeExcluir === true && !somenteStatus) {
+      this.abrirModalConfirmacao({
+        tipo: 'excluir', usuario,
+        titulo: 'Deletar usuário?',
+        mensagem: 'Este cadastro não possui vínculos. A exclusão é permanente e não poderá ser desfeita. Confirme o usuário e informe a justificativa.',
+        detalhe: `${usuario.nome || 'Usuário'} • ${usuario.email || 'sem e-mail'}`,
+        icone: 'bi-trash', confirmarLabel: 'Confirmar exclusão', confirmarClasse: 'btn-danger'
+      });
+      return;
+    }
     const novoStatus = usuarioAtivo ? 'inativo' : 'ativo';
 
     this.abrirModalConfirmacao({
@@ -981,6 +1104,11 @@ export class ExibeUsuarioComponent implements OnInit {
 
   private abrirModalConfirmacao(confirmacao: AcaoConfirmacao): void {
     this.confirmacao = confirmacao;
+    this.justificativaExclusao = '';
+    this.justificativaExclusaoErro = '';
+    this.exclusaoBloqueada = false;
+    this.justificativaResetMfa = '';
+    this.justificativaResetErro = '';
     this.acaoEmExecucao = false;
 
     const el = document.getElementById('modalConfirmacaoUsuario');
@@ -999,7 +1127,21 @@ export class ExibeUsuarioComponent implements OnInit {
       return;
     }
 
+    if (this.confirmacao.tipo === 'excluir') {
+      if (this.exclusaoBloqueada) return;
+      if (!this.justificativaExclusaoValida) {
+        this.justificativaExclusaoErro = 'Informe uma justificativa de 10 a 1000 caracteres para excluir o usuário.';
+        return;
+      }
+      this.executarExclusao(this.confirmacao.usuario);
+      return;
+    }
+
     if (this.confirmacao.tipo === 'resetar-mfa') {
+      if (!this.justificativaResetValida) {
+        this.justificativaResetErro = 'Informe uma justificativa de 10 a 1000 caracteres para resetar o 2FA.';
+        return;
+      }
       this.executarResetarMfa(this.confirmacao.usuario);
       return;
     }
@@ -1014,6 +1156,29 @@ export class ExibeUsuarioComponent implements OnInit {
     }
   }
 
+  private executarExclusao(usuario: Usuario): void {
+    if (!usuario.id || usuario.podeExcluir !== true) return;
+    this.acaoEmExecucao = true;
+    this.justificativaExclusaoErro = '';
+    this.usuarioService.removerUsuario(usuario.id, this.justificativaExclusao.trim()).subscribe({
+      next: () => {
+        this.modalConfirmacao?.hide();
+        this.acaoEmExecucao = false;
+        this.confirmacao = null;
+        alert('Usuário excluído com sucesso. A justificativa foi registrada para auditoria.');
+        this.recarregar();
+      },
+      error: erro => {
+        this.acaoEmExecucao = false;
+        this.justificativaExclusaoErro = this.extrairMensagemErro(erro, 'Não foi possível excluir o usuário.');
+        if (erro.status === 409 || erro.status === 404 || erro.status === 403) {
+          this.exclusaoBloqueada = true;
+          this.recarregar();
+        }
+      }
+    });
+  }
+
   private executarResetarMfa(usuario: Usuario): void {
     if (!usuario.id) {
       return;
@@ -1022,7 +1187,8 @@ export class ExibeUsuarioComponent implements OnInit {
     this.acaoEmExecucao = true;
     this.resetandoMfaId = usuario.id;
 
-    this.usuarioService.resetarMfa(usuario.id).subscribe({
+    this.justificativaResetErro = '';
+    this.usuarioService.resetarMfa(usuario.id, this.justificativaResetMfa.trim()).subscribe({
       next: (resposta) => {
         this.modalConfirmacao?.hide();
         alert(resposta?.mensagem || 'Autenticação em duas etapas resetada com sucesso.');
@@ -1032,12 +1198,8 @@ export class ExibeUsuarioComponent implements OnInit {
         this.recarregar();
       },
       error: (erro) => {
-        console.error('Erro ao resetar MFA:', erro);
-        alert(
-          erro?.error?.mensagem ||
-          erro?.error ||
-          'Não foi possível resetar a autenticação em duas etapas.'
-        );
+        this.justificativaResetErro = this.extrairMensagemErro(erro,
+          'Não foi possível resetar a autenticação em duas etapas.');
         this.resetandoMfaId = null;
         this.acaoEmExecucao = false;
       }
@@ -1135,7 +1297,8 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   campoCadastroInvalido(campo: string): boolean {
-    return this.camposInvalidos.includes(campo);
+    return this.camposInvalidos.includes(campo) || (campo === 'cpf' && this.cpfCadastroDuplicado)
+      || (campo === 'email' && this.emailCadastroDuplicado);
   }
 
 
@@ -1205,11 +1368,13 @@ export class ExibeUsuarioComponent implements OnInit {
   private campoCadastroValidoParaProgresso(campo: keyof Usuario): boolean {
     switch (campo) {
       case 'cpf':
-        return [11, 14].includes(this.onlyDigits(this.novoUsuario.cpf).length);
+        return !this.cpfCadastroDuplicado && !this.cpfCadastroConsultando
+          && [11, 14].includes(this.onlyDigits(this.novoUsuario.cpf).length);
       case 'telefone':
         return this.telefoneWhatsappValido(this.novoUsuario.telefone);
       case 'email':
-        return this.emailValido(String(this.novoUsuario.email || '').trim());
+        return !this.emailCadastroDuplicado && !this.emailCadastroConsultando
+          && this.emailValido(String(this.novoUsuario.email || '').trim());
       case 'cep':
         return this.onlyDigits(this.novoUsuario.cep).length === 8;
       case 'estado':
@@ -1241,6 +1406,7 @@ export class ExibeUsuarioComponent implements OnInit {
     let total = camposPorAba[aba].filter(campo => !String((this.novoUsuario as any)[campo] ?? '').trim()).length;
 
     if (aba === 'contato') {
+      if (this.emailCadastroDuplicado || this.emailCadastroConsultando) total++;
       const email = String(this.novoUsuario.email || '').trim();
       if (email && !this.emailValido(email)) {
         total++;
@@ -1253,6 +1419,7 @@ export class ExibeUsuarioComponent implements OnInit {
     }
 
     if (aba === 'dados') {
+      if (this.cpfCadastroDuplicado || this.cpfCadastroConsultando) total++;
       const cpfCnpj = this.onlyDigits(this.novoUsuario.cpf);
       if (cpfCnpj && cpfCnpj.length !== 11 && cpfCnpj.length !== 14) {
         total++;
@@ -1302,7 +1469,7 @@ export class ExibeUsuarioComponent implements OnInit {
 
   cadastroWhatsappPreview(): string {
     return this.telefoneWhatsappValido(this.novoUsuario.telefone)
-      ? 'WhatsApp válido para notificações automáticas'
+      ? 'WhatsApp'
       : 'Informe telefone com DDD para habilitar notificações';
   }
 
@@ -1473,6 +1640,16 @@ export class ExibeUsuarioComponent implements OnInit {
   }
 
   private validarCadastroUsuario(marcarInvalidos: boolean): string | null {
+    if (this.emailCadastroConsultando) return 'Aguarde a verificação do e-mail.';
+    if (this.emailCadastroDuplicado) {
+      if (marcarInvalidos) this.abaCadastroUsuario = 'contato';
+      return this.mensagemEmailCadastro;
+    }
+    if (this.cpfCadastroConsultando) return 'Aguarde a verificação do CPF ou CNPJ.';
+    if (this.cpfCadastroDuplicado) {
+      if (marcarInvalidos) this.abaCadastroUsuario = 'dados';
+      return this.mensagemCpfCadastro;
+    }
     const erroCampos = this.validarCamposObrigatoriosCadastro(marcarInvalidos);
     if (erroCampos) {
       return erroCampos;
@@ -1677,8 +1854,20 @@ export class ExibeUsuarioComponent implements OnInit {
   private aplicarErroUsuario(mensagem: string, cadastro: boolean): void {
     const texto = this.normalizarTexto(mensagem);
 
+    if (texto.includes('cpf') || texto.includes('cnpj')) {
+      if (cadastro) {
+        this.camposInvalidos = Array.from(new Set([...this.camposInvalidos, 'cpf']));
+        this.cpfCadastroDuplicado = texto.includes('cadastrado');
+        this.abaCadastroUsuario = 'dados';
+      } else {
+        this.camposInvalidosEdicao = Array.from(new Set([...this.camposInvalidosEdicao, 'cpf']));
+        this.abaEdicaoUsuario = 'dados';
+      }
+    }
+
     if (texto.includes('e-mail') || texto.includes('email')) {
       if (cadastro) {
+        this.emailCadastroDuplicado = texto.includes('cadastrado');
         this.camposInvalidos = Array.from(new Set([
           ...this.camposInvalidos,
           'email'
@@ -1946,6 +2135,26 @@ export class ExibeUsuarioComponent implements OnInit {
     }
 
     return data.toLocaleDateString('pt-BR');
+  }
+
+  formatarDataHoraBR(valor: any): string {
+    if (!valor) {
+      return '—';
+    }
+
+    const data = new Date(valor);
+
+    if (Number.isNaN(data.getTime())) {
+      return String(valor);
+    }
+
+    return data.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   enderecoCompleto(usuario: Usuario | null): string {

@@ -57,6 +57,13 @@ public class AuthController {
         return ResponseEntity.ok("Senha redefinida com sucesso.");
     }
 
+    @org.springframework.web.bind.annotation.GetMapping("/redefinir-senha/validar")
+    public ResponseEntity<Void> validarLinkRedefinicao(
+            @org.springframework.web.bind.annotation.RequestParam String token) {
+        recuperacaoSenhaService.validarLinkRedefinicao(token);
+        return ResponseEntity.noContent().cacheControl(org.springframework.http.CacheControl.noStore()).build();
+    }
+
     @PostMapping("/mfa/validar")
         public ResponseEntity<UsuarioResponse> validarMfa(
             @RequestBody MfaValidarRequest request

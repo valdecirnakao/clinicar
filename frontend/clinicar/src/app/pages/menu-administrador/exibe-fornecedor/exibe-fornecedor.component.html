@@ -492,12 +492,12 @@
 
                         <div class="row g-3">
                           <div class="col-md-4">
-                            <label class="form-label" for="telefoneFornecedorCadastro">Telefone *</label>
+                            <label class="form-label" for="telefoneFornecedorCadastro">Telefone | WhatsApp *</label>
                             <input
                               id="telefoneFornecedorCadastro"
                               class="form-control"
                               [(ngModel)]="novoFornecedor.telefone"
-                              (blur)="normalizarTelefoneCadastro()"
+                              (blur)="formatarTelefoneCadastro()"
                               [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'telefone')"
                               autocomplete="off"
                             />

@@ -381,12 +381,21 @@
             {{ mensagemErroModal }}
           </div>
 
-          <progress
+          <div
             class="progress cadastro-progress mb-3"
+            role="progressbar"
             aria-label="Progresso do cadastro"
-            [value]="progressoCadastroEstoque"
-            max="100"
-          >{{ progressoCadastroEstoque }}%</progress>
+            [attr.aria-valuenow]="progressoCadastroEstoque"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div
+              class="progress-bar cadastro-progress-bar"
+              [style.width.%]="progressoCadastroEstoque"
+            >
+              {{ progressoCadastroEstoque }}%
+            </div>
+          </div>
 
           <app-field-help-panel
             defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
@@ -575,9 +584,18 @@
                 </div>
 
                 <div class="col-md-3">
-                  <label class="form-label" for="custo-medio">Custo Médio</label>
-                  <input id="custo-medio" class="form-control" [(ngModel)]="novoEstoque.custoMedio"
-                    (blur)="formatarCustoMedioCadastro()" placeholder="R$ 0,00" />
+                  <label class="form-label" for="custo-medio">
+                    Custo Médio <span *ngIf="custoMedioObrigatorio(novoEstoque)">*</span>
+                  </label>
+                  <input id="custo-medio" data-help="Custo médio unitário do item. É obrigatório quando a quantidade atual for maior que zero." class="form-control"
+                    [(ngModel)]="novoEstoque.custoMedio" (blur)="formatarCustoMedioCadastro()"
+                    [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'custoMedio', false)"
+                    [attr.aria-required]="custoMedioObrigatorio(novoEstoque)" placeholder="R$ 0,00" />
+                  <div class="invalid-feedback d-block"
+                    *ngIf="estoqueCampoInvalido(novoEstoque, 'custoMedio', false)">
+                    Informe o custo médio quando houver estoque inicial.
+                  </div>
+                  <small class="text-muted">Obrigatório quando a quantidade atual for maior que zero.</small>
                 </div>
 
                 <div class="col-md-9">
@@ -819,9 +837,18 @@
                 </div>
 
                 <div class="col-md-3">
-                  <label class="form-label" for="custo-medio-edit">Custo Médio</label>
-                  <input id="custo-medio-edit" class="form-control" [(ngModel)]="edit.custoMedio"
-                    (blur)="formatarCustoMedioEdicao()" placeholder="R$ 0,00" />
+                  <label class="form-label" for="custo-medio-edit">
+                    Custo Médio <span *ngIf="custoMedioObrigatorio(edit)">*</span>
+                  </label>
+                  <input id="custo-medio-edit" data-help="Custo médio unitário do item. É obrigatório quando a quantidade atual for maior que zero." class="form-control"
+                    [(ngModel)]="edit.custoMedio" (blur)="formatarCustoMedioEdicao()"
+                    [class.is-invalid]="estoqueCampoInvalido(edit, 'custoMedio', false)"
+                    [attr.aria-required]="custoMedioObrigatorio(edit)" placeholder="R$ 0,00" />
+                  <div class="invalid-feedback d-block"
+                    *ngIf="estoqueCampoInvalido(edit, 'custoMedio', false)">
+                    Informe o custo médio quando houver estoque atual.
+                  </div>
+                  <small class="text-muted">Obrigatório quando a quantidade atual for maior que zero.</small>
                 </div>
 
                 <div class="col-md-9">

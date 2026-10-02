@@ -1,0 +1,58 @@
+<div class="conta-page">
+  <header class="conta-header">
+    <img src="assets/img/LogoClinicar.png" alt="CliniCar" width="150">
+    <button type="button" class="btn btn-outline-secondary" (click)="sair()"><i class="bi bi-box-arrow-right me-1"></i>Sair</button>
+  </header>
+  <main class="container py-4">
+    <div class="card mb-3"><div class="card-header"><h1 class="h4 mb-0"><i class="bi bi-person-circle me-2"></i>Minha conta</h1></div>
+      <div class="card-body" *ngIf="usuario; else aguardandoUsuario">
+        <div class="row g-3"><div class="col-md-6"><strong>{{ usuario.nome }}</strong><div>{{ usuario.email }}</div></div>
+          <div class="col-md-6 text-md-end"><span class="badge text-bg-primary me-2">{{ usuario.tipo_do_acesso === 'COLABORADOR' ? 'Colaborador' : 'Cliente' }}</span><span class="badge text-bg-success">Acesso ativo</span></div></div>
+      </div>
+      <ng-template #aguardandoUsuario><div class="card-body">Carregando sua conta…</div></ng-template>
+    </div>
+    <div *ngIf="sucesso" class="alert alert-success" role="status">{{ sucesso }}</div>
+    <div *ngIf="erro" class="alert alert-danger" role="alert">{{ erro }}</div>
+    <div class="card mb-3"><div class="card-header"><h2 class="h5 mb-0"><i class="bi bi-person-dash me-2"></i>Solicitar alteração do acesso</h2></div>
+      <div class="card-body">
+        <p>A inativação e o encerramento do acesso são analisados por um administrador. Nas solicitações sem período, a aprovação encerra suas sessões imediatamente. Na suspensão temporária, o bloqueio ocorre no primeiro dia aprovado. Os registros de serviços e demais históricos serão preservados.</p>
+        <div *ngIf="pagina?.pendentes" class="alert alert-info" role="status">Você já possui uma solicitação pendente. Acompanhe a análise abaixo.</div>
+        <form (ngSubmit)="enviar()">
+          <div class="row g-3"><div class="col-md-4"><label for="tipoSolicitacao" class="form-label fw-semibold">Solicitação *</label>
+            <select id="tipoSolicitacao" name="tipo" class="form-select" [(ngModel)]="tipo" [disabled]="enviando || !!pagina?.pendentes">
+              <option *ngIf="usuario?.tipo_do_acesso === 'COLABORADOR'" value="TEMPORARIA">Suspensão temporária (férias ou afastamento)</option><option value="INATIVACAO">Inativar meu acesso</option><option value="ENCERRAMENTO">Encerrar o acesso à minha conta</option>
+            </select></div>
+            <div class="col-md-8"><label for="motivoSolicitacao" class="form-label fw-semibold">Justificativa *</label>
+              <textarea id="motivoSolicitacao" name="justificativa" class="form-control" rows="3" maxlength="1000" [(ngModel)]="justificativa"
+                [disabled]="enviando || !!pagina?.pendentes" aria-describedby="ajudaJustificativa" placeholder="Descreva o motivo da solicitação."></textarea>
+              <small id="ajudaJustificativa" class="text-muted">De 10 a 1000 caracteres.</small></div></div>
+          <div *ngIf="tipo === 'TEMPORARIA'" class="mt-3">
+            <div class="row g-3"><div class="col-md-6"><label for="inicioPeriodo" class="form-label fw-semibold">Primeiro dia de suspensão *</label><input id="inicioPeriodo" name="inicioPeriodo" type="date" class="form-control" [(ngModel)]="inicioPeriodo" [min]="hoje" max="9999-12-30" [disabled]="enviando || !!pagina?.pendentes" required></div>
+            <div class="col-md-6"><label for="fimPeriodo" class="form-label fw-semibold">Último dia de suspensão *</label><input id="fimPeriodo" name="fimPeriodo" type="date" class="form-control" [(ngModel)]="fimPeriodo" [min]="inicioPeriodo || hoje" max="9999-12-30" [disabled]="enviando || !!pagina?.pendentes" required></div></div>
+            <small class="text-muted">Dias completos no horário de Brasília. O acesso retorna automaticamente no dia seguinte à data final, após aprovação administrativa. Será necessário fazer novo login e 2FA.</small>
+            <div *ngIf="inicioPeriodo && fimPeriodo && !periodoValido" class="text-danger small mt-1" role="alert">Informe início a partir de hoje e fim igual ou posterior ao início.</div>
+          </div>
+          <div class="form-check mt-3"><input id="confirmaSolicitacao" name="confirmo" type="checkbox" class="form-check-input" [(ngModel)]="confirmo" [disabled]="enviando || !!pagina?.pendentes">
+            <label class="form-check-label" for="confirmaSolicitacao">Entendo que, se aprovada, esta solicitação bloqueará meu acesso. {{ tipo === 'TEMPORARIA' ? 'Na suspensão temporária, o retorno será automático após o último dia aprovado, salvo alteração administrativa posterior.' : 'A reativação dependerá de um administrador.' }}</label></div>
+          <button class="btn btn-primary mt-3" type="submit" [disabled]="!podeEnviar"><span *ngIf="enviando" class="spinner-border spinner-border-sm me-1"></span>Enviar solicitação</button>
+        </form>
+      </div>
+    </div>
+    <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><h2 class="h5 mb-0">Minhas solicitações</h2><button class="btn btn-sm btn-outline-primary" (click)="carregar(pagina?.pagina || 0)" [disabled]="carregando || enviando">Atualizar</button></div>
+      <div class="card-body">
+        <div *ngIf="erroHistorico" class="alert alert-danger" role="alert">{{ erroHistorico }}</div>
+        <p *ngIf="carregando" role="status">Carregando solicitações…</p>
+        <div class="table-responsive" *ngIf="!carregando && pagina"><table class="table align-middle"><thead><tr><th>Data da solicitação</th><th>Tipo</th><th>Status</th><th>Decisão</th></tr></thead><tbody>
+          <tr *ngFor="let item of pagina.itens"><td>{{ item.solicitadoEm | date:'dd/MM/yyyy HH:mm' }}</td><td>{{ item.tipo === 'TEMPORARIA' ? 'Suspensão temporária' : item.tipo === 'ENCERRAMENTO' ? 'Encerramento do acesso' : 'Inativação' }}<div class="small texto-longo">{{ item.justificativa }}</div><div *ngIf="item.inicioPeriodo" class="small mt-1">{{ item.inicioPeriodo | date:'dd/MM/yyyy' }} a {{ item.fimPeriodo | date:'dd/MM/yyyy' }} (Brasília)<div *ngIf="item.situacaoPeriodo">{{ item.situacaoPeriodo === 'AGENDADA' ? 'Agendada' : item.situacaoPeriodo === 'EM_CURSO' ? 'Em curso' : item.situacaoPeriodo === 'CONCLUIDA' ? 'Concluída' : 'Interrompida por alteração administrativa' }}</div><div *ngIf="item.inativadoEm">Suspenso em {{ item.inativadoEm | date:'dd/MM/yyyy HH:mm' }}</div><div *ngIf="item.reativadoEm">Retorno automático em {{ item.reativadoEm | date:'dd/MM/yyyy HH:mm' }}</div><div *ngIf="item.interrompidoEm">Interrompida em {{ item.interrompidoEm | date:'dd/MM/yyyy HH:mm' }}</div></div></td>
+            <td><span class="badge" [ngClass]="item.status === 'PENDENTE' ? 'text-bg-warning' : item.status === 'APROVADA' ? 'text-bg-success' : 'text-bg-secondary'">{{ item.status === 'PENDENTE' ? 'Pendente' : item.status === 'APROVADA' ? 'Aprovada' : 'Recusada' }}</span></td>
+            <td><div class="texto-longo">{{ item.motivoDecisao || 'Aguardando análise' }}</div><small *ngIf="item.decididoEm">{{ item.administradorNome }} · {{ item.decididoEm | date:'dd/MM/yyyy HH:mm' }}</small></td></tr>
+          <tr *ngIf="!pagina.itens.length"><td colspan="4" class="text-center text-muted py-4">Você ainda não possui solicitações.</td></tr>
+        </tbody></table></div>
+        <div *ngIf="pagina" class="d-flex justify-content-between align-items-center flex-wrap gap-2"><small>{{ pagina.total }} solicitação(ões)</small><div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" [disabled]="carregando || pagina.pagina === 0" (click)="carregar(pagina.pagina - 1)">Anterior</button>
+          <span>{{ pagina.pagina + 1 }} de {{ pagina.totalPaginas || 1 }}</span><button class="btn btn-sm btn-outline-secondary" [disabled]="carregando || pagina.pagina + 1 >= pagina.totalPaginas" (click)="carregar(pagina.pagina + 1)">Próxima</button>
+        </div></div>
+      </div>
+    </div>
+  </main>
+</div>

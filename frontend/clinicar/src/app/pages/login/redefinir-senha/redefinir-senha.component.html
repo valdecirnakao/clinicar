@@ -3,7 +3,7 @@
     <div class="card-body p-4">
 
       <div class="text-center mb-4" style="color: #35689b;">
-        <i class="bi bi-key fs-1"></i>
+        <img src="assets/img/LogoClinicar.png" class="redefinicao-logo" alt="CliniCar">
         <h4 class="mt-2 mb-1">Redefinir senha</h4>
         <p class="text-muted mb-0">
           Informe sua nova senha de acesso ao CliniCar.
@@ -17,10 +17,11 @@
         </div>
       </div>
 
-      <div *ngIf="mensagemErro" class="alert alert-danger">
+      <div *ngIf="mensagemErro" class="alert alert-danger" role="alert">
         {{ mensagemErro }}
       </div>
 
+      <div *ngIf="verificandoLink" class="text-center small mb-3" role="status">Verificando link de recuperação...</div>
       <form (ngSubmit)="redefinirSenha()" *ngIf="!mensagemSucesso">
 
         <div class="mb-3">
@@ -34,7 +35,10 @@
               class="form-control"
               placeholder="Digite a nova senha"
               [(ngModel)]="novaSenha"
-              [disabled]="carregando || !token"
+              (ngModelChange)="mensagemErro = ''"
+              aria-describedby="titulo-requisitos"
+              required minlength="8" maxlength="128"
+              [disabled]="carregando || verificandoLink || linkIndisponivel || !token"
               autocomplete="new-password"
             >
 
@@ -42,7 +46,7 @@
               type="button"
               class="btn btn-outline-secondary"
               (click)="alternarMostrarNovaSenha()"
-              [disabled]="carregando || !token"
+              [disabled]="carregando || verificandoLink || linkIndisponivel || !token"
             >
               <i
                 class="bi"
@@ -51,9 +55,6 @@
             </button>
           </div>
 
-          <div class="form-text">
-            Use pelo menos 8 caracteres, com letras e números.
-          </div>
         </div>
 
         <div class="mb-3">
@@ -67,7 +68,9 @@
               class="form-control"
               placeholder="Confirme a nova senha"
               [(ngModel)]="confirmarSenha"
-              [disabled]="carregando || !token"
+              (ngModelChange)="mensagemErro = ''"
+              aria-describedby="confirmacao-status"
+              [disabled]="carregando || verificandoLink || linkIndisponivel || !token"
               autocomplete="new-password"
             >
 
@@ -75,7 +78,7 @@
               type="button"
               class="btn btn-outline-secondary"
               (click)="alternarMostrarConfirmarSenha()"
-              [disabled]="carregando || !token"
+              [disabled]="carregando || verificandoLink || linkIndisponivel || !token"
             >
               <i
                 class="bi"
@@ -83,13 +86,34 @@
               ></i>
             </button>
           </div>
+          <div id="confirmacao-status" class="form-text" *ngIf="confirmarSenha"
+            [class.text-success]="senhasCoincidem" [class.text-danger]="!senhasCoincidem" role="status">
+            {{ senhasCoincidem ? 'As senhas coincidem.' : 'As senhas ainda não coincidem.' }}
+          </div>
         </div>
+
+        <section class="senha-requisitos mb-3" aria-labelledby="titulo-requisitos">
+          <div class="requisitos-header">
+            <div><strong id="titulo-requisitos">Requisitos da senha</strong><small>{{ textoSeguranca }}</small></div>
+            <span class="requisitos-contador">{{ regrasAtendidas }}/5</span>
+          </div>
+          <div class="progress progresso-senha" role="progressbar" aria-label="Requisitos atendidos"
+            [attr.aria-valuenow]="percentualSeguranca" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" [style.width.%]="percentualSeguranca"></div>
+          </div>
+          <div class="requisitos-grid">
+            <div class="requisito" *ngFor="let requisito of requisitosSenha" [class.atendido]="requisito.atendido">
+              <i class="bi" [ngClass]="requisito.atendido ? 'bi-check-circle-fill' : 'bi-circle'" aria-hidden="true"></i>
+              {{ requisito.texto }}<span class="visually-hidden">{{ requisito.atendido ? ': atendido' : ': pendente' }}</span>
+            </div>
+          </div>
+        </section>
 
         <button
           type="submit"
           class="btn w-100 text-white"
           style="background-color: #35689b;"
-          [disabled]="carregando || !token"
+          [disabled]="carregando || verificandoLink || linkIndisponivel || !token"
         >
           <span *ngIf="!carregando">Salvar nova senha</span>
           <span *ngIf="carregando">

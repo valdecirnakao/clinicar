@@ -81,6 +81,7 @@ public class RecuperacaoSenhaService {
         );
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void redefinirSenha(
             String tokenOriginal,
             String novaSenha,
@@ -104,19 +105,7 @@ public class RecuperacaoSenhaService {
 
         validarForcaSenha(novaSenha);
 
-        String tokenHash = gerarHashToken(tokenOriginal);
-
-        PasswordResetToken token = tokenRepository
-                .findByTokenHash(tokenHash)
-                .orElseThrow(() -> new IllegalArgumentException("Token inválido ou expirado."));
-
-        if (Boolean.TRUE.equals(token.getUsado())) {
-            throw new IllegalArgumentException("Token já utilizado.");
-        }
-
-        if (token.getExpiraEm().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Token expirado.");
-        }
+        PasswordResetToken token = buscarTokenValido(tokenOriginal);
 
         Usuario usuario = usuarioRepository
                 .findById(token.getUsuarioId())
@@ -126,7 +115,21 @@ public class RecuperacaoSenhaService {
         usuarioRepository.save(usuario);
 
         token.setUsado(true);
+        token.setUsadoEm(LocalDateTime.now());
         tokenRepository.save(token);
+    }
+
+    public void validarLinkRedefinicao(String tokenOriginal) {
+        buscarTokenValido(tokenOriginal);
+    }
+
+    private PasswordResetToken buscarTokenValido(String tokenOriginal) {
+        if (tokenOriginal == null || tokenOriginal.isBlank()) throw new IllegalArgumentException("Token não informado.");
+        PasswordResetToken token = tokenRepository.findByTokenHash(gerarHashToken(tokenOriginal))
+                .orElseThrow(() -> new IllegalArgumentException("Token inválido ou expirado."));
+        if (Boolean.TRUE.equals(token.getUsado())) throw new TokenRedefinicaoUtilizadoException(token.getUsadoEm());
+        if (token.getExpiraEm().isBefore(LocalDateTime.now())) throw new IllegalArgumentException("Token expirado.");
+        return token;
     }
 
     private void invalidarTokensAnteriores(Long usuarioId) {
@@ -164,15 +167,16 @@ public class RecuperacaoSenhaService {
     }
 
     private void validarForcaSenha(String senha) {
-        if (senha.length() < 8) {
-            throw new IllegalArgumentException("A senha deve ter pelo menos 8 caracteres.");
+        if (senha.length() < 8 || senha.length() > 128) {
+            throw new IllegalArgumentException("A senha deve ter de 8 a 128 caracteres.");
         }
 
-        boolean temLetra = senha.matches(".*[A-Za-zÀ-ÿ].*");
-        boolean temNumero = senha.matches(".*\\d.*");
-
-        if (!temLetra || !temNumero) {
-            throw new IllegalArgumentException("A senha deve conter letras e números.");
+        boolean maiuscula = senha.chars().anyMatch(Character::isUpperCase);
+        boolean minuscula = senha.chars().anyMatch(Character::isLowerCase);
+        boolean numero = senha.chars().anyMatch(Character::isDigit);
+        boolean especial = senha.chars().anyMatch(c -> !Character.isLetterOrDigit(c) && !Character.isWhitespace(c));
+        if (!maiuscula || !minuscula || !numero || !especial) {
+            throw new IllegalArgumentException("A senha deve conter letra maiúscula, letra minúscula, número e caractere especial.");
         }
     }
 }

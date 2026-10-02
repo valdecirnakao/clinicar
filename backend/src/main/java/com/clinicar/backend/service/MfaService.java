@@ -6,6 +6,8 @@ import com.clinicar.backend.event.UsuarioMfaResetadoEvent;
 import com.clinicar.backend.mapper.UsuarioMapper;
 import com.clinicar.backend.model.MfaChallenge;
 import com.clinicar.backend.model.Usuario;
+import com.clinicar.backend.model.AuditoriaResetMfa;
+import com.clinicar.backend.repository.AuditoriaResetMfaRepository;
 import com.clinicar.backend.repository.MfaChallengeRepository;
 import com.clinicar.backend.repository.UsuarioRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,7 @@ public class MfaService {
     private final MfaCryptoService cryptoService;
     private final QrCodeService qrCodeService;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuditoriaResetMfaRepository auditoriaRepository;
 
     @Value("${clinicar.mfa.issuer}")
     private String issuer;
@@ -63,7 +66,8 @@ public class MfaService {
             MfaCryptoService cryptoService,
             QrCodeService qrCodeService,
             UsuarioMapper usuarioMapper,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            AuditoriaResetMfaRepository auditoriaRepository) {
         this.challengeRepository = challengeRepository;
         this.usuarioRepository = usuarioRepository;
         this.totpService = totpService;
@@ -71,6 +75,7 @@ public class MfaService {
         this.qrCodeService = qrCodeService;
         this.usuarioMapper = usuarioMapper;
         this.eventPublisher = eventPublisher;
+        this.auditoriaRepository = auditoriaRepository;
     }
 
     @Transactional
@@ -297,11 +302,23 @@ public class MfaService {
     }
 
     @Transactional
-    public void resetarMfaUsuario(Long usuarioId) {
+    public void resetarMfaUsuario(Long usuarioId, Long administradorId, String justificativa) {
         log.info("MfaService.resetarMfaUsuario iniciado para usuário ID {}.", usuarioId);
 
         if (usuarioId == null) {
             throw new IllegalArgumentException("ID do usuário não informado.");
+        }
+
+        String motivo = justificativa == null ? "" : justificativa.strip();
+        if (motivo.length() < 10 || motivo.length() > 1000) {
+            throw new IllegalArgumentException("Informe uma justificativa de 10 a 1000 caracteres para resetar o 2FA.");
+        }
+        if (administradorId == null) throw new IllegalArgumentException("Administrador responsável não informado.");
+        Usuario administrador = usuarioRepository.findById(administradorId)
+                .orElseThrow(() -> new IllegalArgumentException("Administrador responsável não encontrado."));
+        if (!"ATIVO".equalsIgnoreCase(administrador.getStatus())
+                || !"ADMINISTRADOR".equalsIgnoreCase(administrador.getTipo_do_acesso())) {
+            throw new IllegalArgumentException("O reset de 2FA exige um administrador ativo.");
         }
 
         invalidarChallengesAnteriores(usuarioId);
@@ -309,6 +326,20 @@ public class MfaService {
         if (usuario == null) {
             throw new IllegalArgumentException("Usuário não encontrado.");
         }
+
+        if (!Boolean.TRUE.equals(usuario.getMfaAtivo())
+                && (usuario.getMfaSecret() == null || usuario.getMfaSecret().isBlank())) {
+            throw new IllegalArgumentException("O usuário não possui 2FA configurado para resetar.");
+        }
+
+        AuditoriaResetMfa auditoria = new AuditoriaResetMfa();
+        auditoria.setUsuarioId(usuario.getId());
+        auditoria.setUsuarioNome(nomePreferencial(usuario));
+        auditoria.setAdministradorId(administrador.getId());
+        auditoria.setAdministradorNome(nomePreferencial(administrador));
+        auditoria.setJustificativa(motivo);
+        auditoria.setRealizadoEm(java.time.Instant.now());
+        auditoriaRepository.saveAndFlush(auditoria);
 
         usuario.setMfaAtivo(false);
         usuario.setMfaTipo(null);

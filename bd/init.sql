@@ -51,6 +51,10 @@ CREATE TABLE IF NOT EXISTS usuario (
     mfa_ativo           BIT(1) NOT NULL DEFAULT FALSE,
     mfa_secret          VARCHAR(1000) NULL,
     mfa_tipo            VARCHAR(30) NULL,
+    criado_em           DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    atualizado_em       DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+                        ON UPDATE CURRENT_TIMESTAMP(6),
+
     PRIMARY KEY (id),
     CONSTRAINT uk_usuario_email UNIQUE (email),
     CONSTRAINT uk_usuario_cpf UNIQUE (cpf),
@@ -179,6 +183,7 @@ CREATE TABLE IF NOT EXISTS password_reset_token (
     usuario_id                  BIGINT UNSIGNED NOT NULL,
     expira_em                   DATETIME(6) NOT NULL,
     usado                       BIT(1) NOT NULL DEFAULT FALSE,
+    usado_em                    DATETIME(6) NULL,
     criado_em                   DATETIME(6) NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_password_reset_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE RESTRICT,
@@ -589,6 +594,12 @@ CREATE TABLE IF NOT EXISTS agendamento (
 
     id_cliente                  BIGINT UNSIGNED NOT NULL,
     id_veiculo                  BIGINT UNSIGNED NOT NULL,
+    veiculo_preservado_em       DATETIME(6) NULL,
+    veiculo_placa_historica      VARCHAR(255) NULL,
+    veiculo_fabricante_historico VARCHAR(255) NULL,
+    veiculo_modelo_historico     VARCHAR(255) NULL,
+    veiculo_cor_historica        VARCHAR(255) NULL,
+    veiculo_ano_modelo_combustivel_historico VARCHAR(255) NULL,
     id_servico                  BIGINT UNSIGNED NOT NULL,
     id_fornecedor               BIGINT UNSIGNED NULL,
     id_responsavel              BIGINT UNSIGNED NULL,
@@ -763,6 +774,13 @@ CREATE TABLE IF NOT EXISTS atendimento (
     estoque_baixado         BIT(1) NOT NULL DEFAULT FALSE,
     estoque_baixado_em      DATETIME(6) NULL,
 
+    veiculo_preservado_em   DATETIME(6) NULL,
+    veiculo_placa_historica  VARCHAR(255) NULL,
+    veiculo_fabricante_historico VARCHAR(255) NULL,
+    veiculo_modelo_historico VARCHAR(255) NULL,
+    veiculo_cor_historica    VARCHAR(255) NULL,
+    veiculo_ano_modelo_combustivel_historico VARCHAR(255) NULL,
+    os_pdf_original         LONGBLOB NULL,
     os_pdf_gerada_em        DATETIME(6) NULL,
     os_enviada_email        BIT(1) NOT NULL DEFAULT FALSE,
     os_enviada_email_em     DATETIME(6) NULL,
@@ -1014,6 +1032,12 @@ CREATE TABLE IF NOT EXISTS previsao_manutencao_veiculo (
     id                          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 
     id_veiculo                  BIGINT UNSIGNED NOT NULL,
+    veiculo_preservado_em       DATETIME(6) NULL,
+    veiculo_placa_historica      VARCHAR(255) NULL,
+    veiculo_fabricante_historico VARCHAR(255) NULL,
+    veiculo_modelo_historico     VARCHAR(255) NULL,
+    veiculo_cor_historica        VARCHAR(255) NULL,
+    veiculo_ano_modelo_combustivel_historico VARCHAR(255) NULL,
     id_regra_manutencao         BIGINT UNSIGNED NOT NULL,
     id_atendimento              BIGINT UNSIGNED NULL,
     id_servico                  BIGINT UNSIGNED NULL,
@@ -1128,3 +1152,90 @@ CREATE TABLE IF NOT EXISTS previsao_manutencao_veiculo (
 -- scripts de /docker-entrypoint-initdb.d são executados somente quando
 -- /var/lib/mysql é inicializado pela primeira vez.
 -- =============================================================================
+
+-- Aplicar no banco clinicar antes de iniciar o backend atualizado.
+-- Não apaga nem altera tabelas existentes. Reexecução preserva a configuração.
+CREATE TABLE IF NOT EXISTS configuracao_alerta_manutencao (
+ id BIGINT NOT NULL PRIMARY KEY,
+ versao BIGINT NULL,
+ ativo BIT(1) NOT NULL DEFAULT FALSE,
+ antecedencia_dias INT NOT NULL DEFAULT 15,
+ intervalo_dias INT NOT NULL DEFAULT 7,
+ maximo_envios INT NOT NULL DEFAULT 3,
+ dias_apos_vencimento INT NOT NULL DEFAULT 30,
+ hora_inicio INT NOT NULL DEFAULT 9,
+ hora_fim INT NOT NULL DEFAULT 18,
+ fuso_horario VARCHAR(60) NOT NULL DEFAULT 'America/Sao_Paulo',
+ CONSTRAINT chk_alerta_antecedencia CHECK (antecedencia_dias BETWEEN 0 AND 365),
+ CONSTRAINT chk_alerta_intervalo CHECK (intervalo_dias BETWEEN 1 AND 365),
+ CONSTRAINT chk_alerta_maximo CHECK (maximo_envios BETWEEN 1 AND 100),
+ CONSTRAINT chk_alerta_apos CHECK (dias_apos_vencimento BETWEEN 0 AND 365),
+ CONSTRAINT chk_alerta_horario CHECK (hora_inicio BETWEEN 0 AND 23 AND hora_fim > hora_inicio AND hora_fim <= 24)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+INSERT IGNORE INTO configuracao_alerta_manutencao (id, versao) VALUES (1, 0);
+CREATE TABLE IF NOT EXISTS envio_alerta_manutencao (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ previsao_id BIGINT NOT NULL,
+ proprietario_id BIGINT NOT NULL,
+ destinatario VARCHAR(254) NOT NULL,
+ status VARCHAR(30) NOT NULL,
+ criado_em TIMESTAMP(6) NOT NULL,
+ finalizado_em TIMESTAMP(6) NULL,
+ detalhe VARCHAR(300) NULL,
+ INDEX idx_envio_previsao (previsao_id, criado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- IDs do histórico são snapshots; permanecem disponíveis mesmo se o cadastro for removido.
+CREATE TABLE IF NOT EXISTS auditoria_reset_mfa (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ usuario_id BIGINT NOT NULL,
+ usuario_nome VARCHAR(255) NOT NULL,
+ administrador_id BIGINT NOT NULL,
+ administrador_nome VARCHAR(255) NOT NULL,
+ justificativa VARCHAR(1000) NOT NULL,
+ realizado_em TIMESTAMP(6) NOT NULL,
+ INDEX idx_auditoria_mfa_usuario_data (usuario_id, realizado_em),
+ INDEX idx_auditoria_mfa_admin_data (administrador_id, realizado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS auditoria_exclusao_usuario (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ usuario_id BIGINT NOT NULL,
+ usuario_nome VARCHAR(255) NOT NULL,
+ administrador_id BIGINT NOT NULL,
+ administrador_nome VARCHAR(255) NOT NULL,
+ justificativa VARCHAR(1000) NOT NULL,
+ realizado_em TIMESTAMP(6) NOT NULL,
+ INDEX idx_exclusao_usuario_data (usuario_id, realizado_em),
+ INDEX idx_exclusao_admin_data (administrador_id, realizado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS solicitacao_acesso_usuario (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ usuario_id BIGINT UNSIGNED NOT NULL,
+ usuario_nome VARCHAR(255) NOT NULL,
+ usuario_email VARCHAR(255) NOT NULL,
+ usuario_perfil VARCHAR(30) NOT NULL,
+ tipo VARCHAR(30) NOT NULL,
+ justificativa VARCHAR(1000) NOT NULL,
+ status VARCHAR(30) NOT NULL,
+ pendencia_usuario_id BIGINT UNSIGNED NULL,
+ solicitado_em TIMESTAMP(6) NOT NULL,
+ administrador_id BIGINT UNSIGNED NULL,
+ administrador_nome VARCHAR(255) NULL,
+ motivo_decisao VARCHAR(1000) NULL,
+ decidido_em TIMESTAMP(6) NULL,
+ UNIQUE KEY uk_solicitacao_acesso_pendente (pendencia_usuario_id),
+ INDEX idx_solicitacao_acesso_status_data (status, solicitado_em),
+ INDEX idx_solicitacao_acesso_usuario_data (usuario_id, solicitado_em),
+ CONSTRAINT fk_solicitacao_acesso_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE RESTRICT,
+ CONSTRAINT fk_solicitacao_acesso_administrador FOREIGN KEY (administrador_id) REFERENCES usuario(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE solicitacao_acesso_usuario
+  ADD COLUMN inicio_periodo DATE NULL,
+  ADD COLUMN fim_periodo DATE NULL,
+  ADD COLUMN situacao_periodo VARCHAR(30) NULL,
+  ADD COLUMN inativado_em TIMESTAMP(6) NULL,
+  ADD COLUMN reativado_em TIMESTAMP(6) NULL,
+  ADD COLUMN interrompido_em TIMESTAMP(6) NULL,
+  ADD INDEX idx_solicitacao_periodo (situacao_periodo, inicio_periodo, fim_periodo);

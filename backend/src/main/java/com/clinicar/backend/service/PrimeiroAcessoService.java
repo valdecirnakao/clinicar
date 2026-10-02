@@ -6,6 +6,7 @@ import com.clinicar.backend.dto.setup.MensagemResponse;
 import com.clinicar.backend.dto.setup.SetupStatusResponse;
 import com.clinicar.backend.dto.setup.ValidarTokenResponse;
 import com.clinicar.backend.event.AtivacaoAdministradorSolicitadaEvent;
+import com.clinicar.backend.event.UsuarioCadastradoEvent;
 import com.clinicar.backend.model.ConfiguracaoSistema;
 import com.clinicar.backend.model.TokenAtivacaoUsuario;
 import com.clinicar.backend.model.Usuario;
@@ -184,6 +185,11 @@ public class PrimeiroAcessoService {
 
         Usuario administrador = new Usuario();
 
+        if (usuarioRepository.existsByCpf(somenteDigitos(request.getCpf()))) {
+            throw new IllegalArgumentException(somenteDigitos(request.getCpf()).length() == 14
+                    ? "CNPJ já cadastrado anteriormente." : "CPF já cadastrado anteriormente.");
+        }
+
         preencherDadosAdministrador(
                 administrador,
                 request,
@@ -297,6 +303,13 @@ public class PrimeiroAcessoService {
         /*
          * Não registrar tokenPuro em log.
          */
+        String nomeNotificacao = administradorSalvo.getNome_social();
+        if (nomeNotificacao == null || nomeNotificacao.isBlank()) {
+            nomeNotificacao = administradorSalvo.getNome();
+        }
+        eventPublisher.publishEvent(new UsuarioCadastradoEvent(
+                administradorSalvo.getId(), nomeNotificacao, administradorSalvo.getTelefone()));
+
         log.info(
                 "Administrador inicial criado com sucesso. usuarioId={}, estadoSetup={}.",
                 administradorSalvo.getId(),

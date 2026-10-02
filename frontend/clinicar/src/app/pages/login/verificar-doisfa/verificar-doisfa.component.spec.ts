@@ -1,18 +1,22 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { VerificarDoisfaComponent } from './verificar-doisfa.component';
+import { Verificar2faComponent } from './verificar-doisfa.component';
 
-describe('VerificarDoisfaComponent', () => {
-  let component: VerificarDoisfaComponent;
-  let fixture: ComponentFixture<VerificarDoisfaComponent>;
+describe('Verificar2faComponent', () => {
+  let component: Verificar2faComponent;
+  let fixture: ComponentFixture<Verificar2faComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [VerificarDoisfaComponent]
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      imports: [Verificar2faComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(VerificarDoisfaComponent);
+    fixture = TestBed.createComponent(Verificar2faComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

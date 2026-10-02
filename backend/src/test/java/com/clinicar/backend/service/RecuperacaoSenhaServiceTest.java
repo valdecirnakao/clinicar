@@ -31,6 +31,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class RecuperacaoSenhaServiceTest {
 
+    @Test
+    void redefinicaoExigeTodasAsRegrasDaPoliticaInicialSemConsumirToken() {
+        for (String senha : List.of("abcdefgh1!", "ABCDEFGH1!", "Abcdefgh!", "Abcdefgh1", "Abcdefg1 ", "Ab1!", "Ab1!" + "x".repeat(125))) {
+            assertThrows(IllegalArgumentException.class, () -> service.redefinirSenha("token", senha, senha));
+        }
+        verifyNoInteractions(tokenRepository, usuarioRepository, passwordEncoder);
+    }
+
     @Mock
     private UsuarioRepository usuarioRepository;
 
@@ -110,25 +118,25 @@ class RecuperacaoSenhaServiceTest {
     void redefinirSenhaValidaCamposObrigatoriosEConfirmacao() {
         IllegalArgumentException exToken = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha(" ", "Senha123", "Senha123")
+                () -> service.redefinirSenha(" ", "Senha123!", "Senha123!")
         );
         assertEquals("Token não informado.", exToken.getMessage());
 
         IllegalArgumentException exNova = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha("token", " ", "Senha123")
+                () -> service.redefinirSenha("token", " ", "Senha123!")
         );
         assertEquals("Nova senha não informada.", exNova.getMessage());
 
         IllegalArgumentException exConfirmacao = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha("token", "Senha123", " ")
+                () -> service.redefinirSenha("token", "Senha123!", " ")
         );
         assertEquals("Confirmação de senha não informada.", exConfirmacao.getMessage());
 
         IllegalArgumentException exDivergente = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha("token", "Senha123", "Senha124")
+                () -> service.redefinirSenha("token", "Senha123!", "Senha124")
         );
         assertEquals("A confirmação de senha não confere.", exDivergente.getMessage());
     }
@@ -139,13 +147,13 @@ class RecuperacaoSenhaServiceTest {
                 IllegalArgumentException.class,
                 () -> service.redefinirSenha("token", "Abc123", "Abc123")
         );
-        assertEquals("A senha deve ter pelo menos 8 caracteres.", exCurta.getMessage());
+        assertEquals("A senha deve ter de 8 a 128 caracteres.", exCurta.getMessage());
 
         IllegalArgumentException exSemNumero = assertThrows(
                 IllegalArgumentException.class,
                 () -> service.redefinirSenha("token", "ApenasLetras", "ApenasLetras")
         );
-        assertEquals("A senha deve conter letras e números.", exSemNumero.getMessage());
+        assertEquals("A senha deve conter letra maiúscula, letra minúscula, número e caractere especial.", exSemNumero.getMessage());
     }
 
     @Test
@@ -154,7 +162,7 @@ class RecuperacaoSenhaServiceTest {
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha("token-valido", "Senha123", "Senha123")
+                () -> service.redefinirSenha("token-valido", "Senha123!", "Senha123!")
         );
 
         assertEquals("Token inválido ou expirado.", ex.getMessage());
@@ -171,7 +179,7 @@ class RecuperacaoSenhaServiceTest {
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha("token", "Senha123", "Senha123")
+                () -> service.redefinirSenha("token", "Senha123!", "Senha123!")
         );
 
         assertEquals("Token já utilizado.", ex.getMessage());
@@ -188,7 +196,7 @@ class RecuperacaoSenhaServiceTest {
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha("token", "Senha123", "Senha123")
+                () -> service.redefinirSenha("token", "Senha123!", "Senha123!")
         );
 
         assertEquals("Token expirado.", ex.getMessage());
@@ -206,7 +214,7 @@ class RecuperacaoSenhaServiceTest {
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.redefinirSenha("token", "Senha123", "Senha123")
+                () -> service.redefinirSenha("token", "Senha123!", "Senha123!")
         );
 
         assertEquals("Usuário não encontrado.", ex.getMessage());
@@ -225,13 +233,27 @@ class RecuperacaoSenhaServiceTest {
 
         when(tokenRepository.findByTokenHash(any())).thenReturn(Optional.of(token));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.encode("Senha123")).thenReturn("senha-criptografada");
+        when(passwordEncoder.encode("Senha123!")).thenReturn("senha-criptografada");
 
-        service.redefinirSenha("token", "Senha123", "Senha123");
+        service.redefinirSenha("token", "Senha123!", "Senha123!");
 
         assertEquals("senha-criptografada", usuario.getSenha());
         assertTrue(token.getUsado());
+        org.junit.jupiter.api.Assertions.assertNotNull(token.getUsadoEm());
         verify(usuarioRepository).save(usuario);
         verify(tokenRepository).save(token);
+    }
+
+    @Test
+    void validacaoDeLinkUsadoRetornaDataOriginalSemAlterarDados() {
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUsado(true);
+        LocalDateTime uso = LocalDateTime.of(2026, 10, 1, 17, 45, 28);
+        token.setUsadoEm(uso);
+        when(tokenRepository.findByTokenHash(any())).thenReturn(Optional.of(token));
+        var erro = assertThrows(TokenRedefinicaoUtilizadoException.class, () -> service.validarLinkRedefinicao("token"));
+        assertEquals(uso, erro.getUtilizadoEm());
+        verify(tokenRepository, never()).save(any());
+        verifyNoInteractions(usuarioRepository, passwordEncoder);
     }
 }

@@ -248,6 +248,15 @@
   padding: .35rem .55rem;
 }
 
+.technical-spec-cell {
+  min-width: 190px;
+  max-width: 320px;
+  white-space: normal;
+  line-height: 1.35;
+  color: #355f89;
+  font-weight: 600;
+}
+
 .badge-peca {
   background: #eef6ff;
   color: #35689b;

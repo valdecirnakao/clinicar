@@ -1,18 +1,22 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ExibeFornecimentoPecasComponent } from './exibe-fornecimento-pecas.component';
+import { ExibeFornecimentoPecaComponent } from './exibe-fornecimento-pecas.component';
 
-describe('ExibeFornecimentoPecasComponent', () => {
-  let component: ExibeFornecimentoPecasComponent;
-  let fixture: ComponentFixture<ExibeFornecimentoPecasComponent>;
+describe('ExibeFornecimentoPecaComponent', () => {
+  let component: ExibeFornecimentoPecaComponent;
+  let fixture: ComponentFixture<ExibeFornecimentoPecaComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ExibeFornecimentoPecasComponent]
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      imports: [ExibeFornecimentoPecaComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(ExibeFornecimentoPecasComponent);
+    fixture = TestBed.createComponent(ExibeFornecimentoPecaComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

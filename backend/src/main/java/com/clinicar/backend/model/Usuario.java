@@ -1,13 +1,16 @@
 package com.clinicar.backend.model;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
-
+import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Getter @Setter
+@Table(name = "usuario", uniqueConstraints = @UniqueConstraint(name = "uk_usuario_cpf", columnNames = "cpf"))
+@Getter
+@Setter
 public class Usuario {
 
     @Id
@@ -16,14 +19,14 @@ public class Usuario {
 
     private String nome;
     private String nome_social;
-    
+
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
-    
+
     @JsonIgnore
     private String senha;
     private String cpf;
-    private LocalDate nascimento;       
+    private LocalDate nascimento;
     private String telefone;
     private String cep;
     private String numero_endereco;
@@ -44,4 +47,28 @@ public class Usuario {
     @JsonIgnore
     @Column(name = "mfa_secret", length = 1000)
     private String mfaSecret;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private LocalDateTime criadoEm;
+
+    @Column(name = "atualizado_em", nullable = false)
+    private LocalDateTime atualizadoEm;
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime agora = LocalDateTime.now();
+
+        if (criadoEm == null) {
+            criadoEm = agora;
+        }
+
+        if (atualizadoEm == null) {
+            atualizadoEm = agora;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        atualizadoEm = LocalDateTime.now();
+    }
 }

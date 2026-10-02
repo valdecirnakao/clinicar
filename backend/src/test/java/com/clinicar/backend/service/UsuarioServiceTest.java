@@ -26,6 +26,53 @@ class UsuarioServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
+    @Test
+    void consultaEmailNormalizadoERejeitaFormatoIncorreto() {
+        when(repo.existsByEmailIgnoreCase("cliente@example.com")).thenReturn(true);
+        org.junit.jupiter.api.Assertions.assertTrue(service.emailCadastrado(" Cliente@Example.com "));
+        org.junit.jupiter.api.Assertions.assertFalse(service.emailCadastrado("livre@example.com"));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.emailCadastrado("sem-arroba"));
+    }
+
+    @Test
+    void rejeitaEmailDuplicadoAoSalvarSemGravarOuNotificar() {
+        UsuarioRequest req = new UsuarioRequest();
+        req.setEmail(" Cliente@Example.com ");
+        when(repo.existsByEmailIgnoreCase("cliente@example.com")).thenReturn(true);
+        var erro = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.criarPorAdministrador(req));
+        assertEquals("E-mail já cadastrado anteriormente.", erro.getMessage());
+        org.mockito.Mockito.verify(repo, org.mockito.Mockito.never()).saveAndFlush(any());
+        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void recusaCpfRepetidoNormalizadoSemGravarOuNotificar() {
+        UsuarioRequest req = new UsuarioRequest();
+        req.setEmail("novo@example.com");
+        req.setCpf("222.222.222-22");
+        when(repo.existsByCpf("22222222222")).thenReturn(true);
+        var erro = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.criarPorAdministrador(req));
+        assertEquals("CPF já cadastrado anteriormente.", erro.getMessage());
+        org.mockito.Mockito.verify(repo, org.mockito.Mockito.never()).saveAndFlush(any());
+        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void consultaDocumentoNormalizadoERejeitaTamanhoIncorreto() {
+        when(repo.existsByCpf("22222222222")).thenReturn(true);
+        org.junit.jupiter.api.Assertions.assertTrue(service.cpfCadastrado("222.222.222-22"));
+        org.junit.jupiter.api.Assertions.assertFalse(service.cpfCadastrado("33333333333"));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> service.cpfCadastrado("123"));
+    }
+
+    @org.mockito.Mock com.clinicar.backend.repository.SolicitacaoAcessoUsuarioRepository solicitacoesAcesso;
     @InjectMocks
     private UsuarioService service;
 
@@ -52,13 +99,13 @@ class UsuarioServiceTest {
         when(passwordEncoder.encode("secret"))
                 .thenReturn("$2a$10$senhaCriptografadaParaTeste");
 
-        when(repo.save(any(Usuario.class)))
+        when(repo.saveAndFlush(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var salvo = service.criar(req);
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
-        verify(repo).save(captor.capture());
+        verify(repo).saveAndFlush(captor.capture());
 
         Usuario usuario = captor.getValue();
 
@@ -73,7 +120,7 @@ class UsuarioServiceTest {
          */
         assertEquals("$2a$10$senhaCriptografadaParaTeste", usuario.getSenha());
 
-        assertEquals("(11) 99999-1111", usuario.getTelefone());
+        assertEquals("11999991111", usuario.getTelefone());
         assertEquals("ATIVO", usuario.getStatus());
         assertEquals("maria@example.com", usuario.getEmail());
         assertEquals("Rua A", usuario.getLogradouro());
@@ -82,10 +129,12 @@ class UsuarioServiceTest {
         assertEquals("SP", usuario.getEstado());
         assertEquals("Apto 1", usuario.getComplemento_endereco());
         assertEquals("100", usuario.getNumero_endereco());
-        assertEquals("ADMIN", usuario.getTipo_do_acesso());
+        assertEquals("CLIENTE", usuario.getTipo_do_acesso());
         assertEquals("2024-12-31", usuario.getNascimento().toString());
 
-        assertEquals(usuario, salvo);
+        assertEquals(usuario.getEmail(), salvo.getEmail());
+        verify(eventPublisher).publishEvent(new com.clinicar.backend.event.UsuarioCadastradoEvent(
+                usuario.getId(), "Maria S.", "11999991111"));
     }
 
     @Test
@@ -94,15 +143,17 @@ class UsuarioServiceTest {
 
         req.setCpf("999.999.999-99");
         req.setCep("00000-000");
-        req.setNascimento("2024-12-31");
+        req.setNascimento("data-invalida");
+        req.setEmail("teste@example.com");
+        req.setSenha("secret");
 
-        when(repo.save(any(Usuario.class)))
+        when(repo.saveAndFlush(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var salvo = service.criar(req);
 
         assertNull(salvo.getNascimento());
 
-        verify(repo).save(any(Usuario.class));
+        verify(repo).saveAndFlush(any(Usuario.class));
     }
 }

@@ -134,6 +134,7 @@
             </div>
             <div class="col-lg-4 col-md-4">
               <div class="d-flex gap-2 justify-content-lg-end flex-wrap toolbar-actions">
+                <a class="btn btn-md btn-outline-primary" routerLink="../solicitacoesAcesso"><i class="bi bi-person-lines-fill me-1"></i>Solicitações de acesso</a>
                 <button class="btn btn-md btn-primary-clinicar" type="button" (click)="abrirModalCadastro()">
                   <i class="bi bi-person-plus me-1"></i>
                   Novo Usuário
@@ -188,7 +189,7 @@
               <div class="usuarios-table-toolbar-right">
                 <span>
                   <i class="bi bi-whatsapp text-success me-1"></i>
-                  {{ totalWhatsappValido }} contato(s) com WhatsApp válido
+                  {{ totalWhatsappValido }} contato(s) com WhatsApp
                 </span>
               </div>
             </div>
@@ -334,10 +335,15 @@
                               Resetar 2FA
                             </button>
 
-                            <button type="button" class="action-menu-item" (click)="abrirConfirmacaoAlterarStatus(u)">
+                            <button type="button" class="action-menu-item" (click)="abrirConfirmacaoAlterarStatus(u)"
+                              [disabled]="u.status === 'ativo' && u.podeInativar === false" [title]="u.motivoBloqueioInativacao || ''">
                               <i class="bi"
-                                [ngClass]="u.status === 'inativo' ? 'bi-person-check text-success' : 'bi-person-dash text-warning'"></i>
-                              {{ u.status === 'inativo' ? 'Reativar usuário' : 'Inativar usuário' }}
+                                [ngClass]="iconeAcaoUsuario(u)"></i>
+                              {{ rotuloAcaoUsuario(u) }}
+                            </button>
+                            <button *ngIf="u.podeExcluir && u.status === 'inativo'" type="button" class="action-menu-item"
+                              (click)="abrirConfirmacaoAlterarStatus(u, true)">
+                              <i class="bi bi-person-check text-success"></i> Reativar usuário
                             </button>
                           </div>
                         </div>
@@ -402,8 +408,14 @@
                       Editar
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-secondary"
+                      [attr.aria-label]="rotuloAcaoUsuario(u)" [title]="rotuloAcaoUsuario(u)"
+                      [disabled]="u.status === 'ativo' && u.podeInativar === false"
                       (click)="abrirConfirmacaoAlterarStatus(u)">
-                      <i class="bi" [ngClass]="u.status === 'inativo' ? 'bi-person-check' : 'bi-person-dash'"></i>
+                      <i class="bi" [ngClass]="iconeAcaoUsuario(u)"></i>
+                    </button>
+                    <button *ngIf="u.podeExcluir && u.status === 'inativo'" type="button" class="btn btn-sm btn-outline-success"
+                      title="Reativar usuário" aria-label="Reativar usuário" (click)="abrirConfirmacaoAlterarStatus(u, true)">
+                      <i class="bi bi-person-check"></i>
                     </button>
                   </div>
                 </div>
@@ -546,17 +558,19 @@
                 <small>{{ usuarioDetalhe.mfaTipo || 'Aplicativo autenticador TOTP' }}</small>
               </div>
             </div>
-
             <div class="col-md-6">
               <div class="detail-box">
                 <span>Cadastro</span>
-                <strong>Criado: {{ formatarDataBR(usuarioDetalhe.criadoEm) }}</strong>
-                <small>Atualizado: {{ formatarDataBR(usuarioDetalhe.atualizadoEm) }}</small>
+                <strong>
+                  Criado: {{ formatarDataHoraBR(usuarioDetalhe.criadoEm) }}
+                </strong>
+                <small>
+                  Atualizado: {{ formatarDataHoraBR(usuarioDetalhe.atualizadoEm) }}
+                </small>
               </div>
             </div>
           </div>
         </div>
-
         <div class="modal-footer usuario-modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
             Fechar
@@ -591,6 +605,29 @@
             <i class="bi bi-person-circle me-1"></i>
             {{ confirmacao.detalhe }}
           </div>
+          <div *ngIf="confirmacao.tipo === 'excluir'" class="mt-3">
+            <label for="justificativaExclusao" class="form-label fw-semibold">Justificativa da exclusão *</label>
+            <textarea id="justificativaExclusao" class="form-control" rows="3" maxlength="1000"
+              [(ngModel)]="justificativaExclusao" [disabled]="acaoEmExecucao || exclusaoBloqueada"
+              (ngModelChange)="justificativaExclusaoErro = ''" [class.is-invalid]="!!justificativaExclusaoErro"
+              aria-describedby="justificativaExclusaoAjuda" placeholder="Descreva por que este cadastro deve ser excluído."></textarea>
+            <small id="justificativaExclusaoAjuda" class="text-muted d-block mt-1">
+              De 10 a 1000 caracteres. O usuário, o administrador responsável, o motivo e a data e hora serão preservados para auditoria.
+            </small>
+            <div *ngIf="justificativaExclusaoErro" class="alert alert-danger py-2 mt-2 mb-0" role="alert">{{ justificativaExclusaoErro }}</div>
+          </div>
+          <div *ngIf="confirmacao.tipo === 'resetar-mfa'" class="mt-3">
+            <label for="justificativaResetMfa" class="form-label fw-semibold">Justificativa do reset *</label>
+            <textarea id="justificativaResetMfa" class="form-control" rows="3" maxlength="1000"
+              [(ngModel)]="justificativaResetMfa" [disabled]="acaoEmExecucao"
+              (ngModelChange)="justificativaResetErro = ''"
+              [class.is-invalid]="!!justificativaResetErro" aria-describedby="justificativaResetAjuda"
+              placeholder="Descreva o motivo da solicitação de reset do 2FA."></textarea>
+            <small id="justificativaResetAjuda" class="text-muted d-block mt-1">
+              De 10 a 1000 caracteres. O motivo, o administrador responsável e a data e hora serão registrados para auditoria.
+            </small>
+            <div *ngIf="justificativaResetErro" class="alert alert-danger py-2 mt-2 mb-0" role="alert">{{ justificativaResetErro }}</div>
+          </div>
         </div>
 
         <div class="modal-footer usuario-modal-footer">
@@ -599,7 +636,7 @@
           </button>
 
           <button type="button" class="btn" [ngClass]="confirmacao?.confirmarClasse || 'btn-primary'"
-            [disabled]="acaoEmExecucao" (click)="executarAcaoConfirmada()">
+            [disabled]="acaoEmExecucao || (confirmacao?.tipo === 'resetar-mfa' && !justificativaResetValida) || (confirmacao?.tipo === 'excluir' && (!justificativaExclusaoValida || exclusaoBloqueada))" (click)="executarAcaoConfirmada()">
             <span class="spinner-border spinner-border-sm me-1" *ngIf="acaoEmExecucao"></span>
             <i class="bi bi-check-circle me-1" *ngIf="!acaoEmExecucao"></i>
             {{ confirmacao?.confirmarLabel || 'Confirmar' }}
@@ -659,10 +696,9 @@
             </div>
 
             <app-field-help-panel
-            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
-          ></app-field-help-panel>
+              defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."></app-field-help-panel>
 
-          <ul class="nav nav-pills usuario-modal-tabs">
+            <ul class="nav nav-pills usuario-modal-tabs">
               <li class="nav-item">
                 <button type="button" class="nav-link" [class.active]="abaEdicaoUsuario === 'dados'"
                   (click)="trocarAbaEdicaoUsuario('dados')">
@@ -742,11 +778,15 @@
                 <div class="col-md-3">
                   <label class="form-label" for="edit-status">Status *</label>
                   <select id="edit-status" class="form-select form-select-sm"
+                    [disabled]="!!bloqueioInativacaoEdicao"
                     [class.is-invalid]="campoEdicaoInvalido('status')" [(ngModel)]="edit.status" style="color:#35689b;">
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
                   </select>
                   <div class="form-text">Define se o usuário poderá acessar o sistema.</div>
+                  <div *ngIf="bloqueioInativacaoEdicao" class="form-text text-warning-emphasis">
+                    <i class="bi bi-shield-lock me-1"></i>{{ bloqueioInativacaoEdicao }}
+                  </div>
                   <div class="invalid-feedback">Selecione o status.</div>
                 </div>
 
@@ -1039,10 +1079,9 @@
             </div>
 
             <app-field-help-panel
-            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
-          ></app-field-help-panel>
+              defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."></app-field-help-panel>
 
-          <ul class="nav nav-pills usuario-modal-tabs usuario-cadastro-tabs mb-0">
+            <ul class="nav nav-pills usuario-modal-tabs usuario-cadastro-tabs mb-0">
               <li class="nav-item">
                 <button type="button" class="nav-link" [class.active]="abaCadastroUsuario === 'dados'"
                   (click)="trocarAbaCadastroUsuario('dados')">
@@ -1107,9 +1146,12 @@
                   <label for="cpfCnpj" class="form-label">CPF | CNPJ *</label>
                   <input id="cpfCnpj" class="form-control form-control-sm"
                     [class.is-invalid]="campoCadastroInvalido('cpf')" [(ngModel)]="novoUsuario.cpf"
-                    (ngModelChange)="limparCampoCadastroInvalido('cpf')" (blur)="formatarCpfCnpjCadastro()"
+                    (ngModelChange)="alterarCpfCadastro()" (blur)="verificarCpfCadastro()"
+                    [attr.aria-invalid]="campoCadastroInvalido('cpf')" aria-describedby="cpfCadastroFeedback"
                     placeholder="000.000.000-00" style="color:#35689b;" />
-                  <div class="invalid-feedback">Informe CPF com 11 dígitos ou CNPJ com 14 dígitos.</div>
+                  <div id="cpfCadastroFeedback" class="invalid-feedback">{{ mensagemCpfCadastro }}</div>
+                  <small *ngIf="cpfCadastroConsultando" class="text-muted d-block" role="status">Verificando cadastro...</small>
+                  <small *ngIf="cpfCadastroAviso" class="text-warning d-block" role="status">{{ cpfCadastroAviso }}</small>
                   <small class="text-muted">Utilizado para identificação cadastral.</small>
                 </div>
 
@@ -1182,9 +1224,12 @@
                   <label for="email" class="form-label">E-mail *</label>
                   <input id="email" type="email" class="form-control form-control-sm"
                     [class.is-invalid]="campoCadastroInvalido('email')" [(ngModel)]="novoUsuario.email"
-                    (ngModelChange)="limparCampoCadastroInvalido('email')" (blur)="normalizarEmailCadastro()"
+                    (ngModelChange)="alterarEmailCadastro()" (blur)="verificarEmailCadastro()"
+                    [attr.aria-invalid]="campoCadastroInvalido('email')" aria-describedby="emailCadastroFeedback"
                     placeholder="usuario@exemplo.com" style="color:#35689b;" />
-                  <div class="invalid-feedback">Informe um e-mail válido.</div>
+                  <div id="emailCadastroFeedback" class="invalid-feedback">{{ mensagemEmailCadastro }}</div>
+                  <small *ngIf="emailCadastroConsultando" class="text-muted d-block" role="status">Verificando cadastro...</small>
+                  <small *ngIf="emailCadastroAviso" class="text-warning d-block" role="status">{{ emailCadastroAviso }}</small>
                 </div>
 
                 <div class="col-md-3">

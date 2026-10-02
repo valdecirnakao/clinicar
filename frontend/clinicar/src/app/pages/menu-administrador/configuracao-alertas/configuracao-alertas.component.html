@@ -1,0 +1,60 @@
+<section class="alertas-page">
+  <div class="card clinicar-header-card mb-3"><div class="card-body">
+    <h4 class="mb-1"><i class="bi bi-bell me-2" aria-hidden="true"></i>Alertas de manutenção preventiva</h4>
+    <small>Defina quando o proprietário atual do veículo recebe os lembretes pelo WhatsApp.</small>
+  </div></div>
+  <div *ngIf="erro" class="alert alert-danger" role="alert">{{ erro }}</div>
+  <div *ngIf="sucesso" class="alert alert-success" role="status">{{ sucesso }}</div>
+  <p *ngIf="carregando" role="status">Carregando configurações…</p>
+  <form *ngIf="config as c" #form="ngForm" (ngSubmit)="salvar()" class="card p-3 mb-4">
+    <fieldset [disabled]="carregando || salvando">
+      <legend class="fs-6 fw-semibold">Frequência e período de envio</legend>
+      <div class="form-check form-switch mb-3">
+        <input id="ativo" name="ativo" type="checkbox" class="form-check-input" [(ngModel)]="c.ativo">
+        <label for="ativo" class="form-check-label">Ativar alertas de manutenção pelo WhatsApp</label>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6 col-xl-3"><label for="antecedencia" class="form-label">Antecedência (dias) *</label>
+          <input id="antecedencia" name="antecedencia" class="form-control" type="number" required min="0" max="365" step="1" [(ngModel)]="c.antecedenciaDias"></div>
+        <div class="col-md-6 col-xl-3"><label for="intervalo" class="form-label">Intervalo entre avisos (dias) *</label>
+          <input id="intervalo" name="intervalo" class="form-control" type="number" required min="1" max="365" step="1" [(ngModel)]="c.intervaloDias"></div>
+        <div class="col-md-6 col-xl-3"><label for="maximo" class="form-label">Máximo por previsão *</label>
+          <input id="maximo" name="maximo" class="form-control" type="number" required min="1" max="100" step="1" [(ngModel)]="c.maximoEnvios"></div>
+        <div class="col-md-6 col-xl-3"><label for="apos" class="form-label">Enviar até após vencer (dias) *</label>
+          <input id="apos" name="apos" class="form-control" type="number" required min="0" max="365" step="1" [(ngModel)]="c.diasAposVencimento"></div>
+        <div class="col-md-3"><label for="inicio" class="form-label">Hora inicial (0–23) *</label>
+          <input id="inicio" name="inicio" class="form-control" type="number" required min="0" max="23" step="1" [(ngModel)]="c.horaInicio"></div>
+        <div class="col-md-3"><label for="fim" class="form-label">Hora final (1–24, exclusiva) *</label>
+          <input id="fim" name="fim" class="form-control" type="number" required min="1" max="24" step="1" [(ngModel)]="c.horaFim"></div>
+        <div class="col-md-6"><label for="fuso" class="form-label">Fuso horário *</label>
+          <select id="fuso" name="fuso" class="form-select" required [(ngModel)]="c.fusoHorario">
+            <option value="America/Sao_Paulo">Brasília — America/Sao_Paulo</option>
+            <option value="America/Manaus">Manaus — America/Manaus</option>
+            <option value="America/Rio_Branco">Rio Branco — America/Rio_Branco</option>
+            <option value="America/Noronha">Fernando de Noronha — America/Noronha</option>
+          </select></div>
+      </div>
+      <p class="small text-muted mt-3">* Campos obrigatórios. O envio também exige integração WhatsApp habilitada e modelo aprovado na Meta. Previsões agendadas, concluídas e canceladas não recebem avisos.
+        O intervalo vale a partir do último envio; reiniciar o sistema não reinicia a contagem.</p>
+      <button type="submit" class="btn btn-primary" [disabled]="form.invalid || salvando || c.horaFim <= c.horaInicio">
+        {{ salvando ? 'Salvando…' : 'Salvar configuração' }}</button>
+      <button type="button" class="btn btn-outline-secondary ms-2" (click)="carregar()">Recarregar</button>
+    </fieldset>
+  </form>
+  <div class="card p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Histórico de envios</h5>
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="historico()">Atualizar</button></div>
+    <p class="small text-muted">Últimos 100 registros. ENVIADO indica aceitação pela API do WhatsApp, sem confirmação de entrega.
+      Em caso de erro ou interrupção, verifique o envio antes de confirmar ou liberar nova tentativa.</p>
+    <div class="table-responsive"><table class="table table-hover align-middle">
+      <thead><tr><th>Previsão</th><th>Data</th><th>Destinatário</th><th>Estado</th><th>Detalhe / conciliação</th></tr></thead>
+      <tbody><tr *ngFor="let e of envios"><td>{{ e.previsaoId }}</td><td>{{ e.criadoEm | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>{{ e.destinatario }}</td><td>{{ e.status }}</td><td>{{ e.detalhe }}
+          <div *ngIf="e.status === 'ERRO' || e.status === 'EM_PROCESSAMENTO'" class="mt-2">
+            <button type="button" class="btn btn-sm btn-outline-success me-2" (click)="conciliar(e, true)">Confirmar envio</button>
+            <button type="button" class="btn btn-sm btn-outline-warning" (click)="conciliar(e, false)">Liberar tentativa</button>
+          </div></td></tr>
+        <tr *ngIf="!envios.length"><td colspan="5" class="text-center text-muted">Nenhum envio registrado.</td></tr>
+      </tbody></table></div>
+  </div>
+</section>

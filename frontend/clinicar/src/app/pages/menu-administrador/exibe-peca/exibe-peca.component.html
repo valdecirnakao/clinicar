@@ -149,7 +149,7 @@
                       Tipo <i class="bi ms-1" [ngClass]="iconeOrdenacao('tipo')"></i>
                     </th>
                     <th scope="col" class="sortable" (click)="ordenarPor('especificacao')">
-                      Especificação <i class="bi ms-1" [ngClass]="iconeOrdenacao('especificacao')"></i>
+                      Especificação técnica <i class="bi ms-1" [ngClass]="iconeOrdenacao('especificacao')"></i>
                     </th>
                     <th scope="col" class="sortable" (click)="ordenarPor('fabricante')">
                       Fabricante <i class="bi ms-1" [ngClass]="iconeOrdenacao('fabricante')"></i>
@@ -178,7 +178,7 @@
                         {{ p.tipo || 'Sem tipo' }}
                       </span>
                     </td>
-                    <td>{{ exibirCaixaAlta(p.especificacao) }}</td>
+                    <td class="technical-spec-cell">{{ resumoEspecificacaoTecnica(p) }}</td>
                     <td>{{ exibirCapitalizado(p.fabricante) }}</td>
                     <td>{{ exibirCapitalizado(p.modelo) }}</td>
                     <td>
@@ -275,7 +275,7 @@
               </div>
 
               <div class="mobile-record-line"><strong>Modelo:</strong> {{ exibirCapitalizado(p.modelo) }}</div>
-              <div class="mobile-record-line"><strong>Especificação:</strong> {{ exibirCaixaAlta(p.especificacao) }}
+              <div class="mobile-record-line"><strong>Especificação técnica:</strong> {{ resumoEspecificacaoTecnica(p) }}
               </div>
               <div class="mobile-record-line"><strong>Norma:</strong> {{ exibirCaixaAlta(p.norma) }}</div>
               <div class="mobile-record-line"><strong>Unidade:</strong> {{ exibirCapitalizado(p.unidade) }}</div>

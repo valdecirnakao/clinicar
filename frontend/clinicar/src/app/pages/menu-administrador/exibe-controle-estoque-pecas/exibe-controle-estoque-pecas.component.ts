@@ -524,6 +524,10 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
       return this.quantidadeObrigatoriaInvalida(model.estoqueCritico, true);
     }
 
+    if (campo === 'custoMedio') {
+      return this.custoMedioInvalido(model);
+    }
+
     return false;
   }
 
@@ -542,6 +546,12 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
   reposicaoEstoquePendente(model: Partial<EstoquePeca>): boolean {
     return this.validarReposicaoEstoque(model) !== null;
+  }
+
+  custoMedioObrigatorio(model: Partial<EstoquePeca>): boolean {
+    const quantidadeAtual = this.numeroFormulario(model.quantidadeAtual);
+
+    return !Number.isNaN(quantidadeAtual) && quantidadeAtual > 0;
   }
 
   private ajustarPaginaAtual(): void {
@@ -590,11 +600,23 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
 
   private calcularProgressoEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean): number {
-    if (this.validarEstoque(model, validarPecaELocal) === null) {
-      return 100;
-    }
+    const verificacoesObrigatorias = this.verificacoesCamposObrigatorios(
+      model,
+      validarPecaELocal
+    );
 
-    const verificacoesObrigatorias = validarPecaELocal
+    const validos = verificacoesObrigatorias.filter(Boolean).length;
+    const percentual = Math.round((validos / verificacoesObrigatorias.length) * 100);
+
+    return Math.max(0, Math.min(100, percentual));
+  }
+
+
+  private verificacoesCamposObrigatorios(
+    model: Partial<EstoquePeca>,
+    validarPecaELocal: boolean
+  ): boolean[] {
+    const verificacoes = validarPecaELocal
       ? [
           !this.estoqueCampoInvalido(model, 'idPeca', true),
           !this.estoqueCampoInvalido(model, 'idLocalEstoque', true),
@@ -610,10 +632,11 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
           !this.estoqueCampoInvalido(model, 'estoqueCritico', false)
         ];
 
-    const validos = verificacoesObrigatorias.filter(Boolean).length;
-    const percentual = Math.round((validos / verificacoesObrigatorias.length) * 100);
+    if (this.custoMedioObrigatorio(model)) {
+      verificacoes.push(!this.estoqueCampoInvalido(model, 'custoMedio', false));
+    }
 
-    return Math.max(0, Math.min(99, percentual));
+    return verificacoes;
   }
 
 
@@ -831,33 +854,68 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
 
 
   private validarReposicaoEstoque(model: Partial<EstoquePeca>): string | null {
-    const minimo = Number(this.converterQuantidadeParaBackend(model.estoqueMinimo));
+    const minimo = this.numeroFormulario(model.estoqueMinimo);
 
     if (model.estoqueMaximo !== null && model.estoqueMaximo !== undefined && String(model.estoqueMaximo).trim() !== '') {
-      const maximo = Number(this.converterQuantidadeParaBackend(model.estoqueMaximo));
+      const maximo = this.numeroFormulario(model.estoqueMaximo);
 
-      if (Number.isNaN(maximo) || maximo < minimo) {
+      if (Number.isNaN(maximo) || maximo < 0) {
+        return 'Informe um estoque máximo válido, com valor igual ou maior que zero.';
+      }
+
+      if (!Number.isNaN(minimo) && maximo < minimo) {
         return 'O estoque máximo não pode ser menor que o estoque mínimo.';
       }
     }
 
     if (model.pontoReposicao !== null && model.pontoReposicao !== undefined && String(model.pontoReposicao).trim() !== '') {
-      const pontoReposicao = Number(this.converterQuantidadeParaBackend(model.pontoReposicao));
+      const pontoReposicao = this.numeroFormulario(model.pontoReposicao);
 
       if (Number.isNaN(pontoReposicao) || pontoReposicao < 0) {
-        return 'O ponto de reposição não pode ser negativo.';
+        return 'Informe um ponto de reposição válido, com valor igual ou maior que zero.';
       }
     }
 
     if (model.quantidadeReposicaoSugerida !== null && model.quantidadeReposicaoSugerida !== undefined && String(model.quantidadeReposicaoSugerida).trim() !== '') {
-      const reposicao = Number(this.converterQuantidadeParaBackend(model.quantidadeReposicaoSugerida));
+      const reposicao = this.numeroFormulario(model.quantidadeReposicaoSugerida);
 
       if (Number.isNaN(reposicao) || reposicao < 0) {
-        return 'A quantidade de reposição sugerida não pode ser negativa.';
+        return 'Informe uma quantidade de reposição válida, com valor igual ou maior que zero.';
+      }
+    }
+
+    const custoMedioVazio = model.custoMedio === null
+      || model.custoMedio === undefined
+      || String(model.custoMedio).trim() === '';
+
+    if (this.custoMedioObrigatorio(model) && custoMedioVazio) {
+      return 'Informe o custo médio quando a quantidade atual for maior que zero.';
+    }
+
+    if (!custoMedioVazio) {
+      const custoMedio = this.numeroFormulario(model.custoMedio, true);
+
+      if (Number.isNaN(custoMedio) || custoMedio < 0) {
+        return 'Informe um custo médio válido, com valor igual ou maior que zero.';
       }
     }
 
     return null;
+  }
+
+
+  private custoMedioInvalido(model: Partial<EstoquePeca>): boolean {
+    const custoMedioVazio = model.custoMedio === null
+      || model.custoMedio === undefined
+      || String(model.custoMedio).trim() === '';
+
+    if (custoMedioVazio) {
+      return this.custoMedioObrigatorio(model);
+    }
+
+    const custoMedio = this.numeroFormulario(model.custoMedio, true);
+
+    return Number.isNaN(custoMedio) || custoMedio < 0;
   }
 
   private quantidadeObrigatoriaInvalida(valor: any, permitirZero: boolean): boolean {
@@ -865,13 +923,38 @@ export class ExibeControleEstoquePecasComponent implements OnInit {
       return true;
     }
 
-    const numero = this.numeroEstoque(valor);
+    const numero = this.numeroFormulario(valor);
 
     if (Number.isNaN(numero)) {
       return true;
     }
 
     return permitirZero ? numero < 0 : numero <= 0;
+  }
+
+
+  private numeroFormulario(valor: any, removerMoeda = false): number {
+    if (valor === null || valor === undefined || String(valor).trim() === '') {
+      return Number.NaN;
+    }
+
+    if (typeof valor === 'number') {
+      return Number.isFinite(valor) ? valor : Number.NaN;
+    }
+
+    let texto = String(valor).replace(/\s/g, '').trim();
+
+    if (removerMoeda) {
+      texto = texto.replace('R$', '');
+    }
+
+    if (texto.includes(',')) {
+      texto = texto.replace(/\./g, '').replace(',', '.');
+    }
+
+    const numero = Number(texto);
+
+    return Number.isFinite(numero) ? numero : Number.NaN;
   }
 
 

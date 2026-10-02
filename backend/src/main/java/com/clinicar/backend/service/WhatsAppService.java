@@ -60,6 +60,9 @@ public class WhatsAppService {
     @Value("${meta.whatsapp.templates.alerta-estoque:alerta_estoque_peca}")
     private String templateAlertaEstoque;
 
+    @Value("${meta.whatsapp.templates.alerta-manutencao:alerta_manutencao_preventiva}")
+    private String templateAlertaManutencao;
+
     @Value("${meta.whatsapp.estoque.telefone-administrador:}")
     private String telefoneAdministradorEstoque;
 
@@ -253,6 +256,14 @@ public class WhatsAppService {
                         localFormatado
                 )
         );
+    }
+
+    /** Corpo aprovado: nome, placa, manutenção e data prevista, nesta ordem. */
+    public String enviarAlertaManutencao(String telefone, String nome, String placa,
+            String descricao, String dataPrevista) {
+        return enviarTemplate(telefone, templateAlertaManutencao,
+                List.of(nomeNotificacao(nome), valorSeguro(placa, "Veículo"),
+                        valorSeguro(descricao, "manutenção preventiva"), dataPrevista));
     }
 
     private String enviarTemplate(

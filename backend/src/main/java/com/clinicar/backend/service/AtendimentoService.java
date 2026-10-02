@@ -315,6 +315,11 @@ public class AtendimentoService {
 
     @Transactional
     public Atendimento concluir(Long id) {
+        return concluir(id, null);
+    }
+
+    @Transactional
+    public Atendimento concluir(Long id, Integer quilometragemSaida) {
         log.info("[ATENDIMENTO] Iniciando conclusão do atendimento ID {}.", id);
 
         Atendimento atendimento = buscarPorId(id);
@@ -330,6 +335,10 @@ public class AtendimentoService {
         if ("CONCLUIDO".equals(atendimento.getStatusAtendimento())) {
             return atendimento;
         }
+
+        Integer kmSaida = quilometragemSaida != null ? quilometragemSaida : atendimento.getQuilometragemSaida();
+        validarQuilometragens(atendimento.getQuilometragemEntrada(), kmSaida, true);
+        atendimento.setQuilometragemSaida(kmSaida);
 
         LocalDateTime agora = LocalDateTime.now();
 
@@ -364,6 +373,7 @@ public class AtendimentoService {
          */
         atendimentoEstoqueService.baixarPecasDoAtendimento(atendimento);
 
+        atendimento.preservarDadosVeiculo();
         atendimento.setStatusAtendimento("CONCLUIDO");
 
         if (atendimento.getInicioReal() == null) {
@@ -390,22 +400,16 @@ public class AtendimentoService {
         Atendimento salvo = atendimentoRepository.save(atendimento);
         Atendimento recalculado = recalcularTotaisComSeguranca(salvo);
 
-        try {
-            previsaoManutencaoService.gerarPrevisoesDoAtendimento(salvo.getId());
-        } catch (Exception e) {
-            log.warn(
-                    "[ATENDIMENTO] Atendimento ID {} foi concluído, mas não foi possível gerar previsões de manutenção preventiva: {}",
-                    salvo.getId(),
-                    e.getMessage()
-            );
-        }
+        previsaoManutencaoService.gerarPrevisoesDoAtendimento(salvo.getId());
 
         return recalculado;
     }
 
     @Transactional
     public Atendimento entregar(Long id) {
-        Atendimento atendimento = buscarPorId(id);
+        validarIdObrigatorio(id, "Atendimento");
+        Atendimento atendimento = atendimentoRepository.buscarParaEmissaoOs(id)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado."));
 
         if (!"CONCLUIDO".equals(atendimento.getStatusAtendimento())) {
             throw new IllegalArgumentException("Somente atendimento concluído pode ser marcado como entregue.");
@@ -433,7 +437,9 @@ public class AtendimentoService {
 
     @Transactional
     public Atendimento reenviarOrdemServicoEmail(Long id) {
-        Atendimento atendimento = buscarPorId(id);
+        validarIdObrigatorio(id, "Atendimento");
+        Atendimento atendimento = atendimentoRepository.buscarParaEmissaoOs(id)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado."));
 
         if (!"CONCLUIDO".equals(atendimento.getStatusAtendimento())
                 && !"ENTREGUE".equals(atendimento.getStatusAtendimento())) {
@@ -521,8 +527,8 @@ public class AtendimentoService {
 
         validarDatas(dataEntrada, inicioReal, fimReal, dataEntrega);
 
-        validarQuilometragem(request.getQuilometragemEntrada(), "Quilometragem de entrada");
-        validarQuilometragem(request.getQuilometragemSaida(), "Quilometragem de saída");
+        validarQuilometragens(request.getQuilometragemEntrada(), request.getQuilometragemSaida(),
+                "CONCLUIDO".equals(status) || "ENTREGUE".equals(status));
 
         Integer garantiaDias = request.getGarantiaDias() == null
                 ? 0
@@ -714,6 +720,17 @@ public class AtendimentoService {
     private void validarQuilometragem(Integer valor, String campo) {
         if (valor != null && valor < 0) {
             throw new IllegalArgumentException(campo + " não pode ser negativa.");
+        }
+    }
+
+    private void validarQuilometragens(Integer entrada, Integer saida, boolean saidaObrigatoria) {
+        if (saidaObrigatoria && saida == null) {
+            throw new IllegalArgumentException("Informe a quilometragem de saída para concluir o atendimento.");
+        }
+        validarQuilometragem(entrada, "Quilometragem de entrada");
+        validarQuilometragem(saida, "Quilometragem de saída");
+        if (entrada != null && saida != null && saida < entrada) {
+            throw new IllegalArgumentException("A quilometragem de saída não pode ser menor que a quilometragem de entrada.");
         }
     }
 

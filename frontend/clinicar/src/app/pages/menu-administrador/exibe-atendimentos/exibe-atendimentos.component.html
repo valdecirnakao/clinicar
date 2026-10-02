@@ -2092,3 +2092,29 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="modalConclusaoAtendimento" tabindex="-1" aria-labelledby="tituloConclusaoAtendimento" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border:1px solid #d0e2f2; color:#35689b;">
+      <form (ngSubmit)="confirmarConclusao()">
+        <div class="modal-header" style="background:#eef6ff;">
+          <h5 class="modal-title" id="tituloConclusaoAtendimento">Concluir atendimento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" [disabled]="concluindo"></button>
+        </div>
+        <div class="modal-body">
+          <p>Confirme a quilometragem de saída para concluir o atendimento <strong>{{ atendimentoConclusao?.codigoAtendimento }}</strong>.</p>
+          <p class="small">KM de entrada: <strong>{{ atendimentoConclusao?.quilometragemEntrada ?? 'Não informado' }}</strong></p>
+          <label for="kmSaidaConclusao" class="form-label">KM de saída <span aria-hidden="true">*</span></label>
+          <input id="kmSaidaConclusao" name="kmSaidaConclusao" type="number" class="form-control" required
+            [min]="atendimentoConclusao?.quilometragemEntrada ?? 0" max="2147483647" step="1"
+            [(ngModel)]="quilometragemSaidaConclusao" [disabled]="concluindo" aria-describedby="ajudaKmSaida">
+          <div id="ajudaKmSaida" class="form-text">Informe a leitura do hodômetro em quilômetros inteiros. O valor deve ser igual ou superior ao KM de entrada.</div>
+          <div class="alert alert-danger mt-3 mb-0" *ngIf="erroConclusao" role="alert">{{ erroConclusao }}</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" [disabled]="concluindo">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="background:#35689b; border-color:#35689b;" [disabled]="concluindo">{{ concluindo ? 'Concluindo...' : 'Confirmar conclusão' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

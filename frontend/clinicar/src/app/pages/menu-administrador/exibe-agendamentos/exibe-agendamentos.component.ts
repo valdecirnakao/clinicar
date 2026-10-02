@@ -103,6 +103,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   modalConfirmacao: any;
 
   editandoId: number | null = null;
+  private agendamentoOriginalEdicao: Agendamento | null = null;
   editandoPecaId: number | null = null;
 
   private tempPecaId = -1;
@@ -417,6 +418,7 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   abrirModalCadastro(): void {
     this.editandoId = null;
+    this.agendamentoOriginalEdicao = null;
     this.abaNovoAgendamento = 'agendamento';
     this.mensagemErroModal = '';
     this.mensagemDisponibilidadeResponsavel = '';
@@ -478,6 +480,7 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   abrirModalEdicao(item: Agendamento): void {
     this.editandoId = item.id ?? null;
+    this.agendamentoOriginalEdicao = { ...item, idVeiculo: item.idVeiculo ?? item.veiculo?.id };
     this.abaNovoAgendamento = 'agendamento';
     this.mensagemErroModal = '';
     this.mensagemDisponibilidadeResponsavel = '';
@@ -558,6 +561,10 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   labelVeiculo(veiculo: VeiculoResumo): string {
+    const original = this.agendamentoOriginalEdicao;
+    if (this.editandoId && original && Number(veiculo.id) === Number(original.idVeiculo)) {
+      return `${this.formatarPlaca(original.placaVeiculo)} │ ${this.capitalizar(original.modeloVeiculo || '')}`.trim();
+    }
     const placa = this.placaDoVeiculo(veiculo);
     const modelo = this.capitalizar(this.modeloDoVeiculo(veiculo));
 
@@ -566,6 +573,15 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   selecionarVeiculo(): void {
     const idVeiculo = Number(this.novoAgendamento.idVeiculo);
+    const original = this.agendamentoOriginalEdicao;
+    if (this.editandoId && original && idVeiculo === Number(original.idVeiculo)) {
+      this.novoAgendamento.placaVeiculo = original.placaVeiculo;
+      this.novoAgendamento.fabricanteVeiculo = original.fabricanteVeiculo;
+      this.novoAgendamento.modeloVeiculo = original.modeloVeiculo;
+      this.novoAgendamento.corVeiculo = original.corVeiculo;
+      this.novoAgendamento.anoModeloCombustivelVeiculo = original.anoModeloCombustivelVeiculo;
+      return;
+    }
 
     const veiculo = this.veiculos.find(v => Number(v.id) === idVeiculo);
 

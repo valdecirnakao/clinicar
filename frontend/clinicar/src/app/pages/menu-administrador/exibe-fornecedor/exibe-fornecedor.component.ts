@@ -48,6 +48,8 @@ type CampoObrigatorioFornecedor =
 })
 export class ExibeFornecedorComponent implements OnInit {
 
+  camposInvalidosEdicao: string[] = [];
+  mensagemErroCadastro = '';
   fornecedores: Fornecedor[] = [];
   private todos: Fornecedor[] = [];
 
@@ -739,6 +741,12 @@ export class ExibeFornecedorComponent implements OnInit {
     }
 
     return `${d.slice(0, 5)}-${d.slice(5, 8)}`;
+  }
+
+
+
+  formatarTelefoneCadastro(): void {
+    this.novoFornecedor.telefone = this.exibirTelefoneFormatado(this.novoFornecedor.telefone);
   }
 
   exibirTelefoneFormatado(telefone: string | null | undefined): string {

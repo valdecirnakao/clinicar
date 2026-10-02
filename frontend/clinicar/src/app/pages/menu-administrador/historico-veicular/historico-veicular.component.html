@@ -1,0 +1,108 @@
+<div class="container-fluid historico-page">
+  <div class="card page-title-card mb-2"><div class="card-body text-center"><i class="bi bi-clock-history me-2"></i>Histórico veicular</div></div>
+  <section class="card clinicar-card mb-3" aria-label="Filtros do relatório">
+    <div class="card-body">
+      <form (ngSubmit)="consultar()" class="row g-3 align-items-end">
+        <div class="col-lg-5"><label for="historicoVeiculo" class="form-label">Veículo</label>
+          <select id="historicoVeiculo" name="veiculo" class="form-select" [(ngModel)]="veiculoId" (ngModelChange)="limparResultado()">
+            <option [ngValue]="null">Selecione um veículo</option>
+            <option *ngFor="let v of veiculos" [ngValue]="v.id">{{ v.placa }} | {{ v.fabricante }} {{ v.modelo }}</option>
+          </select></div>
+        <div class="col-sm-6 col-lg-2"><label for="historicoInicio" class="form-label">Data inicial</label><input id="historicoInicio" name="inicio" type="date" class="form-control" [(ngModel)]="inicio" (ngModelChange)="limparResultado()"></div>
+        <div class="col-sm-6 col-lg-2"><label for="historicoFim" class="form-label">Data final</label><input id="historicoFim" name="fim" type="date" class="form-control" [(ngModel)]="fim" (ngModelChange)="limparResultado()"></div>
+        <div class="col-lg-3"><label for="historicoSituacao" class="form-label">Situação</label><select id="historicoSituacao" name="situacao" class="form-select" [(ngModel)]="situacao" (ngModelChange)="limparResultado()"><option value="TODOS">Todas</option><option value="FINALIZADOS">Finalizados</option><option value="EM_ABERTO">Em aberto</option><option value="CANCELADOS">Cancelados</option></select></div>
+        <div class="col-12 d-flex flex-wrap align-items-center gap-2">
+          <button class="btn btn-clinicar-primary" type="submit" [disabled]="!veiculoId || carregando"><i class="bi bi-search me-1"></i>{{ carregando ? 'Consultando...' : 'Consultar histórico' }}</button>
+          <button class="btn btn-outline-primary" type="button" (click)="exportar()" [disabled]="!relatorio || carregando || exportando"><i class="bi bi-file-earmark-pdf me-1"></i>{{ exportando ? 'Gerando PDF...' : 'Exportar PDF' }}</button>
+          <a routerLink="../exibeVeiculo" class="btn btn-outline-secondary ms-sm-auto">Voltar aos veículos</a>
+        </div>
+      </form>
+    </div>
+  </section>
+  <div class="alert alert-danger" *ngIf="erro" role="alert">{{ erro }}</div>
+  <div class="text-center py-4" *ngIf="carregando" role="status"><span class="spinner-border spinner-border-sm me-2"></span>Carregando histórico...</div>
+  <div class="empty-state" *ngIf="!relatorio && !carregando && !erro"><i class="bi bi-car-front"></i><h2>Conheça a trajetória do veículo</h2><p>Selecione um veículo para consultar agendamentos, atendimentos e manutenções. As datas são opcionais.</p></div>
+  <ng-container *ngIf="relatorio as r">
+    <section class="card clinicar-card mb-3"><div class="card-body vehicle-heading"><div><small>Cadastro atual</small><h2>{{ r.veiculo.placa }} <span>{{ r.veiculo.fabricante }} {{ r.veiculo.modelo }}</span></h2><p class="mb-0">{{ r.veiculo.cor }} · {{ r.veiculo.anoModeloCombustivel }}</p></div><small>Consulta em {{ r.geradoEm | date:'dd/MM/yyyy HH:mm' }}</small></div></section>
+    <div class="row g-2 mb-3">
+      <div class="col-sm-6 col-lg-3"><div class="summary-card"><i class="bi bi-calendar-check"></i><div><small>Agendamentos</small><strong>{{ r.resumo.agendamentos }}</strong></div></div></div>
+      <div class="col-sm-6 col-lg-3"><div class="summary-card"><i class="bi bi-tools"></i><div><small>Atendimentos finalizados</small><strong>{{ r.resumo.finalizados }} <span>de {{ r.resumo.atendimentos }}</span></strong></div></div></div>
+      <div class="col-sm-6 col-lg-3"><div class="summary-card"><i class="bi bi-cash-coin"></i><div><small>Total dos finalizados</small><strong>{{ dinheiro(r.resumo.valorFinalizados) }}</strong></div></div></div>
+      <div class="col-sm-6 col-lg-3"><div class="summary-card"><i class="bi bi-speedometer2"></i><div><small>Última km no período</small><strong>{{ r.resumo.ultimaQuilometragem ?? 'Não informada' }}</strong></div></div></div>
+    </div>
+    <p class="report-note">O total considera apenas atendimentos concluídos ou entregues. Os valores de agendamentos são estimativas. O período usa a data agendada ou a entrada do atendimento.</p>
+    <div class="empty-state" *ngIf="!r.registros.length"><i class="bi bi-search"></i><h2>Nenhum registro encontrado</h2><p>Experimente ampliar o período ou selecionar outra situação.</p></div>
+    <section class="timeline" aria-label="Linha do tempo do veículo">
+      <article class="card clinicar-card history-record" *ngFor="let registro of registrosPagina">
+        <div class="record-heading"><div><span class="record-type">{{ rotulo(registro.tipo) }}</span><h3>{{ registro.codigo }}</h3><small>{{ registro.data | date:'dd/MM/yyyy HH:mm' }}</small></div><span class="badge" [class.badge-success]="registro.finalizado" [class.badge-neutral]="!registro.finalizado">{{ rotulo(registro.status) }}</span></div>
+        <div class="card-body">
+          <div class="record-vehicle"><i class="bi bi-car-front me-2"></i><strong>{{ registro.placa }}</strong> · {{ registro.fabricante }} {{ registro.modelo }}<small>{{ registro.cor }} · {{ registro.anoModeloCombustivel }}</small></div>
+          <p class="text-muted small mt-2" *ngIf="!registro.veiculoPreservado">Este registro não possui dados históricos preservados; a identificação exibida vem do cadastro disponível.</p>
+          <div class="record-metrics"><span>Km de entrada: <strong>{{ registro.kmEntrada ?? 'Não informada' }}</strong></span><span *ngIf="registro.tipo === 'ATENDIMENTO'">Km de saída: <strong>{{ registro.kmSaida ?? 'Não informada' }}</strong></span><span>{{ registro.tipo === 'AGENDAMENTO' ? 'Valor estimado' : 'Valor do atendimento' }}: <strong>{{ dinheiro(registro.valor) }}</strong></span></div>
+          <div class="row g-3 mt-1"><div class="col-md-6" *ngIf="registro.queixa"><h4>Relato do cliente</h4><p class="narrative">{{ registro.queixa }}</p></div><div class="col-md-6" *ngIf="registro.diagnostico"><h4>Diagnóstico</h4><p class="narrative">{{ registro.diagnostico }}</p></div><div class="col-md-6" *ngIf="registro.execucao"><h4>Serviço realizado</h4><p class="narrative">{{ registro.execucao }}</p></div><div class="col-md-6" *ngIf="registro.recomendacoes"><h4>Recomendações</h4><p class="narrative">{{ registro.recomendacoes }}</p></div></div>
+          <div class="table-responsive" *ngIf="registro.itens.length"><table class="table table-sm align-middle mb-0"><caption class="visually-hidden">Serviços e peças registrados no atendimento {{ registro.codigo }}</caption><thead><tr><th>Serviço ou peça</th><th>Quantidade</th><th class="text-end">Valor</th></tr></thead><tbody><tr *ngFor="let item of registro.itens"><td><span class="item-type">{{ item.tipo === 'PECA' ? 'Peça' : 'Serviço' }}</span> {{ item.descricao }}</td><td>{{ item.quantidade }} {{ item.unidade }}</td><td class="text-end text-nowrap">{{ dinheiro(item.valorTotal) }}</td></tr></tbody></table></div>
+        </div>
+      </article>
+    </section>
+            <div class="table-pagination-footer" *ngIf="totalRegistros > 0">
+              <div class="pagination-info">
+                Mostrando
+                <strong>{{ indiceInicialPagina }}</strong>
+                a
+                <strong>{{ indiceFinalPagina }}</strong>
+                de
+                <strong>{{ totalRegistros }}</strong>
+                registro(s)
+              </div>
+
+              <div class="pagination-size">
+                <label for="historicoTamanhoPagina">Exibir</label>
+
+                <select
+                  id="historicoTamanhoPagina" class="form-select form-select-sm"
+                  [(ngModel)]="itensPorPagina"
+                  (ngModelChange)="aoAlterarItensPorPagina()"
+                  style="color:#35689b;"
+                >
+                  <option *ngFor="let opcao of opcoesItensPorPagina" [ngValue]="opcao">
+                    {{ opcao }}
+                  </option>
+                </select>
+
+                <span>por página</span>
+              </div>
+
+              <div class="pagination-actions">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="pagina === 1" (click)="irParaPagina(1)" aria-label="Primeira página">
+                  <i class="bi bi-chevron-double-left"></i>
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="pagina === 1" (click)="irParaPagina(pagina - 1)">
+                  <i class="bi bi-chevron-left"></i>
+                  Anterior
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  *ngFor="let numero of paginasVisiveis()"
+                  [class.btn-primary]="pagina === numero" [attr.aria-current]="pagina === numero ? 'page' : null" [attr.aria-label]="'Página ' + numero"
+                  [class.btn-outline-primary]="pagina !== numero"
+                  (click)="irParaPagina(numero)"
+                >
+                  {{ numero }}
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="pagina === totalPaginas" (click)="irParaPagina(pagina + 1)">
+                  Próxima
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="pagina === totalPaginas" (click)="irParaPagina(totalPaginas)" aria-label="Última página">
+                  <i class="bi bi-chevron-double-right"></i>
+                </button>
+              </div>
+            </div>
+    <p class="report-note">A exportação inclui todos os registros dos filtros selecionados. Os nomes dos serviços e peças seguem os cadastros disponíveis na consulta. As OS originais permanecem preservadas.</p>
+  </ng-container>
+</div>

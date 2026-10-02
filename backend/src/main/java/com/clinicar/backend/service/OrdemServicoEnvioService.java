@@ -44,7 +44,17 @@ public class OrdemServicoEnvioService {
                 throw new IllegalArgumentException("Cliente não possui e-mail cadastrado.");
             }
 
-            byte[] pdf = ordemServicoPdfService.gerarPdf(atendimento);
+            byte[] pdf = atendimento.getOsPdfOriginal();
+            if (pdf == null || pdf.length == 0) {
+                if (atendimento.getOsPdfGeradaEm() != null || Boolean.TRUE.equals(atendimento.getOsEnviadaEmail())) {
+                    throw new IllegalStateException("Esta OS foi emitida antes da preservação do PDF original. "
+                            + "Recupere o documento original para reenviar sem alterar o histórico.");
+                }
+                atendimento.preservarDadosVeiculo();
+                pdf = ordemServicoPdfService.gerarPdf(atendimento);
+                atendimento.setOsPdfOriginal(pdf);
+                atendimento.setOsPdfGeradaEm(LocalDateTime.now());
+            }
             String nomeArquivo = ordemServicoPdfService.gerarNomeArquivo(atendimento);
 
             String assunto = "CliniCar - Ordem de Serviço " + atendimento.getCodigoAtendimento();
@@ -59,14 +69,12 @@ public class OrdemServicoEnvioService {
                     pdf
             );
 
-            atendimento.setOsPdfGeradaEm(LocalDateTime.now());
             atendimento.setOsEnviadaEmail(true);
             atendimento.setOsEnviadaEmailEm(LocalDateTime.now());
             atendimento.setOsEmailDestino(emailCliente);
             atendimento.setOsUltimoErro(null);
 
         } catch (Exception e) {
-            atendimento.setOsPdfGeradaEm(LocalDateTime.now());
             atendimento.setOsEnviadaEmail(false);
             atendimento.setOsEnviadaEmailEm(null);
             atendimento.setOsUltimoErro(resumirErro(e));

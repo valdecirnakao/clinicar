@@ -5,6 +5,9 @@ import { Observable } from 'rxjs';
 const API_BASE = '';
 
 export interface Usuario {
+  podeExcluir?: boolean;
+  podeInativar?: boolean;
+  motivoBloqueioInativacao?: string;
   id?: number;
   cpf: string;
   nome: string;
@@ -49,6 +52,18 @@ export class UsuarioService {
     });
   }
 
+  verificarCpfCadastrado(cpf: string): Observable<{ cadastrado: boolean }> {
+    return this.http.get<{ cadastrado: boolean }>(`${this.baseUrl}/validar-cpf`, {
+      params: { cpf: this.onlyDigits(cpf) }, withCredentials: true
+    });
+  }
+
+  verificarEmailCadastrado(email: string): Observable<{ cadastrado: boolean }> {
+    return this.http.get<{ cadastrado: boolean }>(`${this.baseUrl}/validar-email`, {
+      params: { email: email.trim().toLowerCase() }, withCredentials: true
+    });
+  }
+
   buscarPorCpf(cpf: string): Observable<Usuario> {
     const clean = this.onlyDigits(cpf);
 
@@ -78,14 +93,15 @@ export class UsuarioService {
     });
   }
 
-  removerUsuario(id: number): Observable<void> {
+  removerUsuario(id: number, justificativa: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`, {
+      body: { justificativa },
       withCredentials: true
     });
   }
 
-  resetarMfa(id: number): Observable<{ mensagem: string }> {
-    return this.http.put<{ mensagem: string }>(`${this.baseUrl}/${id}/resetar-mfa`, {}, {
+  resetarMfa(id: number, justificativa: string): Observable<{ mensagem: string }> {
+    return this.http.put<{ mensagem: string }>(`${this.baseUrl}/${id}/resetar-mfa`, { justificativa }, {
       withCredentials: true
     });
   }
