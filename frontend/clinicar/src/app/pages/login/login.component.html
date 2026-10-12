@@ -3,7 +3,7 @@
     src="assets/img/LogoClinicar.png"
     alt="CliniCar Logo"
     class="img-fluid logo-img object-fit-md-scale"
-  />
+    />
 </div>
 <div class="container mt-2 py-0 mt-0 mb-0 w-100" style="color: #35689b;">
   <div class="row justify-content-center">
@@ -14,7 +14,8 @@
         <!-- Login -->
         <div class="col-md-6 border-end pe-md-4 border-md-end-0" id="comcadastro">
           <h4>Já tenho cadastro</h4>
-          <form (ngSubmit)="login()">
+          <form data-help-scope="login" (ngSubmit)="login()">
+            <app-field-help-panel></app-field-help-panel>
             <div class="mb-3">
               <label for="loginEmail" class="form-label">Email</label>
               <input type="email" class="form-control" id="loginEmail" placeholder="Digite seu email"[(ngModel)]="email" name="email" (click)="erroLogin = false">
@@ -23,20 +24,22 @@
               <label for="loginSenha" class="form-label">Senha</label>
               <input type="password" class="form-control" id="loginSenha" placeholder="Digite sua senha"[(ngModel)]="senha" name="senha">
             </div>
-              <div class="col-md-6 mb-3 justify-content-between">
-                <button type="submit" class="btn btn-primary">Entrar</button>
-              </div>
+            <div class="col-md-6 mb-3 justify-content-between">
+              <button type="submit" class="btn btn-primary">Entrar</button>
+            </div>
           </form>
           <div class="col-md-6 mb-2 justify-content-between">
             <button class="btn btn-secondary" routerLink="/esqueci-senha">Esqueci minha senha</button>
           </div>
 
-          <div *ngIf="erroLogin"  class="alert alert-danger mt-3">
-            {{ mensagemErro }}
-          </div>
+          @if (erroLogin) {
+            <div  class="alert alert-danger mt-3">
+              {{ mensagemErro }}
+            </div>
+          }
         </div>
 
-          <!-- Cadastro -->
+        <!-- Cadastro -->
         <div class="col-md-6 pe-md-10" id="semcadastro">
           <h4>Ainda não tenho cadastro</h4>
           <p>Clique abaixo para se cadastrar:</p>
@@ -46,10 +49,14 @@
           <button type="button" class="btn btn-link setup-link p-0" (click)="primeiroAcesso()" [disabled]="consultandoSetup">
             {{ consultandoSetup ? 'Consultando...' : 'Primeiro acesso?' }}
           </button>
-          <div *ngIf="mensagemSetup" class="alert alert-info mt-3" role="status">
-            {{ mensagemSetup }}
-            <a *ngIf="aguardandoAtivacao" routerLink="/primeiro-acesso" class="d-block mt-2">Consultar orientações e reenviar ativação</a>
-          </div>
+          @if (mensagemSetup) {
+            <div class="alert alert-info mt-3" role="status">
+              {{ mensagemSetup }}
+              @if (aguardandoAtivacao) {
+                <a routerLink="/primeiro-acesso" class="d-block mt-2">Consultar orientações e reenviar ativação</a>
+              }
+            </div>
+          }
         </div>
       </div>
     </div>

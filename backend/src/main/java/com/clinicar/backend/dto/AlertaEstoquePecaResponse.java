@@ -8,6 +8,16 @@ import java.time.LocalDateTime;
 @Data
 public class AlertaEstoquePecaResponse {
 
+
+    private LocalDateTime reconhecidoEm;
+    private Long idUsuarioReconhecimento;
+    private String nomeUsuarioReconhecimento;
+    private LocalDateTime encerradoEm;
+    private Long idUsuarioEncerramento;
+    private String nomeUsuarioEncerramento;
+    private String justificativaEncerramento;
+    private Boolean excecaoAtiva = false;
+
     private Long id;
 
     private Long idEstoquePeca;
@@ -30,6 +40,7 @@ public class AlertaEstoquePecaResponse {
     private String whatsappMessageId;
 
     private Integer tentativasEnvio;
+    private LocalDateTime ultimaTentativaEm;
     private String ultimoErro;
 
     private LocalDateTime criadoEm;

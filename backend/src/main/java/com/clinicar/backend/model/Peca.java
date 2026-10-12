@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "peca")
+@Table(name = "peca", uniqueConstraints = @UniqueConstraint(name = "uk_peca_chave_catalogo", columnNames = {"chave_catalogo"}))
 @Getter
 @Setter
 public class Peca {
@@ -16,6 +16,10 @@ public class Peca {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", columnDefinition = "BIGINT UNSIGNED")
     private Long id;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "chave_catalogo", length = 64)
+    private String chaveCatalogo;
 
     @Column(name = "nome", nullable = false, length = 200)
     private String nome;
@@ -67,6 +71,7 @@ public class Peca {
 
     @PrePersist
     public void prePersist() {
+        chaveCatalogo = com.clinicar.backend.util.IdentidadePeca.chave(this);
         if (criadoEm == null) {
             criadoEm = LocalDateTime.now();
         }
@@ -74,6 +79,7 @@ public class Peca {
 
     @PreUpdate
     public void preUpdate() {
+        chaveCatalogo = com.clinicar.backend.util.IdentidadePeca.chave(this);
         atualizadoEm = LocalDateTime.now();
     }
 }

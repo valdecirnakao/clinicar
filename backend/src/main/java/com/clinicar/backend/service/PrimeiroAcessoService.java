@@ -939,72 +939,7 @@ public class PrimeiroAcessoService {
             );
         }
 
-        if (senha.length() < 8) {
-
-            throw new IllegalArgumentException(
-                    "A senha deve possuir pelo menos 8 caracteres."
-            );
-        }
-
-        if (senha.length() > 128) {
-
-            throw new IllegalArgumentException(
-                    "A senha excede o tamanho máximo permitido."
-            );
-        }
-
-        boolean possuiMaiuscula =
-                senha.chars()
-                        .anyMatch(
-                                Character::isUpperCase
-                        );
-
-        boolean possuiMinuscula =
-                senha.chars()
-                        .anyMatch(
-                                Character::isLowerCase
-                        );
-
-        boolean possuiNumero =
-                senha.chars()
-                        .anyMatch(
-                                Character::isDigit
-                        );
-
-        boolean possuiEspecial =
-                senha.chars()
-                        .anyMatch(c ->
-                                !Character.isLetterOrDigit(c) &&
-                                !Character.isWhitespace(c)
-                        );
-
-        if (!possuiMaiuscula) {
-
-            throw new IllegalArgumentException(
-                    "A senha deve possuir pelo menos uma letra maiúscula."
-            );
-        }
-
-        if (!possuiMinuscula) {
-
-            throw new IllegalArgumentException(
-                    "A senha deve possuir pelo menos uma letra minúscula."
-            );
-        }
-
-        if (!possuiNumero) {
-
-            throw new IllegalArgumentException(
-                    "A senha deve possuir pelo menos um número."
-            );
-        }
-
-        if (!possuiEspecial) {
-
-            throw new IllegalArgumentException(
-                    "A senha deve possuir pelo menos um caractere especial."
-            );
-        }
+        com.clinicar.backend.util.PoliticaSenha.validar(senha);
     }
 
     // =========================================================

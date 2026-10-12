@@ -30,4 +30,5 @@ public interface AlertaEstoquePecaRepository
             Long estoquePecaId,
             String statusAlerta
     );
-}
+    @org.springframework.data.jpa.repository.Query("select a.estoquePeca.id from AlertaEstoquePeca a where a.id = :id")
+    Optional<Long> buscarIdEstoque(@org.springframework.data.repository.query.Param("id") Long id);}

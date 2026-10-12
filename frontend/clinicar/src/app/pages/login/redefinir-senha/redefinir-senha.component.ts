@@ -1,3 +1,6 @@
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
+import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -5,15 +8,14 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service.ts.service';
 
 @Component({
-  selector: 'app-redefinir-senha',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterModule
-  ],
-  templateUrl: './redefinir-senha.component.html',
-  styleUrl: './redefinir-senha.component.css'
+    selector: 'app-redefinir-senha',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective,
+        CommonModule,
+        FormsModule,
+        RouterModule
+    ],
+    templateUrl: './redefinir-senha.component.html',
+    styleUrl: './redefinir-senha.component.css'
 })
 export class RedefinirSenhaComponent implements OnInit {
 

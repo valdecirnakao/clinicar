@@ -45,6 +45,12 @@ public class MovimentacaoEstoquePeca {
 
     @Column(length = 80)
     private String origem;
+    @Column(name = "id_movimentacao_origem")
+    private Long idMovimentacaoOrigem;
+    @Column(name = "id_fornecedor", columnDefinition = "BIGINT UNSIGNED")
+    private Long idFornecedor;
+    @Column(name = "nome_fornecedor", length = 255)
+    private String nomeFornecedor;
 
     @Column(name = "documento_referencia", length = 120)
     private String documentoReferencia;
@@ -57,6 +63,16 @@ public class MovimentacaoEstoquePeca {
 
     @Column(name = "id_usuario")
     private Long idUsuario;
+    @Column(name = "nome_usuario", length = 255)
+    private String nomeUsuario;
+    @Column(name = "id_atendimento", columnDefinition = "BIGINT UNSIGNED")
+    private Long idAtendimento;
+    @Column(name = "custo_unitario_estoque", precision = 10, scale = 2)
+    private BigDecimal custoUnitarioEstoque;
+    @Column(name = "tratamento_cobranca", length = 40)
+    private String tratamentoCobranca;
+    @Column(name = "valor_restituicao", precision = 10, scale = 2)
+    private BigDecimal valorRestituicao;
 
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm;

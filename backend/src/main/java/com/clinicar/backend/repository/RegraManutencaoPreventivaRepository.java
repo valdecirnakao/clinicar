@@ -30,6 +30,8 @@ public interface RegraManutencaoPreventivaRepository
             Long pecaId
     );
 
+    boolean existsByGrupoManutencaoAndDescricaoIgnoreCaseAndIdNot(String grupo, String descricao, Long id);
+
     boolean existsByGrupoManutencaoAndDescricaoIgnoreCase(
             String grupoManutencao,
             String descricao

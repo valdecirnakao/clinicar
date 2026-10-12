@@ -1,0 +1,1136 @@
+<div class="container-fluid mt-0 mb-0 agendamentos-page"  style="color:#35689b; max-height: 80vh;">
+  <div class="row justify-content-center">
+    <div class="col-md-12">
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card page-title-card">
+            <div class="card-body">
+              <i class="bi bi-calendar-check me-1"></i>
+              Gerenciamento de Agendamentos
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3 summary-grid">
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-total">
+            <small>Total</small>
+            <strong>{{ totalAgendamentos }}</strong>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-agendado">
+            <small>Agendados</small>
+            <strong>{{ totalAgendados }}</strong>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-confirmado">
+            <small>Confirmados</small>
+            <strong>{{ totalConfirmados }}</strong>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-atendimento">
+            <small>Em atendimento</small>
+            <strong>{{ totalEmAtendimento }}</strong>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-concluido">
+            <small>Concluídos</small>
+            <strong>{{ totalConcluidos }}</strong>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="summary-card summary-cancelado">
+            <small>Cancelados / ausentes</small>
+            <strong>{{ totalCancelados }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card clinicar-card agendamentos-list-card" style="color:#35689b;">
+        <div class="card-body agendamentos-list-body">
+          <div class="toolbar-card mb-3">
+            <div class="row g-2 align-items-end toolbar-filters">
+              <div class="col-xl-4 col-lg-4 col-md-12">
+                <label class="form-label fw-bold" for="buscar-agendamentos">Buscar</label>
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                  </span>
+
+                  <input id="buscar-agendamentos" class="form-control"
+                    placeholder="Cliente, placa, serviço, código, responsável..." [(ngModel)]="filtro"
+                    (ngModelChange)="aoAlterarFiltros()" />
+                  </div>
+                </div>
+
+                <div class="col-xl-2 col-lg-3 col-md-4 status-filter-column">
+                  <label class="form-label fw-bold" for="filtro-status">Status</label>
+                  <div class="status-filter-dropdown" (click)="$event.stopPropagation()"
+                    (keydown)="$event.stopPropagation()" (keyup)="$event.stopPropagation()"
+                    (keypress)="$event.stopPropagation()">
+                    <button id="filtro-status" type="button" class="status-filter-button"
+                      [class.active]="statusFiltroAberto" (click)="alternarFiltroStatus($event)">
+                      <span>{{ rotuloFiltroStatus() }}</span>
+                      <i class="bi" [class.bi-chevron-up]="statusFiltroAberto"
+                      [class.bi-chevron-down]="!statusFiltroAberto"></i>
+                    </button>
+
+                    @if (statusFiltroAberto) {
+                      <div class="status-filter-menu">
+                        <button type="button" class="status-filter-option" [class.selected]="!filtroStatus"
+                          (click)="selecionarFiltroStatus('')">
+                          <span class="status-filter-option-text">Todos</span>
+                          @if (!filtroStatus) {
+                            <i class="bi bi-check2"></i>
+                          }
+                        </button>
+                        @for (status of statusAgendamento; track status) {
+                          <button type="button" class="status-filter-option"
+                            [class.selected]="filtroStatus === status" (click)="selecionarFiltroStatus(status)">
+                            <span class="badge" [ngClass]="statusBadgeClass(status)">
+                              {{ formatarStatus(status) }}
+                            </span>
+                            @if (filtroStatus === status) {
+                              <i class="bi bi-check2"></i>
+                            }
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="col-lg-1 col-md-3">
+                  <button type="button" class="btn btn-outline-secondary btn-md btn-limpar-filtros"
+                    (click)="filtro=''; filtroStatus=''; aoAlterarFiltros()">
+                    Limpar filtros
+                  </button>
+                </div>
+
+                <div class="col-xl-5 col-lg-5 col-md-12">
+                  <div class="toolbar-actions">
+                    <button class="btn btn-clinicar-primary" type="button" (click)="abrirModalCadastro()">
+                      <i class="bi bi-plus-circle me-1"></i>
+                      Novo Agendamento
+                    </button>
+
+                    <button class="btn btn-outline-primary" type="button" (click)="carregarTudo()">
+                      <i class="bi bi-arrow-clockwise me-1"></i>
+                      Atualizar
+                    </button>
+
+                    <button class="btn btn-outline-secondary" type="button" (click)="voltar()">
+                      <i class="bi bi-arrow-left me-1"></i>
+                      Voltar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              @if (filtro || filtroStatus) {
+                <div class="filter-chip-row">
+                  @if (filtro) {
+                    <span class="filter-chip">
+                      Busca: {{ filtro }}
+                      <button type="button" (click)="filtro = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+                    </span>
+                  }
+                  @if (filtroStatus) {
+                    <span class="filter-chip">
+                      Status: {{ formatarStatus(filtroStatus) }}
+                      <button type="button" (click)="selecionarFiltroStatus('')" aria-label="Remover status">×</button>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (mensagemErro) {
+              <div class="alert alert-danger py-2 mb-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ mensagemErro }}
+              </div>
+            }
+
+            @if (carregando) {
+              <div class="loading-box">
+                <output class="spinner-border" aria-live="polite" aria-label="Carregando agendamentos"></output>
+                <div class="mt-2">Carregando agendamentos...</div>
+              </div>
+            }
+
+            @if (!carregando) {
+              <div class="agendamento-table-shell">
+                <div class="agendamento-table-scroll">
+                  <table class="table table-hover align-middle table-compact table-sticky-header">
+                    <thead>
+                      <tr>
+                        <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                          onkeypress="return false;">
+                          Código <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                          onkeypress="return false;">
+                          Cliente <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                          onkeypress="return false;">
+                          Veículo <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                          onkeypress="return false;">
+                          Serviço <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                          onkeypress="return false;">
+                          Data <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                          onkeypress="return false;">
+                          Prioridade <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="sortable" tabindex="0" onkeydown="return false;" onkeyup="return false;"
+                          onkeypress="return false;">
+                          Status <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="sortable text-end" tabindex="0" onkeydown="return false;"
+                          onkeyup="return false;" onkeypress="return false;">
+                          Valor <i class="bi bi-arrow-down-up ms-1"></i>
+                        </th>
+                        <th scope="col" class="text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of agendamentosPaginados; track item) {
+                        <tr
+                          [class.row-inactive]="item.statusAgendamento === 'CANCELADO' || item.statusAgendamento === 'NAO_COMPARECEU'">
+                          <td>
+                            <div class="fw-semibold">{{ item.codigoAgendamento || '—' }}</div>
+                            <small>{{ formatarStatus(item.canalOrigem) }}</small>
+                          </td>
+                          <td>
+                            <div class="fw-semibold">{{ item.nomeCliente || item.cliente?.nome || '—' }}</div>
+                            <small>{{ formatarTelefone(item.telefoneCliente || item.cliente?.telefone) || '—' }}</small>
+                          </td>
+                          <td>
+                            <div class="fw-semibold">
+                              {{ formatarPlaca(item.placaVeiculo || item.veiculo?.placa) }}
+                            </div>
+                            <small>{{ item.modeloVeiculo || item.veiculo?.modelo || '—' }}</small>
+                          </td>
+                          <td>
+                            <div class="fw-semibold">{{ item.nomeServico || item.servico?.nome || item.servico?.descricao ||
+                            '—' }}</div>
+                            <small>{{ item.nomeResponsavel || item.responsavel?.nome || 'Responsável não informado' }}</small>
+                          </td>
+                          <td>
+                            <div>{{ formatarDataHora(item.dataHoraInicio) }}</div>
+                            <small>Fim: {{ formatarDataHora(item.dataHoraFim) }}</small>
+                          </td>
+                          <td>
+                            <span class="badge prioridade-badge">
+                              {{ formatarStatus(item.prioridade || 'NORMAL') }}
+                            </span>
+                          </td>
+                          <td>
+                            <span class="badge" [ngClass]="statusBadgeClass(item.statusAgendamento)">
+                              {{ formatarStatus(item.statusAgendamento) }}
+                            </span>
+                          </td>
+                          <td class="fw-semibold text-end">
+                            {{ formatarMoedaBR(item.valorEstimado) }}
+                          </td>
+                          <td class="text-center actions-cell">
+                            <div class="action-buttons">
+                              <button class="btn btn-sm btn-outline-info" title="Visualizar" type="button"
+                                (click)="abrirDetalhes(item)">
+                                <i class="bi bi-eye"></i>
+                              </button>
+                              <button class="btn btn-sm btn-outline-primary" title="Editar" type="button"
+                                (click)="abrirModalEdicao(item)">
+                                <i class="bi bi-pencil-square"></i>
+                              </button>
+                              <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                  data-bs-toggle="dropdown" aria-expanded="false" title="Mais ações">
+                                  <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end action-menu">
+                                  <li>
+                                    <button class="dropdown-item" type="button" [disabled]="!podeConfirmar(item)"
+                                      (click)="abrirConfirmacaoAcao(item, 'confirmar')">
+                                      <i class="bi bi-check-circle me-2 text-success"></i>
+                                      Confirmar
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button class="dropdown-item" type="button" [disabled]="!podeIniciar(item)"
+                                      (click)="abrirConfirmacaoAcao(item, 'iniciar')">
+                                      <i class="bi bi-play-circle me-2 text-primary"></i>
+                                      Iniciar atendimento
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button class="dropdown-item" type="button" [disabled]="!podeConcluir(item)"
+                                      (click)="abrirConfirmacaoAcao(item, 'concluir')">
+                                      <i class="bi bi-flag me-2 text-success"></i>
+                                      Concluir
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button class="dropdown-item" type="button" (click)="abrirConfirmacaoAcao(item, 'naoCompareceu')">
+                                      <i class="bi bi-person-x me-2 text-warning"></i>
+                                      Não compareceu
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <hr class="dropdown-divider">
+                                  </li>
+                                  <li>
+                                    <button class="dropdown-item" type="button" [disabled]="!podeCancelar(item)"
+                                      (click)="abrirCancelamento(item)">
+                                      <i class="bi bi-x-circle me-2 text-danger"></i>
+                                      Cancelar
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button class="dropdown-item text-danger" type="button" (click)="excluir(item)">
+                                      <i class="bi bi-trash me-2"></i>
+                                      Excluir
+                                    </button>
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                      @if (totalRegistrosFiltrados === 0) {
+                        <tr>
+                          <td colspan="9" class="text-center text-muted py-4">
+                            <i class="bi bi-search me-1"></i>
+                            Nenhum agendamento encontrado.
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                @if (totalRegistrosFiltrados > 0) {
+                  <div class="table-pagination-footer agendamento-pagination-footer">
+<app-paginacao [pagina]="paginaAtual-1" [tamanho]="itensPorPagina" [total]="totalRegistrosFiltrados" [carregando]="carregando" [tamanhos]="opcoesItensPorPagina" (paginaChange)="irParaPagina($event+1)" (tamanhoChange)="itensPorPagina=$event;aoAlterarItensPorPagina()" />
+</div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CADASTRO / EDIÇÃO -->
+  <div class="modal fade" id="modalCadastroAgendamento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered agendamento-modal-dialog">
+      <div class="modal-content agendamento-modal-content" style="color:#35689b;">
+
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title mb-1">
+              <i class="bi bi-calendar-plus me-1"></i>
+              {{ editandoId ? 'Editar Agendamento' : 'Novo Agendamento' }}
+            </h5>
+            <small>
+              {{ novoAgendamento.nomeCliente || 'Cliente não selecionado' }} · {{
+              formatarPlaca(novoAgendamento.placaVeiculo) || 'Veículo não selecionado' }} · {{ novoAgendamento.nomeServico
+              || 'Serviço não selecionado' }}
+            </small>
+          </div>
+
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body agendamento-modal-body">
+          <div class="agendamento-modal-tabs-area">
+            <div class="cadastro-progress-card agendamento-progress-card">
+              <div class="cadastro-progress-top">
+                <div>
+                  <strong>{{ editandoId ? 'Progresso da edição' : 'Progresso do cadastro' }}</strong>
+                  @if (agendamentoProntoParaSalvar) {
+                    <small>
+                      Agendamento pronto para ser salvo.
+                    </small>
+                  }
+                  @if (!agendamentoProntoParaSalvar) {
+                    <small>
+                      {{ quantidadePendenciasAgendamento }} pendência(s) para concluir.
+                      {{ mensagemBloqueioSalvar }}
+                    </small>
+                  }
+                </div>
+
+                <span class="progress-percent-badge">
+                  {{ progressoAgendamentoPercentual }}%
+                </span>
+              </div>
+
+              <div
+                class="progress cadastro-progress"
+                role="progressbar"
+                aria-label="Progresso do agendamento"
+                [attr.aria-valuenow]="progressoAgendamentoPercentual"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                >
+                <div
+                  class="progress-bar"
+                  [style.width.%]="progressoAgendamentoPercentual"
+                  >
+                  {{ progressoAgendamentoPercentual }}%
+                </div>
+              </div>
+            </div>
+
+            <app-field-help-panel
+              defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+            ></app-field-help-panel>
+
+            <ul class="nav nav-pills clinicar-tabs mb-1">
+              <li class="nav-item">
+                <button data-help-guia="agendamento" [disabled]="!podeAcessarAbaCadastro(&apos;agendamento&apos;)" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaNovoAgendamento === &apos;agendamento&apos;"
+                  (click)="trocarAbaNovoAgendamento(&apos;agendamento&apos;)">
+                  <i class="bi bi-calendar-check me-1"></i>
+                  Agendamento
+                  @if (pendenciasAgendamentoAba('agendamento') > 0) {
+                    <span class="tab-pendencia ms-1">
+                      {{ pendenciasAgendamentoAba('agendamento') }}
+                    </span>
+                  }
+                  <i class="bi ms-1"
+                  [ngClass]="agendamentoProntoParaSalvar ? 'bi-check-circle-fill text-success' : 'bi-exclamation-circle-fill text-danger'"></i>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button data-help-guia="pecas" [disabled]="!podeAcessarAbaCadastro(&apos;pecas&apos;)" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaNovoAgendamento === &apos;pecas&apos;"
+                  (click)="trocarAbaNovoAgendamento(&apos;pecas&apos;)">
+                  <i class="bi bi-nut me-1"></i>
+                  Peças previstas
+                  <span class="badge bg-light text-primary ms-1">
+                    {{ pecasNovoAgendamento.length }}
+                  </span>
+                  <i class="bi ms-1"
+                  [ngClass]="pecasNovoAgendamento.length > 0 ? &apos;bi-check-circle-fill text-success&apos; : &apos;bi-exclamation-circle-fill text-warning&apos;"></i>
+                </button>
+              </li>
+
+              <li class="nav-item">
+                <button data-help-guia="adicionais" [disabled]="!podeAcessarAbaCadastro('adicionais')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaNovoAgendamento === 'adicionais'"
+                  (click)="trocarAbaNovoAgendamento('adicionais')">
+                  <i class="bi bi-card-text me-1"></i>
+                  Informações adicionais
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div class="agendamento-modal-scroll-area">
+            <!-- GUIA AGENDAMENTO -->
+            @if (abaNovoAgendamento === 'agendamento') {
+              <div>
+                <div class="card clinicar-card mb-2">
+                  <div class="card-body">
+                    <h6 class="modal-section-title">
+                      <i class="bi bi-person me-1"></i>
+                      Cliente e veículo
+                    </h6>
+                    <div class="row g-1">
+                      <div class="col-md-3">
+                        <label class="form-label">
+                          Cliente *
+                        </label>
+                        <select class="form-select" [class.is-invalid]="clienteInvalido()"
+                          [(ngModel)]="novoAgendamento.idCliente" (change)="selecionarCliente()" style="color:#35689b;">
+                          <option [ngValue]="undefined">Selecione...</option>
+                          @for (c of clientes; track c) {
+                            <option [ngValue]="c.id">
+                              {{ c.nome || c.nome_social || c.nomeSocial }}
+                            </option>
+                          }
+                        </select>
+                        <div class="invalid-feedback">
+                          Selecione o cliente.
+                        </div>
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label">
+                          Veículo *
+                        </label>
+                        <select class="form-select" [class.is-invalid]="veiculoInvalido()"
+                          [(ngModel)]="novoAgendamento.idVeiculo" (change)="selecionarVeiculo()" style="color:#35689b;">
+                          <option [ngValue]="undefined">
+                            {{
+                            !novoAgendamento.idCliente
+                            ? 'Selecione primeiro o cliente'
+                            : 'Selecione...'
+                            }}
+                          </option>
+                          @for (v of veiculosDoCliente(); track v) {
+                            <option [ngValue]="v.id">
+                              {{ labelVeiculo(v) }}
+                            </option>
+                          }
+                        </select>
+                        <div class="invalid-feedback">
+                          Selecione o veículo do cliente.
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label">
+                          KM atual *
+                        </label>
+                        <input type="number" min="0" step="1" class="form-control"
+                          [class.is-invalid]="quilometragemAtualInvalida()" [(ngModel)]="novoAgendamento.quilometragemAtual"
+                          (blur)="normalizarQuilometragemAtual()" style="color:#35689b;" />
+                          <div class="invalid-feedback">
+                            Informe a quilometragem atual.
+                          </div>
+                        </div>
+                        <div class="col-md-2">
+                          <label class="form-label">Prioridade</label>
+                          <select class="form-select" [(ngModel)]="novoAgendamento.prioridade" style="color:#35689b;">
+                            @for (prioridade of prioridades; track prioridade) {
+                              <option [value]="prioridade">
+                                {{ formatarStatus(prioridade) }}
+                              </option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card clinicar-card mb-2">
+                    <div class="card-body">
+                      <h6 class="modal-section-title">
+                        <i class="bi bi-wrench me-1"></i>
+                        Serviço, data e responsável
+                      </h6>
+                      <div class="row g-2">
+                        <div class="col-md-4">
+                          <label class="form-label">
+                            Serviço previsto *
+                          </label>
+                          <select class="form-select" [class.is-invalid]="servicoPrevistoInvalido()"
+                            [(ngModel)]="novoAgendamento.idServico" (change)="selecionarServico()" style="color:#35689b;">
+                            <option [ngValue]="undefined">Selecione...</option>
+                            @for (s of servicos; track s) {
+                              <option [ngValue]="s.id">
+                                {{ s.nome || s.descricao }} - {{ s.categoria || 'Sem categoria' }}
+                              </option>
+                            }
+                          </select>
+                          <div class="invalid-feedback">
+                            Selecione o serviço previsto para o agendamento.
+                          </div>
+                        </div>
+                        <div class="col-md-2">
+                          <label class="form-label">Início *</label>
+                          <input type="datetime-local" class="form-control" [(ngModel)]="novoAgendamento.dataHoraInicio"
+                            (change)="recalcularDataFim()" style="color:#35689b;" />
+                          </div>
+                          <div class="col-md-2">
+                            <label class="form-label">Duração min.</label>
+                            <input type="number" class="form-control" [(ngModel)]="novoAgendamento.duracaoEstimadaMinutos"
+                              (input)="recalcularDataFim()" style="color:#35689b;" />
+                            </div>
+                            <div class="col-md-2">
+                              <label class="form-label">Fim *</label>
+                              <input type="datetime-local" class="form-control" [(ngModel)]="novoAgendamento.dataHoraFim"
+                                (change)="atualizarDisponibilidadeResponsavel()" style="color:#35689b;" />
+                              </div>
+                              <div class="col-md-2">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" [(ngModel)]="novoAgendamento.statusAgendamento" style="color:#35689b;">
+                                  @for (status of statusAgendamento; track status) {
+                                    <option [value]="status">
+                                      {{ formatarStatus(status) }}
+                                    </option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label">
+                                  Responsável disponível *
+                                </label>
+                                <select class="form-select" [class.is-invalid]="responsavelDisponivelInvalido()"
+                                  [(ngModel)]="novoAgendamento.idResponsavel" (change)="selecionarResponsavel()"
+                                  [disabled]="!periodoAgendamentoValido() || responsaveisDisponiveis().length === 0"
+                                  style="color:#35689b;">
+                                  <option [ngValue]="undefined">
+                                    {{
+                                    !periodoAgendamentoValido()
+                                    ? 'Informe início e fim válidos'
+                                    : (
+                                    responsaveisDisponiveis().length === 0
+                                    ? 'Nenhum responsável disponível'
+                                    : 'Selecione...'
+                                    )
+                                    }}
+                                  </option>
+                                  @for (r of responsaveisDisponiveis(); track r) {
+                                    <option [ngValue]="r.id">
+                                      {{ r.nome || r.nome_social || r.nomeSocial }}
+                                    </option>
+                                  }
+                                </select>
+                                @if (responsavelDisponivelInvalido()) {
+                                  <div class="invalid-feedback d-block">
+                                    {{ mensagemResponsavelInvalido() }}
+                                  </div>
+                                }
+                                @if (!responsavelDisponivelInvalido()) {
+                                  <small class="text-muted">
+                                    A lista mostra apenas responsáveis sem conflito no período informado.
+                                  </small>
+                                }
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label">Fornecedor</label>
+                                <select class="form-select" [(ngModel)]="novoAgendamento.idFornecedor" style="color:#35689b;">
+                                  <option [ngValue]="undefined">Selecione...</option>
+                                  @for (f of fornecedores; track f) {
+                                    <option [ngValue]="f.id">
+                                      {{ f.razaoSocial || f.razao_social || f.nomeFantasia || f.nome_fantasia }}
+                                    </option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="col-md-2">
+                                <label class="form-label">Canal</label>
+                                <select class="form-select" [(ngModel)]="novoAgendamento.canalOrigem" style="color:#35689b;">
+                                  @for (canal of canais; track canal) {
+                                    <option [value]="canal">
+                                      {{ formatarStatus(canal) }}
+                                    </option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="col-md-2">
+                                <label class="form-label">Atendimento</label>
+                                <select class="form-select" [(ngModel)]="novoAgendamento.tipoAtendimento" style="color:#35689b;">
+                                  @for (tipo of tiposAtendimento; track tipo) {
+                                    <option [value]="tipo">
+                                      {{ formatarStatus(tipo) }}
+                                    </option>
+                                  }
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="row g-2">
+                          <div class="col-md-4">
+                            <div class="info-card">
+                              <div class="info-card-title">Cliente</div>
+                              <div class="info-line">
+                                <span>Nome</span>
+                                <strong>{{ novoAgendamento.nomeCliente || '—' }}</strong>
+                              </div>
+                              <div class="info-line">
+                                <span>CPF</span>
+                                <strong>{{ formatarCpf(novoAgendamento.cpfCliente) }}</strong>
+                              </div>
+                              <div class="info-line">
+                                <span>Telefone</span>
+                                <strong>{{ formatarTelefone(novoAgendamento.telefoneCliente) || '—' }}</strong>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <div class="info-card">
+                              <div class="info-card-title">Veículo</div>
+                              <div class="info-line">
+                                <span>Placa</span>
+                                <strong>{{ formatarPlaca(novoAgendamento.placaVeiculo) }}</strong>
+                              </div>
+                              <div class="info-line">
+                                <span>Modelo</span>
+                                <strong>{{ capitalizar(novoAgendamento.modeloVeiculo) || '—' }}</strong>
+                              </div>
+                              <div class="info-line">
+                                <span>Fabricante</span>
+                                <strong>{{ formatarFabricante(novoAgendamento.fabricanteVeiculo) || '—' }}</strong>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <div class="info-card">
+                              <div class="info-card-title">Valores</div>
+                              <div class="info-line">
+                                <span>Mão de obra</span>
+                                <strong>{{ formatarMoedaBR(valorServicoSelecionado()) }}</strong>
+                              </div>
+                              <div class="info-line">
+                                <span>Peças previstas</span>
+                                <strong>{{ formatarMoedaBR(totalPecasAgendamento()) }}</strong>
+                              </div>
+                              <div class="info-line">
+                                <span>Total estimado</span>
+                                <strong>{{ novoAgendamento.valorEstimado || 'R$ 0,00' }}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- GUIA PEÇAS -->
+                    @if (abaNovoAgendamento === 'pecas') {
+                      <div>
+                        <div class="card clinicar-card mb-3">
+                          <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                              <div>
+                                <h6 class="modal-section-title mb-1">
+                                  <i class="bi bi-nut me-1"></i>
+                                  Peças previstas para o agendamento *
+                                </h6>
+                                <small class="text-muted">
+                                  As peças selecionadas entram no cálculo do valor estimado para o agendamento.
+                                </small>
+                              </div>
+                              <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalPecaAgendamento()">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Adicionar peça
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="card clinicar-card mb-3">
+                          <div class="card-body">
+                            <div class="table-responsive item-table-wrapper">
+                              <table class="table table-sm table-hover align-middle mb-0">
+                                <thead style="background:#eef6ff;color:#35689b;">
+                                  <tr>
+                                    <th>Descrição</th>
+                                    <th>Fabricante</th>
+                                    <th>Modelo</th>
+                                    <th class="text-end">Quantidade</th>
+                                    <th>Unidade</th>
+                                    <th class="text-end">Custo unitário</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-center">Ações</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  @for (item of pecasNovoAgendamento; track item) {
+                                    <tr>
+                                      <td>
+                                        <div class="fw-semibold">{{ item.descricaoPeca || item.nomePeca || '—' }}</div>
+                                        <small class="text-muted">{{ item.observacoes || '' }}</small>
+                                      </td>
+                                      <td>{{ item.fabricantePeca || '—' }}</td>
+                                      <td>{{ item.modeloPeca || '—' }}</td>
+                                      <td class="text-end">{{ item.quantidade }}</td>
+                                      <td>{{ item.unidadeMedida | unidadePeca }}</td>
+                                      <td class="text-end">{{ formatarMoedaBR(item.valorUnitario) }}</td>
+                                      <td class="text-end fw-semibold">{{ formatarMoedaBR(item.valorTotal) }}</td>
+                                      <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Editar peça"
+                                          (click)="abrirModalEditarPecaAgendamento(item)">
+                                          <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir peça"
+                                          (click)="removerPecaAgendamento(item)">
+                                          <i class="bi bi-trash"></i>
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  }
+                                  @if (pecasNovoAgendamento.length === 0) {
+                                    <tr>
+                                      <td colspan="8" class="text-center text-muted py-3">
+                                        Nenhuma peça prevista para este agendamento.
+                                      </td>
+                                    </tr>
+                                  }
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="card clinicar-card resumo-itens-card">
+                          <div class="card-body">
+                            <h6 class="modal-section-title">
+                              <i class="bi bi-calculator me-1"></i>
+                              Resumo do agendamento
+                            </h6>
+                            <div class="row g-2">
+                              <div class="col-md-4">
+                                <div class="resumo-valor-box">
+                                  <small>Mão de obra</small>
+                                  <strong>{{ formatarMoedaBR(valorServicoSelecionado()) }}</strong>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="resumo-valor-box">
+                                  <small>Total de peças</small>
+                                  <strong>{{ formatarMoedaBR(totalPecasAgendamento()) }}</strong>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="resumo-valor-box total">
+                                  <small>Total estimado</small>
+                                  <strong>{{ novoAgendamento.valorEstimado || 'R$ 0,00' }}</strong>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- GUIA ADICIONAIS -->
+                    @if (abaNovoAgendamento === 'adicionais') {
+                      <div>
+                        <div class="card clinicar-card">
+                          <div class="card-body">
+                            <h6 class="modal-section-title">
+                              <i class="bi bi-card-text me-1"></i>
+                              Informações adicionais
+                            </h6>
+                            <div class="row g-2">
+                              <div class="col-md-6">
+                                <label class="form-label">Queixa do cliente</label>
+                                <textarea class="form-control" rows="3" [(ngModel)]="novoAgendamento.queixaCliente"
+                                style="color:#35689b;"></textarea>
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label">Diagnóstico prévio</label>
+                                <textarea class="form-control" rows="3" [(ngModel)]="novoAgendamento.diagnosticoPrevio"
+                                style="color:#35689b;"></textarea>
+                              </div>
+                              <div class="col-md-12">
+                                <label class="form-label">Observações</label>
+                                <textarea class="form-control" rows="4" [(ngModel)]="novoAgendamento.observacoes"
+                                style="color:#35689b;"></textarea>
+                              </div>
+                              <div class="col-md-3">
+                                <label class="form-label">Requer confirmação?</label>
+                                <select class="form-select" [(ngModel)]="novoAgendamento.requerConfirmacao" style="color:#35689b;">
+                                  <option [ngValue]="true">Sim</option>
+                                  <option [ngValue]="false">Não</option>
+                                </select>
+                              </div>
+                              <div class="col-md-3">
+                                <label class="form-label">Confirmado?</label>
+                                <select class="form-select" [(ngModel)]="novoAgendamento.confirmado" style="color:#35689b;">
+                                  <option [ngValue]="false">Não</option>
+                                  <option [ngValue]="true">Sim</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="modal-footer modal-footer-totais">
+                  <div class="totais-footer me-auto">
+
+                    @if (mensagemBloqueioSalvar) {
+                      <div class="pendencia-salvar">
+                        <i class="bi bi-info-circle me-1"></i>
+                        {{ mensagemBloqueioSalvar }}
+                      </div>
+                    }
+                  </div>
+
+                  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                  </button>
+
+                  <button type="button" class="btn" style="background:#35689b;color:white;"
+                    [disabled]="!agendamentoProntoParaSalvar" [title]="mensagemBloqueioSalvar || 'Salvar agendamento'"
+                    (click)="salvarAgendamento()">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Salvar Agendamento
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- MODAL PEÇA DO AGENDAMENTO -->
+          <div class="modal fade" id="modalPecaAgendamento" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+              <div class="modal-content item-modal" style="color:#35689b;">
+
+                <div class="modal-header" style="background:#eef6ff;">
+                  <h5 class="modal-title">
+                    <i class="bi bi-nut me-1"></i>
+                    {{ editandoPecaId !== null ? 'Editar Peça Prevista' : 'Adicionar Peça Prevista' }}
+                  </h5>
+
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                  <app-field-help-panel></app-field-help-panel>
+                  <div class="row g-2">
+
+                    <div class="col-md-6">
+                      <label class="form-label">Peça *</label>
+                      <select class="form-select" [(ngModel)]="pecaForm.idPeca" (change)="selecionarPecaCatalogo()"
+                        style="color:#35689b;">
+                        <option [ngValue]="undefined">Selecione...</option>
+                        @for (p of pecas; track p) {
+                          <option [ngValue]="p.id">
+                            {{ p.nome || p.descricao }} - {{ p.fabricante || 'Fabricante não informado' }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Descrição</label>
+                      <input class="form-control" [value]="pecaForm.descricaoPeca || pecaForm.nomePeca || ''" readonly
+                        style="color:#35689b;" />
+                      </div>
+
+                      <div class="col-md-3">
+                        <label class="form-label">Fabricante</label>
+                        <input class="form-control" [value]="pecaForm.fabricantePeca || ''" readonly style="color:#35689b;" />
+                      </div>
+
+                      <div class="col-md-3">
+                        <label class="form-label">Modelo</label>
+                        <input class="form-control" [value]="pecaForm.modeloPeca || ''" readonly style="color:#35689b;" />
+                      </div>
+
+                      <div class="col-md-2">
+                        <label class="form-label">Quantidade *</label>
+                        <input type="number" min="1" step="1" class="form-control" [(ngModel)]="pecaForm.quantidade"
+                          (input)="recalcularTotalPecaForm()" (blur)="normalizarQuantidadePecaForm()" style="color:#35689b;" />
+                        </div>
+
+                        <div class="col-md-2">
+                          <label class="form-label">Unidade</label>
+                          <input class="form-control" [(ngModel)]="pecaForm.unidadeMedida" style="color:#35689b;" />
+                        </div>
+
+                        <div class="col-md-2">
+                          <label class="form-label">Unitário</label>
+                          <input class="form-control" [(ngModel)]="pecaForm.valorUnitario" (blur)="formatarValorUnitarioPeca()"
+                            style="color:#35689b;" />
+                          </div>
+
+                          <div class="col-md-3">
+                            <label class="form-label">Total</label>
+                            <input class="form-control fw-semibold" [value]="pecaForm.valorTotal || 'R$ 0,00'" readonly
+                              style="color:#35689b;" />
+                            </div>
+
+                            <div class="col-md-9">
+                              <label class="form-label">Observações</label>
+                              <input class="form-control" [(ngModel)]="pecaForm.observacoes" style="color:#35689b;" />
+                            </div>
+
+                          </div>
+                        </div>
+
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" (click)="resetarPecaForm()">
+                            Limpar
+                          </button>
+
+                          <button type="button" class="btn btn-outline-success" (click)="salvarPecaAgendamento()">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {{ editandoPecaId !== null ? 'Atualizar Peça' : 'Adicionar Peça' }}
+                          </button>
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- MODAL DETALHES -->
+                  <div class="modal fade" id="modalDetalhesAgendamento" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                      <div class="modal-content" style="color:#35689b;">
+
+                        <div class="modal-header" style="background:#eef6ff;">
+                          <h5 class="modal-title">
+                            <i class="bi bi-eye me-1"></i>
+                            Detalhes do Agendamento
+                          </h5>
+
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        @if (agendamentoSelecionado) {
+                          <div class="modal-body">
+                            <div class="row g-2">
+                              <div class="col-md-4">
+                                <div class="detail-box">
+                                  <small>Código</small>
+                                  <strong>{{ agendamentoSelecionado.codigoAgendamento || '—' }}</strong>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="detail-box">
+                                  <small>Cliente</small>
+                                  <strong>{{ agendamentoSelecionado.nomeCliente || agendamentoSelecionado.cliente?.nome || '—' }}</strong>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="detail-box">
+                                  <small>Veículo</small>
+                                  <strong>{{ formatarPlaca(agendamentoSelecionado.placaVeiculo || agendamentoSelecionado.veiculo?.placa)
+                                  }}</strong>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="detail-box">
+                                  <small>Status</small>
+                                  <span class="badge" [ngClass]="statusBadgeClass(agendamentoSelecionado.statusAgendamento)">
+                                    {{ formatarStatus(agendamentoSelecionado.statusAgendamento) }}
+                                  </span>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="detail-box">
+                                  <small>Início</small>
+                                  <strong>{{ formatarDataHora(agendamentoSelecionado.dataHoraInicio) }}</strong>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="detail-box">
+                                  <small>Valor estimado</small>
+                                  <strong>{{ formatarMoedaBR(agendamentoSelecionado.valorEstimado) }}</strong>
+                                </div>
+                              </div>
+                              <div class="col-md-12">
+                                <div class="detail-box">
+                                  <small>Observações</small>
+                                  <p class="mb-0">{{ agendamentoSelecionado.observacoes || '—' }}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        }
+
+                        <div class="modal-footer">
+                          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Fechar
+                          </button>
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- MODAL CANCELAMENTO -->
+                  <div class="modal fade" id="modalCancelamentoAgendamento" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-md modal-dialog-centered">
+                      <div class="modal-content" style="color:#35689b;">
+
+                        <div class="modal-header" style="background:#eef6ff;">
+                          <h5 class="modal-title">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Cancelar Agendamento
+                          </h5>
+
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                          <app-field-help-panel></app-field-help-panel>
+                          <label class="form-label">Motivo do cancelamento</label>
+                          <textarea class="form-control" rows="4" [(ngModel)]="motivoCancelamento" style="color:#35689b;"></textarea>
+                        </div>
+
+                        <div class="modal-footer">
+                          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Fechar
+                          </button>
+
+                          <button class="btn btn-outline-danger" (click)="confirmarCancelamento()">
+                            Confirmar cancelamento
+                          </button>
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
+
+
+                  <!-- MODAL CONFIRMAÇÃO DE AÇÃO -->
+                  <div class="modal fade" id="modalConfirmacaoAgendamento" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-md modal-dialog-centered">
+                      <div class="modal-content confirm-modal" style="color:#35689b;">
+                        <div class="modal-header modal-header-clinicar">
+                          <div>
+                            <h5 class="modal-title mb-1">
+                              <i class="bi me-1" [ngClass]="acaoConfirmacao?.icone || 'bi-question-circle'"></i>
+                              {{ acaoConfirmacao?.titulo || 'Confirmar ação' }}
+                            </h5>
+                            <small>{{ acaoConfirmacao?.item?.codigoAgendamento || 'Agendamento selecionado' }}</small>
+                          </div>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+
+                        <div class="modal-body">
+                          <div class="confirm-box">
+                            <div class="confirm-icon">
+                              <i class="bi" [ngClass]="acaoConfirmacao?.icone || 'bi-question-circle'"></i>
+                            </div>
+
+                            <div>
+                              <strong>{{ acaoConfirmacao?.titulo || 'Confirmar ação' }}</strong>
+                              <p class="mb-0">
+                                {{ acaoConfirmacao?.mensagem || 'Confirme a execução da ação para o agendamento selecionado.' }}
+                              </p>
+                            </div>
+                          </div>
+
+                          @if (acaoConfirmacao?.item; as agendamento) {
+                            <div class="detail-box mt-3">
+                              <small>Resumo do agendamento</small>
+                              <strong>{{ agendamento.nomeCliente || agendamento.cliente?.nome || 'Cliente não informado' }}</strong>
+                              <div class="details-line mt-1">
+                                {{ formatarPlaca(agendamento.placaVeiculo || agendamento.veiculo?.placa) }} ·
+                                {{ agendamento.nomeServico || agendamento.servico?.nome || agendamento.servico?.descricao || 'Serviço não informado' }}
+                              </div>
+                              <div class="details-line">
+                                {{ formatarDataHora(agendamento.dataHoraInicio) }} · {{ formatarStatus(agendamento.statusAgendamento) }}
+                              </div>
+                            </div>
+                          }
+                        </div>
+
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Cancelar
+                          </button>
+
+                          <button type="button" class="btn" [ngClass]="acaoConfirmacao?.classeBotao || 'btn-primary'"
+                            [disabled]="!acaoConfirmacao" (click)="confirmarAcaoAgendamento()">
+                            <i class="bi me-1" [ngClass]="acaoConfirmacao?.icone || 'bi-check-circle'"></i>
+                            {{ acaoConfirmacao?.textoBotao || 'Confirmar' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>

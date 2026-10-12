@@ -129,8 +129,12 @@ public class SessionService {
             return Optional.empty();
         }
 
-        session.setUltimoUsoEm(LocalDateTime.now());
-        authSessionRepository.save(session);
+        // Validade e status continuam conferidos em toda requisição. Apenas a escrita é agrupada.
+        var agora = LocalDateTime.now();
+        if (session.getUltimoUsoEm() == null || session.getUltimoUsoEm().isBefore(agora.minusMinutes(5))) {
+            session.setUltimoUsoEm(agora);
+            authSessionRepository.save(session);
+        }
 
         Usuario usuario = usuarioOpt.get();
         return Optional.of(usuarioMapper.toResponse(usuario));

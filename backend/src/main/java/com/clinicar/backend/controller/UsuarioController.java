@@ -46,21 +46,23 @@ public class UsuarioController {
     @GetMapping("/validar-cpf")
     public ResponseEntity<Map<String, Boolean>> validarCpf(
             @org.springframework.web.bind.annotation.RequestParam String cpf,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long idIgnorado,
             @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
         HttpStatus bloqueio = verificarAcesso(solicitante, true);
         if (bloqueio != null) return ResponseEntity.status(bloqueio).build();
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
-                .body(Map.of("cadastrado", usuarioService.cpfCadastrado(cpf)));
+                .body(Map.of("cadastrado", usuarioService.cpfCadastrado(cpf, idIgnorado)));
     }
 
     @GetMapping("/validar-email")
     public ResponseEntity<Map<String, Boolean>> validarEmail(
             @org.springframework.web.bind.annotation.RequestParam String email,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long idIgnorado,
             @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
         HttpStatus bloqueio = verificarAcesso(solicitante, true);
         if (bloqueio != null) return ResponseEntity.status(bloqueio).build();
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
-                .body(Map.of("cadastrado", usuarioService.emailCadastrado(email)));
+                .body(Map.of("cadastrado", usuarioService.emailCadastrado(email, idIgnorado)));
     }
 
     @PostMapping

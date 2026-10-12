@@ -1,0 +1,1186 @@
+<div class="container-fluid mt-0 mb-0 fornecimento-page" style="color:#35689b; max-height: 80vh;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 mt-sm-0">
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card clinicar-title-card">
+            <div class="card-body py-3">
+              <i class="bi bi-briefcase me-1"></i>
+              Gerenciamento do Fornecimento de Serviços
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="summary-grid mb-2">
+        <div class="summary-card">
+          <span>Total</span>
+          <strong>{{ totalFornecimentos }}</strong>
+        </div>
+        <div class="summary-card summary-success">
+          <span>Ativos</span>
+          <strong>{{ totalAtivos }}</strong>
+        </div>
+        <div class="summary-card summary-muted">
+          <span>Inativos</span>
+          <strong>{{ totalInativos }}</strong>
+        </div>
+        <div class="summary-card summary-info">
+          <span>Fornecedores</span>
+          <strong>{{ totalFornecedoresVinculados }}</strong>
+        </div>
+        <div class="summary-card summary-warning">
+          <span>Serviços</span>
+          <strong>{{ totalServicosVinculados }}</strong>
+        </div>
+        <div class="summary-card summary-money">
+          <span>Custo médio</span>
+          <strong>{{ formatarMoedaBR(valorMedioFornecimento) || 'R$ 0,00' }}</strong>
+        </div>
+      </div>
+      <div class="card clinicar-card fornecimento-list-card" style="color:#35689b;">
+        <div class="card-body fornecimento-list-body">
+          <div class="toolbar-filters mb-2">
+            <div class="row g-2 align-items-end">
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label fw-bold" for="filtro-texto">Buscar</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input id="filtro-texto" type="search" class="form-control"
+                    placeholder="Fornecedor, CNPJ, Serviço..." [(ngModel)]="filtroTexto"
+                    (ngModelChange)="aoAlterarFiltros()" />
+                </div>
+              </div>
+              <div class="col-lg-1 col-md-6">
+                <label class="form-label fw-bold" for="filtro-status">Status</label>
+                <select id="filtro-status" class="form-select" [(ngModel)]="filtroStatus"
+                  (ngModelChange)="aoAlterarFiltros()">
+                  <option value="">Todos</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+
+              <div class="col-lg-1 col-md-6">
+                <label class="form-label fw-bold" for="filtro-disponibilidade">Disponibilidade</label>
+                <select id="filtro-disponibilidade" class="form-select" [(ngModel)]="filtroDisponibilidade"
+                  (ngModelChange)="aoAlterarFiltros()">
+                  <option value="">Todas</option>
+                  @for (d of disponibilidades; track d) {
+                    <option [value]="d">
+                      {{ formatarDisponibilidade(d) }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label fw-bold" for="filtro-fornecedor">Fornecedor</label>
+                <select id="filtro-fornecedor" class="form-select" [(ngModel)]="filtroFornecedor"
+                  (ngModelChange)="aoAlterarFiltros()">
+                  <option value="">Todos</option>
+                  @for (item of fornecedoresFiltroDisponiveis; track item) {
+                    <option [value]="item.idFornecedor">
+                      {{ fornecedorNome(item) }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label fw-bold" for="filtro-servico">Serviço</label>
+                <select id="filtro-servico" class="form-select" [(ngModel)]="filtroServico"
+                  (ngModelChange)="aoAlterarFiltros()">
+                  <option value="">Todos</option>
+                  @for (item of servicosFiltroDisponiveis; track item) {
+                    <option [value]="item.idServico">
+                      {{ servicoNome(item) }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="col-lg-1 col-md-6 d-flex justify-content-lg-end justify-content-md-start">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-md btn-limpar-filtros"
+                  title="Limpar Filtros"
+                  [disabled]="!possuiFiltrosAplicados"
+                  (click)="limparFiltros()"
+                  >
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+              </div>
+              <div class="col-lg-3 col-md-6 gap-2 align-items-end d-flex justify-content-lg-end justify-content-md-start">
+                <button type="button" class="btn btn-md" style="background:#35689b;color:white;"
+                  (click)="abrirModalCadastro()">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Novo Fornecimento
+                </button>
+
+                <button type="button" class="btn btn-outline-secondary btn-md" (click)="recarregar()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+
+                <button type="button" class="btn btn-outline-secondary btn-md" (click)="voltar()">
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar
+                </button>
+              </div>
+            </div>
+
+            @if (possuiFiltrosAplicados) {
+              <div class="filter-chip-row mt-2">
+                @if (filtroTexto) {
+                  <span class="filter-chip">
+                    Busca: {{ filtroTexto }}
+                    <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()"
+                    aria-label="Remover busca">×</button>
+                  </span>
+                }
+                @if (filtroStatus) {
+                  <span class="filter-chip">
+                    Status: {{ filtroStatus === 'ativo' ? 'Ativo' : 'Inativo' }}
+                    <button type="button" (click)="filtroStatus = ''; aoAlterarFiltros()"
+                    aria-label="Remover status">×</button>
+                  </span>
+                }
+                @if (filtroDisponibilidade) {
+                  <span class="filter-chip">
+                    Disponibilidade: {{ formatarDisponibilidade(filtroDisponibilidade) }}
+                    <button type="button" (click)="filtroDisponibilidade = ''; aoAlterarFiltros()"
+                    aria-label="Remover disponibilidade">×</button>
+                  </span>
+                }
+                @if (filtroFornecedor) {
+                  <span class="filter-chip">
+                    Fornecedor selecionado
+                    <button type="button" (click)="filtroFornecedor = ''; aoAlterarFiltros()"
+                    aria-label="Remover fornecedor">×</button>
+                  </span>
+                }
+                @if (filtroServico) {
+                  <span class="filter-chip">
+                    Serviço selecionado
+                    <button type="button" (click)="filtroServico = ''; aoAlterarFiltros()"
+                    aria-label="Remover serviço">×</button>
+                  </span>
+                }
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-limpar-filtros" (click)="limparFiltros()">
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar filtros
+                </button>
+              </div>
+            }
+          </div>
+
+          @if (loading) {
+            <div class="alert alert-info py-2 mb-2">
+              <i class="bi bi-hourglass-split me-1"></i>
+              Carregando fornecimentos de serviços...
+            </div>
+          }
+
+          @if (!loading && errorMsg) {
+            <div class="alert alert-danger py-2 mb-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ errorMsg }}
+            </div>
+          }
+
+          @if (!loading) {
+            <div class="fornecimento-table-shell">
+              <div class="fornecimento-table-scroll">
+                <table class="table table-hover align-middle table-compact table-sticky-header">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable" (click)="ordenarPor('fornecedor')">
+                        Fornecedor <i class="bi ms-1" [ngClass]="iconeOrdenacao('fornecedor')"></i>
+                      </th>
+                      <th scope="col" class="sortable" (click)="ordenarPor('servico')">
+                        Serviço <i class="bi ms-1" [ngClass]="iconeOrdenacao('servico')"></i>
+                      </th>
+                      <th scope="col" class="sortable" (click)="ordenarPor('categoria')">
+                        Categoria <i class="bi ms-1" [ngClass]="iconeOrdenacao('categoria')"></i>
+                      </th>
+                      <th scope="col" class="right-align sortable" (click)="ordenarPor('valorCusto')">
+                        Custo <i class="bi ms-1" [ngClass]="iconeOrdenacao('valorCusto')"></i>
+                      </th>
+                      <th scope="col" class="sortable" (click)="ordenarPor('prazoExecucao')">
+                        Prazo <i class="bi ms-1" [ngClass]="iconeOrdenacao('prazoExecucao')"></i>
+                      </th>
+                      <th scope="col" class="sortable" (click)="ordenarPor('disponibilidade')">
+                        Disponibilidade <i class="bi ms-1" [ngClass]="iconeOrdenacao('disponibilidade')"></i>
+                      </th>
+                      <th scope="col" class="sortable" (click)="ordenarPor('vigencia')">
+                        Vigência <i class="bi ms-1" [ngClass]="iconeOrdenacao('vigencia')"></i>
+                      </th>
+                      <th scope="col" class="sortable" (click)="ordenarPor('ativo')">
+                        Status <i class="bi ms-1" [ngClass]="iconeOrdenacao('ativo')"></i>
+                      </th>
+                      <th scope="col" class="text-center actions-column">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of fornecimentosPaginados; track trackByFornecimentoServico($index, item)) {
+                      <tr
+                        [class.row-inativo]="!fornecimentoAtivo(item)">
+                        <td>
+                          <div class="fw-semibold">{{ fornecedorNome(item) }}</div>
+                          <small>{{ formatarCNPJ(item.cnpjFornecedor) || 'CNPJ não informado' }}</small>
+                        </td>
+                        <td>
+                          <div class="fw-semibold">{{ servicoNome(item) }}</div>
+                          <small>{{ formatarUnidade(item.unidadeCobranca) || 'Unidade não informada' }}</small>
+                        </td>
+                        <td>
+                          <span class="badge category-badge">{{ item.categoriaServico || '—' }}</span>
+                        </td>
+                        <td class="right-align">
+                          <strong>{{ formatarMoedaBR(item.valorCusto) || 'R$ 0,00' }}</strong>
+                        </td>
+                        <td>
+                          <div>{{ formatarPrazo(item) || '—' }}</div>
+                          <small>Qtd. mín.: {{ item.quantidadeMinima || 1 }}</small>
+                        </td>
+                        <td>
+                          <span class="badge" [ngClass]="disponibilidadeBadgeClass(item.disponibilidade)">
+                            {{ formatarDisponibilidade(item.disponibilidade) || '—' }}
+                          </span>
+                        </td>
+                        <td>{{ formatarVigencia(item) }}</td>
+                        <td>
+                          <span class="badge" [ngClass]="statusBadgeClass(item)">
+                            {{ fornecimentoAtivo(item) ? 'Ativo' : 'Inativo' }}
+                          </span>
+                        </td>
+                        <td class="text-center actions-column">
+                          <div class="btn-group btn-group-sm" role="group" aria-label="Ações" style="gap: 0.25rem; border-radius: 3px;">
+                            <button type="button" class="btn btn-outline-info" title="Visualizar" style="border-radius: 3px;"
+                              (click)="abrirModalDetalhes(item)">
+                              <i class="bi bi-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" title="Editar" style="border-radius: 3px;"
+                              (click)="abrirModalEdicao(item)">
+                              <i class="bi bi-pencil-square"></i>
+                            </button>
+                            @if (!fornecimentoAtivo(item)) {
+                              <button type="button" class="btn btn-outline-success" title="Ativar" style="border-radius: 3px;"
+                                (click)="abrirConfirmacao(item, 'ativar')">
+                                <i class="bi bi-check-circle"></i>
+                              </button>
+                            }
+                            @if (fornecimentoAtivo(item)) {
+                              <button type="button" class="btn btn-outline-warning" title="Inativar" style="border-radius: 3px;"
+                                (click)="abrirConfirmacao(item, 'inativar')">
+                                <i class="bi bi-pause-circle"></i>
+                              </button>
+                            }
+                            <button type="button" class="btn btn-outline-danger" title="Excluir" style="border-radius: 3px;"
+                              (click)="abrirConfirmacao(item, 'excluir')">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                    @if (totalRegistrosFiltrados === 0) {
+                      <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                          Nenhum fornecimento de serviço encontrado.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (totalRegistrosFiltrados > 0) {
+                <div class="table-pagination-footer">
+<app-paginacao [pagina]="paginaAtual-1" [tamanho]="itensPorPagina" [total]="totalRegistrosFiltrados" [carregando]="loading" [tamanhos]="opcoesItensPorPagina" (paginaChange)="irParaPagina($event+1)" (tamanhoChange)="itensPorPagina=$event;aoAlterarItensPorPagina()" />
+</div>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cadastro -->
+  <div class="modal fade" id="modalCadastroFornecimentoServico" [appValidarDuplicidade]="{ tipo: 'fornecimento-servico', model: novoFornecimento, id: null, campos: { fornecedor: '#fornecedorCadastro', servico: '#servicoCadastro' } }" (duplicidadeChange)="registrarDuplicidade($event)" tabindex="-1"
+    aria-labelledby="modalCadastroFornecimentoServicoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered fornecimento-modal-dialog">
+      <div class="modal-content fornecimento-modal-content">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title" id="modalCadastroFornecimentoServicoLabel">
+              <i class="bi bi-plus-circle me-1"></i>
+              Novo Fornecimento de Serviço
+            </h5>
+            <small>
+              {{ fornecedorTexto(novoFornecimento) || 'Fornecedor não selecionado' }} · {{
+              servicoTexto(novoFornecimento) || 'Serviço não selecionado' }}
+            </small>
+          </div>
+          <button type="button" class="btn-close" [disabled]="salvandoCadastro" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body fornecimento-modal-body">
+          <div class="fornecimento-modal-tabs-area">
+            @if (fornecimentoNovoDuplicado) {
+              <div class="alert alert-warning mb-3" role="status">
+                <strong>Este fornecedor já está vinculado a este serviço.</strong>
+                <p class="mb-2">Atualize as condições do fornecimento existente, inclusive se estiver inativo, ou selecione outro fornecedor ou serviço.</p>
+                <button type="button" class="btn btn-outline-primary" [disabled]="abrindoDuplicado" (click)="atualizarFornecimentoDuplicado()">{{ abrindoDuplicado ? 'Carregando...' : 'Atualizar fornecimento existente' }}</button>
+                @if (erroAoAbrirDuplicado) {
+                  <div class="mt-2">{{ erroAoAbrirDuplicado }}</div>
+                }
+              </div>
+            }
+            @if (mensagemErroModal) {
+              <div class="alert alert-danger py-2 mb-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ mensagemErroModal }}
+              </div>
+            }
+
+            <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+              <div class="progress-bar" [style.width.%]="progressoCadastroFornecimento">
+                {{ progressoCadastroFornecimento }}%
+              </div>
+            </div>
+
+            <app-field-help-panel
+              defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+            ></app-field-help-panel>
+
+            <ul class="nav nav-pills clinicar-tabs">
+              <li class="nav-item">
+                <button data-help-guia="vinculo" [disabled]="!podeAcessarAbaCadastro('vinculo')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroFornecimento === 'vinculo'"
+                  (click)="trocarAbaCadastroFornecimento('vinculo')">
+                  <i class="bi bi-diagram-3 me-1"></i>
+                  Vínculo
+                  @if (pendenciasCadastroAba('vinculo')) {
+                    <span class="tab-alert">{{ pendenciasCadastroAba('vinculo')
+                    }}</span>
+                  }
+                </button>
+              </li>
+              <li class="nav-item">
+                <button data-help-guia="condicoes" [disabled]="!podeAcessarAbaCadastro('condicoes')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroFornecimento === 'condicoes'"
+                  (click)="trocarAbaCadastroFornecimento('condicoes')">
+                  <i class="bi bi-cash-coin me-1"></i>
+                  Condições
+                  @if (pendenciasCadastroAba('condicoes')) {
+                    <span class="tab-alert">{{
+                    pendenciasCadastroAba('condicoes') }}</span>
+                  }
+                </button>
+              </li>
+              <li class="nav-item">
+                <button data-help-guia="revisao" [disabled]="!podeAcessarAbaCadastro('revisao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroFornecimento === 'revisao'"
+                  (click)="trocarAbaCadastroFornecimento('revisao')">
+                  <i class="bi bi-clipboard-check me-1"></i>
+                  Revisão
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="fornecimento-modal-scroll-area">
+            @if (abaCadastroFornecimento === 'vinculo') {
+              <div class="row g-3">
+                <div class="col-lg-6">
+                  <div class="section-card h-100">
+                    <div class="section-card-title">
+                      <i class="bi bi-building me-1"></i>
+                      Fornecedor
+                    </div>
+                    <label class="form-label" for="fornecedorCadastro">Fornecedor *</label>
+                    <div class="input-group">
+                      <input id="fornecedorCadastro" class="form-control" [value]="fornecedorTexto(novoFornecimento)"
+                        readonly placeholder="Selecione um fornecedor"
+                        [class.is-invalid]="campoInvalido('fornecedor')" />
+                      <button type="button" class="btn btn-outline-primary" (click)="abrirModalFornecedor('cadastro')">
+                        <i class="bi bi-search me-1"></i>
+                        Selecionar
+                      </button>
+                    </div>
+                    @if (campoInvalido('fornecedor')) {
+                      <div class="invalid-feedback d-block">Selecione um fornecedor.
+                      </div>
+                    }
+                    <div class="owner-card mt-3" [class.owner-card-empty]="!novoFornecimento.idFornecedor">
+                      <div class="preview-title">Fornecedor selecionado</div>
+                      <div class="preview-main">{{ fornecedorTexto(novoFornecimento) || 'Nenhum fornecedor selecionado'
+                      }}</div>
+                      <div class="preview-sub">{{ formatarCNPJ(novoFornecimento.cnpjFornecedor) || 'CNPJ não informado'
+                      }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="section-card h-100">
+                    <div class="section-card-title">
+                      <i class="bi bi-tools me-1"></i>
+                      Serviço
+                    </div>
+                    <label class="form-label" for="servicoCadastro">Serviço *</label>
+                    <div class="input-group">
+                      <input id="servicoCadastro" class="form-control" [value]="servicoTexto(novoFornecimento)" readonly
+                        placeholder="Selecione um serviço" [class.is-invalid]="campoInvalido('servico')" />
+                      <button type="button" class="btn btn-outline-primary" [disabled]="fluxoServicoAtivo" (click)="abrirModalServico('cadastro')">
+                        <i class="bi bi-search me-1"></i>
+                        Selecionar
+                      </button>
+                    </div>
+                    @if (campoInvalido('servico')) {
+                      <div class="invalid-feedback d-block">Selecione um serviço.</div>
+                    }
+                    <div class="owner-card mt-3" [class.owner-card-empty]="!novoFornecimento.idServico">
+                      <div class="preview-title">Serviço selecionado</div>
+                      <div class="preview-main">{{ novoFornecimento.nomeServico || 'Nenhum serviço selecionado' }}</div>
+                      <div class="preview-sub">{{ novoFornecimento.categoriaServico || 'Categoria não informada' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (abaCadastroFornecimento === 'condicoes') {
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-cash-coin me-1"></i>
+                  Condições comerciais
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label" for="valorCustoCadastro">Valor de Custo *</label>
+                    <input id="valorCustoCadastro" class="form-control" type="text"
+                      [(ngModel)]="novoFornecimento.valorCusto" (blur)="formatarValorCustoCadastro()"
+                      [class.is-invalid]="campoInvalido('valorCusto')" placeholder="R$ 0,00" />
+                    @if (campoInvalido('valorCusto')) {
+                      <div class="invalid-feedback d-block">Informe um valor válido.
+                      </div>
+                    }
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="unidadeCobrancaCadastro">Unidade Cobrança *</label>
+                    <select id="unidadeCobrancaCadastro" class="form-select"
+                      [(ngModel)]="novoFornecimento.unidadeCobranca" (change)="limparCampoInvalido('unidadeCobranca')"
+                      [class.is-invalid]="campoInvalido('unidadeCobranca')">
+                      @for (u of unidadesCobranca; track u) {
+                        <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="prazoExecucaoCadastro">Prazo Execução *</label>
+                    <input id="prazoExecucaoCadastro" data-help="Informe o valor numérico do prazo de execução do fornecedor. A unidade é definida no campo Unidade Prazo logo ao lado." class="form-control" type="text"
+                      [(ngModel)]="novoFornecimento.prazoExecucao" (input)="limparCampoInvalido('prazoExecucao')"
+                      [class.is-invalid]="campoInvalido('prazoExecucao')" />
+                    @if (campoInvalido('prazoExecucao')) {
+                      <div class="invalid-feedback d-block">Informe prazo maior que
+                      zero.</div>
+                    }
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="unidadePrazoCadastro">Unidade Prazo *</label>
+                    <select id="unidadePrazoCadastro" data-help="Defina se o prazo informado é medido em minutos, horas ou dias." class="form-select" [(ngModel)]="novoFornecimento.unidadePrazo"
+                      (change)="limparCampoInvalido('unidadePrazo')" [class.is-invalid]="campoInvalido('unidadePrazo')">
+                      @for (u of unidadesPrazo; track u) {
+                        <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="quantidadeMinimaCadastro">Quantidade Mínima *</label>
+                    <input id="quantidadeMinimaCadastro" class="form-control" type="number" min="1" step="1"
+                      [(ngModel)]="novoFornecimento.quantidadeMinima" (blur)="normalizarQuantidadeMinimaCadastro()"
+                      [class.is-invalid]="campoInvalido('quantidadeMinima')" />
+                    @if (campoInvalido('quantidadeMinima')) {
+                      <div class="invalid-feedback d-block">Informe quantidade
+                      mínima válida.</div>
+                    }
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="disponibilidadeCadastro">Disponibilidade *</label>
+                    <select id="disponibilidadeCadastro" class="form-select"
+                      [(ngModel)]="novoFornecimento.disponibilidade" (change)="limparCampoInvalido('disponibilidade')"
+                      [class.is-invalid]="campoInvalido('disponibilidade')">
+                      @for (d of disponibilidades; track d) {
+                        <option [ngValue]="d">{{ formatarDisponibilidade(d) }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="dataInicioCadastro">Início Vigência</label>
+                    <input id="dataInicioCadastro" class="form-control" type="date"
+                      [(ngModel)]="novoFornecimento.dataInicioVigencia" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="dataFimCadastro">Fim Vigência</label>
+                    <input id="dataFimCadastro" class="form-control" type="date"
+                      [(ngModel)]="novoFornecimento.dataFimVigencia" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="contratoCadastro">Contrato / Referência</label>
+                    <input id="contratoCadastro" class="form-control" [(ngModel)]="novoFornecimento.contratoReferencia"
+                      autocomplete="off" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="ativoCadastro">Status</label>
+                    <select id="ativoCadastro" class="form-select" [(ngModel)]="novoFornecimento.ativo">
+                      <option [ngValue]="true">Ativo</option>
+                      <option [ngValue]="false">Inativo</option>
+                    </select>
+                  </div>
+                  <div class="col-md-12">
+                    <label class="form-label" for="observacoesCadastro">Observações</label>
+                    <textarea id="observacoesCadastro" class="form-control" rows="3"
+                    [(ngModel)]="novoFornecimento.observacoes"></textarea>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (abaCadastroFornecimento === 'revisao') {
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Vínculo</div>
+                    <div class="review-main">{{ servicoTexto(novoFornecimento) || '—' }}</div>
+                    <div class="details-line">Fornecedor: {{ fornecedorTexto(novoFornecimento) || '—' }}</div>
+                    <div class="details-line">CNPJ: {{ formatarCNPJ(novoFornecimento.cnpjFornecedor) || '—' }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Condições</div>
+                    <div class="review-main">{{ formatarMoedaBR(novoFornecimento.valorCusto) || 'R$ 0,00' }}</div>
+                    <div class="details-line">Prazo: {{ formatarPrazo(novoFornecimento) || '—' }}</div>
+                    <div class="details-line">Disponibilidade: {{
+                    formatarDisponibilidade(novoFornecimento.disponibilidade) || '—' }}</div>
+                    <div class="details-line">Vigência: {{ formatarVigencia(novoFornecimento) }}</div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer modal-footer-profissional">
+          <div class="footer-status me-auto">
+            @if (mensagemBloqueioCadastro) {
+              <div class="footer-warning">
+                <i class="bi bi-info-circle me-1"></i>
+                {{ mensagemBloqueioCadastro }}
+              </div>
+            }
+            @if (!mensagemBloqueioCadastro) {
+              <div class="footer-ok">
+                <i class="bi bi-check-circle me-1"></i>
+                Cadastro pronto para salvar.
+              </div>
+            }
+          </div>
+
+          <button data-help-navegacao type="button" class="btn btn-outline-secondary" [disabled]="cadastroEhPrimeiraAba()"
+            (click)="cadastroAbaAnterior()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+
+          @if (!cadastroEhUltimaAba()) {
+            <button data-help-navegacao [disabled]="!podeAvancarCadastro" type="button" class="btn btn-outline-primary"
+              (click)="cadastroAbaProxima()">
+              Próximo
+              <i class="bi bi-chevron-right ms-1"></i>
+            </button>
+          }
+
+          <button type="button" class="btn btn-outline-secondary" [disabled]="salvandoCadastro" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <button type="button" class="btn" style="background:#35689b;color:white;"
+            [disabled]="salvandoCadastro || !cadastroProntoParaSalvar" [title]="mensagemBloqueioCadastro || 'Salvar fornecimento'"
+            (click)="salvarNovoFornecimento()">
+            <i class="bi bi-check-circle me-1"></i>
+            Salvar Fornecimento
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edição -->
+  <div class="modal fade" id="modalEdicaoFornecimentoServico" [appValidarDuplicidade]="{ tipo: 'fornecimento-servico', model: edit, id: editId, campos: { fornecedor: '#fornecedorEdicao', servico: '#servicoEdicao' } }" (duplicidadeChange)="registrarDuplicidade($event)" tabindex="-1"
+    aria-labelledby="modalEdicaoFornecimentoServicoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered fornecimento-modal-dialog">
+      <div class="modal-content fornecimento-modal-content fornecimento-modal-content-auto">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title" id="modalEdicaoFornecimentoServicoLabel">
+              <i class="bi bi-pencil-square me-1"></i>
+              Editar Fornecimento de Serviço
+            </h5>
+            <small>
+              ID #{{ editId || '—' }} · {{ fornecedorTexto(edit) || 'Fornecedor não selecionado' }} · {{
+              servicoTexto(edit) || 'Serviço não selecionado' }}
+            </small>
+          </div>
+          <button type="button" class="btn-close" [disabled]="salvandoEdicao" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body fornecimento-modal-body">
+          <div class="fornecimento-modal-tabs-area">
+            @if (mensagemErroModal) {
+              <div class="alert alert-danger py-2 mb-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ mensagemErroModal }}
+              </div>
+            }
+
+            <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+              <div class="progress-bar" [style.width.%]="progressoEdicaoFornecimento">
+                {{ progressoEdicaoFornecimento }}%
+              </div>
+            </div>
+
+            <app-field-help-panel
+              defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+            ></app-field-help-panel>
+
+            <ul class="nav nav-pills clinicar-tabs">
+              <li class="nav-item">
+                <button data-help-guia="vinculo" class="nav-link" type="button" [class.active]="abaEdicaoFornecimento === 'vinculo'"
+                  (click)="trocarAbaEdicaoFornecimento('vinculo')">
+                  <i class="bi bi-diagram-3 me-1"></i>
+                  Vínculo
+                  @if (pendenciasEdicaoAba('vinculo')) {
+                    <span class="tab-alert">{{ pendenciasEdicaoAba('vinculo')
+                    }}</span>
+                  }
+                </button>
+              </li>
+              <li class="nav-item">
+                <button data-help-guia="condicoes" class="nav-link" type="button" [class.active]="abaEdicaoFornecimento === 'condicoes'"
+                  (click)="trocarAbaEdicaoFornecimento('condicoes')">
+                  <i class="bi bi-cash-coin me-1"></i>
+                  Condições
+                  @if (pendenciasEdicaoAba('condicoes')) {
+                    <span class="tab-alert">{{ pendenciasEdicaoAba('condicoes')
+                    }}</span>
+                  }
+                </button>
+              </li>
+              <li class="nav-item">
+                <button data-help-guia="revisao" class="nav-link" type="button" [class.active]="abaEdicaoFornecimento === 'revisao'"
+                  (click)="trocarAbaEdicaoFornecimento('revisao')">
+                  <i class="bi bi-clipboard-check me-1"></i>
+                  Revisão
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="fornecimento-modal-scroll-area">
+            @if (abaEdicaoFornecimento === 'vinculo') {
+              <div class="row g-3">
+                <div class="col-lg-6">
+                  <div class="section-card h-100">
+                    <div class="section-card-title">
+                      <i class="bi bi-building me-1"></i>
+                      Fornecedor
+                    </div>
+                    <label class="form-label" for="fornecedorEdicao">Fornecedor *</label>
+                    <div class="input-group">
+                      <input id="fornecedorEdicao" class="form-control" [value]="fornecedorTexto(edit)" readonly
+                        placeholder="Selecione um fornecedor" [class.is-invalid]="campoInvalido('fornecedor', edit)" />
+                      <button type="button" class="btn btn-outline-primary" [disabled]="editandoExistenteNoFluxo" (click)="abrirModalFornecedor('edicao')">
+                        <i class="bi bi-search me-1"></i>
+                        Selecionar
+                      </button>
+                    </div>
+                    @if (campoInvalido('fornecedor', edit)) {
+                      <div class="invalid-feedback d-block">Selecione um fornecedor.
+                      </div>
+                    }
+                    <div class="owner-card mt-3" [class.owner-card-empty]="!edit.idFornecedor">
+                      <div class="preview-title">Fornecedor selecionado</div>
+                      <div class="preview-main">{{ fornecedorTexto(edit) || 'Nenhum fornecedor selecionado' }}</div>
+                      <div class="preview-sub">{{ formatarCNPJ(edit.cnpjFornecedor) || 'CNPJ não informado' }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="section-card h-100">
+                    <div class="section-card-title">
+                      <i class="bi bi-tools me-1"></i>
+                      Serviço
+                    </div>
+                    <label class="form-label" for="servicoEdicao">Serviço *</label>
+                    <div class="input-group">
+                      <input id="servicoEdicao" class="form-control" [value]="servicoTexto(edit)" readonly
+                        placeholder="Selecione um serviço" [class.is-invalid]="campoInvalido('servico', edit)" />
+                      <button type="button" class="btn btn-outline-primary" [disabled]="editandoExistenteNoFluxo" (click)="abrirModalServico('edicao')">
+                        <i class="bi bi-search me-1"></i>
+                        Selecionar
+                      </button>
+                    </div>
+                    @if (campoInvalido('servico', edit)) {
+                      <div class="invalid-feedback d-block">Selecione um serviço.</div>
+                    }
+                    <div class="owner-card mt-3" [class.owner-card-empty]="!edit.idServico">
+                      <div class="preview-title">Serviço selecionado</div>
+                      <div class="preview-main">{{ edit.nomeServico || 'Nenhum serviço selecionado' }}</div>
+                      <div class="preview-sub">{{ edit.categoriaServico || 'Categoria não informada' }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (abaEdicaoFornecimento === 'condicoes') {
+              <div class="section-card">
+                <div class="section-card-title">
+                  <i class="bi bi-cash-coin me-1"></i>
+                  Condições comerciais
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label" for="valorCustoEdicao">Valor de Custo *</label>
+                    <input id="valorCustoEdicao" class="form-control" type="text" [(ngModel)]="edit.valorCusto"
+                      (blur)="formatarValorCustoEdicao()" [class.is-invalid]="campoInvalido('valorCusto', edit)"
+                      placeholder="R$ 0,00" />
+                    @if (campoInvalido('valorCusto', edit)) {
+                      <div class="invalid-feedback d-block">Informe um valor válido.
+                      </div>
+                    }
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="unidadeCobrancaEdicao">Unidade Cobrança *</label>
+                    <select id="unidadeCobrancaEdicao" class="form-select" [(ngModel)]="edit.unidadeCobranca"
+                      (change)="limparCampoInvalido('unidadeCobranca')"
+                      [class.is-invalid]="campoInvalido('unidadeCobranca', edit)">
+                      @for (u of unidadesCobranca; track u) {
+                        <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="prazoExecucaoEdicao">Prazo Execução *</label>
+                    <input id="prazoExecucaoEdicao" data-help="Informe o valor numérico do prazo de execução do fornecedor. A unidade é definida no campo Unidade Prazo logo ao lado." class="form-control" type="text" [(ngModel)]="edit.prazoExecucao"
+                      (input)="limparCampoInvalido('prazoExecucao')"
+                      [class.is-invalid]="campoInvalido('prazoExecucao', edit)" />
+                    @if (campoInvalido('prazoExecucao', edit)) {
+                      <div class="invalid-feedback d-block">Informe prazo maior que
+                      zero.</div>
+                    }
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="unidadePrazoEdicao">Unidade Prazo *</label>
+                    <select id="unidadePrazoEdicao" data-help="Defina se o prazo informado é medido em minutos, horas ou dias." class="form-select" [(ngModel)]="edit.unidadePrazo"
+                      (change)="limparCampoInvalido('unidadePrazo')" [class.is-invalid]="campoInvalido('unidadePrazo', edit)">
+                      @for (u of unidadesPrazo; track u) {
+                        <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="quantidadeMinimaEdicao">Quantidade Mínima *</label>
+                    <input id="quantidadeMinimaEdicao" class="form-control" type="number" min="1" step="1"
+                      [(ngModel)]="edit.quantidadeMinima" (blur)="normalizarQuantidadeMinimaEdicao()"
+                      [class.is-invalid]="campoInvalido('quantidadeMinima', edit)" />
+                    @if (campoInvalido('quantidadeMinima', edit)) {
+                      <div class="invalid-feedback d-block">Informe quantidade
+                      mínima válida.</div>
+                    }
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="disponibilidadeEdicao">Disponibilidade *</label>
+                    <select id="disponibilidadeEdicao" class="form-select" [(ngModel)]="edit.disponibilidade"
+                      (change)="limparCampoInvalido('disponibilidade')"
+                      [class.is-invalid]="campoInvalido('disponibilidade', edit)">
+                      @for (d of disponibilidades; track d) {
+                        <option [ngValue]="d">{{ formatarDisponibilidade(d) }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="dataInicioEdicao">Início Vigência</label>
+                    <input id="dataInicioEdicao" class="form-control" type="date"
+                      [(ngModel)]="edit.dataInicioVigencia" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="dataFimEdicao">Fim Vigência</label>
+                    <input id="dataFimEdicao" class="form-control" type="date" [(ngModel)]="edit.dataFimVigencia" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="contratoEdicao">Contrato / Referência</label>
+                    <input id="contratoEdicao" class="form-control" [(ngModel)]="edit.contratoReferencia"
+                      autocomplete="off" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="ativoEdicao">Status</label>
+                    <select id="ativoEdicao" class="form-select" [(ngModel)]="edit.ativo">
+                      <option [ngValue]="true">Ativo</option>
+                      <option [ngValue]="false">Inativo</option>
+                    </select>
+                  </div>
+                  <div class="col-md-12">
+                    <label class="form-label" for="observacoesEdicao">Observações</label>
+                    <textarea id="observacoesEdicao" class="form-control" rows="3"
+                    [(ngModel)]="edit.observacoes"></textarea>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (abaEdicaoFornecimento === 'revisao') {
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Vínculo</div>
+                    <div class="review-main">{{ servicoTexto(edit) || '—' }}</div>
+                    <div class="details-line">Fornecedor: {{ fornecedorTexto(edit) || '—' }}</div>
+                    <div class="details-line">CNPJ: {{ formatarCNPJ(edit.cnpjFornecedor) || '—' }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Condições</div>
+                    <div class="review-main">{{ formatarMoedaBR(edit.valorCusto) || 'R$ 0,00' }}</div>
+                    <div class="details-line">Prazo: {{ formatarPrazo(edit) || '—' }}</div>
+                    <div class="details-line">Disponibilidade: {{ formatarDisponibilidade(edit.disponibilidade) || '—'
+                    }}</div>
+                    <div class="details-line">Vigência: {{ formatarVigencia(edit) }}</div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer modal-footer-profissional">
+          <div class="footer-status me-auto">
+            @if (mensagemBloqueioEdicao) {
+              <div class="footer-warning">
+                <i class="bi bi-info-circle me-1"></i>
+                {{ mensagemBloqueioEdicao }}
+              </div>
+            }
+            @if (!mensagemBloqueioEdicao) {
+              <div class="footer-ok">
+                <i class="bi bi-check-circle me-1"></i>
+                Edição pronta para salvar.
+              </div>
+            }
+          </div>
+
+          <button data-help-navegacao type="button" class="btn btn-outline-secondary" [disabled]="edicaoEhPrimeiraAba()"
+            (click)="edicaoAbaAnterior()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+
+          @if (!edicaoEhUltimaAba()) {
+            <button data-help-navegacao type="button" class="btn btn-outline-primary"
+              (click)="edicaoAbaProxima()">
+              Próximo
+              <i class="bi bi-chevron-right ms-1"></i>
+            </button>
+          }
+
+          <button type="button" class="btn btn-outline-secondary" [disabled]="salvandoEdicao" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <button type="button" class="btn" style="background:#35689b;color:white;" [disabled]="salvandoEdicao || !edicaoProntaParaSalvar"
+            [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
+            <i class="bi bi-check-circle me-1"></i>
+            Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalhes -->
+  <div class="modal fade" id="modalDetalhesFornecimentoServico" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content detalhes-modal-content">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title">
+              <i class="bi bi-eye me-1"></i>
+              Detalhes do Fornecimento
+            </h5>
+            <small>{{ fornecedorNome(fornecimentoDetalhe || {}) }} · {{ servicoNome(fornecimentoDetalhe || {})
+            }}</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        @if (fornecimentoDetalhe; as item) {
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="details-card h-100">
+                  <div class="details-title">Fornecedor</div>
+                  <div class="details-line"><strong>Razão social:</strong> {{ fornecedorNome(item) }}</div>
+                  <div class="details-line"><strong>CNPJ:</strong> {{ formatarCNPJ(item.cnpjFornecedor) || '—' }}</div>
+                  <div class="details-line"><strong>Status:</strong> {{ fornecimentoAtivo(item) ? 'Ativo' : 'Inativo' }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Serviço</div>
+                <div class="details-line"><strong>Nome:</strong> {{ servicoNome(item) }}</div>
+                <div class="details-line"><strong>Categoria:</strong> {{ item.categoriaServico || '—' }}</div>
+                <div class="details-line"><strong>Unidade:</strong> {{ formatarUnidade(item.unidadeCobranca) || '—' }}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="details-card h-100">
+              <div class="details-title">Condições</div>
+              <div class="details-line"><strong>Custo:</strong> {{ formatarMoedaBR(item.valorCusto) || 'R$ 0,00' }}
+            </div>
+            <div class="details-line"><strong>Prazo:</strong> {{ formatarPrazo(item) || '—' }}</div>
+            <div class="details-line"><strong>Quantidade mínima:</strong> {{ item.quantidadeMinima || 1 }}</div>
+            <div class="details-line"><strong>Disponibilidade:</strong> {{
+          formatarDisponibilidade(item.disponibilidade) || '—' }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="details-card h-100">
+          <div class="details-title">Vigência e observações</div>
+          <div class="details-line"><strong>Vigência:</strong> {{ formatarVigencia(item) }}</div>
+          <div class="details-line"><strong>Contrato:</strong> {{ item.contratoReferencia || '—' }}</div>
+          <div class="details-line"><strong>Observações:</strong> {{ item.observacoes || '—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Modal Fornecedor -->
+<div class="modal fade" id="modalFornecedorFornecimentoServico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered selection-modal-dialog">
+    <div class="modal-content selection-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title">
+          <i class="bi bi-building me-1"></i>
+          Selecionar Fornecedor
+        </h5>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="cancelarSelecaoFornecedor()"></button>
+      </div>
+
+      <div class="modal-body selection-modal-body">
+<app-field-help-panel></app-field-help-panel>
+@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true}" (selecionado)="selecionarFornecedor($event)" />}@else{
+
+        <input type="search" class="form-control mb-3"
+          placeholder="Buscar fornecedor por razão social, nome fantasia, item fornecido ou CNPJ..."
+          [(ngModel)]="fornecedorFiltro" (input)="aplicarFiltroFornecedor()" />
+
+        <div class="selection-table-scroll">
+          <table class="table table-hover align-middle table-compact table-sticky-header mb-0">
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th>CNPJ</th>
+                <th>Item fornecido</th>
+                <th class="text-center">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fornecedor of fornecedoresFiltrados; track trackByFornecedor($index, fornecedor)) {
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ fornecedor.razaoSocial }}</div>
+                    <small>{{ fornecedor.nomeFantasia }}</small>
+                  </td>
+                  <td>{{ formatarCNPJ(fornecedor.cnpj) }}</td>
+                  <td>{{ fornecedor.itemFornecido || '—' }}</td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                      (click)="selecionarFornecedor(fornecedor)">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Selecionar
+                    </button>
+                  </td>
+                </tr>
+              }
+
+              @if (fornecedoresFiltrados.length === 0) {
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">Nenhum fornecedor encontrado.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+</div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary"
+        (click)="cancelarSelecaoFornecedor()">Voltar ao fornecimento</button>
+        @if (modoSelecaoFornecedor === 'cadastro') {
+          <button type="button" class="btn btn-primary" (click)="iniciarCadastroAuxiliar('fornecedor')">Cadastrar novo fornecedor</button>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Serviço -->
+<div class="modal fade" id="modalServicoFornecimentoServico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered selection-modal-dialog">
+    <div class="modal-content selection-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title">
+          <i class="bi bi-tools me-1"></i>
+          Selecionar Serviço
+        </h5>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="cancelarSelecaoServico()"></button>
+      </div>
+
+      <div class="modal-body selection-modal-body">
+<app-field-help-panel></app-field-help-panel>
+@if(modoPaginado){<app-selecao-cadastro recurso="servico" [colunas]="[{titulo:'Serviço',campo:'nome'},{titulo:'Categoria',campo:'categoria'},{titulo:'Prestador',campo:'tipoDoPrestador'},{titulo:'Valor base',campo:'valorBase',formato:'moeda'}]" [filtros]="{ativo:true}" (selecionado)="selecionarServico($event)" />}@else{
+
+        <input type="search" class="form-control mb-3"
+          placeholder="Buscar serviço por nome, categoria, prestador ou unidade..." [(ngModel)]="servicoFiltro"
+          (input)="aplicarFiltroServico()" />
+
+        <div class="selection-table-scroll">
+          <table class="table table-hover align-middle table-compact table-sticky-header mb-0">
+            <thead>
+              <tr>
+                <th>Serviço</th>
+                <th>Categoria</th>
+                <th>Prestador</th>
+                <th class="right-align">Valor base</th>
+                <th class="text-center">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (servico of servicosFiltrados; track trackByServico($index, servico)) {
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ servico.nome }}</div>
+                    <small>{{ servico.descricao || 'Sem descrição' }}</small>
+                  </td>
+                  <td>{{ servico.categoria }}</td>
+                  <td>{{ servico.tipoDoPrestador }}</td>
+                  <td class="right-align">{{ formatarMoedaBR(servico.valorBase) || 'R$ 0,00' }}</td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="selecionarServico(servico)">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Selecionar
+                    </button>
+                  </td>
+                </tr>
+              }
+
+              @if (servicosFiltrados.length === 0) {
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-4">Nenhum serviço encontrado.
+                    @if (fluxoFornecedorAtivo && modoSelecaoServico === 'cadastro') {
+                      <div class="mt-2"><button type="button" class="btn btn-primary btn-sm" (click)="voltarOpcoesFornecedor()">Voltar às opções e cadastrar um novo serviço</button></div>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+</div>
+
+      <div class="modal-footer">
+        @if (fluxoFornecedorAtivo && modoSelecaoServico === 'cadastro') {
+          <button type="button" class="btn btn-outline-primary" (click)="voltarOpcoesFornecedor()">Não encontrei o serviço / Voltar às opções</button>
+        }
+        <button type="button" class="btn btn-outline-secondary" (click)="cancelarSelecaoServico()">{{ fluxoFornecedorAtivo && !novoFornecimento.idServico ? 'Voltar às opções' : 'Voltar ao fornecimento' }}</button>
+        @if (modoSelecaoServico === 'cadastro') {
+          <button type="button" class="btn btn-primary" (click)="iniciarCadastroAuxiliar('servico')">Cadastrar novo serviço</button>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmação -->
+<div class="modal fade" id="modalContinuidadeServicoFornecedor" tabindex="-1" aria-labelledby="tituloContinuidadeServico" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content selection-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title" id="tituloContinuidadeServico"><i class="bi bi-link-45deg me-1"></i>Continuar cadastro do fornecedor</h5>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="concluirContinuidadeServico()"></button>
+      </div>
+      <div class="modal-body">
+        <app-field-help-panel></app-field-help-panel>
+        <div class="mb-3"><strong>{{ novoFornecimento.razaoSocialFornecedor }}</strong><div>{{ formatarCNPJ(novoFornecimento.cnpjFornecedor) }}</div></div>
+        <p>Selecione um serviço existente ou cadastre um novo. Após o cadastro, informe as condições do fornecimento para concluir a associação com este fornecedor.</p>
+        @if (erroContinuidadeServico) {
+          <div class="alert alert-danger" role="alert">{{ erroContinuidadeServico }}</div>
+        }
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-primary" (click)="continuarEscolhaServico(false)"><i class="bi bi-search me-1"></i>Selecionar serviço existente</button>
+          <button type="button" class="btn btn-primary" (click)="continuarEscolhaServico(true)"><i class="bi bi-plus-circle me-1"></i>Cadastrar novo serviço</button>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="concluirContinuidadeServico()">Concluir por enquanto</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalConfirmacaoFornecimentoServico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content confirm-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title">
+          <i class="bi me-1" [ngClass]="iconeConfirmacao()"></i>
+          {{ tituloConfirmacao() }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="confirm-box">
+          <p class="mb-0">{{ textoConfirmacao() }}</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn" [ngClass]="classeBotaoConfirmacao()" (click)="executarConfirmacao()">
+          <i class="bi me-1" [ngClass]="iconeConfirmacao()"></i>
+          {{ labelBotaoConfirmacao() }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (cadastroAuxiliar === 'fornecedor') {
+  <app-fornecedor [cadastroIntegrado]="true" [itemCadastroIntegrado]="'Serviços automotivos'" (registroCriado)="fornecedorCriadoNoFornecimento($event)" (cadastroCancelado)="cancelarCadastroAuxiliar()"></app-fornecedor>
+}
+@if (cadastroAuxiliar === 'servico') {
+  <app-servico [cadastroIntegrado]="true" [fornecedorCadastroIntegrado]="fornecedorCadastroIntegrado" (registroCriado)="servicoCriadoNoFornecimento($event)" (cadastroCancelado)="cancelarCadastroAuxiliar()"></app-servico>
+}

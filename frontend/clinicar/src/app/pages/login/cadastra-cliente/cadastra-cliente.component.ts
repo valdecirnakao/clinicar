@@ -1,5 +1,10 @@
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
+import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
+import { inject as injectFeedback } from '@angular/core';
+import { NotificacaoService } from '../../../shared/feedback/notificacao.service';
 import { Component, ElementRef, HostListener, ViewChild, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { switchMap, catchError, of, finalize } from 'rxjs';
@@ -72,12 +77,12 @@ interface FipeYear  { code: string; name: string; }
 const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
 
 @Component({
-  selector: 'app-cadastra-cliente',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
-  templateUrl: './cadastra-cliente.component.html'
+    selector: 'app-cadastra-cliente',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, FormsModule, RouterModule],
+    templateUrl: './cadastra-cliente.component.html'
 })
 export class CadastraClienteComponent implements OnInit {
+  private readonly notificacoes = injectFeedback(NotificacaoService);
   /** ================== FORM STATE ================== */
   // Cliente
   cliente: Usuario = {
@@ -287,7 +292,7 @@ export class CadastraClienteComponent implements OnInit {
         // validações básicas
 
     if (this.cliente.senha !== this.cliente.confirmarSenha) {
-      alert('As senhas não coincidem.');
+      this.notificacoes.erro('As senhas não coincidem.');
       return;
     }
     this.errorMsg = ''; this.successMsg = '';

@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-md bg-white sticky-top m-0 p-0 top-nav-clinicar">
+<nav class="navbar navbar-expand-xl bg-white sticky-top m-0 p-0 top-nav-clinicar">
   <div class="container-fluid">
     <a class="navbar-brand d-flex align-items-center" routerLink="/">
       <img src="assets/img/LogoClinicar.png" alt="CliniCar" class="m-0 p-0 logo-clinicar">
@@ -16,14 +16,15 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="collapse navbar-collapse justify-content-md-center" id="topNav">
-      <ul class="navbar-nav nav nav-pills gap-2 align-items-md-center flex-column flex-md-row w-auto w-md-auto">
+    <div class="collapse navbar-collapse justify-content-xl-center" id="topNav">
+      <ul class="navbar-nav nav nav-pills gap-2 align-items-xl-center flex-column flex-xl-row w-auto w-xl-auto">
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="painel" routerLinkActive="nav-active">Painel</a></li>
 
         <li class="nav-item">
           <button
             class="nav-link btn px-3 pill-btn"
             type="button"
-            routerLink="exibeUsuario"
+            routerLink="usuario"
             routerLinkActive="nav-active"
             ariaCurrentWhenActive="page"
           >
@@ -35,7 +36,7 @@
           <button
             class="nav-link btn px-3 pill-btn"
             type="button"
-            routerLink="exibeVeiculo"
+            routerLink="veiculo"
             routerLinkActive="nav-active"
             ariaCurrentWhenActive="page"
           >
@@ -47,7 +48,7 @@
           <button
             class="nav-link btn px-3 pill-btn"
             type="button"
-            routerLink="exibeFornecedor"
+            routerLink="fornecedor"
             routerLinkActive="nav-active"
             ariaCurrentWhenActive="page"
           >
@@ -65,9 +66,9 @@
             Peças
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibePeca" routerLinkActive="dropdown-active">Cadastros</a></li>
-            <li><a class="dropdown-item" routerLink="exibeControleEstoquePecas" routerLinkActive="dropdown-active">Estoque</a></li>
-            <li><a class="dropdown-item" routerLink="exibeFornecimentoPecas" routerLinkActive="dropdown-active">Fornecimentos</a></li>
+            <li><a class="dropdown-item" routerLink="peca" routerLinkActive="dropdown-active">Cadastros</a></li>
+            <li><a class="dropdown-item" routerLink="controleEstoquePecas" routerLinkActive="dropdown-active">Estoque</a></li>
+            <li><a class="dropdown-item" routerLink="fornecimentoPecas" routerLinkActive="dropdown-active">Fornecimentos</a></li>
           </ul>
         </li>
 
@@ -81,8 +82,8 @@
             Serviços
           </button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="exibeServico" routerLinkActive="dropdown-active">Cadastros</a></li>
-            <li><a class="dropdown-item" routerLink="exibeFornecimentoServicos" routerLinkActive="dropdown-active">Fornecimentos</a></li>
+            <li><a class="dropdown-item" routerLink="servico" routerLinkActive="dropdown-active">Cadastros</a></li>
+            <li><a class="dropdown-item" routerLink="fornecimentoServico" routerLinkActive="dropdown-active">Fornecimentos</a></li>
           </ul>
         </li>
 
@@ -90,7 +91,7 @@
           <button
             class="nav-link btn px-3 pill-btn"
             type="button"
-            routerLink="exibeRegrasManutencao"
+            routerLink="regraManutencao"
             routerLinkActive="nav-active"
             ariaCurrentWhenActive="page"
           >
@@ -102,7 +103,7 @@
           <button
             class="nav-link btn px-3 pill-btn"
             type="button"
-            routerLink="exibeAgendamentos"
+            routerLink="agendamento"
             routerLinkActive="nav-active"
             ariaCurrentWhenActive="page"
           >
@@ -114,7 +115,7 @@
           <button
             class="nav-link btn px-3 pill-btn"
             type="button"
-            routerLink="exibeAtendimentos"
+            routerLink="atendimento"
             routerLinkActive="nav-active"
             ariaCurrentWhenActive="page"
           >
@@ -123,22 +124,18 @@
         </li>
 
         <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="historicoVeicular" routerLinkActive="nav-active" ariaCurrentWhenActive="page">Histórico veicular</a></li>
-        <li class="nav-item"><button class="nav-link btn px-3 pill-btn" type="button"
-          routerLink="configuracaoAlertas" routerLinkActive="nav-active" ariaCurrentWhenActive="page">Alertas</button></li>
-        <li class="nav-item dropdown" data-bs-display="static">
-          <button
-            class="nav-link dropdown-toggle btn btn-link px-3 pill-btn"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            Encerrar
-          </button>
+        <li class="nav-item dropdown" data-bs-display="static" routerLinkActive="nav-group-active">
+          <button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">Alertas</button>
           <ul class="dropdown-menu shadow-sm">
-            <li><a class="dropdown-item" routerLink="/" (click)="logout()">Sessão</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><button class="dropdown-item text-danger" type="button">Fechar</button></li>
+            <li><a class="dropdown-item" routerLink="alertasClientes" routerLinkActive="dropdown-active">Clientes</a></li>
+            <li><a class="dropdown-item" routerLink="alertasColaboradores" routerLinkActive="dropdown-active">Colaboradores</a></li>
           </ul>
+        </li>
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="auditoria" routerLinkActive="nav-active" ariaCurrentWhenActive="page">Auditoria</a></li>
+        <li class="nav-item">
+          <button class="nav-link btn px-3 pill-btn" type="button" (click)="logout()" [disabled]="encerrando">
+            {{ encerrando ? 'Encerrando...' : 'Encerrar' }}
+          </button>
         </li>
 
       </ul>

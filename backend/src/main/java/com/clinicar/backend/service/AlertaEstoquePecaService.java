@@ -37,15 +37,18 @@ public class AlertaEstoquePecaService {
     private final AlertaEstoquePecaRepository alertaRepository;
     private final ConfiguracaoAlertaEstoqueRepository configuracaoRepository;
     private final WhatsappEstoqueService whatsappEstoqueService;
+    private final com.clinicar.backend.repository.EstoquePecaRepository estoqueRepository;
 
     public AlertaEstoquePecaService(
             AlertaEstoquePecaRepository alertaRepository,
             ConfiguracaoAlertaEstoqueRepository configuracaoRepository,
-            WhatsappEstoqueService whatsappEstoqueService
+            WhatsappEstoqueService whatsappEstoqueService,
+            com.clinicar.backend.repository.EstoquePecaRepository estoqueRepository
     ) {
         this.alertaRepository = alertaRepository;
         this.configuracaoRepository = configuracaoRepository;
         this.whatsappEstoqueService = whatsappEstoqueService;
+        this.estoqueRepository = estoqueRepository;
     }
 
     /**
@@ -63,6 +66,11 @@ public class AlertaEstoquePecaService {
             String origem,
             String documentoReferencia
     ) {
+        avaliarEEnviarAlertaSeNecessario(estoque, origem, documentoReferencia, false);
+    }
+
+    @Transactional
+    public void avaliarEEnviarAlertaSeNecessario(EstoquePeca estoque, String origem, String documentoReferencia, boolean forcarPendente) {
         if (estoque == null || estoque.getId() == null) {
             log.warn("[ALERTA-ESTOQUE] Estoque não informado. Avaliação de alerta ignorada.");
             return;
@@ -84,6 +92,14 @@ public class AlertaEstoquePecaService {
                 quantidadeDisponivel
         );
 
+        boolean suspenso = false;
+        for (var encerrado : alertaRepository.findByEstoquePeca_IdAndStatusAlerta(estoque.getId(), "ENCERRADO")) {
+            if (!Boolean.TRUE.equals(encerrado.getExcecaoAtiva())) continue;
+            if (nivelAtual.equals(encerrado.getNivelAlerta())) suspenso = true;
+            else { encerrado.setExcecaoAtiva(false); alertaRepository.save(encerrado); }
+        }
+        if (suspenso) return;
+
         if (NIVEL_NORMAL.equals(nivelAtual)) {
             resolverAlertasAbertosSeEstoqueNormalizado(estoque);
             return;
@@ -98,6 +114,10 @@ public class AlertaEstoquePecaService {
             return;
         }
 
+        // Mantém aberto apenas o nível atual; evita lembretes de níveis antigos.
+        for (var anterior : alertaRepository.findByEstoquePeca_IdAndStatusAlerta(estoque.getId(), STATUS_ABERTO)) {
+            if (!nivelAtual.equals(anterior.getNivelAlerta())) { anterior.setStatusAlerta("SUPERADO"); anterior.setEncerradoEm(LocalDateTime.now()); alertaRepository.save(anterior); }
+        }
         Optional<AlertaEstoquePeca> alertaAbertoMesmoNivel =
                 alertaRepository.findFirstByEstoquePeca_IdAndNivelAlertaAndStatusAlertaOrderByCriadoEmDesc(
                         estoque.getId(),
@@ -116,22 +136,14 @@ public class AlertaEstoquePecaService {
         if (alertaAbertoMesmoNivel.isPresent()) {
             AlertaEstoquePeca alertaExistente = alertaAbertoMesmoNivel.get();
 
-            if (Boolean.FALSE.equals(alertaExistente.getWhatsappEnviado())) {
-                log.info(
-                        "[ALERTA-ESTOQUE] Já existe alerta ABERTO de nível {} para estoque ID {}, mas WhatsApp ainda não foi enviado. Tentando reenviar alerta ID {}.",
-                        nivelAtual,
-                        estoque.getId(),
-                        alertaExistente.getId()
-                );
+            var c = configuracaoRepository.findFirstByAtivoTrueOrderByIdAsc().orElse(null);
+            LocalDateTime ultima = alertaExistente.getUltimaTentativaEm() != null ? alertaExistente.getUltimaTentativaEm() : alertaExistente.getWhatsappEnviadoEm();
+            boolean pendente = !Boolean.TRUE.equals(alertaExistente.getWhatsappEnviado());
+            boolean intervaloVencido = ultima == null || (c != null && !ultima.plusHours(c.getReenviarAlertaAposHoras()).isAfter(LocalDateTime.now()));
+            if ((forcarPendente && pendente) || intervaloVencido) {
+                atualizarDadosAlerta(alertaExistente, estoque, origem, documentoReferencia);
                 tentarEnviarWhatsapp(alertaExistente);
-                return;
             }
-
-            log.info(
-                    "[ALERTA-ESTOQUE] Já existe alerta ABERTO de nível {} para estoque ID {}. WhatsApp não será reenviado.",
-                    nivelAtual,
-                    estoque.getId()
-            );
             return;
         }
 
@@ -203,17 +215,64 @@ public class AlertaEstoquePecaService {
 
     @Transactional
     public AlertaEstoquePeca resolver(Long id) {
-        AlertaEstoquePeca alerta = buscarPorId(id);
-
+        var alerta = bloquearAlerta(id);
+        if (!NIVEL_NORMAL.equals(calcularNivelPelaQuantidadeDisponivel(alerta.getEstoquePeca())))
+            throw new IllegalArgumentException("O estoque ainda está abaixo do nível normal. Registre uma entrada real ou reconheça o alerta.");
         alerta.setStatusAlerta(STATUS_RESOLVIDO);
-
+        alerta.setEncerradoEm(LocalDateTime.now());
         return alertaRepository.save(alerta);
     }
 
     @Transactional
-    public AlertaEstoquePeca reenviarWhatsapp(Long id) {
-        AlertaEstoquePeca alerta = buscarPorId(id);
+    public AlertaEstoquePeca reconhecer(Long id, com.clinicar.backend.dto.UsuarioResponse usuario) {
+        validarAdministrador(usuario);
+        var alerta = bloquearAlerta(id);
+        if (alerta.getReconhecidoEm() == null) {
+            alerta.setReconhecidoEm(LocalDateTime.now());
+            alerta.setIdUsuarioReconhecimento(usuario.getId());
+            alerta.setNomeUsuarioReconhecimento(usuario.getNome());
+        }
+        return alertaRepository.save(alerta);
+    }
 
+    @Transactional
+    public AlertaEstoquePeca encerrarExcepcionalmente(Long id, String justificativa, com.clinicar.backend.dto.UsuarioResponse usuario) {
+        validarAdministrador(usuario);
+        String motivo = justificativa == null ? "" : justificativa.strip();
+        if (motivo.length() < 10 || motivo.length() > 1000)
+            throw new IllegalArgumentException("Informe uma justificativa com 10 a 1.000 caracteres para o encerramento excepcional.");
+        var alerta = bloquearAlerta(id);
+        validarReenvio(alerta, alerta.getEstoquePeca());
+        alerta.setStatusAlerta("ENCERRADO");
+        alerta.setEncerradoEm(LocalDateTime.now());
+        alerta.setIdUsuarioEncerramento(usuario.getId());
+        alerta.setNomeUsuarioEncerramento(usuario.getNome());
+        alerta.setJustificativaEncerramento(motivo);
+        alerta.setExcecaoAtiva(true);
+        return alertaRepository.save(alerta);
+    }
+
+    private void validarAdministrador(com.clinicar.backend.dto.UsuarioResponse usuario) {
+        if (usuario == null || usuario.getId() == null || !"ADMINISTRADOR".equalsIgnoreCase(usuario.getTipo_do_acesso()))
+            throw new IllegalArgumentException("A ação exige um administrador autenticado.");
+    }
+
+    private AlertaEstoquePeca bloquearAlerta(Long id) {
+        var estoqueId = alertaRepository.buscarIdEstoque(id).orElseThrow(() -> new IllegalArgumentException("Alerta de estoque não encontrado."));
+        estoqueRepository.buscarComLockPorId(estoqueId).orElseThrow(() -> new IllegalArgumentException("Estoque não encontrado."));
+        var alerta = buscarPorId(id);
+        if (!STATUS_ABERTO.equals(alerta.getStatusAlerta()))
+            throw new IllegalArgumentException("Este alerta já foi encerrado. Atualize a lista de alertas.");
+        return alerta;
+    }
+
+    @Transactional
+    public AlertaEstoquePeca reenviarWhatsapp(Long id) {
+        var idEstoque = alertaRepository.buscarIdEstoque(id).orElseThrow(() -> new IllegalArgumentException("Alerta de estoque não encontrado."));
+        var estoque = estoqueRepository.buscarComLockPorId(idEstoque).orElseThrow();
+        var alerta = alertaRepository.findById(id).orElseThrow();
+        validarReenvio(alerta, estoque);
+        atualizarDadosAlerta(alerta, estoque, "REENVIO_MANUAL", null);
         tentarEnviarWhatsapp(alerta);
 
         return alertaRepository.findById(id).orElse(alerta);
@@ -229,10 +288,8 @@ public class AlertaEstoquePecaService {
                 .orElse(null);
 
         if (configuracao == null) {
-            alerta.setUltimoErro("Configuração de alerta de estoque não encontrada.");
-            alerta.setTentativasEnvio(incrementarTentativas(alerta));
+            alerta.setUltimoErro("Configure e ative os alertas de estoque na página Alertas para enviar pelo WhatsApp.");
             alertaRepository.save(alerta);
-
             log.warn(
                     "[ALERTA-ESTOQUE] Configuração ativa de alerta de estoque não encontrada. WhatsApp não enviado para alerta ID {}.",
                     alerta.getId()
@@ -240,11 +297,13 @@ public class AlertaEstoquePecaService {
             return;
         }
 
+        alerta.setUltimaTentativaEm(LocalDateTime.now());
         try {
             String messageId = whatsappEstoqueService.enviarAlertaEstoque(alerta, configuracao);
 
-            alerta.setWhatsappEnviado(true);
-            alerta.setWhatsappEnviadoEm(LocalDateTime.now());
+            if (messageId == null || messageId.isBlank()) throw new IllegalStateException("A Meta não confirmou a aceitação do envio. Verifique o histórico antes de reenviar.");
+            alerta.setWhatsappEnviado(!messageId.startsWith("fila:"));
+            alerta.setWhatsappEnviadoEm(messageId.startsWith("fila:") ? null : LocalDateTime.now());
             alerta.setWhatsappDestinatario(configuracao.getTelefoneAdministrador());
             alerta.setWhatsappMessageId(messageId);
             alerta.setUltimoErro(null);
@@ -259,6 +318,7 @@ public class AlertaEstoquePecaService {
             );
 
         } catch (Exception e) {
+            if(e instanceof org.springframework.dao.DataAccessException databaseError) throw databaseError;
             alerta.setWhatsappEnviado(false);
             alerta.setTentativasEnvio(incrementarTentativas(alerta));
             alerta.setUltimoErro(e.getMessage());
@@ -274,6 +334,16 @@ public class AlertaEstoquePecaService {
         }
     }
 
+    private void validarReenvio(AlertaEstoquePeca alerta, EstoquePeca estoque) {
+        if (!STATUS_ABERTO.equals(alerta.getStatusAlerta()) || !Boolean.TRUE.equals(estoque.getAtivo())
+                || !alerta.getNivelAlerta().equals(calcularNivelPelaQuantidadeDisponivel(estoque)))
+            throw new IllegalArgumentException("Este alerta não corresponde à situação atual do estoque. Atualize a lista de alertas.");
+    }
+    private void atualizarDadosAlerta(AlertaEstoquePeca alerta, EstoquePeca estoque, String origem, String documento) {
+        alerta.setQuantidadeAtual(valorOuZero(estoque.getQuantidadeAtual()));
+        alerta.setEstoqueMinimo(valorOuZero(estoque.getEstoqueMinimo())); alerta.setEstoqueCritico(valorOuZero(estoque.getEstoqueCritico()));
+        alerta.setMensagem(montarMensagem(alerta, estoque, origem, documento));
+    }
     private void resolverAlertasAbertosSeEstoqueNormalizado(EstoquePeca estoque) {
         if (estoque == null || estoque.getId() == null) {
             return;
@@ -291,6 +361,7 @@ public class AlertaEstoquePecaService {
 
         for (AlertaEstoquePeca alerta : alertasAbertos) {
             alerta.setStatusAlerta(STATUS_RESOLVIDO);
+            alerta.setEncerradoEm(LocalDateTime.now());
             alertaRepository.save(alerta);
 
             log.info(
@@ -338,7 +409,7 @@ public class AlertaEstoquePecaService {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
 
-        return disponivel.setScale(2, RoundingMode.HALF_UP);
+        return disponivel.setScale(3, RoundingMode.HALF_UP);
     }
 
     private String montarMensagem(
@@ -413,6 +484,6 @@ public class AlertaEstoquePecaService {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
 
-        return valor.setScale(2, RoundingMode.HALF_UP);
+        return valor.setScale(3, RoundingMode.HALF_UP);
     }
 }

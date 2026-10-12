@@ -2,6 +2,9 @@ package com.clinicar.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.clinicar.backend.dto.FornecedorRequest;
 import com.clinicar.backend.model.Fornecedor;
 import com.clinicar.backend.repository.FornecedorRepository;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -24,6 +28,79 @@ class FornecedorServiceTest {
 
     @InjectMocks
     private FornecedorService service;
+
+    @Test
+    void rejeitaEmailComFormatoInvalidoAntesDeGravar() {
+        for (String email : java.util.List.of("semarroba.com", "@empresa.com", "nome@", "nome@empresa",
+                "nome@@empresa.com", "nome sobrenome@empresa.com", "nome@empresa..com")) {
+            FornecedorRequest request = new FornecedorRequest(); request.setEmail(email);
+            assertThrows(IllegalArgumentException.class, () -> service.criar(request));
+        }
+        org.mockito.Mockito.verifyNoInteractions(repo);
+    }
+
+    @Test
+    void consultaEmailNormalizaEIgnoraOProprioFornecedor() {
+        when(repo.emailCadastrado("teste@example.com", null)).thenReturn(true);
+        assertTrue(service.emailCadastrado(" Teste@Example.com ", null));
+        assertFalse(service.emailCadastrado("Teste@Example.com", 7L));
+        verify(repo).emailCadastrado("teste@example.com", 7L);
+        assertThrows(IllegalArgumentException.class, () -> service.emailCadastrado("invalido", null));
+    }
+
+    @Test
+    void cadastroEEdicaoRejeitamEmailDuplicadoSemConsultaPrevia() {
+        FornecedorRequest request = new FornecedorRequest();
+        request.setCnpj("12345678000190");
+        request.setEmail(" Teste@Example.com ");
+        when(repo.emailCadastrado("teste@example.com", null)).thenReturn(true);
+        assertEquals("E-mail já cadastrado anteriormente.",
+                assertThrows(IllegalArgumentException.class, () -> service.criar(request)).getMessage());
+        Fornecedor atual = new Fornecedor(); atual.setId(7L);
+        when(repo.findById(7L)).thenReturn(Optional.of(atual));
+        when(repo.emailCadastrado("teste@example.com", 7L)).thenReturn(true);
+        assertEquals("E-mail já cadastrado anteriormente.",
+                assertThrows(IllegalArgumentException.class, () -> service.atualizar(7L, request)).getMessage());
+    }
+
+    @Test
+    void consultaNormalizaMascaraEIgnoraSomenteOProprioFornecedor() {
+        Fornecedor fornecedor = new Fornecedor();
+        fornecedor.setId(7L);
+        when(repo.findByCnpj("12345678000190")).thenReturn(Optional.of(fornecedor));
+        assertTrue(service.cnpjCadastrado("12.345.678/0001-90", null));
+        assertFalse(service.cnpjCadastrado("12.345.678/0001-90", 7L));
+        assertTrue(service.cnpjCadastrado("12.345.678/0001-90", 8L));
+    }
+
+    @Test
+    void consultaPermiteDocumentoDisponivelERejeitaFormatoIncompleto() {
+        assertFalse(service.cnpjCadastrado("12345678000190", null));
+        assertThrows(IllegalArgumentException.class, () -> service.cnpjCadastrado("123", null));
+    }
+
+    @Test
+    void cadastroRejeitaDuplicidadeMesmoSemConsultaPrevia() {
+        FornecedorRequest request = new FornecedorRequest();
+        request.setCnpj("12.345.678/0001-90");
+        when(repo.findByCnpj("12345678000190")).thenReturn(Optional.of(new Fornecedor()));
+        assertEquals("CNPJ já cadastrado anteriormente.",
+                assertThrows(IllegalArgumentException.class, () -> service.criar(request)).getMessage());
+    }
+
+    @Test
+    void edicaoRejeitaCnpjDeOutroFornecedor() {
+        Fornecedor atual = new Fornecedor();
+        atual.setId(7L);
+        Fornecedor outro = new Fornecedor();
+        outro.setId(8L);
+        FornecedorRequest request = new FornecedorRequest();
+        request.setCnpj("12.345.678/0001-90");
+        when(repo.findById(7L)).thenReturn(Optional.of(atual));
+        when(repo.findByCnpj("12345678000190")).thenReturn(Optional.of(outro));
+        assertEquals("CNPJ já cadastrado anteriormente.",
+                assertThrows(IllegalArgumentException.class, () -> service.atualizar(7L, request)).getMessage());
+    }
 
     @Test
     void criarNormalizaCnpjEcepEConverteFundacaoValida() {

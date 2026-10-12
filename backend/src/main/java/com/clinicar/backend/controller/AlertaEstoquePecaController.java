@@ -39,6 +39,21 @@ public class AlertaEstoquePecaController {
         return ResponseEntity.ok(mapper.toResponse(service.resolver(id)));
     }
 
+    @PatchMapping("/{id}/reconhecer")
+    public ResponseEntity<AlertaEstoquePecaResponse> reconhecer(@PathVariable Long id,
+            @RequestAttribute("usuarioLogado") com.clinicar.backend.dto.UsuarioResponse usuario) {
+        return ResponseEntity.ok(mapper.toResponse(service.reconhecer(id, usuario)));
+    }
+
+    public record EncerramentoRequest(String justificativa) {}
+
+    @PatchMapping("/{id}/encerrar-excepcionalmente")
+    public ResponseEntity<AlertaEstoquePecaResponse> encerrar(@PathVariable Long id,
+            @RequestBody EncerramentoRequest request,
+            @RequestAttribute("usuarioLogado") com.clinicar.backend.dto.UsuarioResponse usuario) {
+        return ResponseEntity.ok(mapper.toResponse(service.encerrarExcepcionalmente(id, request.justificativa(), usuario)));
+    }
+
     @PostMapping("/{id}/reenviar-whatsapp")
     public ResponseEntity<AlertaEstoquePecaResponse> reenviarWhatsapp(@PathVariable Long id) {
         return ResponseEntity.ok(mapper.toResponse(service.reenviarWhatsapp(id)));

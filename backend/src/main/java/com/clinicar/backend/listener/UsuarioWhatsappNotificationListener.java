@@ -20,7 +20,7 @@ public class UsuarioWhatsappNotificationListener {
 
     private final WhatsAppService whatsAppService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void aoCadastrarUsuario(UsuarioCadastradoEvent event) {
         tentarEnviar(
                 () -> whatsAppService.enviarMensagemCadastroUsuario(event.telefone(), event.nome()),
@@ -33,7 +33,7 @@ public class UsuarioWhatsappNotificationListener {
     }
 
     @TransactionalEventListener(
-            phase = TransactionPhase.AFTER_COMMIT,
+            phase = TransactionPhase.BEFORE_COMMIT,
             fallbackExecution = true
     )
     public void aoAtualizarUsuario(UsuarioAtualizadoEvent event) {
@@ -55,7 +55,7 @@ public class UsuarioWhatsappNotificationListener {
     }
 
     @TransactionalEventListener(
-            phase = TransactionPhase.AFTER_COMMIT,
+            phase = TransactionPhase.BEFORE_COMMIT,
             fallbackExecution = true
     )
     public void aoInativarUsuario(UsuarioInativadoEvent event) {
@@ -77,7 +77,7 @@ public class UsuarioWhatsappNotificationListener {
     }
 
     @TransactionalEventListener(
-            phase = TransactionPhase.AFTER_COMMIT,
+            phase = TransactionPhase.BEFORE_COMMIT,
             fallbackExecution = true
     )
     public void aoAtivarUsuario(UsuarioAtivadoEvent event) {
@@ -99,7 +99,7 @@ public class UsuarioWhatsappNotificationListener {
     }
 
     @TransactionalEventListener(
-            phase = TransactionPhase.AFTER_COMMIT,
+            phase = TransactionPhase.BEFORE_COMMIT,
             fallbackExecution = true
     )
     public void aoResetarMfa(UsuarioMfaResetadoEvent event) {
@@ -141,6 +141,8 @@ public class UsuarioWhatsappNotificationListener {
             );
 
         } catch (Exception e) {
+            if (e instanceof com.clinicar.backend.exception.NotificacaoPersistenciaException persistencia) throw persistencia;
+            if (e instanceof org.springframework.dao.DataAccessException databaseError) throw databaseError;
             log.error(
                     "Usuário ID {} foi processado, mas houve falha ao enviar o template WhatsApp '{}'.",
                     usuarioId,

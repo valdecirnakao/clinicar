@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class FornecedorRequest {
+    private Boolean ativo;
     private String cnpj;
     private String razaoSocial;
     private String nomeFantasia;

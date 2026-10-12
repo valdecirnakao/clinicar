@@ -30,7 +30,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 # Configuração do CliniCar.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Angular 18 application builder gera os arquivos em /browser.
+# O application builder do Angular gera os arquivos em /browser.
 COPY --from=build /app/dist/clinicar/browser /usr/share/nginx/html
 
 EXPOSE 80

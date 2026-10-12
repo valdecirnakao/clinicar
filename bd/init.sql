@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS password_reset_token (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS fornecedor (
+    ativo                BIT(1) NOT NULL DEFAULT b'1',
     id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     cnpj                 VARCHAR(255) NULL,
     razao_social         VARCHAR(255) NULL,
@@ -217,6 +218,7 @@ CREATE TABLE IF NOT EXISTS fornecedor (
 
     PRIMARY KEY (id),
     CONSTRAINT uk_fornecedor_cnpj UNIQUE (cnpj),
+    CONSTRAINT uk_fornecedor_email UNIQUE (email),
     INDEX idx_fornecedor_razao_social (razao_social),
     INDEX idx_fornecedor_nome_fantasia (nome_fantasia)
 ) ENGINE=InnoDB
@@ -253,6 +255,8 @@ CREATE TABLE IF NOT EXISTS veiculo (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS peca (
+    chave_catalogo CHAR(64) NULL,
+    CONSTRAINT uk_peca_chave_catalogo UNIQUE (chave_catalogo),
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     nome            VARCHAR(200) NOT NULL,
     tipo            VARCHAR(100) NULL,
@@ -289,6 +293,7 @@ CREATE TABLE IF NOT EXISTS peca (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS servico (
+    CONSTRAINT uk_servico_nome_categoria UNIQUE (nome, categoria),
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     nome                VARCHAR(120) NOT NULL,
     descricao           VARCHAR(500) NULL,
@@ -329,6 +334,7 @@ CREATE TABLE IF NOT EXISTS servico (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS fornecimento_pecas (
+    CONSTRAINT uk_fornecedor_peca UNIQUE (id_fornecedor, id_peca),
     -- Colunas legadas preservadas: criado_em, atualizado_em.
     id                    BIGINT NOT NULL AUTO_INCREMENT,
     id_fornecedor         BIGINT UNSIGNED NOT NULL,
@@ -485,14 +491,25 @@ CREATE TABLE IF NOT EXISTS movimentacao_estoque_peca (
     valor_total           DECIMAL(10,2) NULL,
 
     origem                VARCHAR(80) NULL,
+    id_movimentacao_origem BIGINT NULL,
     documento_referencia  VARCHAR(120) NULL,
     motivo                VARCHAR(200) NULL,
     observacoes           VARCHAR(500) NULL,
 
     id_usuario            BIGINT UNSIGNED NULL,
+    nome_usuario VARCHAR(255) NULL,
+    id_atendimento BIGINT UNSIGNED NULL,
+    custo_unitario_estoque DECIMAL(10,2) NULL,
+    tratamento_cobranca VARCHAR(40) NULL,
+    valor_restituicao DECIMAL(10,2) NULL,
     criado_em             DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     PRIMARY KEY (id),
+    INDEX idx_movimentacao_atendimento (id_atendimento),
+    INDEX idx_movimentacao_origem (id_movimentacao_origem),
+    CONSTRAINT fk_movimentacao_origem
+        FOREIGN KEY (id_movimentacao_origem) REFERENCES movimentacao_estoque_peca(id)
+        ON DELETE RESTRICT,
     CONSTRAINT fk_mov_estoque_estoque
         FOREIGN KEY (id_estoque_peca) REFERENCES estoque_peca(id)
         ON UPDATE CASCADE
@@ -936,6 +953,7 @@ CREATE TABLE IF NOT EXISTS atendimento_servico_executado (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS regra_manutencao_preventiva (
+    CONSTRAINT uk_regra_grupo_descricao UNIQUE (grupo_manutencao, descricao),
     -- Colunas legadas preservadas: intervalo_quilometragem, intervalo_meses, tolerancia_km, tolerancia_dias.
     id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     grupo_manutencao        VARCHAR(80) NOT NULL,
@@ -1239,3 +1257,115 @@ ALTER TABLE solicitacao_acesso_usuario
   ADD COLUMN reativado_em TIMESTAMP(6) NULL,
   ADD COLUMN interrompido_em TIMESTAMP(6) NULL,
   ADD INDEX idx_solicitacao_periodo (situacao_periodo, inicio_periodo, fim_periodo);
+
+
+-- Atendimento é criado depois das tabelas de estoque.
+SET @ddl_mov = IF(EXISTS(SELECT 1 FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND table_name='movimentacao_estoque_peca' AND constraint_name='fk_mov_estoque_atendimento'), 'DO 0', 'ALTER TABLE movimentacao_estoque_peca ADD CONSTRAINT fk_mov_estoque_atendimento FOREIGN KEY (id_atendimento) REFERENCES atendimento(id) ON DELETE RESTRICT');
+PREPARE ddl_mov FROM @ddl_mov;
+EXECUTE ddl_mov;
+DEALLOCATE PREPARE ddl_mov;
+
+-- Fornecedor da compra e da devolução. Registros anteriores permanecem preservados.
+SET @ddl_mov = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='movimentacao_estoque_peca' AND column_name='id_fornecedor'), 'DO 0', 'ALTER TABLE movimentacao_estoque_peca ADD COLUMN id_fornecedor BIGINT UNSIGNED NULL');
+PREPARE ddl_mov FROM @ddl_mov;
+EXECUTE ddl_mov;
+DEALLOCATE PREPARE ddl_mov;
+SET @ddl_mov = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='movimentacao_estoque_peca' AND column_name='nome_fornecedor'), 'DO 0', 'ALTER TABLE movimentacao_estoque_peca ADD COLUMN nome_fornecedor VARCHAR(255) NULL');
+PREPARE ddl_mov FROM @ddl_mov;
+EXECUTE ddl_mov;
+DEALLOCATE PREPARE ddl_mov;
+SET @ddl_mov = IF(EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='movimentacao_estoque_peca' AND index_name='idx_movimentacao_fornecedor'), 'DO 0', 'CREATE INDEX idx_movimentacao_fornecedor ON movimentacao_estoque_peca(id_fornecedor)');
+PREPARE ddl_mov FROM @ddl_mov;
+EXECUTE ddl_mov;
+DEALLOCATE PREPARE ddl_mov;
+SET @ddl_mov = IF(EXISTS(SELECT 1 FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND table_name='movimentacao_estoque_peca' AND constraint_name='fk_mov_estoque_fornecedor'), 'DO 0', 'ALTER TABLE movimentacao_estoque_peca ADD CONSTRAINT fk_mov_estoque_fornecedor FOREIGN KEY (id_fornecedor) REFERENCES fornecedor(id) ON DELETE RESTRICT');
+PREPARE ddl_mov FROM @ddl_mov;
+EXECUTE ddl_mov;
+DEALLOCATE PREPARE ddl_mov;
+
+-- Configuração administrável, controle de concorrência e intervalo de tentativas.
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='configuracao_alerta_estoque' AND column_name='versao'), 'DO 0', 'ALTER TABLE configuracao_alerta_estoque ADD COLUMN versao BIGINT NULL DEFAULT 0');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='configuracao_alerta_estoque' AND column_name='id_responsavel'), 'DO 0', 'ALTER TABLE configuracao_alerta_estoque ADD COLUMN id_responsavel BIGINT UNSIGNED NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='configuracao_alerta_estoque' AND column_name='nome_responsavel'), 'DO 0', 'ALTER TABLE configuracao_alerta_estoque ADD COLUMN nome_responsavel VARCHAR(255) NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='ultima_tentativa_em'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN ultima_tentativa_em DATETIME NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+INSERT INTO configuracao_alerta_estoque (id, ativo, telefone_administrador, template_whatsapp, idioma_template, reenviar_alerta_apos_horas, criado_em, versao)
+SELECT 1, ativo, telefone_administrador, template_whatsapp, idioma_template, reenviar_alerta_apos_horas, NOW(), 0
+FROM configuracao_alerta_estoque WHERE id <> 1 AND NOT EXISTS (SELECT 1 FROM configuracao_alerta_estoque WHERE id=1) ORDER BY ativo DESC, id ASC LIMIT 1;
+INSERT IGNORE INTO configuracao_alerta_estoque (id, ativo, telefone_administrador, template_whatsapp, idioma_template, reenviar_alerta_apos_horas, criado_em, versao)
+VALUES (1, FALSE, '', 'alerta_estoque_peca', 'pt_BR', 24, NOW(), 0);
+UPDATE configuracao_alerta_estoque SET ativo=FALSE WHERE id<>1 AND ativo=TRUE;
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_name='fk_config_estoque_responsavel'), 'DO 0', 'ALTER TABLE configuracao_alerta_estoque ADD CONSTRAINT fk_config_estoque_responsavel FOREIGN KEY(id_responsavel) REFERENCES usuario(id) ON DELETE RESTRICT');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+-- Reconhecimento e encerramento excepcional auditável dos alertas.
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='reconhecido_em'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN reconhecido_em DATETIME NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='id_usuario_reconhecimento'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN id_usuario_reconhecimento BIGINT UNSIGNED NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='nome_usuario_reconhecimento'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN nome_usuario_reconhecimento VARCHAR(255) NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='encerrado_em'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN encerrado_em DATETIME NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='id_usuario_encerramento'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN id_usuario_encerramento BIGINT UNSIGNED NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='nome_usuario_encerramento'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN nome_usuario_encerramento VARCHAR(255) NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='justificativa_encerramento'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN justificativa_encerramento VARCHAR(1000) NULL');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+SET @ddl_alerta = IF(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='alerta_estoque_peca' AND column_name='excecao_ativa'), 'DO 0', 'ALTER TABLE alerta_estoque_peca ADD COLUMN excecao_ativa BOOLEAN NOT NULL DEFAULT FALSE');
+PREPARE ddl_alerta FROM @ddl_alerta;
+EXECUTE ddl_alerta;
+DEALLOCATE PREPARE ddl_alerta;
+
+-- Configurações individuais dos alertas de manutenção preventiva.
+CREATE TABLE IF NOT EXISTS configuracao_alerta_manutencao_usuario LIKE configuracao_alerta_manutencao;
+
+-- Acessos à tela de auditoria: preservados independentemente do cadastro do responsável.
+CREATE TABLE IF NOT EXISTS auditoria_consulta (
+  id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  usuario_id BIGINT NOT NULL,
+  usuario_nome VARCHAR(255) NOT NULL,
+  operacao VARCHAR(30) NOT NULL,
+  descricao VARCHAR(1000) NOT NULL,
+  realizado_em TIMESTAMP(6) NOT NULL,
+  INDEX idx_auditoria_consulta_data (realizado_em),
+  INDEX idx_auditoria_consulta_usuario (usuario_id, realizado_em)
+);

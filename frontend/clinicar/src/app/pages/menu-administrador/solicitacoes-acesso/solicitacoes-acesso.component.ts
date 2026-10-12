@@ -1,3 +1,6 @@
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -5,8 +8,10 @@ import { RouterLink } from '@angular/router';
 import { PaginaSolicitacoes, SolicitacaoAcesso, SolicitacoesAcessoService, mensagemSolicitacao } from '../../../services/solicitacoes-acesso.service';
 declare const bootstrap: any;
 
-@Component({ selector: 'app-solicitacoes-acesso', standalone: true, imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './solicitacoes-acesso.component.html', styleUrl: './solicitacoes-acesso.component.css' })
+@Component({
+    selector: 'app-solicitacoes-acesso', imports: [FieldHelpPanelComponent, FieldHelpDirective, FeedbackDirective, CommonModule, FormsModule, RouterLink],
+    templateUrl: './solicitacoes-acesso.component.html', styleUrl: './solicitacoes-acesso.component.css'
+})
 export class SolicitacoesAcessoComponent implements OnInit {
   private readonly service = inject(SolicitacoesAcessoService);
   pagina: PaginaSolicitacoes | null = null;
@@ -36,7 +41,7 @@ export class SolicitacoesAcessoComponent implements OnInit {
   }
   confirmar(): void {
     if (!this.podeConfirmar || !this.selecionada) return;
-    this.salvando = true; this.erroDecisao = '';
+    this.salvando = true; this.erroDecisao = ''; this.sucesso = '';
     this.service.decidir(this.selecionada.id, this.decisao, this.justificativa.trim()).subscribe({
       next: resposta => {
         this.salvando = false; this.modal?.hide(); this.selecionada = null;

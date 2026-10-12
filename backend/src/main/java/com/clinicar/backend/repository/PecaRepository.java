@@ -7,5 +7,6 @@ import java.util.Optional;
 public interface PecaRepository extends JpaRepository<Peca, Long> {
     @SuppressWarnings("null")
     Optional<Peca> findById(Long id);
+    java.util.List<Peca> findByNomeIgnoreCaseAndFabricanteIgnoreCase(String nome, String fabricante);
     Peca findByNomeAndTipo(String nome, String tipo);
 }

@@ -1,0 +1,122 @@
+/* Shared compact layouts retain the same colors and controls as desktop pages. */
+@media (max-width: 1199.98px), (max-height: 600px) {
+  .conteudo-clinicar :is(.usuarios-page, .veiculos-page, .fornecedor-page,
+    .peca-page, .servicos-page, .fornecimento-page, .estoque-page,
+    .agendamentos-page, .atendimentos-page, .regras-page, .historico-page,
+    .auditoria-page, .painel-page, .solicitacoes-page, .alertas-tabela-page) {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .conteudo-clinicar :is(.toolbar-actions, .pagination-actions, .action-buttons) {
+    flex-wrap: wrap;
+  }
+
+  .modal-dialog {
+    --clinicar-modal-height: calc(100dvh - 1rem);
+    max-width: calc(100vw - 1rem) !important;
+    margin: .5rem auto !important;
+  }
+
+  .modal-dialog > .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 1rem) !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
+  .modal-content > .modal-body {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .modal-header, .modal-footer { flex-shrink: 0; }
+  .modal-title { overflow-wrap: anywhere; min-width: 0; }
+  .modal-header .btn-close { flex-shrink: 0; }
+
+  .modal-footer {
+    gap: .4rem;
+    padding: .65rem .75rem;
+    flex-wrap: wrap;
+  }
+
+  .modal-footer .btn {
+    width: auto !important;
+    max-width: 100%;
+    white-space: normal;
+    margin: 0;
+  }
+
+  .modal :is(.clinicar-tabs, .nav-tabs, .nav-pills):has([data-help-guia]) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: .25rem;
+    max-width: 100%;
+  }
+
+  .modal :is(.clinicar-tabs, .nav-tabs, .nav-pills):has([data-help-guia]) > * {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .conteudo-clinicar { padding: .75rem .5rem !important; }
+  .conteudo-clinicar :is(.container-fluid, .card-body, .row) { min-width: 0; }
+  .conteudo-clinicar .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .conteudo-clinicar :is(.summary-card, .resumo-card) { min-width: 0; }
+  .conteudo-clinicar :is(.summary-card, .resumo-card) :is(span, .small) { overflow-wrap: anywhere; }
+  .conteudo-clinicar .toolbar-actions { justify-content: flex-start; gap: .5rem; }
+  .conteudo-clinicar .toolbar-actions > .btn { flex: 1 1 auto; }
+  .conteudo-clinicar :is(.table-pagination-footer, .table-footer) { flex-wrap: wrap; gap: .5rem; }
+  .conteudo-clinicar :is(.pagination-actions, .pagination-info, .pagination-size) { max-width: 100%; }
+
+  app-root :is(.form-control, .form-select),
+  .modal :is(.form-control, .form-select),
+  .conta-page :is(.form-control, .form-select),
+  .conteudo-clinicar :is(.form-control, .form-select) {
+    font-size: 1rem !important;
+    min-height: 42px !important;
+    min-width: 0;
+  }
+
+  app-root .btn { min-height: 40px; }
+  .modal .btn, .conta-page .btn, .conteudo-clinicar .btn { min-height: 40px; }
+  .modal .btn { font-size: .9rem; }
+  .modal .modal-header { padding: .75rem; }
+  .modal .modal-footer > .btn { flex: 1 1 130px; }
+  .modal .modal-footer > :is(.footer-status, .cadastro-status, .footer-validation) {
+    width: 100%; min-width: 0;
+  }
+  .modal :is(.input-group, .section-card, .preview-card, .review-card, .owner-card) { min-width: 0; }
+  .modal :is(.owner-name, .preview-main, .review-main, .details-line) { overflow-wrap: anywhere; }
+  .modal .badge { white-space: normal; text-align: start; }
+  .modal :is(.usuario-cadastro-heading, .usuario-edit-heading) { min-width: 0; }
+  .modal .cadastro-progress-card { padding: .55rem .65rem !important; margin-bottom: .6rem !important; }
+  .modal .cadastro-progress-top { flex-direction: row !important; flex-wrap: wrap; align-items: center; gap: .4rem; }
+  .modal .cadastro-progress-top small { display: none !important; }
+  app-root app-field-help-panel {
+    height: 6.25rem !important;
+    min-height: 6.25rem !important;
+    flex-basis: 6.25rem !important;
+    margin-bottom: .6rem;
+  }
+  /* Scroll the entire form on phones so the tab/help area cannot squeeze out fields. */
+  .modal-content > .modal-body:has([data-help-guia]) { display: block !important; overflow-y: auto !important; }
+  .modal-content > .modal-body > [class*="scroll-area"] { max-height: none !important; overflow: visible !important; }
+  .conta-header { padding: .75rem 1rem !important; gap: 1rem; }
+  .conta-page .card-body { overflow-wrap: anywhere; }
+  .conteudo-clinicar .vehicle-heading, .conteudo-clinicar .record-heading { flex-wrap: wrap; }
+}
+
+@media (max-height: 600px) {
+  .modal-dialog:has([data-help-guia]) { --clinicar-modal-height: calc(100dvh - 1rem); }
+  .modal-content > .modal-body:has([data-help-guia]) { display: block !important; overflow-y: auto !important; }
+  .modal-content > .modal-body > [class*="scroll-area"] { max-height: none !important; overflow: visible !important; }
+  .modal .modal-header { padding-block: .5rem; }
+  .modal .modal-footer { padding-block: .5rem; }
+  .modal .modal-footer .btn { min-height: 36px; }
+}

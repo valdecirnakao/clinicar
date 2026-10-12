@@ -1,3 +1,4 @@
+import { provideZoneChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
@@ -5,7 +6,7 @@ import { provideRouter, Router } from '@angular/router';
 import { contaGuard } from './conta.guard';
 
 describe('contaGuard', () => {
-  beforeEach(() => TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] }));
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideZoneChangeDetection(), provideHttpClient(), provideHttpClientTesting(), provideRouter([])] }));
   it('libera somente o perfil ativo correspondente à área de conta', () => {
     for (const perfil of ['CLIENTE', 'COLABORADOR']) {
       const resultado: any = TestBed.runInInjectionContext(() => contaGuard({ data: { perfil } } as any, {} as any));

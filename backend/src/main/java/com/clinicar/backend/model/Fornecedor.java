@@ -4,10 +4,13 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 @Entity
+@Table(name = "fornecedor", uniqueConstraints = @UniqueConstraint(name = "uk_fornecedor_email", columnNames = "email"))
 @Getter @Setter
 public class Fornecedor {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(nullable = false)
+    private boolean ativo = true;
     private String cnpj;
     private String razaoSocial;
     private String nomeFantasia;

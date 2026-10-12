@@ -1,6 +1,9 @@
 package com.clinicar.backend.dto;
 import java.time.LocalDate;
 public class FornecedorResponse {
+    private boolean ativo;
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
     private Long id;
     private String cnpj;
     private String razaoSocial;

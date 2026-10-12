@@ -1,0 +1,92 @@
+<section class="container-fluid mt-0 mb-0 auditoria-page">
+  <div class="card page-title-card mb-2"><div class="card-body text-center"><i class="bi bi-journal-check me-1"></i>Auditoria do Sistema</div></div>
+  @if (erro) {
+    <div class="alert alert-danger" [appFeedback]="erro" tipoFeedback="erro" (feedbackFechado)="erro=''">{{erro}}</div>
+  }
+  <div class="card list-card"><div class="card-body p-2">
+    <form (ngSubmit)="filtrar()" class="row g-2 align-items-end mb-2 toolbar-filters">
+      <div class="col-xl-3 col-md-6"><label for="auditBusca" class="form-label fw-semibold">Buscar</label><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="auditBusca" name="busca" type="search" class="form-control" maxlength="120" [(ngModel)]="busca" placeholder="Nome do responsável ou do registro"></div></div>
+      <div class="col-xl-2 col-md-3"><label for="auditInicio" class="form-label fw-semibold">Data inicial</label><input id="auditInicio" name="inicio" type="date" class="form-control" [(ngModel)]="inicio"></div>
+      <div class="col-xl-2 col-md-3"><label for="auditFim" class="form-label fw-semibold">Data final</label><input id="auditFim" name="fim" type="date" class="form-control" [(ngModel)]="fim" [class.is-invalid]="inicio&&fim&&inicio>fim"></div>
+      <div class="col-xl-2 col-md-6"><label for="auditComponente" class="form-label fw-semibold">Componente</label><select id="auditComponente" name="componente" class="form-select" [(ngModel)]="componente"><option value="">Todos</option>@for (c of componentes | keyvalue; track c) {
+      <option [value]="c.key">{{c.value}}</option>
+    }</select></div>
+    <div class="col-xl-3 col-md-6"><label for="auditOperacao" class="form-label fw-semibold">Operação</label><select id="auditOperacao" name="operacao" class="form-select" [(ngModel)]="operacao"><option value="">Todas</option>@for (o of operacoes | keyvalue; track o) {
+    <option [value]="o.key">{{o.value}}</option>
+  }</select></div>
+  <div class="col-xl-2 col-md-3"><label for="auditResponsavel" class="form-label fw-semibold">ID do responsável</label><input id="auditResponsavel" name="responsavel" type="number" min="1" step="1" class="form-control" [(ngModel)]="responsavelId" placeholder="Quem executou"></div>
+  <div class="col-xl-2 col-md-3"><label for="auditRegistro" class="form-label fw-semibold">ID do registro</label><input id="auditRegistro" name="registro" type="number" min="1" step="1" class="form-control" [(ngModel)]="registroId" placeholder="Usuário ou peça"></div>
+  <div class="col-xl-8 col-md-6 toolbar-actions">
+    <button type="submit" class="btn btn-primary" [disabled]="carregando||!filtrosValidos"><i class="bi bi-search me-1"></i>Consultar</button>
+    <button type="button" class="btn btn-outline-secondary btn-limpar-filtros" (click)="limpar()" [disabled]="carregando"><i class="bi bi-eraser me-1"></i>Limpar filtros</button>
+    <button type="button" class="btn btn-outline-primary" (click)="exportar()" [disabled]="carregando||exportando||!filtrosValidos"><i class="bi bi-download me-1"></i>{{exportando?'Exportando…':'Exportar CSV'}}</button>
+    <button type="button" class="btn btn-outline-primary" (click)="carregar()" [disabled]="carregando||!filtrosValidos"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+    <a class="btn btn-outline-secondary" routerLink="../usuario"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+  </div>
+</form>
+<div class="table-shell">
+  <div class="table-orientacao"><span><i class="bi bi-info-circle me-1"></i>Clique nos cabeçalhos para ordenar. Use os filtros para refinar a consulta.</span><span>Somente leitura · Horários de São Paulo · CSV até 5.000 registros</span></div>
+  <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+    <thead><tr><th><button class="sort-button" (click)="ordenarPor('dataHora')">Data/hora <i class="bi bi-arrow-down-up"></i></button></th>
+    <th><button class="sort-button" (click)="ordenarPor('componente')">Componente <i class="bi bi-arrow-down-up"></i></button></th>
+    <th><button class="sort-button" (click)="ordenarPor('operacao')">Operação <i class="bi bi-arrow-down-up"></i></button></th>
+    <th><button class="sort-button" (click)="ordenarPor('responsavelNome')">Responsável <i class="bi bi-arrow-down-up"></i></button></th>
+    <th><button class="sort-button" (click)="ordenarPor('registroId')">Registro <i class="bi bi-arrow-down-up"></i></button></th><th>Resultado</th><th class="text-center">Ações</th></tr></thead>
+    <tbody>@for (e of eventos; track e) {
+      <tr><td>{{e.dataHora | date:'dd/MM/yyyy HH:mm:ss'}}</td><td>{{componentes[e.componente]||e.componente}}</td><td>{{operacoes[e.operacao]||e.operacao}}</td>
+      <td><strong>{{e.responsavelNome||'Não registrado'}}</strong>@if (e.responsavelId) {
+      <small class="d-block">ID {{e.responsavelId}}</small>
+    }</td>
+    <td><strong>{{e.registroNome||'Não registrado'}}</strong><small class="d-block">ID {{e.registroId}}</small></td><td><span class="badge text-bg-success">Sucesso</span></td>
+    <td class="text-center"><button class="btn btn-sm btn-outline-info" (click)="abrir(e)" [disabled]="carregandoDetalhe" title="Visualizar detalhes" aria-label="Visualizar detalhes do evento"><i class="bi bi-eye"></i></button></td></tr>
+  }
+  @if (carregando) {
+    <tr><td colspan="7" class="text-center py-4" role="status">Consultando auditoria…</td></tr>
+  }
+  @if (!carregando&&!eventos.length) {
+    <tr><td colspan="7" class="text-center py-4"><i class="bi bi-search d-block fs-3 mb-2"></i>Nenhum registro encontrado para os filtros informados.</td></tr>
+  }
+</tbody>
+</table></div>
+<div class="table-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <small>Mostrando <strong>{{primeiro}}</strong> a <strong>{{ultimo}}</strong> de <strong>{{total}}</strong> registro(s)</small>
+  <label class="d-flex align-items-center gap-2 small">Exibir <select class="form-select form-select-sm page-size" [(ngModel)]="tamanho" (ngModelChange)="filtrar()" [disabled]="carregando"><option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option></select> por página</label>
+  <nav class="d-flex gap-1" aria-label="Paginação da auditoria"><button class="btn btn-sm btn-outline-secondary" [disabled]="carregando||pagina===0" (click)="mudarPagina(pagina-1)"><i class="bi bi-chevron-left"></i> Anterior</button>@for (p of paginas; track p) {
+  <button class="btn btn-sm" [class.btn-primary]="p===pagina" [class.btn-outline-primary]="p!==pagina" [attr.aria-current]="p===pagina?'page':null" (click)="mudarPagina(p)" [disabled]="carregando">{{p+1}}</button>
+  }<button class="btn btn-sm btn-outline-secondary" [disabled]="carregando||pagina+1>=totalPaginas" (click)="mudarPagina(pagina+1)">Próxima <i class="bi bi-chevron-right"></i></button></nav>
+</div>
+</div>
+</div></div>
+</section>
+<div class="modal fade" id="modalDetalhesAuditoria" tabindex="-1" aria-labelledby="tituloDetalhesAuditoria" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="tituloDetalhesAuditoria"><i class="bi bi-journal-check me-1"></i>Detalhes do registro de auditoria</h5><button class="btn-close" type="button" aria-label="Fechar" (click)="fechar()"></button></div>
+    <div class="modal-body">
+      @if (carregandoDetalhe) {
+        <div role="status">Consultando detalhes…</div>
+        }@if (erroDetalhe) {
+        <div class="alert alert-danger">{{erroDetalhe}}</div>
+      }
+      @if (selecionado; as e) {
+        <div class="help-card mb-3"><i class="bi bi-info-circle me-2"></i>Este registro mostra a operação concluída e os dados preservados para auditoria. Informações ausentes em registros antigos não são reconstruídas.</div>
+        <div class="detail-card"><h6 class="section-title"><i class="bi bi-journal-text me-1"></i>Identificação do evento</h6>
+        <dl class="row mb-0"><dt class="col-sm-4">Evento</dt><dd class="col-sm-8">{{e.origem}} #{{e.id}}</dd>
+        <dt class="col-sm-4">Data/hora (São Paulo)</dt><dd class="col-sm-8">{{e.dataHora | date:'dd/MM/yyyy HH:mm:ss'}}</dd>
+        <dt class="col-sm-4">Componente / operação</dt><dd class="col-sm-8">{{componentes[e.componente]}} · {{operacoes[e.operacao]||e.operacao}}</dd>
+        <dt class="col-sm-4">Responsável</dt><dd class="col-sm-8">{{e.responsavelNome||'Não registrado'}} @if (e.responsavelId) {
+        <span>· ID {{e.responsavelId}}</span>
+      }</dd>
+      <dt class="col-sm-4">Registro afetado</dt><dd class="col-sm-8">{{e.registroNome||'Não registrado'}} · ID {{e.registroId}}</dd>
+      <dt class="col-sm-4">Resultado</dt><dd class="col-sm-8"><span class="badge text-bg-success">Sucesso</span></dd>
+    </dl>
+  </div>
+  <div class="detail-card mt-3"><h6 class="section-title"><i class="bi bi-chat-left-text me-1"></i>Justificativa / contexto</h6><p class="preserve-lines mb-0">{{e.justificativa||'Não registrado'}}</p></div>
+  @if ((e.detalhes | keyvalue).length) {
+    <div class="detail-card mt-3"><h6 class="section-title"><i class="bi bi-box-seam me-1"></i>Dados da movimentação</h6><dl class="row mb-0">@for (d of e.detalhes | keyvalue; track d) {
+    <dt class="col-sm-4">{{campos[d.key]||d.key}}</dt><dd class="col-sm-8">{{valorDetalhe(d.key,d.value)}}</dd>
+  }</dl></div>
+}
+}
+</div><div class="modal-footer"><button class="btn btn-outline-secondary" (click)="fechar()">Fechar</button></div>
+</div></div>
+</div>

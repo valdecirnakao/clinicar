@@ -1,3 +1,6 @@
+import { FieldHelpDirective } from '../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../shared/field-help/field-help-panel.component';
+import { FeedbackDirective } from '../../shared/feedback/feedback.directive';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
@@ -42,11 +45,10 @@ interface Etapa {
 }
 
 @Component({
-  selector: 'app-primeiro-acesso',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './primeiro-acesso.component.html',
-  styleUrls: ['./primeiro-acesso.component.css']
+    selector: 'app-primeiro-acesso',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, CommonModule, FormsModule, RouterLink],
+    templateUrl: './primeiro-acesso.component.html',
+    styleUrls: ['./primeiro-acesso.component.css']
 })
 export class PrimeiroAcessoComponent implements OnInit {
 

@@ -4,6 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+    @org.springframework.data.jpa.repository.Query("select u from Usuario u where upper(u.tipo_do_acesso) = 'CLIENTE' and (:busca = '' or lower(u.nome) like concat('%', :busca, '%') or lower(u.email) like concat('%', :busca, '%'))")
+    org.springframework.data.domain.Page<Usuario> listarClientesAlertas(@org.springframework.data.repository.query.Param("busca") String busca, org.springframework.data.domain.Pageable pagina);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select u from Usuario u where upper(u.tipo_do_acesso) = 'ADMINISTRADOR' order by u.id")
     java.util.List<Usuario> bloquearAdministradores();

@@ -1,0 +1,34 @@
+<section class="alertas-tabela-page" id="configuracao-estoque">
+  <div class="card page-title-card mb-2"><div class="card-body text-center"><i class="bi bi-box-seam me-1"></i>Configuração de alertas dos colaboradores</div></div>
+  @if (erro) {
+    <div class="alert alert-danger" [appFeedback]="erro" tipoFeedback="erro" (feedbackFechado)="erro=''">{{erro}}</div>
+  }
+  @if (sucesso) {
+    <div class="alert alert-success" [appFeedback]="sucesso" tipoFeedback="sucesso" (feedbackFechado)="sucesso=''">{{sucesso}}</div>
+  }
+  <div class="card list-card"><div class="card-body">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><span>Alertas de estoque e reposição</span><div class="d-flex gap-2"><button class="btn btn-outline-primary" (click)="carregar()" [disabled]="carregando||reenviando"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button><a class="btn btn-outline-secondary" routerLink="../controleEstoquePecas"><i class="bi bi-arrow-left me-1"></i>Voltar</a></div></div>
+    <div class="table-orientacao small"><i class="bi bi-info-circle me-1"></i>Uma única configuração define o responsável pela reposição: administrador ou colaborador ativo. O template e o idioma são definidos pelo sistema.</div>
+    <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Tipo de alerta</th><th>Responsável</th><th>Telefone | WhatsApp</th><th>Envio</th><th>Intervalo entre lembretes</th><th>Integração WhatsApp</th><th class="text-center">Ações</th></tr></thead>
+    <tbody>@if (consulta; as c) {
+      <tr><td><strong>Estoque e reposição</strong></td><td>{{c.configuracao.nomeResponsavel||'Não definido'}}@if (c.configuracao.idResponsavel) {
+      <small class="d-block">ID {{c.configuracao.idResponsavel}}</small>
+      }</td><td><app-telefone-whatsapp [telefone]="c.configuracao.telefoneAdministrador"></app-telefone-whatsapp></td><td><span class="badge" [class.text-bg-success]="c.configuracao.ativo" [class.text-bg-secondary]="!c.configuracao.ativo">{{c.configuracao.ativo?'Ativo':'Desativado'}}</span></td><td>{{c.configuracao.reenviarAlertaAposHoras}} hora(s)</td><td>{{c.whatsappHabilitado?'Habilitada':'Desativada'}}</td>
+      <td><div class="d-flex justify-content-center gap-1"><button class="btn btn-sm btn-outline-info" (click)="abrir(true)" title="Visualizar configuração" aria-label="Visualizar configuração dos alertas de estoque"><i class="bi bi-eye"></i></button><button class="btn btn-sm btn-outline-primary" (click)="abrir(false)" title="Editar configuração" aria-label="Editar configuração dos alertas de estoque"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm btn-outline-success" (click)="reenviar()" [disabled]="reenviando||!c.configuracao.ativo||!c.whatsappHabilitado" title="Reenviar alertas pendentes" aria-label="Reenviar alertas pendentes"><i class="bi bi-send"></i></button></div></td>
+    </tr>
+    }@if (carregando) {
+    <tr><td colspan="7" class="text-center py-3" role="status">Carregando configuração…</td></tr>
+    }@if (!carregando&&!consulta) {
+    <tr><td colspan="7" class="text-center py-4">Não foi possível consultar a configuração.</td></tr>
+  }</tbody>
+</table></div>
+<div class="table-footer d-flex justify-content-between align-items-center flex-wrap gap-2"><small>Mostrando <strong>{{consulta?1:0}}</strong> a <strong>{{consulta?1:0}}</strong> de <strong>{{consulta?1:0}}</strong> registro(s)</small><label class="d-flex align-items-center gap-2 small">Exibir <select class="form-select form-select-sm page-size" [(ngModel)]="tamanho"><option [ngValue]="5">5</option><option [ngValue]="10">10</option><option [ngValue]="20">20</option></select> por página</label><nav class="d-flex gap-1" aria-label="Paginação da configuração de estoque"><button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i> Anterior</button><button class="btn btn-sm btn-primary" aria-current="page">1</button><button class="btn btn-sm btn-outline-secondary" disabled>Próxima <i class="bi bi-chevron-right"></i></button></nav></div>
+</div></div>
+</section>
+<div class="modal fade" id="modalConfiguracaoColaborador" tabindex="-1" aria-labelledby="tituloConfiguracaoColaborador" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><h5 id="tituloConfiguracaoColaborador" class="modal-title"><i class="bi bi-box-seam me-1"></i>{{modoLeitura?'Detalhes':'Editar configuração'}} dos alertas de estoque</h5><button type="button" class="btn-close" aria-label="Fechar" (click)="fechar()" [disabled]="editor?.salvando||editor?.reenviando"></button></div>
+  <div class="modal-body">@if (aberto) {
+    <app-configuracao-alertas-estoque [modoLeitura]="modoLeitura" (configuracaoSalva)="salvo()"></app-configuracao-alertas-estoque>
+  }</div>
+  <div class="modal-footer"><button class="btn btn-outline-secondary" (click)="fechar()" [disabled]="editor?.salvando||editor?.reenviando">Fechar</button></div>
+</div></div></div>

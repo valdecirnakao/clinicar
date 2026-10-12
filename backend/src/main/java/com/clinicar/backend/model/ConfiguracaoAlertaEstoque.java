@@ -16,6 +16,12 @@ public class ConfiguracaoAlertaEstoque {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long versao;
+    @Column(name = "id_responsavel", columnDefinition = "BIGINT UNSIGNED")
+    private Long idResponsavel;
+    @Column(name = "nome_responsavel", length = 255)
+    private String nomeResponsavel;
     @Column(nullable = false)
     private Boolean ativo = true;
 

@@ -1,1 +1,82 @@
 @import "bootstrap-icons/font/bootstrap-icons.css";
+@import "./styles/responsividade.css";
+
+/* Filter labels keep the standard control height even in narrow grid columns. */
+.btn.btn-limpar-filtros {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (min-width: 1200px) {
+  .conteudo-clinicar .row:has(> [class*="col-"] > .btn-limpar-filtros) > [class*="col-"]:has(> .btn-limpar-filtros) {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .conteudo-clinicar .row:has(> [class*="col-"] > .btn-limpar-filtros) > [class*="col-"]:last-child:not(:has(> .btn-limpar-filtros)) {
+    flex: 1 1 18rem;
+    width: auto;
+  }
+}
+
+/* Shared tabbed-modal layout: tab contents never resize the dialog shell. */
+.modal-dialog:has([data-help-guia]) {
+  --clinicar-modal-height: calc(100dvh - 2rem);
+  height: var(--clinicar-modal-height) !important;
+  min-height: 0 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.modal-dialog:has([data-help-guia]) > .modal-content {
+  display: flex;
+  flex-direction: column;
+  height: var(--clinicar-modal-height) !important;
+  max-height: var(--clinicar-modal-height) !important;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+
+.modal-dialog:has([data-help-guia]) > .modal-content > :is(.modal-header, .modal-footer) {
+  flex: 0 0 auto;
+}
+
+.modal-dialog:has([data-help-guia]) > .modal-content > .modal-body {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto;
+}
+
+/* Forms with a separate tab header keep scrolling inside their content area. */
+.modal-dialog:has([data-help-guia]) > .modal-content > .modal-body:has(> [class*="scroll-area"]) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-dialog:has([data-help-guia]) > .modal-content > .modal-body > [class*="scroll-area"] {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto;
+}
+
+@media (max-width: 575.98px) {
+  .modal-dialog:has([data-help-guia]) {
+    --clinicar-modal-height: calc(100dvh - 1rem);
+    margin-top: .5rem !important;
+    margin-bottom: .5rem !important;
+  }
+}
+
+/* On short screens the body scrolls as a whole so no fields become unreachable. */
+@media (max-height: 600px) {
+  .modal-dialog:has([data-help-guia]) > .modal-content > .modal-body:has(> [class*="scroll-area"]) {
+    display: block;
+    overflow-y: auto;
+  }
+  .modal-dialog:has([data-help-guia]) > .modal-content > .modal-body > [class*="scroll-area"] {
+    overflow: visible;
+  }
+}

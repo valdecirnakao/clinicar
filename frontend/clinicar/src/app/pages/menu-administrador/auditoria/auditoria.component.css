@@ -1,0 +1,206 @@
+:host {
+  display: block;
+  color: #35689b;
+}
+
+.auditoria-page {
+  height: calc(100vh - 105px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.card,
+.modal-content {
+  color: #35689b;
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
+}
+
+.page-title-card {
+  flex-shrink: 0;
+  background: #eef6ff;
+  font-weight: 400;
+}
+
+.page-title-card .card-body { padding: 1rem; }
+
+.list-card,
+.list-card > .card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-filters { flex-shrink: 0; }
+
+.toolbar-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.form-label {
+  color: #35689b;
+  font-size: .9rem;
+  font-weight: 700 !important;
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+  color: #35689b;
+  border-color: #d0e2f2;
+}
+
+.form-control::placeholder { color: #6d879e; opacity: 1; }
+.input-group-text { background: #eef6ff; }
+
+.form-control:focus,
+.form-select:focus,
+.btn:focus-visible {
+  border-color: #8fb4da;
+  box-shadow: 0 0 0 .2rem rgba(53, 104, 155, .15);
+}
+
+.form-control.is-invalid { border-color: #dc3545; }
+
+.table-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.table-orientacao {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  font-size: .8rem;
+  background: #f7fbff;
+  border-bottom: 1px solid #d0e2f2;
+}
+
+.table-responsive {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.table {
+  --bs-table-color: #35689b;
+  --bs-table-border-color: #d0e2f2;
+  --bs-table-hover-color: #35689b;
+  --bs-table-hover-bg: #f7fbff;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th,
+.table td {
+  color: #35689b;
+  padding: .55rem;
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
+.table th {
+  background: #eef6ff;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  box-shadow: 0 2px 0 #d0e2f2;
+}
+
+.table td { overflow-wrap: anywhere; }
+.table small { font-size: .75rem; color: #6d879e; }
+
+.sort-button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 700;
+  padding: 0;
+}
+
+.sort-button:hover { color: #204f7b; }
+
+.table-footer {
+  flex-shrink: 0;
+  gap: .75rem;
+  padding: .6rem .7rem;
+  background: #f8fbff;
+  color: #35689b;
+  border-top: 1px solid #d0e2f2;
+  font-size: .88rem;
+}
+
+.table-footer small,
+.table-footer .small { font-size: .88rem; }
+
+.table-footer nav { flex-wrap: wrap; justify-content: flex-end; }
+.page-size { width: 72px; }
+.btn-primary { background: #35689b; border-color: #35689b; }
+.btn-primary:hover { background: #2f5d8b; border-color: #2f5d8b; }
+.table-responsive::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-responsive::-webkit-scrollbar-thumb { background: #b4cbe0; border-radius: 8px; }
+
+.modal-header {
+  background: #eef6ff;
+  color: #35689b;
+  border-bottom-color: #d0e2f2;
+}
+
+.modal-title { font-size: 1.2rem; }
+.modal-body,
+.modal-footer { color: #35689b; }
+.modal-footer { background: #f7fbff; border-top-color: #d0e2f2; }
+
+.help-card,
+.detail-card {
+  padding: 1rem;
+  border: 1px solid #d0e2f2;
+  border-radius: 10px;
+  background: #f7fbff;
+}
+
+.help-card {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: #eef6ff;
+  font-size: .9rem;
+}
+
+.help-card i { flex-shrink: 0; }
+
+.section-title {
+  color: #35689b;
+  font-size: 1rem;
+  font-weight: 800;
+  padding-bottom: .55rem;
+  margin-bottom: .75rem;
+  border-bottom: 1px solid #d0e2f2;
+}
+
+dt,
+dd { overflow-wrap: anywhere; font-size: .9rem; }
+.preserve-lines { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 991.98px) {
+  .auditoria-page { height: auto; max-height: none; padding-bottom: 1rem; }
+  .table-responsive { max-height: 55vh; min-height: 15rem; }
+  .toolbar-actions { justify-content: flex-start; }
+}

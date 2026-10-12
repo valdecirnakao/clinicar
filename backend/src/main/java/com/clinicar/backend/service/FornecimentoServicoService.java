@@ -154,9 +154,19 @@ public class FornecimentoServicoService {
                 .findById(request.getIdFornecedor())
                 .orElseThrow(() -> new IllegalArgumentException("Fornecedor não encontrado."));
 
+        if (!fornecedor.isAtivo() && (fornecimento.getId() == null
+                || !fornecedor.getId().equals(fornecimento.getFornecedor().getId())
+                || !request.getIdServico().equals(fornecimento.getServico().getId())))
+            throw new IllegalArgumentException("Selecione um fornecedor ativo para cadastrar ou alterar o vínculo do fornecimento.");
+
         Servico servico = servicoRepository
                 .findById(request.getIdServico())
                 .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado."));
+
+        if (Boolean.FALSE.equals(servico.getAtivo()) && (fornecimento.getId() == null
+                || !servico.getId().equals(fornecimento.getServico().getId())
+                || !request.getIdFornecedor().equals(fornecimento.getFornecedor().getId())))
+            throw new IllegalArgumentException("Selecione um serviço ativo para cadastrar ou alterar o vínculo do fornecimento.");
 
         BigDecimal valorCusto = parseBigDecimalObrigatorio(
                 request.getValorCusto(),

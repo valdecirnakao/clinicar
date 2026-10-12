@@ -16,6 +16,8 @@ import java.util.*;
 @Service
 @lombok.extern.slf4j.Slf4j
 public class AlertaManutencaoService {
+    @org.springframework.beans.factory.annotation.Autowired private NotificacaoOutboxService outbox;
+    @Value("${clinicar.notificacoes.outbox-enabled:true}") private boolean outboxEnabled;
     private final ConfiguracaoAlertaManutencaoRepository configuracoes;
     private final EnvioAlertaManutencaoRepository envios;
     private final PrevisaoManutencaoVeiculoRepository previsoes;
@@ -35,11 +37,35 @@ public class AlertaManutencaoService {
         this.tx = new TransactionTemplate(transactionManager); this.whatsappHabilitado = whatsappHabilitado;
     }
 
-    public ConfiguracaoAlertaManutencao consultar() {
-        return configuracoes.findById(1L).orElseGet(ConfiguracaoAlertaManutencao::new);
+    public ConfiguracaoAlertaManutencao consultar(Long usuarioId) {
+        validarUsuario(usuarioId);
+        return configuracoes.findById(usuarioId).orElseGet(() -> {
+            var c = new ConfiguracaoAlertaManutencao(); c.setId(usuarioId); return c;
+        });
+    }
+    public record ClienteConfiguracao(Long usuarioId, String nome, String email, String telefone, String statusUsuario,
+            boolean configurada, ConfiguracaoAlertaManutencao configuracao) {}
+
+    public org.springframework.data.domain.Page<ClienteConfiguracao> listarClientes(String busca, int pagina, int tamanho, String ordenar, boolean decrescente) {
+        String coluna = List.of("nome", "email").contains(ordenar) ? ordenar : "nome";
+        var ordenacao = Sort.by(decrescente ? Sort.Direction.DESC : Sort.Direction.ASC, coluna).and(Sort.by("id"));
+        var usuariosPagina = usuarios.listarClientesAlertas(busca == null ? "" : busca.strip().toLowerCase(Locale.ROOT),
+                PageRequest.of(Math.max(0, pagina), Math.max(1, Math.min(50, tamanho)), ordenacao));
+        var existentes = configuracoes.findAllById(usuariosPagina.getContent().stream().map(Usuario::getId).toList())
+                .stream().collect(java.util.stream.Collectors.toMap(ConfiguracaoAlertaManutencao::getId, c -> c));
+        return usuariosPagina.map(u -> {
+            var c = existentes.get(u.getId()); boolean configurada = c != null;
+            if (c == null) { c = new ConfiguracaoAlertaManutencao(); c.setId(u.getId()); }
+            return new ClienteConfiguracao(u.getId(), u.getNome(), u.getEmail(), u.getTelefone(), u.getStatus(), configurada, c);
+        });
+    }
+    private void validarUsuario(Long usuarioId) {
+        if (usuarioId == null || !usuarios.existsById(usuarioId))
+            throw new IllegalArgumentException("Selecione um usuário cadastrado.");
     }
 
-    public ConfiguracaoAlertaManutencao salvar(ConfiguracaoAlertaManutencao entrada) {
+    public ConfiguracaoAlertaManutencao salvar(Long usuarioId, ConfiguracaoAlertaManutencao entrada) {
+        validarUsuario(usuarioId);
         if (entrada == null || !validator.validate(entrada).isEmpty())
             throw new IllegalArgumentException("Preencha os parâmetros dentro dos limites informados.");
         if (entrada.getHoraFim() <= entrada.getHoraInicio())
@@ -47,24 +73,43 @@ public class AlertaManutencaoService {
         try { ZoneId.of(entrada.getFusoHorario()); }
         catch (DateTimeException e) { throw new IllegalArgumentException("Fuso horário inválido."); }
         return tx.execute(status -> {
-            ConfiguracaoAlertaManutencao atual = configuracoes.bloquear().orElse(null);
+            // Também serializa a primeira criação, quando ainda não existe configuração.
+            usuarios.buscarParaAtualizacao(usuarioId).orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+            ConfiguracaoAlertaManutencao atual = configuracoes.bloquear(usuarioId).orElse(null);
             if (atual != null && !Objects.equals(atual.getVersao(), entrada.getVersao()))
                 throw new IllegalArgumentException("A configuração foi alterada. Recarregue antes de salvar.");
-            entrada.setId(1L);
+            entrada.setId(usuarioId);
             return configuracoes.saveAndFlush(entrada);
         });
     }
 
-    public List<EnvioAlertaManutencao> historico() { return envios.findTop100ByOrderByCriadoEmDesc(); }
+    public List<EnvioAlertaManutencao> historico(Long usuarioId) {
+        validarUsuario(usuarioId);
+        return envios.findTop100ByProprietarioIdOrderByCriadoEmDesc(usuarioId);
+    }
 
     /** Percorre páginas sem excluir registros do conjunto durante a varredura. */
     public void processar() {
-        if (!whatsappHabilitado || !Boolean.TRUE.equals(consultar().getAtivo())) return;
+        if (!whatsappHabilitado) return;
         int pagina = 0;
         org.springframework.data.domain.Page<PrevisaoManutencaoVeiculo> lote;
         do {
             lote = previsoes.findAll(PageRequest.of(pagina++, 100, Sort.by("id")));
             for (PrevisaoManutencaoVeiculo p : lote.getContent()) {
+                if (outboxEnabled) {
+                    try {
+                        tx.execute(status -> {
+                            Entrega entrega=reservar(p.getId(), Instant.now());
+                            if(entrega==null) return null;
+                            String referencia=whatsapp.enviarAlertaManutencao(entrega.destinatario(), entrega.nome(), entrega.placa(), entrega.descricao(), entrega.data().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                            outbox.vincular(referencia,"MANUTENCAO",entrega.id());
+                            var envio=envios.findById(entrega.id()).orElseThrow();
+                            envio.setStatus("PENDENTE"); envio.setDetalhe("Aguardando processamento da notificação."); envios.save(envio);
+                            return null;
+                        });
+                    } catch (RuntimeException error) { log.error("Não foi possível registrar a notificação da previsão {}.",p.getId()); }
+                    continue;
+                }
                 Entrega entrega;
                 try { entrega = tx.execute(status -> reservar(p.getId(), Instant.now())); }
                 catch (RuntimeException e) {
@@ -87,14 +132,14 @@ public class AlertaManutencaoService {
     }
 
     private Entrega reservar(Long previsaoId, Instant agora) {
-        // A linha única serializa reservas entre instâncias; o registro é confirmado antes da API externa.
-        ConfiguracaoAlertaManutencao c = configuracoes.bloquear().orElse(null);
-        if (c == null) return null;
         PrevisaoManutencaoVeiculo p = previsoes.findById(previsaoId).orElse(null);
-        if (p == null || !PoliticaAlertaManutencao.elegivel(c, p,
-                envios.findByPrevisaoIdOrderByCriadoEmDesc(previsaoId), agora)) return null;
+        if (p == null) return null;
         Long donoId = p.getVeiculo().getIdProprietario();
         if (donoId == null) return null;
+        // A configuração do proprietário atual serializa reservas entre instâncias.
+        ConfiguracaoAlertaManutencao c = configuracoes.bloquear(donoId).orElse(null);
+        if (c == null || !PoliticaAlertaManutencao.elegivel(c, p,
+                envios.findByPrevisaoIdAndProprietarioIdOrderByCriadoEmDesc(previsaoId, donoId), agora)) return null;
         Usuario dono = usuarios.findById(donoId).orElse(null);
         if (dono == null || !"ATIVO".equalsIgnoreCase(dono.getStatus())
                 || dono.getTelefone() == null || dono.getTelefone().isBlank()) return null;
@@ -108,8 +153,9 @@ public class AlertaManutencaoService {
 
     private void finalizar(Long id, String status, String detalhe) {
         tx.executeWithoutResult(txStatus -> {
-            configuracoes.bloquear();
-            EnvioAlertaManutencao e = envios.findById(id).orElseThrow();
+            var proprietarioId = envios.buscarProprietario(id).orElseThrow();
+            configuracoes.bloquear(proprietarioId);
+            EnvioAlertaManutencao e = envios.buscarParaAtualizacao(id).orElseThrow();
             e.setStatus(status); e.setDetalhe(detalhe); e.setFinalizadoEm(Instant.now()); envios.save(e);
         });
     }
@@ -117,8 +163,11 @@ public class AlertaManutencaoService {
     /** Conciliação explícita após verificar o provedor; nunca repete automaticamente um resultado incerto. */
     public void conciliar(Long id, boolean enviado) {
         tx.executeWithoutResult(txStatus -> {
-            configuracoes.bloquear();
-            EnvioAlertaManutencao e = envios.findById(id)
+            var proprietarioId = envios.buscarProprietario(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Envio não encontrado."));
+            configuracoes.bloquear(proprietarioId);
+            // Recarrega após obter o bloqueio para observar uma conciliação concorrente.
+            EnvioAlertaManutencao e = envios.buscarParaAtualizacao(id)
                     .orElseThrow(() -> new IllegalArgumentException("Envio não encontrado."));
             if (!List.of("ERRO", "EM_PROCESSAMENTO").contains(e.getStatus()))
                 throw new IllegalArgumentException("Este envio já foi conciliado.");

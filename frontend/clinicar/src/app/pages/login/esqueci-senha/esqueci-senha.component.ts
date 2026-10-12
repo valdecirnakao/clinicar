@@ -1,19 +1,17 @@
-import { CommonModule } from '@angular/common';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
+import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
+
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service.ts.service';
 
 @Component({
-  selector: 'app-esqueci-senha',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterModule
-  ],
-  templateUrl: './esqueci-senha.component.html',
-  styleUrl: './esqueci-senha.component.css'
+    selector: 'app-esqueci-senha',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, FormsModule, RouterModule],
+    templateUrl: './esqueci-senha.component.html',
+    styleUrl: './esqueci-senha.component.css'
 })
 export class EsqueciSenhaComponent {
 

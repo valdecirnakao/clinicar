@@ -1,0 +1,87 @@
+<section class="painel-page" aria-labelledby="titulo-painel">
+  <div class="card page-title-card mb-2">
+    <div class="card-body text-center" id="titulo-painel">
+      <i class="bi bi-speedometer2 me-1" aria-hidden="true"></i> Painel operacional
+    </div>
+  </div>
+
+  @if (erro) {
+    <div class="alert alert-danger mb-2" role="alert"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ erro }}</div>
+  }
+
+  <div class="summary-grid mb-2">
+    @for (card of cards; track card.campo; let indice = $index) {
+      <a class="summary-card text-decoration-none" [class.border-success-card]="indice === 1"
+        [class.border-warning-card]="indice === 2" [class.border-info-card]="indice === 3"
+        [class.border-danger-card]="indice === 4" [routerLink]="card.rota">
+        <span>{{ card.titulo }}</span>
+        <strong>{{ dados[card.campo] ?? '—' }}</strong>
+      </a>
+    }
+  </div>
+
+  @if (dados['cadastrosPendentes']?.length) {
+    <section class="card continuidade-card mb-2" aria-labelledby="titulo-continuar">
+      <div class="card-body p-2">
+        <h2 id="titulo-continuar" class="section-title"><i class="bi bi-arrow-return-right me-1" aria-hidden="true"></i>Cadastros para continuar</h2>
+        <div class="continuidade-links">
+          @for (item of dados['cadastrosPendentes']; track item.id) {
+            <a class="btn btn-sm btn-outline-primary" [routerLink]="item.rota" [queryParams]="contexto(item.contexto, item.id)">
+              {{ item.titulo }} <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+            </a>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <section class="card list-card" aria-label="Notificações">
+    <div class="card-body p-2">
+      <div class="toolbar-filters mb-2">
+        <div class="row g-2 align-items-end">
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label" for="estado-notificacao">Estado da notificação</label>
+            <select id="estado-notificacao" class="form-select" [(ngModel)]="estado" (ngModelChange)="pagina=0; carregarNotificacoes()">
+              <option value="">Todos</option>
+              @for (item of estados; track item.valor) { <option [value]="item.valor">{{ item.rotulo }}</option> }
+            </select>
+          </div>
+          <div class="col-lg-9 col-md-6 toolbar-actions">
+            <button type="button" class="btn btn-outline-primary" (click)="carregar()" [disabled]="carregando">
+              <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Atualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-shell" [attr.aria-busy]="carregando">
+        <div class="table-orientacao">
+          <span><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Aceita: envio confirmado pelo provedor. Entregue e Lida: confirmação do destinatário. Confira envios sem confirmação antes de tentar novamente.</span>
+          <span class="text-nowrap">{{ total }} notificação(ões)</span>
+        </div>
+        <div class="table-scroll">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th scope="col">Data/hora</th><th scope="col">Canal</th><th scope="col">Mensagem</th><th scope="col">Estado</th><th scope="col" class="text-center">Tentativas</th><th scope="col" class="text-center">Ações</th></tr></thead>
+            <tbody>
+              @for (item of notificacoes; track item.id) {
+                <tr>
+                  <td class="text-nowrap">{{ item.criado_em | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="text-nowrap">{{ item.canal === 'WHATSAPP' ? 'WhatsApp' : item.canal === 'EMAIL' ? 'E-mail' : item.canal }}</td>
+                  <td class="mensagem-cell">{{ item.template }}@if (item.ultimo_erro) { <small class="d-block mensagem-detalhe">{{ item.ultimo_erro }}</small> }</td>
+                  <td><span class="badge" [class.text-bg-success]="['ACEITA','ENTREGUE','LIDA'].includes(item.estado)" [class.text-bg-danger]="['ERRO','INDETERMINADO'].includes(item.estado)" [class.text-bg-secondary]="!['ACEITA','ENTREGUE','LIDA','ERRO','INDETERMINADO'].includes(item.estado)">{{ rotulo(item.estado) }}</span></td>
+                  <td class="text-center">{{ item.tentativas }}</td>
+                  <td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary text-nowrap" [disabled]="item.estado !== 'ERRO' || carregando" (click)="reenviar(item.id)"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Reenviar</button></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="text-center empty-state"><i class="bi bi-bell d-block mb-2" aria-hidden="true"></i>{{ carregando ? 'Carregando notificações...' : 'Nenhuma notificação encontrada.' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="table-pagination-footer">
+          <app-paginacao [pagina]="pagina" [tamanho]="tamanho" [total]="total" [carregando]="carregando" (paginaChange)="pagina=$event;carregarNotificacoes()" (tamanhoChange)="tamanho=$event;pagina=0;carregarNotificacoes()" />
+        </div>
+      </div>
+    </div>
+  </section>
+</section>

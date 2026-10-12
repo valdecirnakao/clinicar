@@ -1,3 +1,5 @@
+import { FieldHelpDirective } from '../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../shared/field-help/field-help-panel.component';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -20,15 +22,14 @@ import {
 } from '../../services/setup.service';
 
 @Component({
-  selector: 'app-ativar-conta',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink
-  ],
-  templateUrl: './ativar-conta.component.html',
-  styleUrls: ['./ativar-conta.component.css']
+    selector: 'app-ativar-conta',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent,
+        CommonModule,
+        FormsModule,
+        RouterLink
+    ],
+    templateUrl: './ativar-conta.component.html',
+    styleUrls: ['./ativar-conta.component.css']
 })
 export class AtivarContaComponent implements OnInit {
 

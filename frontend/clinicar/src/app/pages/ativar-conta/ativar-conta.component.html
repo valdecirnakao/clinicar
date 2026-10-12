@@ -3,11 +3,11 @@
   <section
     class="ativacao-card shadow-sm"
     aria-labelledby="titulo-ativacao"
-  >
+    >
 
     <!-- =====================================================
-         PAINEL ESQUERDO
-         ===================================================== -->
+    PAINEL ESQUERDO
+    ===================================================== -->
 
     <aside class="ativacao-info">
 
@@ -17,7 +17,7 @@
           src="assets/img/LogoClinicar.png"
           class="ativacao-logo"
           alt="CliniCar"
-        >
+          >
 
         <div>
           <span class="marca-etapa">
@@ -27,7 +27,7 @@
           <h1
             id="titulo-ativacao"
             class="h4 mb-1"
-          >
+            >
             Ativar conta
           </h1>
 
@@ -40,27 +40,24 @@
       </div>
 
       <!-- CONTA VALIDADA -->
-      <div
-        *ngIf="tokenValido && emailMascarado"
-        class="conta-ativacao"
-      >
-
-        <span class="conta-icon">
-          <i
-            class="bi bi-person-check"
-            aria-hidden="true"
-          ></i>
-        </span>
-
-        <div>
-          <small>Conta em ativação</small>
-
-          <strong>
-            {{ emailMascarado }}
-          </strong>
+      @if (tokenValido && emailMascarado) {
+        <div
+          class="conta-ativacao"
+          >
+          <span class="conta-icon">
+            <i
+              class="bi bi-person-check"
+              aria-hidden="true"
+            ></i>
+          </span>
+          <div>
+            <small>Conta em ativação</small>
+            <strong>
+              {{ emailMascarado }}
+            </strong>
+          </div>
         </div>
-
-      </div>
+      }
 
       <!-- PASSOS -->
       <div class="ativacao-passos">
@@ -68,20 +65,22 @@
         <div
           class="passo-item"
           [class.concluido]="tokenValido || sucesso"
-        >
+          >
 
           <span class="passo-numero">
 
-            <i
-              *ngIf="tokenValido || sucesso"
-              class="bi bi-check-lg"
-            ></i>
+            @if (tokenValido || sucesso) {
+              <i
+                class="bi bi-check-lg"
+              ></i>
+            }
 
-            <span
-              *ngIf="!tokenValido && !sucesso"
-            >
-              1
-            </span>
+            @if (!tokenValido && !sucesso) {
+              <span
+                >
+                1
+              </span>
+            }
 
           </span>
 
@@ -98,18 +97,21 @@
           class="passo-item"
           [class.ativo]="tokenValido && !sucesso"
           [class.concluido]="sucesso"
-        >
+          >
 
           <span class="passo-numero">
 
-            <i
-              *ngIf="sucesso"
-              class="bi bi-check-lg"
-            ></i>
+            @if (sucesso) {
+              <i
+                class="bi bi-check-lg"
+              ></i>
+            }
 
-            <span *ngIf="!sucesso">
-              2
-            </span>
+            @if (!sucesso) {
+              <span>
+                2
+              </span>
+            }
 
           </span>
 
@@ -125,7 +127,7 @@
         <div
           class="passo-item"
           [class.ativo]="sucesso"
-        >
+          >
 
           <span class="passo-numero">
             3
@@ -161,231 +163,204 @@
     </aside>
 
     <!-- =====================================================
-         PAINEL DIREITO
-         ===================================================== -->
+    PAINEL DIREITO
+    ===================================================== -->
 
     <section class="ativacao-form-area">
 
       <!-- CARREGANDO TOKEN -->
-      <div
-        *ngIf="carregandoToken"
-        class="estado-central"
-        role="status"
-        aria-live="polite"
-      >
-
-        <span
+      @if (carregandoToken) {
+        <div
+          class="estado-central"
+          role="status"
+          aria-live="polite"
+          >
+          <span
           class="
             spinner-border
             text-primary
             mb-3
           "
-          aria-hidden="true"
-        ></span>
-
-        <h2 class="h5">
-          Validando link de ativação
-        </h2>
-
-        <p>
-          Aguarde enquanto verificamos seu link.
-        </p>
-
-      </div>
+            aria-hidden="true"
+          ></span>
+          <h2 class="h5">
+            Validando link de ativação
+          </h2>
+          <p>
+            Aguarde enquanto verificamos seu link.
+          </p>
+        </div>
+      }
 
       <!-- =================================================
-           TOKEN INVÁLIDO
-           ================================================= -->
+      TOKEN INVÁLIDO
+      ================================================= -->
 
-      <div
-        *ngIf="
-          !carregandoToken &&
-          !tokenValido &&
-          !sucesso
-        "
-        class="estado-central"
-      >
-
-        <span class="estado-icon erro">
-          <i
-            class="bi bi-link-45deg"
-            aria-hidden="true"
-          ></i>
-        </span>
-
-        <h2 class="h5">
-          Não foi possível ativar a conta
-        </h2>
-
+      @if (
+        !carregandoToken &&
+        !tokenValido &&
+        !sucesso
+        ) {
         <div
-          class="alert alert-danger compact-alert"
-          role="alert"
-        >
-          {{ erroToken }}
-        </div>
-
-        <p class="estado-ajuda">
-          Se o link tiver expirado ou já tiver sido
-          utilizado, volte ao primeiro acesso e solicite
-          um novo envio.
-        </p>
-
-        <a
-          routerLink="/login"
-          class="btn btn-outline-primary"
-        >
-          <i class="bi bi-arrow-left me-1"></i>
-          Voltar ao login
-        </a>
-
-      </div>
-
-      <!-- =================================================
-           SUCESSO
-           ================================================= -->
-
-      <div
-        *ngIf="sucesso"
-        class="estado-central"
-        role="status"
-        aria-live="polite"
-      >
-
-        <span class="estado-icon sucesso">
-          <i
-            class="bi bi-check-lg"
-            aria-hidden="true"
-          ></i>
-        </span>
-
-        <h2 class="h4">
-          Conta ativada
-        </h2>
-
-        <p class="sucesso-texto">
-          {{ mensagemSucesso }}
-        </p>
-
-        <div class="proximo-passo">
-
-          <i
-            class="bi bi-shield-lock"
-            aria-hidden="true"
-          ></i>
-
-          <span>
-            Faça o login normalmente. Caso seja o
-            primeiro acesso, o CliniCar solicitará a
-            configuração da autenticação em duas etapas.
-          </span>
-
-        </div>
-
-        <a
-          routerLink="/login"
-          class="btn btn-primary"
-        >
-          <i class="bi bi-box-arrow-in-right me-1"></i>
-          Ir para o login
-        </a>
-
-      </div>
-
-      <!-- =================================================
-           FORMULÁRIO
-           ================================================= -->
-
-      <form
-        *ngIf="
-          !carregandoToken &&
-          tokenValido &&
-          !sucesso
-        "
-        #form="ngForm"
-        (ngSubmit)="definirSenha(form)"
-        novalidate
-        class="senha-form"
-      >
-
-        <div class="form-header">
-
-          <span class="form-icon">
+          class="estado-central"
+          >
+          <span class="estado-icon erro">
             <i
-              class="bi bi-key"
+              class="bi bi-link-45deg"
               aria-hidden="true"
             ></i>
           </span>
-
-          <div>
-            <h2 class="h5 mb-1">
-              Defina sua senha
-            </h2>
-
-            <p class="mb-0">
-              Crie uma senha que atenda a todos os
-              requisitos de segurança.
-            </p>
-          </div>
-
-        </div>
-
-        <div
-          *ngIf="mensagemToken"
-          class="alert alert-info compact-alert"
-          role="status"
-        >
-          <i class="bi bi-check-circle me-1"></i>
-          {{ mensagemToken }}
-        </div>
-
-        <div
-          *ngIf="erroFormulario"
-          class="alert alert-danger compact-alert"
-          role="alert"
-        >
-          <i
-            class="bi bi-exclamation-triangle me-1"
-          ></i>
-
-          {{ erroFormulario }}
-        </div>
-
-        <!-- SENHAS -->
-        <div class="row g-3">
-
-          <div class="col-12 col-md-6">
-
-            <label
-              for="novaSenha"
-              class="form-label"
+          <h2 class="h5">
+            Não foi possível ativar a conta
+          </h2>
+          <div
+            class="alert alert-danger compact-alert"
+            role="alert"
             >
-              Nova senha *
-            </label>
+            {{ erroToken }}
+          </div>
+          <p class="estado-ajuda">
+            Se o link tiver expirado ou já tiver sido
+            utilizado, volte ao primeiro acesso e solicite
+            um novo envio.
+          </p>
+          <a
+            routerLink="/login"
+            class="btn btn-outline-primary"
+            >
+            <i class="bi bi-arrow-left me-1"></i>
+            Voltar ao login
+          </a>
+        </div>
+      }
 
-            <div class="input-group">
+      <!-- =================================================
+      SUCESSO
+      ================================================= -->
 
-              <input
-                id="novaSenha"
-                name="novaSenha"
-                class="form-control"
+      @if (sucesso) {
+        <div
+          class="estado-central"
+          role="status"
+          aria-live="polite"
+          >
+          <span class="estado-icon sucesso">
+            <i
+              class="bi bi-check-lg"
+              aria-hidden="true"
+            ></i>
+          </span>
+          <h2 class="h4">
+            Conta ativada
+          </h2>
+          <p class="sucesso-texto">
+            {{ mensagemSucesso }}
+          </p>
+          <div class="proximo-passo">
+            <i
+              class="bi bi-shield-lock"
+              aria-hidden="true"
+            ></i>
+            <span>
+              Faça o login normalmente. Caso seja o
+              primeiro acesso, o CliniCar solicitará a
+              configuração da autenticação em duas etapas.
+            </span>
+          </div>
+          <a
+            routerLink="/login"
+            class="btn btn-primary"
+            >
+            <i class="bi bi-box-arrow-in-right me-1"></i>
+            Ir para o login
+          </a>
+        </div>
+      }
+
+      <!-- =================================================
+      FORMULÁRIO
+      ================================================= -->
+
+      @if (
+        !carregandoToken &&
+        tokenValido &&
+        !sucesso
+        ) {
+        <form data-help-scope="ativar-conta"
+          #form="ngForm"
+          (ngSubmit)="definirSenha(form)"
+          novalidate
+          class="senha-form"
+          >
+          <app-field-help-panel></app-field-help-panel>
+          <div class="form-header">
+            <span class="form-icon">
+              <i
+                class="bi bi-key"
+                aria-hidden="true"
+              ></i>
+            </span>
+            <div>
+              <h2 class="h5 mb-1">
+                Defina sua senha
+              </h2>
+              <p class="mb-0">
+                Crie uma senha que atenda a todos os
+                requisitos de segurança.
+              </p>
+            </div>
+          </div>
+          @if (mensagemToken) {
+            <div
+              class="alert alert-info compact-alert"
+              role="status"
+              >
+              <i class="bi bi-check-circle me-1"></i>
+              {{ mensagemToken }}
+            </div>
+          }
+          @if (erroFormulario) {
+            <div
+              class="alert alert-danger compact-alert"
+              role="alert"
+              >
+              <i
+                class="bi bi-exclamation-triangle me-1"
+              ></i>
+              {{ erroFormulario }}
+            </div>
+          }
+          <!-- SENHAS -->
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label
+                for="novaSenha"
+                class="form-label"
+                >
+                Nova senha *
+              </label>
+              <div class="input-group">
+                <input
+                  id="novaSenha"
+                  name="novaSenha"
+                  class="form-control"
                 [type]="
                   mostrarSenha
                     ? 'text'
                     : 'password'
                 "
-                [(ngModel)]="senha"
-                required
-                minlength="8"
-                maxlength="128"
-                autocomplete="new-password"
-                placeholder="Digite a nova senha"
-                [disabled]="enviando"
-              >
-
-              <button
-                type="button"
-                class="btn btn-outline-primary senha-toggle"
-                (click)="alternarSenha()"
+                  [(ngModel)]="senha"
+                  required
+                  minlength="8"
+                  maxlength="128"
+                  autocomplete="new-password"
+                  placeholder="Digite a nova senha"
+                  [disabled]="enviando"
+                  >
+                <button
+                  type="button"
+                  class="btn btn-outline-primary senha-toggle"
+                  (click)="alternarSenha()"
                 [attr.aria-label]="
                   mostrarSenha
                     ? 'Ocultar nova senha'
@@ -396,59 +371,50 @@
                     ? 'Ocultar senha'
                     : 'Mostrar senha'
                 "
-              >
-
-                <i
-                  class="bi"
+                  >
+                  <i
+                    class="bi"
                   [ngClass]="
                     mostrarSenha
                       ? 'bi-eye-slash'
                       : 'bi-eye'
                   "
-                  aria-hidden="true"
-                ></i>
-
-              </button>
-
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
             </div>
-
-          </div>
-
-          <div class="col-12 col-md-6">
-
-            <label
-              for="confirmarSenha"
-              class="form-label"
-            >
-              Confirmar senha *
-            </label>
-
-            <div class="input-group">
-
-              <input
-                id="confirmarSenha"
-                name="confirmarSenha"
-                class="form-control"
+            <div class="col-12 col-md-6">
+              <label
+                for="confirmarSenha"
+                class="form-label"
+                >
+                Confirmar senha *
+              </label>
+              <div class="input-group">
+                <input
+                  id="confirmarSenha"
+                  name="confirmarSenha"
+                  class="form-control"
                 [type]="
                   mostrarConfirmacao
                     ? 'text'
                     : 'password'
                 "
-                [(ngModel)]="confirmarSenha"
-                required
-                maxlength="128"
-                autocomplete="new-password"
-                placeholder="Repita a nova senha"
-                [disabled]="enviando"
+                  [(ngModel)]="confirmarSenha"
+                  required
+                  maxlength="128"
+                  autocomplete="new-password"
+                  placeholder="Repita a nova senha"
+                  [disabled]="enviando"
                 [class.is-invalid]="
                   confirmacaoInvalida
                 "
-              >
-
-              <button
-                type="button"
-                class="btn btn-outline-primary senha-toggle"
-                (click)="alternarConfirmacao()"
+                  >
+                <button
+                  type="button"
+                  class="btn btn-outline-primary senha-toggle"
+                  (click)="alternarConfirmacao()"
                 [attr.aria-label]="
                   mostrarConfirmacao
                     ? 'Ocultar confirmação da senha'
@@ -459,201 +425,170 @@
                     ? 'Ocultar senha'
                     : 'Mostrar senha'
                 "
-              >
-
-                <i
-                  class="bi"
+                  >
+                  <i
+                    class="bi"
                   [ngClass]="
                     mostrarConfirmacao
                       ? 'bi-eye-slash'
                       : 'bi-eye'
                   "
-                  aria-hidden="true"
-                ></i>
-
-              </button>
-
-              <div
-                *ngIf="confirmacaoInvalida"
-                class="invalid-feedback"
-              >
-                As senhas não coincidem.
+                    aria-hidden="true"
+                  ></i>
+                </button>
+                @if (confirmacaoInvalida) {
+                  <div
+                    class="invalid-feedback"
+                    >
+                    As senhas não coincidem.
+                  </div>
+                }
               </div>
-
             </div>
-
           </div>
-
-        </div>
-
-        <!-- REQUISITOS -->
-        <section
-          class="senha-requisitos"
-          aria-labelledby="titulo-requisitos"
-        >
-
-          <div class="requisitos-header">
-
-            <div>
-              <strong id="titulo-requisitos">
-                Requisitos da senha
-              </strong>
-
-              <small>
-                {{ textoSeguranca }}
-              </small>
-            </div>
-
-            <span class="requisitos-contador">
-              {{ regrasAtendidas }}/5
-            </span>
-
-          </div>
-
-          <div
-            class="progress progresso-senha"
-            role="progressbar"
-            aria-label="Requisitos atendidos"
-            [attr.aria-valuenow]="percentualSeguranca"
-            aria-valuemin="0"
-            aria-valuemax="100"
-          >
-            <div
-              class="progress-bar"
-              [style.width.%]="percentualSeguranca"
-            ></div>
-          </div>
-
-          <div class="requisitos-grid">
-
-            <div
-              class="requisito"
-              [class.atendido]="regraTamanho"
+          <!-- REQUISITOS -->
+          <section
+            class="senha-requisitos"
+            aria-labelledby="titulo-requisitos"
             >
-              <i
-                class="bi"
+            <div class="requisitos-header">
+              <div>
+                <strong id="titulo-requisitos">
+                  Requisitos da senha
+                </strong>
+                <small>
+                  {{ textoSeguranca }}
+                </small>
+              </div>
+              <span class="requisitos-contador">
+                {{ regrasAtendidas }}/5
+              </span>
+            </div>
+            <div
+              class="progress progresso-senha"
+              role="progressbar"
+              aria-label="Requisitos atendidos"
+              [attr.aria-valuenow]="percentualSeguranca"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              >
+              <div
+                class="progress-bar"
+                [style.width.%]="percentualSeguranca"
+              ></div>
+            </div>
+            <div class="requisitos-grid">
+              <div
+                class="requisito"
+                [class.atendido]="regraTamanho"
+                >
+                <i
+                  class="bi"
                 [ngClass]="
                   regraTamanho
                     ? 'bi-check-circle-fill'
                     : 'bi-circle'
                 "
-              ></i>
-
-              8 a 128 caracteres
-            </div>
-
-            <div
-              class="requisito"
-              [class.atendido]="regraMaiuscula"
-            >
-              <i
-                class="bi"
+                ></i>
+                8 a 128 caracteres
+              </div>
+              <div
+                class="requisito"
+                [class.atendido]="regraMaiuscula"
+                >
+                <i
+                  class="bi"
                 [ngClass]="
                   regraMaiuscula
                     ? 'bi-check-circle-fill'
                     : 'bi-circle'
                 "
-              ></i>
-
-              Uma letra maiúscula
-            </div>
-
-            <div
-              class="requisito"
-              [class.atendido]="regraMinuscula"
-            >
-              <i
-                class="bi"
+                ></i>
+                Uma letra maiúscula
+              </div>
+              <div
+                class="requisito"
+                [class.atendido]="regraMinuscula"
+                >
+                <i
+                  class="bi"
                 [ngClass]="
                   regraMinuscula
                     ? 'bi-check-circle-fill'
                     : 'bi-circle'
                 "
-              ></i>
-
-              Uma letra minúscula
-            </div>
-
-            <div
-              class="requisito"
-              [class.atendido]="regraNumero"
-            >
-              <i
-                class="bi"
+                ></i>
+                Uma letra minúscula
+              </div>
+              <div
+                class="requisito"
+                [class.atendido]="regraNumero"
+                >
+                <i
+                  class="bi"
                 [ngClass]="
                   regraNumero
                     ? 'bi-check-circle-fill'
                     : 'bi-circle'
                 "
-              ></i>
-
-              Um número
-            </div>
-
-            <div
-              class="requisito"
-              [class.atendido]="regraEspecial"
-            >
-              <i
-                class="bi"
+                ></i>
+                Um número
+              </div>
+              <div
+                class="requisito"
+                [class.atendido]="regraEspecial"
+                >
+                <i
+                  class="bi"
                 [ngClass]="
                   regraEspecial
                     ? 'bi-check-circle-fill'
                     : 'bi-circle'
                 "
-              ></i>
-
-              Um caractere especial
+                ></i>
+                Um caractere especial
+              </div>
             </div>
-
-          </div>
-
-        </section>
-
-        <!-- AÇÕES -->
-        <div class="form-actions">
-
-          <a
-            routerLink="/login"
-            class="btn btn-outline-primary"
-          >
-            <i class="bi bi-arrow-left me-1"></i>
-            Voltar ao login
-          </a>
-
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="!podeEnviar"
-          >
-
-            <span
-              *ngIf="enviando"
+          </section>
+          <!-- AÇÕES -->
+          <div class="form-actions">
+            <a
+              routerLink="/login"
+              class="btn btn-outline-primary"
+              >
+              <i class="bi bi-arrow-left me-1"></i>
+              Voltar ao login
+            </a>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="!podeEnviar"
+              >
+              @if (enviando) {
+                <span
               class="
                 spinner-border
                 spinner-border-sm
                 me-1
               "
-              aria-hidden="true"
-            ></span>
-
-            <i
-              *ngIf="!enviando"
-              class="bi bi-shield-check me-1"
-              aria-hidden="true"
-            ></i>
-
-            {{
+                  aria-hidden="true"
+                ></span>
+              }
+              @if (!enviando) {
+                <i
+                  class="bi bi-shield-check me-1"
+                  aria-hidden="true"
+                ></i>
+              }
+              {{
               enviando
-                ? 'Ativando...'
-                : 'Definir senha e ativar conta'
-            }}
-
-          </button>
-
-        </div>
-
-      </form>
+              ? 'Ativando...'
+              : 'Definir senha e ativar conta'
+              }}
+            </button>
+          </div>
+        </form>
+      }
 
     </section>
 

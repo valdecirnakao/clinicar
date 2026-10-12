@@ -18,6 +18,9 @@ import java.util.Map;
 @Slf4j
 @Service
 public class WhatsAppService {
+    @org.springframework.beans.factory.annotation.Autowired private NotificacaoOutboxService outbox;
+    @Value("${clinicar.notificacoes.outbox-enabled:true}") private boolean outboxEnabled;
+    public boolean usaFila() { return outboxEnabled && outbox != null; }
 
     @Value("${whatsapp.api-url}")
     private String apiUrl;
@@ -51,6 +54,14 @@ public class WhatsAppService {
 
     @Value("${meta.whatsapp.templates.alerta-atualiza-veiculo}")
     private String templateAlertaAtualizaVeiculo;
+
+    @Value("${meta.whatsapp.templates.eliminacao-veiculo:eliminacao_veiculo}")
+    private String templateEliminacaoVeiculo;
+
+    public void enviarAlertaExclusaoVeiculo(String telefone, String nome, String veiculo) {
+        enviarTemplate(telefone, templateEliminacaoVeiculo,
+                List.of(nomeNotificacao(nome), valorSeguro(veiculo, "Veículo")));
+    }
 
     /*
      * Campos usados apenas se o alerta de estoque for enviado por este service.
@@ -338,19 +349,25 @@ public class WhatsAppService {
 
         body.put("template", template);
 
+        if (outboxEnabled && outbox != null) return outbox.enfileirar(telefoneNormalizado, nomeTemplate, codigoIdioma, body);
+
         log.info("WhatsApp Cloud API - URL: {}", url);
         log.info(
-                "WhatsApp Cloud API - template='{}', idioma='{}', telefone='{}', parametros={}",
+                "WhatsApp Cloud API - template='{}', idioma='{}', telefone='{}'",
                 nomeTemplate,
                 codigoIdioma,
                 mascararTelefone(telefoneNormalizado),
                 parametrosBody
         );
-        log.info("WhatsApp Cloud API - payload sem token: {}", body);
+
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
         RestTemplate restTemplate = new RestTemplate();
+        var requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(5000);
+        requestFactory.setReadTimeout(10000);
+        restTemplate.setRequestFactory(requestFactory);
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(

@@ -1,5 +1,7 @@
 package com.clinicar.backend.controller;
 import com.clinicar.backend.dto.VeiculoRequest;
+import com.clinicar.backend.dto.VeiculoExclusaoResponse;
+import com.clinicar.backend.dto.UsuarioResponse;
 import com.clinicar.backend.model.Veiculo;
 import com.clinicar.backend.repository.VeiculoRepository;
 import com.clinicar.backend.service.VeiculoService;
@@ -94,14 +96,9 @@ public class VeiculoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> removerVeiculo(
-            @PathVariable Long id) {
-        if (!veiculoRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-
-        veiculoRepository.deleteById(id);
-
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<VeiculoExclusaoResponse> removerVeiculo(
+            @PathVariable Long id, @RequestAttribute("usuarioLogado") UsuarioResponse administrador) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(veiculoService.excluir(id, administrador.getId()));
     }
 }

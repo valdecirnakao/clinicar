@@ -70,6 +70,7 @@ public class UsuarioService {
         usuario.setMfaSecret(null);
 
         if (request.getSenha() != null && !request.getSenha().isBlank()) {
+            com.clinicar.backend.util.PoliticaSenha.validar(request.getSenha());
             usuario.setSenha(passwordEncoder.encode(request.getSenha()));
         } else {
             throw new IllegalArgumentException("Informe a senha do usuário.");
@@ -160,6 +161,7 @@ public class UsuarioService {
          * Se vier null ou vazia, mantém a senha atual.
          */
         if (administrador && request.getSenha() != null && !request.getSenha().isBlank()) {
+            com.clinicar.backend.util.PoliticaSenha.validar(request.getSenha());
             usuario.setSenha(passwordEncoder.encode(request.getSenha()));
         }
 
@@ -323,21 +325,32 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public boolean emailCadastrado(String email) {
+        return emailCadastrado(email, null);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean emailCadastrado(String email, Long idIgnorado) {
         String normalizado = normalizarEmail(email);
         if (normalizado == null || normalizado.length() > 255
-                || !normalizado.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                || !normalizado.matches("^[^\\s@]+@[^\\s@.]+(?:\\.[^\\s@.]+)*\\.[^\\s@.]{2,}$")) {
             throw new IllegalArgumentException("Informe um e-mail válido.");
         }
-        return repo.existsByEmailIgnoreCase(normalizado);
+        return idIgnorado == null ? repo.existsByEmailIgnoreCase(normalizado)
+                : repo.existsByEmailIgnoreCaseAndIdNot(normalizado, idIgnorado);
     }
 
     @Transactional(readOnly = true)
     public boolean cpfCadastrado(String cpf) {
+        return cpfCadastrado(cpf, null);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean cpfCadastrado(String cpf, Long idIgnorado) {
         String documento = soDigitos(cpf);
         if (documento == null || (documento.length() != 11 && documento.length() != 14)) {
             throw new IllegalArgumentException("Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.");
         }
-        return repo.existsByCpf(documento);
+        return idIgnorado == null ? repo.existsByCpf(documento) : repo.existsByCpfAndIdNot(documento, idIgnorado);
     }
 
     private void validarCpfUnico(String cpf, Long idIgnorado) {
@@ -354,6 +367,10 @@ public class UsuarioService {
 
         if (emailNormalizado == null || emailNormalizado.isBlank()) {
             throw new IllegalArgumentException("Informe o e-mail do usuário.");
+        }
+        if (emailNormalizado.length() > 255
+                || !emailNormalizado.matches("^[^\\s@]+@[^\\s@.]+(?:\\.[^\\s@.]+)*\\.[^\\s@.]{2,}$")) {
+            throw new IllegalArgumentException("Informe um e-mail válido, como nome@empresa.com.");
         }
 
         boolean emailJaExiste;

@@ -15,15 +15,17 @@ public class AtivacaoAdministradorEmailListener {
 
     private final EmailService emailService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void enviarAtivacao(AtivacaoAdministradorSolicitadaEvent evento) {
         try {
             emailService.enviarAtivacaoAdministrador(
                     evento.getEmail(), evento.getNome(), evento.getToken(), evento.getExpiraEm());
             log.info("E-mail de ativação enviado. usuarioId={}", evento.getUsuarioId());
         } catch (Exception erro) {
+            if (erro instanceof com.clinicar.backend.exception.NotificacaoPersistenciaException persistencia) throw persistencia;
+            if (erro instanceof org.springframework.dao.DataAccessException databaseError) throw databaseError;
             // O SMTP pode incluir conteúdo da mensagem na exceção. Não registrar causa/mensagem.
-            // A transação já foi confirmada; o reenvio gera outro link para a conta pendente.
+            // Falhas de transporte no modo legado permitem gerar outro link para a conta pendente.
             log.error("Falha no envio da ativação. usuarioId={}; reenvio disponível.", evento.getUsuarioId());
         }
     }

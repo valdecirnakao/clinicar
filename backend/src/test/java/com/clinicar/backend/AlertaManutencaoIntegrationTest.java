@@ -26,9 +26,8 @@ class AlertaManutencaoIntegrationTest {
     Usuario dono;
     @BeforeEach void preparar() {
         envios.deleteAll(); previsoes.deleteAll(); regras.deleteAll(); veiculos.deleteAll(); usuarios.deleteAll(); configs.deleteAll();
-        var c = new ConfiguracaoAlertaManutencao(); c.setAtivo(true); c.setHoraInicio(0); c.setHoraFim(24);
-        service.salvar(c);
         dono = new Usuario(); dono.setEmail("dono@example.test"); dono.setTelefone("11999990000"); dono.setNome("Dono"); dono.setStatus("ATIVO"); dono = usuarios.saveAndFlush(dono);
+        ativar(dono);
         var v = new Veiculo(); v.setPlaca("ABC1D23"); v.setFabricante("Teste"); v.setCor("Azul");
         v.setModelo("Teste"); v.setAnoModeloCombustivel("2026 Flex"); v.setIdProprietario(dono.getId()); v = veiculos.saveAndFlush(v);
         var r = new RegraManutencaoPreventiva(); r.setGrupoManutencao("FILTRO"); r.setDescricao("Troca de filtro"); r.setIntervaloDias(30); r = regras.saveAndFlush(r);
@@ -36,6 +35,10 @@ class AlertaManutencaoIntegrationTest {
         p.setGrupoManutencao("FILTRO"); p.setDescricao("Troca de filtro"); p.setKmReferencia(10000);
         p.setDataReferencia(LocalDate.now()); p.setDataRecomendada(LocalDate.now()); p.setCriterioUtilizado("TEMPO"); p.setNivelConfianca("BAIXA");
         previsoes.saveAndFlush(p);
+    }
+    private void ativar(Usuario usuario) {
+        var c = service.consultar(usuario.getId()); c.setAtivo(true); c.setHoraInicio(0); c.setHoraFim(24);
+        service.salvar(usuario.getId(), c);
     }
     @Test void enviaUmaVezEPersisteHistoricoEntreExecucoes() {
         service.processar(); service.processar();
@@ -53,12 +56,55 @@ class AlertaManutencaoIntegrationTest {
     @Test void enviaParaProprietarioAtualEmVezDoClienteAntigo() {
         var novo = new Usuario(); novo.setEmail("novo@example.test"); novo.setTelefone("11988880000"); novo.setNome("Novo"); novo.setStatus("ATIVO"); novo = usuarios.saveAndFlush(novo);
         var v = veiculos.findAll().getFirst(); v.setIdProprietario(novo.getId()); veiculos.saveAndFlush(v);
+        ativar(novo);
         service.processar(); assertEquals("11988880000",envios.findAll().getFirst().getDestinatario());
     }
     @Test void configuracaoInvalidaNaoESalva() {
-        var c = service.consultar(); c.setIntervaloDias(0);
-        assertThrows(IllegalArgumentException.class, () -> service.salvar(c));
-        assertEquals(7,service.consultar().getIntervaloDias());
+        var c = service.consultar(dono.getId()); c.setIntervaloDias(0);
+        assertThrows(IllegalArgumentException.class, () -> service.salvar(dono.getId(), c));
+        assertEquals(7,service.consultar(dono.getId()).getIntervaloDias());
+    }
+    @Test void novoProprietarioSemConfiguracaoNaoHerdaAlertasDoAnterior() {
+        var novo = new Usuario(); novo.setEmail("outro@example.test"); novo.setTelefone("11988880000"); novo.setNome("Outro"); novo.setStatus("ATIVO"); novo = usuarios.saveAndFlush(novo);
+        var v = veiculos.findAll().getFirst(); v.setIdProprietario(novo.getId()); veiculos.saveAndFlush(v);
+        service.processar(); assertEquals(0, envios.count());
+        assertFalse(service.consultar(novo.getId()).getAtivo());
+        assertTrue(service.consultar(dono.getId()).getAtivo());
+    }
+    @Test void configuracoesEHistoricosSaoIndependentesMesmoAposTransferencia() {
+        service.processar();
+        var novo = new Usuario(); novo.setEmail("novo@example.test"); novo.setTelefone("11988880000"); novo.setNome("Novo"); novo.setStatus("ATIVO"); novo = usuarios.saveAndFlush(novo);
+        ativar(novo);
+        var c = service.consultar(novo.getId()); c.setIntervaloDias(15); c.setMaximoEnvios(1); service.salvar(novo.getId(), c);
+        var v = veiculos.findAll().getFirst(); v.setIdProprietario(novo.getId()); veiculos.saveAndFlush(v);
+        service.processar(); service.processar();
+        assertEquals(7, service.consultar(dono.getId()).getIntervaloDias());
+        assertEquals(15, service.consultar(novo.getId()).getIntervaloDias());
+        assertEquals(1, service.historico(dono.getId()).size());
+        assertEquals(1, service.historico(novo.getId()).size());
+        assertEquals("11988880000", service.historico(novo.getId()).getFirst().getDestinatario());
+    }
+    @Test void rejeitaSobrescritaDeConfiguracaoDesatualizada() {
+        var antiga = service.consultar(dono.getId());
+        var atual = service.consultar(dono.getId()); atual.setIntervaloDias(8); service.salvar(dono.getId(), atual);
+        assertThrows(IllegalArgumentException.class, () -> service.salvar(dono.getId(), antiga));
+    }
+    @Test void listaTodosClientesComPaginacaoSemIncluirColaboradores() {
+        dono.setTipo_do_acesso("CLIENTE"); usuarios.saveAndFlush(dono);
+        var novo = new Usuario(); novo.setNome("Cliente sem configuração"); novo.setEmail("inativo@example.test"); novo.setTipo_do_acesso("CLIENTE"); novo.setStatus("INATIVO"); novo = usuarios.saveAndFlush(novo);
+        var colaborador = new Usuario(); colaborador.setNome("Colaborador"); colaborador.setEmail("interno@example.test"); colaborador.setTipo_do_acesso("COLABORADOR"); usuarios.saveAndFlush(colaborador);
+        var primeira = service.listarClientes("", 0, 1, "nome", false);
+        assertEquals(2, primeira.getTotalElements()); assertEquals(2, primeira.getTotalPages());
+        assertEquals(novo.getId(), primeira.getContent().getFirst().usuarioId());
+        assertFalse(primeira.getContent().getFirst().configurada());
+        assertFalse(primeira.getContent().getFirst().configuracao().getAtivo());
+        assertEquals(1, configs.count()); // A consulta não cria configurações nem habilita envios.
+        var segunda = service.listarClientes("", 1, 1, "nome", false);
+        assertEquals(dono.getId(), segunda.getContent().getFirst().usuarioId());
+        assertTrue(segunda.getContent().getFirst().configurada());
+        assertTrue(segunda.getContent().getFirst().configuracao().getAtivo());
+        assertEquals(1, service.listarClientes("INATIVO@", 0, 10, "email", false).getTotalElements());
+        assertEquals(0, service.listarClientes("interno", 0, 10, "nome", false).getTotalElements());
     }
     @Test void duasExecucoesSimultaneasReservamUmUnicoEnvio() throws Exception {
         try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {

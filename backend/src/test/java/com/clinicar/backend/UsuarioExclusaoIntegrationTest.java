@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 class UsuarioExclusaoIntegrationTest {
     @Autowired UsuarioExclusaoService service;
     @Autowired UsuarioRepository usuarios;
+    @Autowired ConfiguracaoAlertaManutencaoRepository preferencias;
     @Autowired EntityManager em;
     @Autowired PlatformTransactionManager manager;
     @MockitoSpyBean AuditoriaExclusaoUsuarioRepository auditoria;
@@ -41,6 +42,7 @@ class UsuarioExclusaoIntegrationTest {
     @AfterEach void limpar() {
         reset(auditoria);
         transacao(() -> {
+            em.createNativeQuery("DELETE FROM configuracao_alerta_estoque WHERE id_responsavel = :id").setParameter("id", alvo.getId()).executeUpdate();
             for (String tabela : new String[]{"veiculo", "auth_session", "password_reset_token", "auditoria_reset_mfa"}) {
                 String coluna = tabela.equals("veiculo") ? "id_proprietario" : "usuario_id";
                 em.createNativeQuery("DELETE FROM " + tabela + " WHERE " + coluna + " = :id")
@@ -53,10 +55,12 @@ class UsuarioExclusaoIntegrationTest {
         });
     }
     @Test void excluiSomenteCadastroSemVinculosEPreservaAuditoriaSemDadosDeAutenticacao() {
+        var preferencia = new ConfiguracaoAlertaManutencao(); preferencia.setId(alvo.getId()); preferencias.saveAndFlush(preferencia);
         assertTrue(service.podeExcluir(alvo, admin.getId(), service.usuariosComVinculos()));
         Instant inicio = Instant.now();
         service.excluir(alvo.getId(), admin.getId(), "  " + motivo + "  ");
         assertFalse(usuarios.existsById(alvo.getId()));
+        assertFalse(preferencias.existsById(alvo.getId()));
         var registro = auditoria.findAll().stream().filter(a -> a.getUsuarioId().equals(alvo.getId())).findFirst().orElseThrow();
         assertEquals(motivo, registro.getJustificativa());
         assertEquals(admin.getId(), registro.getAdministradorId());
@@ -144,4 +148,11 @@ class UsuarioExclusaoIntegrationTest {
         assertTrue(auditoria.findAll().stream().noneMatch(a -> a.getUsuarioId().equals(alvo.getId())));
         transacao(() -> assertNull(em.find(ConfiguracaoSistema.class, 987654321L)));
     }
-}
+    @Test void responsavelConfiguradoNoAlertaDeEstoqueTemVinculoENaoPodeSerExcluido() {
+        transacao(() -> {
+            var c = new ConfiguracaoAlertaEstoque(); c.setIdResponsavel(alvo.getId()); c.setTelefoneAdministrador("5511999999999"); em.persist(c);
+        });
+        assertFalse(service.podeExcluir(alvo, admin.getId(), service.usuariosComVinculos()));
+        assertEquals(409, assertThrows(ResponseStatusException.class, () -> service.excluir(alvo.getId(), admin.getId(), motivo)).getStatusCode().value());
+        assertTrue(usuarios.existsById(alvo.getId()));
+    }}

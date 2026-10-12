@@ -1,4 +1,7 @@
-import { CommonModule } from '@angular/common';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
+import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -7,15 +10,10 @@ import { LoginService, UsuarioLogado } from '../login.service';
 import { MfaPendente, MfaPendenteService } from '../../../services/mfa-pendente.service';
 
 @Component({
-  selector: 'app-verificar-doisfa',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterModule
-  ],
-  templateUrl: './verificar-doisfa.component.html',
-  styleUrls: ['./verificar-doisfa.component.css']
+    selector: 'app-verificar-doisfa',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, FormsModule, RouterModule],
+    templateUrl: './verificar-doisfa.component.html',
+    styleUrls: ['./verificar-doisfa.component.css']
 })
 export class Verificar2faComponent implements OnInit, OnDestroy {
 
