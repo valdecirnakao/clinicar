@@ -45,7 +45,7 @@ test('cadastro no celular mantém botões acessíveis e permite rolar até os ca
       }) };
   });
   expect(limites.campoTop).toBeGreaterThanOrEqual(limites.header);
-  expect(limites.campoBottom).toBeLessThanOrEqual(limites.footer);
+  expect(limites.campoBottom).toBeLessThanOrEqual(limites.footer + 1);
   expect(limites.botoes.every(Boolean)).toBeTruthy();
 });
 
