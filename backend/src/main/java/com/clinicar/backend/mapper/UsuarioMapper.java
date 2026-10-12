@@ -35,7 +35,8 @@ public class UsuarioMapper {
 
         response.setMfaAtivo(usuario.getMfaAtivo());
         response.setMfaTipo(usuario.getMfaTipo());
-
+        response.setCriadoEm(usuario.getCriadoEm());
+        response.setAtualizadoEm(usuario.getAtualizadoEm());
         return response;
     }
 

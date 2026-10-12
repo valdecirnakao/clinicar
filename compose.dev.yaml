@@ -1,0 +1,19 @@
+services:
+
+  mysql:
+    build:
+      context: ./bd
+      dockerfile: Dockerfile
+    image: clinicar-mysql:dev
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: clinicar-backend:dev
+
+  frontend:
+    build:
+      context: ./frontend/clinicar
+      dockerfile: Dockerfile
+    image: clinicar-frontend:dev

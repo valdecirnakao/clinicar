@@ -8,6 +8,8 @@ import java.util.List;
 public interface PrevisaoManutencaoVeiculoRepository
         extends JpaRepository<PrevisaoManutencaoVeiculo, Long> {
 
+    List<PrevisaoManutencaoVeiculo> findByAtendimentoOrigem_Id(Long atendimentoId);
+
     List<PrevisaoManutencaoVeiculo> findByVeiculo_IdAndGrupoManutencaoAndStatusPrevisaoIn(
             Long veiculoId,
             String grupoManutencao,

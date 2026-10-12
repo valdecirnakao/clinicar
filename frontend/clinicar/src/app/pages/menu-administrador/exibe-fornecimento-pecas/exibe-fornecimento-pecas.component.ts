@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 
 import {
   ExibeFornecimentoPecasService,
@@ -45,7 +47,7 @@ type CampoObrigatorioFornecimento =
 @Component({
   selector: 'app-exibe-fornecimento-peca',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-fornecimento-pecas.component.html',
   styleUrls: ['./exibe-fornecimento-pecas.component.css']
 })
@@ -1200,6 +1202,10 @@ export class ExibeFornecimentoPecaComponent implements OnInit {
   }
 
   private progressoFormulario(model: Partial<FornecimentoPeca>): number {
+    if (this.validarFornecimento(model, false) === null) {
+      return 100;
+    }
+
     const preenchidos = this.camposObrigatorios.filter(campo => {
       switch (campo) {
         case 'fornecedor':
@@ -1219,7 +1225,8 @@ export class ExibeFornecimentoPecaComponent implements OnInit {
       }
     }).length;
 
-    return Math.round((preenchidos / this.camposObrigatorios.length) * 100);
+    const percentual = Math.round((preenchidos / this.camposObrigatorios.length) * 100);
+    return Math.max(0, Math.min(99, percentual));
   }
 
   private montarPayload(model: Partial<FornecimentoPeca>): FornecimentoPecaRequest {

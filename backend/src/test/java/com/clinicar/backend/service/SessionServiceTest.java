@@ -42,11 +42,15 @@ class SessionServiceTest {
     @Mock
     private UsuarioMapper usuarioMapper;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private SessionService service;
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(service, "entityManager", entityManager);
         ReflectionTestUtils.setField(service, "cookieName", "clinicar_session");
         ReflectionTestUtils.setField(service, "expirationHours", 6L);
         ReflectionTestUtils.setField(service, "cookieSecure", true);
@@ -68,6 +72,9 @@ class SessionServiceTest {
         when(authSessionRepository.save(any(AuthSession.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        Usuario usuario = new Usuario(); usuario.setId(42L); usuario.setStatus("ATIVO");
+        usuario.setMfaAtivo(true); usuario.setMfaTipo("TOTP"); usuario.setMfaSecret("segredo-teste");
+        when(entityManager.find(Usuario.class, 42L, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)).thenReturn(usuario);
         ResponseCookie cookie = service.criarSessaoCookie(42L);
 
         ArgumentCaptor<AuthSession> captor = ArgumentCaptor.forClass(AuthSession.class);
@@ -169,6 +176,7 @@ class SessionServiceTest {
         Usuario usuario = new Usuario();
         usuario.setId(7L);
         usuario.setNome("Maria");
+        usuario.setStatus("ATIVO");
 
         UsuarioResponse response = new UsuarioResponse();
         response.setId(7L);

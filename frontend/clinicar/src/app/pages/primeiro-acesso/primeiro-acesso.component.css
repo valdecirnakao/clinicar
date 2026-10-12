@@ -745,3 +745,9 @@
     width: 100%;
   }
 }
+.preenchimento-progresso { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid #d0e2f2; border-radius: 10px; background: #f8fbff; color: #35689b; }
+.preenchimento-resumo { display: flex; justify-content: space-between; align-items: center; gap: .75rem; font-size: .85rem; margin-bottom: .5rem; }
+.preenchimento-barra { height: .5rem; background: #e1edf8; border-radius: 10px; }
+.preenchimento-barra .progress-bar { background: #35689b; transition: width .2s ease; }
+.preenchimento-progresso small { display: block; margin-top: .4rem; font-size: .78rem; }
+@media (prefers-reduced-motion: reduce) { .preenchimento-barra .progress-bar { transition: none; } }

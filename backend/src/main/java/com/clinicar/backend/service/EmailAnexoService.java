@@ -12,7 +12,7 @@ public class EmailAnexoService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${clinicar.email.from:}")
+    @Value("${clinicar.mail.remetente:}")
     private String remetenteConfigurado;
 
     @Value("${spring.mail.username:}")
@@ -45,7 +45,8 @@ public class EmailAnexoService {
 
             helper.addAttachment(
                     nomeArquivo,
-                    new ByteArrayResource(arquivo)
+                    new ByteArrayResource(arquivo),
+                    "application/pdf"
             );
 
             mailSender.send(mensagem);

@@ -1,6 +1,8 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { catchError, forkJoin, of } from 'rxjs';
 import { Router } from '@angular/router';
 import {
@@ -53,7 +55,7 @@ interface ConfirmacaoAgendamento {
 @Component({
   selector: 'app-exibe-agendamentos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-agendamentos.component.html',
   styleUrl: './exibe-agendamentos.component.css'
 })
@@ -101,6 +103,7 @@ export class ExibeAgendamentosComponent implements OnInit {
   modalConfirmacao: any;
 
   editandoId: number | null = null;
+  private agendamentoOriginalEdicao: Agendamento | null = null;
   editandoPecaId: number | null = null;
 
   private tempPecaId = -1;
@@ -272,28 +275,22 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   get progressoAgendamentoPercentual(): number {
-    /*
-     * A barra de progresso acompanha a validação real do agendamento.
-     * Quando todos os campos obrigatórios estão válidos, o progresso chega a 100%.
-     */
     if (this.agendamentoProntoParaSalvar) {
       return 100;
     }
 
-    const obrigatorios = this.camposObrigatoriosAgendamento();
-    const totalObrigatorios = obrigatorios.length || 1;
+    const checks = [
+      !this.clienteInvalido(),
+      !this.veiculoInvalido(),
+      !this.servicoPrevistoInvalido(),
+      !this.quilometragemAtualInvalida(),
+      !!this.novoAgendamento.dataHoraInicio,
+      !!this.novoAgendamento.dataHoraFim,
+      !!this.novoAgendamento.idResponsavel && !this.responsavelDisponivelInvalido()
+    ];
 
-    const preenchidos = obrigatorios.filter(campo =>
-      this.campoAgendamentoPreenchido(campo)
-    ).length;
-
-    const percentualPreenchimento = Math.round((preenchidos / totalObrigatorios) * 100);
-
-    const pendencias = this.quantidadePendenciasAgendamento;
-    const descontoPorPendencias = Math.min(25, pendencias * 5);
-    const percentualAjustado = percentualPreenchimento - descontoPorPendencias;
-
-    return Math.max(0, Math.min(99, percentualAjustado));
+    const percentual = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+    return Math.max(0, Math.min(99, percentual));
   }
 
   get quantidadePendenciasAgendamento(): number {
@@ -421,6 +418,7 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   abrirModalCadastro(): void {
     this.editandoId = null;
+    this.agendamentoOriginalEdicao = null;
     this.abaNovoAgendamento = 'agendamento';
     this.mensagemErroModal = '';
     this.mensagemDisponibilidadeResponsavel = '';
@@ -482,6 +480,7 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   abrirModalEdicao(item: Agendamento): void {
     this.editandoId = item.id ?? null;
+    this.agendamentoOriginalEdicao = { ...item, idVeiculo: item.idVeiculo ?? item.veiculo?.id };
     this.abaNovoAgendamento = 'agendamento';
     this.mensagemErroModal = '';
     this.mensagemDisponibilidadeResponsavel = '';
@@ -562,6 +561,10 @@ export class ExibeAgendamentosComponent implements OnInit {
   }
 
   labelVeiculo(veiculo: VeiculoResumo): string {
+    const original = this.agendamentoOriginalEdicao;
+    if (this.editandoId && original && Number(veiculo.id) === Number(original.idVeiculo)) {
+      return `${this.formatarPlaca(original.placaVeiculo)} │ ${this.capitalizar(original.modeloVeiculo || '')}`.trim();
+    }
     const placa = this.placaDoVeiculo(veiculo);
     const modelo = this.capitalizar(this.modeloDoVeiculo(veiculo));
 
@@ -570,6 +573,15 @@ export class ExibeAgendamentosComponent implements OnInit {
 
   selecionarVeiculo(): void {
     const idVeiculo = Number(this.novoAgendamento.idVeiculo);
+    const original = this.agendamentoOriginalEdicao;
+    if (this.editandoId && original && idVeiculo === Number(original.idVeiculo)) {
+      this.novoAgendamento.placaVeiculo = original.placaVeiculo;
+      this.novoAgendamento.fabricanteVeiculo = original.fabricanteVeiculo;
+      this.novoAgendamento.modeloVeiculo = original.modeloVeiculo;
+      this.novoAgendamento.corVeiculo = original.corVeiculo;
+      this.novoAgendamento.anoModeloCombustivelVeiculo = original.anoModeloCombustivelVeiculo;
+      return;
+    }
 
     const veiculo = this.veiculos.find(v => Number(v.id) === idVeiculo);
 

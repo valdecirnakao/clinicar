@@ -1,6 +1,7 @@
 package com.clinicar.backend.listener;
 
 import com.clinicar.backend.event.UsuarioAtivadoEvent;
+import com.clinicar.backend.event.UsuarioCadastradoEvent;
 import com.clinicar.backend.event.UsuarioAtualizadoEvent;
 import com.clinicar.backend.event.UsuarioInativadoEvent;
 import com.clinicar.backend.event.UsuarioMfaResetadoEvent;
@@ -18,6 +19,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class UsuarioWhatsappNotificationListener {
 
     private final WhatsAppService whatsAppService;
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void aoCadastrarUsuario(UsuarioCadastradoEvent event) {
+        tentarEnviar(
+                () -> whatsAppService.enviarMensagemCadastroUsuario(event.telefone(), event.nome()),
+                "cadastro_usuario", event.usuarioId());
+    }
 
     @PostConstruct
     public void init() {

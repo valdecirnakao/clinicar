@@ -132,7 +132,7 @@ export class PrimeiroAcessoComponent implements OnInit {
       obrigatorio: true,
       autocomplete: 'off',
       secao: 'dados',
-      largura: 'col-md-4'
+      largura: 'col-md-6'
     },
     {
       nome: 'nascimento',
@@ -141,7 +141,7 @@ export class PrimeiroAcessoComponent implements OnInit {
       obrigatorio: true,
       autocomplete: 'bday',
       secao: 'dados',
-      largura: 'col-md-4'
+      largura: 'col-md-6'
     },
 
     {
@@ -251,6 +251,18 @@ export class PrimeiroAcessoComponent implements OnInit {
 
   get etapaSelecionada(): Etapa {
     return this.etapas[this.etapaAtual - 1];
+  }
+
+  get totalCamposObrigatorios(): number {
+    return this.campos.filter(campo => campo.obrigatorio).length;
+  }
+
+  get camposObrigatoriosPreenchidos(): number {
+    return this.campos.filter(campo => campo.obrigatorio && !this.erroCampo(campo.nome)).length;
+  }
+
+  get progressoPreenchimento(): number {
+    return Math.round(this.camposObrigatoriosPreenchidos / this.totalCamposObrigatorios * 100);
   }
 
   camposDaSecao(secao: SecaoId): Campo[] {

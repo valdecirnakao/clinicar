@@ -51,12 +51,22 @@ public class AuthSessionInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        // Auth e usuário possuem suas próprias regras de sessão/propriedade.
+        // Os demais recursos atualmente pertencem ao modo administrador.
+        if (!(uri.startsWith("/api/auth/") || uri.equals("/api/usuario") || uri.startsWith("/api/usuario/"))
+                && !"ADMINISTRADOR".equalsIgnoreCase(usuarioOpt.get().getTipo_do_acesso())) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"mensagem\":\"Acesso exclusivo do administrador.\"}");
+            return false;
+        }
         request.setAttribute("usuarioLogado", usuarioOpt.get());
 
         return true;
     }
 
     private boolean rotaPublica(String uri, String metodo) {
+        if ("GET".equalsIgnoreCase(metodo) && uri.equals("/api/auth/redefinir-senha/validar")) return true;
         // Primeiro acesso: a autorização é o estado transacional do setup/token.
         if ("GET".equalsIgnoreCase(metodo)
                 && (uri.equals("/api/setup/status")

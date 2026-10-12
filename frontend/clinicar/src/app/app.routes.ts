@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { administradorGuard } from './guards/administrador.guard';
+import { contaGuard } from './guards/conta.guard';
 import { LoginComponent } from './pages/login/login.component';
 import { MenuAdministradorComponent } from './pages/menu-administrador/menu-administrador.component';
 import { ExibeFornecedorComponent } from './pages/menu-administrador/exibe-fornecedor/exibe-fornecedor.component';
@@ -27,8 +29,13 @@ export const routes: Routes = [
   { path: 'ativar-conta', loadComponent: () => import('./pages/ativar-conta/ativar-conta.component').then(m => m.AtivarContaComponent) },
   { path: 'verificar-2fa', component: Verificar2faComponent },
   { path: 'cadastraCliente', component: CadastraClienteComponent },
-  { path: 'menuAdministrador', component: MenuAdministradorComponent,  // precisa ter <router-outlet> no template
+  { path: 'menuCliente', canActivate: [contaGuard], data: { perfil: 'CLIENTE' }, loadComponent: () => import('./pages/minha-conta/minha-conta.component').then(m => m.MinhaContaComponent) },
+  { path: 'menuColaborador', canActivate: [contaGuard], data: { perfil: 'COLABORADOR' }, loadComponent: () => import('./pages/minha-conta/minha-conta.component').then(m => m.MinhaContaComponent) },
+  { path: 'menuAdministrador', component: MenuAdministradorComponent, canActivate: [administradorGuard], canActivateChild: [administradorGuard],  // precisa ter <router-outlet> no template
     children: [
+      { path: 'solicitacoesAcesso', loadComponent: () => import('./pages/menu-administrador/solicitacoes-acesso/solicitacoes-acesso.component').then(m => m.SolicitacoesAcessoComponent) },
+      { path: 'historicoVeicular', loadComponent: () => import('./pages/menu-administrador/historico-veicular/historico-veicular.component').then(m => m.HistoricoVeicularComponent) },
+      { path: 'configuracaoAlertas', loadComponent: () => import('./pages/menu-administrador/configuracao-alertas/configuracao-alertas.component').then(m => m.ConfiguracaoAlertasComponent) },
       { path: 'exibeFornecedor', component: ExibeFornecedorComponent }, // filho (NÃO repete o pai)
       { path: 'exibeUsuario', component: ExibeUsuarioComponent }, // filho (NÃO repete o pai)
       { path: 'exibeRegrasManutencao', component: ExibeRegrasManutencaoComponent }, // filho (NÃO repete o pai)

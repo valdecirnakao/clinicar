@@ -143,6 +143,8 @@ export interface PecaResumo {
 
   tipo?: string;
 
+  origemOleo?: string | null;
+
   fabricante?: string;
 
   modelo?: string;
@@ -304,9 +306,10 @@ export class ExibeRegrasManutencaoComponent
     'PASTILHA_FREIO'
   ];
 
-  readonly origensOleo = [
+  origensOleo = [
     'MINERAL',
-    'SINTETICO'
+    'SINTETICO',
+    'SEMISSINTETICO'
   ];
 
 
@@ -462,7 +465,6 @@ export class ExibeRegrasManutencaoComponent
                     'pt-BR'
                   )
             );
-
 
         this.todasRegras =
           (regras || [])
@@ -1179,6 +1181,186 @@ export class ExibeRegrasManutencaoComponent
 
 
   /* =======================================================
+     PROGRESSO E PREENCHIMENTO AUTOMÁTICO
+     ======================================================= */
+
+  get progressoFormulario(): number {
+    const verificacoes = this.verificacoesCamposObrigatorios();
+    const preenchidos = verificacoes.filter(Boolean).length;
+
+    return Math.round((preenchidos / verificacoes.length) * 100);
+  }
+
+
+  get formularioProntoParaSalvar(): boolean {
+    return this.validarFormulario() === null;
+  }
+
+
+  get mensagemBloqueioFormulario(): string {
+    return this.validarFormulario() || '';
+  }
+
+
+  aoAlterarPecaFormulario(): void {
+    const peca = this.pecaSelecionadaFormulario();
+
+    if (!peca || !this.pecaEhOleoMotor(peca)) {
+      return;
+    }
+
+    this.formulario.grupoManutencao = 'TROCA_OLEO';
+    this.preencherOrigemOleoDaPeca(peca);
+  }
+
+
+  pecaSelecionadaEhOleoMotor(): boolean {
+    const peca = this.pecaSelecionadaFormulario();
+
+    return Boolean(peca && this.pecaEhOleoMotor(peca));
+  }
+
+
+  private verificacoesCamposObrigatorios(): boolean[] {
+    const grupo = this.formulario.grupoManutencao?.trim() || '';
+    const descricao = this.formulario.descricao?.trim() || '';
+    const possuiVinculo = Boolean(
+      this.numeroOuNull(this.formulario.idServico)
+      || this.numeroOuNull(this.formulario.idPeca)
+    );
+    const possuiPeriodicidade = this.numeroPositivoValido(this.formulario.intervaloKm)
+      || this.numeroPositivoValido(this.formulario.intervaloDias);
+    const verificacoes = [
+      Boolean(grupo),
+      Boolean(descricao),
+      possuiVinculo,
+      possuiPeriodicidade,
+      this.prioridadeValida()
+    ];
+
+    if (this.ehRegraTrocaOleoFormulario()) {
+      verificacoes.push(Boolean(this.formulario.origemOleo));
+    }
+
+    return verificacoes;
+  }
+
+
+  private numeroPositivoValido(valor: any): boolean {
+    if (valor === null || valor === undefined || valor === '') {
+      return false;
+    }
+
+    const numero = Number(valor);
+
+    return Number.isFinite(numero) && Number.isInteger(numero) && numero > 0;
+  }
+
+
+  private prioridadeValida(): boolean {
+    const valor = this.formulario.prioridade;
+
+    if (valor === null || valor === undefined || String(valor).trim() === '') {
+      return false;
+    }
+
+    const prioridade = Number(valor);
+
+    return Number.isFinite(prioridade)
+      && Number.isInteger(prioridade)
+      && prioridade >= 0;
+  }
+
+
+  private pecaSelecionadaFormulario(): PecaResumo | null {
+    const idPeca = this.numeroOuNull(this.formulario.idPeca);
+
+    if (!idPeca) {
+      return null;
+    }
+
+    return this.pecas.find(peca => Number(peca.id) === idPeca) || null;
+  }
+
+
+  private pecaEhOleoMotor(peca: PecaResumo): boolean {
+    const identificacao = this.normalizarEnumBackend([
+      peca?.nome,
+      peca?.descricao,
+      peca?.tipo,
+      peca?.modelo
+    ].filter(Boolean).join(' '));
+
+    return identificacao.includes('OLEO_MOTOR')
+      || (identificacao.includes('OLEO') && identificacao.includes('MOTOR'));
+  }
+
+
+  private preencherOrigemOleoDaPeca(peca: PecaResumo): void {
+    const origem = this.extrairOrigemOleoPeca(peca);
+
+    if (!origem) {
+      this.formulario.origemOleo = null;
+      return;
+    }
+
+    this.formulario.origemOleo = origem;
+  }
+
+
+  private extrairOrigemOleoPeca(peca: PecaResumo): string | null {
+    // A API de peças devolve a origem em um campo próprio. O texto da peça
+    // pode omitir a origem ou mencionar outra especificação no nome.
+    const origemCadastrada = this.textoOuNull(
+      peca?.origemOleo ?? peca?.['origem_oleo']
+    );
+
+    if (origemCadastrada) {
+      return this.identificarOrigemOleoNoTexto(origemCadastrada);
+    }
+
+    // Compatibilidade com cadastros antigos que descreviam a origem no texto.
+    const descricaoCompleta = [
+      peca?.tipo,
+      peca?.nome,
+      peca?.descricao,
+      peca?.modelo
+    ].filter(Boolean).join(' ');
+
+    return this.identificarOrigemOleoNoTexto(descricaoCompleta);
+  }
+
+
+  private identificarOrigemOleoNoTexto(valor: string): string | null {
+    const normalizado = this.normalizarEnumBackend(valor);
+
+    if (
+      normalizado.includes('SEMISSINTETICO')
+      || normalizado.includes('SEMI_SINTETICO')
+      || normalizado.includes('SEMISINTETICO')
+    ) {
+      return 'SEMISSINTETICO';
+    }
+
+    if (normalizado.includes('SINTETICO')) {
+      return 'SINTETICO';
+    }
+
+    if (normalizado.includes('MINERAL')) {
+      return 'MINERAL';
+    }
+
+    return null;
+  }
+
+
+  private normalizarOrigemOleo(valor: string): string {
+    return this.identificarOrigemOleoNoTexto(valor)
+      || this.normalizarEnumBackend(valor);
+  }
+
+
+  /* =======================================================
      CADASTRO
      ======================================================= */
 
@@ -1269,6 +1451,21 @@ export class ExibeRegrasManutencaoComponent
 
 
     this.ajustarGrupoFormulario();
+
+    const pecaSelecionada =
+      this.pecaSelecionadaFormulario();
+
+    if (
+      pecaSelecionada
+      && this.pecaEhOleoMotor(pecaSelecionada)
+    ) {
+      this.formulario.grupoManutencao =
+        'TROCA_OLEO';
+
+      this.preencherOrigemOleoDaPeca(
+        pecaSelecionada
+      );
+    }
 
     this.mensagemErroModal =
       '';
@@ -1447,9 +1644,11 @@ export class ExibeRegrasManutencaoComponent
       origemOleo:
         grupo === 'TROCA_OLEO'
           ? (
-              this.formulario
-                .origemOleo
-              || null
+              this.formulario.origemOleo
+                ? this.normalizarOrigemOleo(
+                    this.formulario.origemOleo
+                  )
+                : null
             )
           : null,
 
@@ -1513,39 +1712,60 @@ export class ExibeRegrasManutencaoComponent
     }
 
 
-    const intervaloKm =
-      Number(
-        this.formulario
-          .intervaloKm
-        || 0
-      );
-
-    const intervaloDias =
-      Number(
-        this.formulario
-          .intervaloDias
-        || 0
-      );
-
-
     if (
-      intervaloKm <= 0
-      && intervaloDias <= 0
+      !this.numeroOuNull(
+        this.formulario.idServico
+      )
+      && !this.numeroOuNull(
+        this.formulario.idPeca
+      )
     ) {
-
       return (
-        'Informe pelo menos um intervalo de manutenção: quilometragem ou quantidade de dias.'
+        'Vincule pelo menos um serviço ou uma peça à regra de manutenção.'
       );
     }
 
 
+    const intervaloKmInformado =
+      this.formulario.intervaloKm !== null
+      && this.formulario.intervaloKm !== undefined
+      && String(this.formulario.intervaloKm).trim() !== '';
+
+    const intervaloDiasInformado =
+      this.formulario.intervaloDias !== null
+      && this.formulario.intervaloDias !== undefined
+      && String(this.formulario.intervaloDias).trim() !== '';
+
+    const intervaloKm =
+      Number(this.formulario.intervaloKm);
+
+    const intervaloDias =
+      Number(this.formulario.intervaloDias);
+
+
     if (
-      intervaloKm < 0
-      || intervaloDias < 0
+      intervaloKmInformado
+      && !this.numeroPositivoValido(intervaloKm)
+    ) {
+      return 'Informe um intervalo em quilômetros inteiro e maior que zero.';
+    }
+
+
+    if (
+      intervaloDiasInformado
+      && !this.numeroPositivoValido(intervaloDias)
+    ) {
+      return 'Informe um intervalo em dias inteiro e maior que zero.';
+    }
+
+
+    if (
+      !this.numeroPositivoValido(intervaloKm)
+      && !this.numeroPositivoValido(intervaloDias)
     ) {
 
       return (
-        'Os intervalos de manutenção não podem ser negativos.'
+        'Informe pelo menos um intervalo de manutenção: quilometragem ou quantidade de dias.'
       );
     }
 
@@ -1569,15 +1789,10 @@ export class ExibeRegrasManutencaoComponent
     }
 
 
-    if (
-      Number(
-        this.formulario
-          .prioridade
-      ) < 0
-    ) {
+    if (!this.prioridadeValida()) {
 
       return (
-        'A prioridade não pode ser negativa.'
+        'Informe uma prioridade inteira, com valor igual ou maior que zero.'
       );
     }
 
@@ -1607,6 +1822,21 @@ export class ExibeRegrasManutencaoComponent
       this.formulario
         .origemOleo =
         null;
+
+      return;
+    }
+
+
+    const pecaSelecionada =
+      this.pecaSelecionadaFormulario();
+
+    if (
+      pecaSelecionada
+      && this.pecaEhOleoMotor(pecaSelecionada)
+    ) {
+      this.preencherOrigemOleoDaPeca(
+        pecaSelecionada
+      );
     }
   }
 
@@ -2023,9 +2253,22 @@ export class ExibeRegrasManutencaoComponent
     }
 
 
-    return this.formatarEnum(
-      origem
-    );
+    const origemNormalizada =
+      this.normalizarOrigemOleo(origem);
+
+    if (origemNormalizada === 'MINERAL') {
+      return 'Mineral';
+    }
+
+    if (origemNormalizada === 'SINTETICO') {
+      return 'Sintético';
+    }
+
+    if (origemNormalizada === 'SEMISSINTETICO') {
+      return 'Semissintético';
+    }
+
+    return this.formatarEnum(origemNormalizada);
   }
 
 

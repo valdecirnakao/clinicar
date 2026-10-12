@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { LoginService, UsuarioLogado } from '../login/login.service';
 
 @Component({
   selector: 'app-menu-administrador',
   standalone: true,
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './menu-administrador.component.html',
   styleUrl: './menu-administrador.component.css'
 })

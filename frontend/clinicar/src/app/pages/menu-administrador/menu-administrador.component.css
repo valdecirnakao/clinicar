@@ -1,0 +1,129 @@
+.top-nav-clinicar {
+  border-bottom: 1px solid #dbe7f5;
+  height: 14vh;
+}
+
+.conteudo-clinicar {
+  height: 86vh;
+}
+
+.logo-clinicar {
+  height: 100px;
+}
+
+.pill-btn {
+  text-decoration: none;
+  color: #35689b;
+  border: 1px solid #d0e2f2;
+  background: #eef6ff;
+  position: relative;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.pill-btn:hover,
+.pill-btn:focus-visible {
+  color: #28547f;
+  border-color: #9fc1df;
+  background: #e3f0fb;
+}
+
+.nav-active,
+.nav-group-active > .pill-btn {
+  color: #fff !important;
+  background: #35689b !important;
+  border-color: #35689b !important;
+  box-shadow: 0 3px 9px rgba(53, 104, 155, .24);
+  font-weight: 600;
+}
+
+.nav-active::after,
+.nav-group-active > .pill-btn::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -5px;
+  height: 3px;
+  border-radius: 999px;
+  background: #35689b;
+}
+
+.nav-group-active > .dropdown-toggle::after {
+  position: static;
+  display: inline-block;
+  margin-left: .255em;
+  vertical-align: .255em;
+  content: '';
+  border-top: .3em solid;
+  border-right: .3em solid transparent;
+  border-bottom: 0;
+  border-left: .3em solid transparent;
+  background: transparent;
+  height: auto;
+  border-radius: 0;
+}
+
+.dropdown-menu {
+  z-index: 2000;
+}
+
+.dropdown-item {
+  color: #35689b;
+}
+
+.dropdown-item.dropdown-active {
+  color: #fff;
+  background: #35689b;
+  font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+  .logo-clinicar {
+    height: 72px;
+  }
+
+  #topNav .navbar-nav,
+  #topNav .nav-item {
+    width: 100%;
+  }
+
+  .pill-btn {
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-active::after,
+  .nav-group-active > .pill-btn::after {
+    display: none;
+  }
+
+  #topNav .dropdown-menu {
+    position: static;
+    width: 100%;
+    margin-top: .25rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1399.98px) {
+  .logo-clinicar {
+    height: 80px;
+  }
+
+  .navbar-nav.gap-2 {
+    gap: .35rem !important;
+  }
+
+  .pill-btn {
+    padding-left: .75rem !important;
+    padding-right: .75rem !important;
+    padding-top: .35rem !important;
+    padding-bottom: .35rem !important;
+    font-size: .92rem;
+  }
+
+  .dropdown-menu .dropdown-item {
+    font-size: .92rem;
+    padding-top: .4rem;
+    padding-bottom: .4rem;
+  }
+}

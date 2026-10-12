@@ -47,6 +47,13 @@ public class VeiculoController {
                 .body(salvo);
     }
 
+    @GetMapping("/verificar-placa")
+    public ResponseEntity<java.util.Map<String, Boolean>> verificarPlaca(@RequestParam String placa,
+            @RequestParam(required = false) Long ignorarId) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(java.util.Map.of("cadastrada", veiculoService.verificarPlacaCadastrada(placa, ignorarId)));
+    }
+
     @GetMapping("/placa/{placa}")
     public ResponseEntity<Veiculo> buscarPorPlaca(
             @PathVariable String placa) {

@@ -358,7 +358,11 @@
               </div>
             </div>
 
-            <ul class="nav nav-pills clinicar-tabs">
+            <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
               <li class="nav-item">
                 <button class="nav-link" type="button" [class.active]="abaCadastroFornecimento === 'vinculo'"
                   (click)="trocarAbaCadastroFornecimento('vinculo')">
@@ -477,7 +481,7 @@
 
                   <div class="col-md-3">
                     <label class="form-label" for="prazoExecucaoCadastro">Prazo Execução *</label>
-                    <input id="prazoExecucaoCadastro" class="form-control" type="text"
+                    <input id="prazoExecucaoCadastro" data-help="Informe o valor numérico do prazo de execução do fornecedor. A unidade é definida no campo Unidade Prazo logo ao lado." class="form-control" type="text"
                       [(ngModel)]="novoFornecimento.prazoExecucao" (input)="limparCampoInvalido('prazoExecucao')"
                       [class.is-invalid]="campoInvalido('prazoExecucao')" />
                     <div class="invalid-feedback d-block" *ngIf="campoInvalido('prazoExecucao')">Informe prazo maior que
@@ -486,7 +490,7 @@
 
                   <div class="col-md-3">
                     <label class="form-label" for="unidadePrazoCadastro">Unidade Prazo *</label>
-                    <select id="unidadePrazoCadastro" class="form-select" [(ngModel)]="novoFornecimento.unidadePrazo"
+                    <select id="unidadePrazoCadastro" data-help="Defina se o prazo informado é medido em minutos, horas ou dias." class="form-select" [(ngModel)]="novoFornecimento.unidadePrazo"
                       (change)="limparCampoInvalido('unidadePrazo')" [class.is-invalid]="campoInvalido('unidadePrazo')">
                       <option *ngFor="let u of unidadesPrazo" [ngValue]="u">{{ formatarUnidade(u) }}</option>
                     </select>
@@ -642,7 +646,11 @@
               </div>
             </div>
 
-            <ul class="nav nav-pills clinicar-tabs">
+            <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
               <li class="nav-item">
                 <button class="nav-link" type="button" [class.active]="abaEdicaoFornecimento === 'vinculo'"
                   (click)="trocarAbaEdicaoFornecimento('vinculo')">
@@ -757,7 +765,7 @@
 
                   <div class="col-md-3">
                     <label class="form-label" for="prazoExecucaoEdicao">Prazo Execução *</label>
-                    <input id="prazoExecucaoEdicao" class="form-control" type="text" [(ngModel)]="edit.prazoExecucao"
+                    <input id="prazoExecucaoEdicao" data-help="Informe o valor numérico do prazo de execução do fornecedor. A unidade é definida no campo Unidade Prazo logo ao lado." class="form-control" type="text" [(ngModel)]="edit.prazoExecucao"
                       (input)="limparCampoInvalido('prazoExecucao')"
                       [class.is-invalid]="campoInvalido('prazoExecucao')" />
                     <div class="invalid-feedback d-block" *ngIf="campoInvalido('prazoExecucao')">Informe prazo maior que
@@ -766,7 +774,7 @@
 
                   <div class="col-md-3">
                     <label class="form-label" for="unidadePrazoEdicao">Unidade Prazo *</label>
-                    <select id="unidadePrazoEdicao" class="form-select" [(ngModel)]="edit.unidadePrazo"
+                    <select id="unidadePrazoEdicao" data-help="Defina se o prazo informado é medido em minutos, horas ou dias." class="form-select" [(ngModel)]="edit.unidadePrazo"
                       (change)="limparCampoInvalido('unidadePrazo')" [class.is-invalid]="campoInvalido('unidadePrazo')">
                       <option *ngFor="let u of unidadesPrazo" [ngValue]="u">{{ formatarUnidade(u) }}</option>
                     </select>

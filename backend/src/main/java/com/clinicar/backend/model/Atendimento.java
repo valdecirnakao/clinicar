@@ -57,6 +57,51 @@ public class Atendimento {
     )
     private Veiculo veiculo;
 
+    @Column(name = "veiculo_preservado_em")
+    private LocalDateTime veiculoPreservadoEm;
+
+    @Column(name = "veiculo_placa_historica")
+    private String veiculoPlacaHistorica;
+
+    @Column(name = "veiculo_fabricante_historico")
+    private String veiculoFabricanteHistorico;
+
+    @Column(name = "veiculo_modelo_historico")
+    private String veiculoModeloHistorico;
+
+    @Column(name = "veiculo_cor_historica")
+    private String veiculoCorHistorica;
+
+    @Column(name = "veiculo_ano_modelo_combustivel_historico")
+    private String veiculoAnoModeloCombustivelHistorico;
+
+    @Lob
+    @Column(name = "os_pdf_original", columnDefinition = "LONGBLOB")
+    private byte[] osPdfOriginal;
+
+    public void preservarDadosVeiculo() {
+        if (veiculoPreservadoEm != null) return;
+        if (veiculo == null) throw new IllegalStateException("Veículo não vinculado ao atendimento.");
+        veiculoPlacaHistorica = veiculo.getPlaca();
+        veiculoFabricanteHistorico = veiculo.getFabricante();
+        veiculoModeloHistorico = veiculo.getModelo();
+        veiculoCorHistorica = veiculo.getCor();
+        veiculoAnoModeloCombustivelHistorico = veiculo.getAnoModeloCombustivel();
+        veiculoPreservadoEm = LocalDateTime.now();
+    }
+
+    public String placaVeiculoDoAtendimento() {
+        return veiculoPreservadoEm != null ? veiculoPlacaHistorica : veiculo == null ? null : veiculo.getPlaca();
+    }
+
+    public String fabricanteVeiculoDoAtendimento() {
+        return veiculoPreservadoEm != null ? veiculoFabricanteHistorico : veiculo == null ? null : veiculo.getFabricante();
+    }
+
+    public String modeloVeiculoDoAtendimento() {
+        return veiculoPreservadoEm != null ? veiculoModeloHistorico : veiculo == null ? null : veiculo.getModelo();
+    }
+
     @ManyToOne(optional = false)
     @JoinColumn(
             name = "id_servico",

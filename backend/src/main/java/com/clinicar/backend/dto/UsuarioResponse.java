@@ -1,8 +1,19 @@
 package com.clinicar.backend.dto;
 
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 
 public class UsuarioResponse {
+    private boolean podeExcluir;
+    private boolean podeInativar;
+    private String motivoBloqueioInativacao;
+    public boolean getPodeInativar() { return podeInativar; }
+    public void setPodeInativar(boolean valor) { podeInativar = valor; }
+    public String getMotivoBloqueioInativacao() { return motivoBloqueioInativacao; }
+    public void setMotivoBloqueioInativacao(String valor) { motivoBloqueioInativacao = valor; }
+
+    public boolean getPodeExcluir() { return podeExcluir; }
+    public void setPodeExcluir(boolean podeExcluir) { this.podeExcluir = podeExcluir; }
 
     private Long id;
     private String nome;
@@ -23,6 +34,8 @@ public class UsuarioResponse {
 
     private Boolean mfaAtivo;
     private String mfaTipo;
+    private LocalDateTime criadoEm;
+    private LocalDateTime atualizadoEm;
 
     public Long getId() {
         return id;
@@ -166,5 +179,21 @@ public class UsuarioResponse {
 
     public void setMfaTipo(String mfaTipo) {
         this.mfaTipo = mfaTipo;
+    }
+
+    public LocalDateTime getCriadoEm() {
+        return criadoEm;
+    }
+
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
+    }
+
+    public LocalDateTime getAtualizadoEm() {
+        return atualizadoEm;
+    }
+
+    public void setAtualizadoEm(LocalDateTime atualizadoEm) {
+        this.atualizadoEm = atualizadoEm;
     }
 }

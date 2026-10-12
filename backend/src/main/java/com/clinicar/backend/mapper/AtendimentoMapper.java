@@ -46,10 +46,10 @@ public class AtendimentoMapper {
 
         if (veiculo != null) {
             response.setIdVeiculo(veiculo.getId());
-            response.setPlacaVeiculo(veiculo.getPlaca());
-            response.setFabricanteVeiculo(veiculo.getFabricante());
-            response.setModeloVeiculo(veiculo.getModelo());
         }
+        response.setPlacaVeiculo(atendimento.placaVeiculoDoAtendimento());
+        response.setFabricanteVeiculo(atendimento.fabricanteVeiculoDoAtendimento());
+        response.setModeloVeiculo(atendimento.modeloVeiculoDoAtendimento());
 
         Servico servico = atendimento.getServico();
 

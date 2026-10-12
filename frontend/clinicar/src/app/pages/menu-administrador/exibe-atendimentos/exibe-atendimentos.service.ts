@@ -517,8 +517,8 @@ export class ExibeAtendimentosService {
     });
   }
 
-  concluir(id: number): Observable<Atendimento> {
-    return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/concluir`, {}, {
+  concluir(id: number, quilometragemSaida?: number): Observable<Atendimento> {
+    return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/concluir`, { quilometragemSaida }, {
       withCredentials: true
     });
   }

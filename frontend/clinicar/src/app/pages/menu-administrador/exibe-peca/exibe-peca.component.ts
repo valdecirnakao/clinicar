@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { Peca, PecaService } from './exibe-peca.service';
 
 declare var bootstrap: any;
@@ -16,12 +18,21 @@ type ColunaOrdenacaoPeca =
   | 'norma'
   | 'unidade';
 
-type CampoObrigatorioPeca = 'nome' | 'fabricante' | 'unidade';
+type CampoObrigatorioPeca =
+  | 'nome'
+  | 'fabricante'
+  | 'tipo'
+  | 'unidade'
+  | 'origemOleo'
+  | 'viscosidadeSae'
+  | 'especificacaoTecnica';
+
+type CampoObrigatorioDiretoPeca = Exclude<CampoObrigatorioPeca, 'especificacaoTecnica'>;
 
 @Component({
   selector: 'app-exibe-peca',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-peca.component.html',
   styleUrls: ['./exibe-peca.component.css']
 })
@@ -62,12 +73,37 @@ export class ExibePecaComponent implements OnInit {
 
   readonly tiposPeca = [
     'Peça automotiva',
+    'Óleo de motor',
     'Lubrificante',
     'Fluido automotivo',
     'Consumível',
     'Acessório',
     'Ferramenta e equipamento',
     'Outro'
+  ];
+
+  readonly origensOleo = [
+    { valor: 'MINERAL', rotulo: 'Mineral' },
+    { valor: 'SEMISSINTETICO', rotulo: 'Semissintético' },
+    { valor: 'SINTETICO', rotulo: 'Sintético' }
+  ];
+
+  readonly viscosidadesSaeComuns = [
+    '0W-16',
+    '0W-20',
+    '0W-30',
+    '0W-40',
+    '5W-20',
+    '5W-30',
+    '5W-40',
+    '5W-50',
+    '10W-30',
+    '10W-40',
+    '10W-50',
+    '10W-60',
+    '15W-40',
+    '15W-50',
+    '20W-50'
   ];
 
   readonly unidadesMedida = [
@@ -134,7 +170,12 @@ export class ExibePecaComponent implements OnInit {
   }
 
   get totalComNorma(): number {
-    return this.todos.filter(p => !!String(p.norma || '').trim()).length;
+    return this.todos.filter(p =>
+      !!String(p.norma || '').trim() ||
+      !!String(p.classificacaoApi || '').trim() ||
+      !!String(p.classificacaoAcea || '').trim() ||
+      !!String(p.normaOem || '').trim()
+    ).length;
   }
 
   get tiposParaFiltro(): string[] {
@@ -142,7 +183,7 @@ export class ExibePecaComponent implements OnInit {
       .map(p => this.capitalizarTexto(p.tipo))
       .filter(Boolean);
 
-    return Array.from(new Set([...this.tiposPeca, ...existentes]))
+    return this.removerDuplicadosNormalizados([...this.tiposPeca, ...existentes])
       .sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
@@ -151,7 +192,7 @@ export class ExibePecaComponent implements OnInit {
       .map(p => this.capitalizarTexto(p.unidade))
       .filter(Boolean);
 
-    return Array.from(new Set([...this.unidadesMedida, ...existentes]))
+    return this.removerDuplicadosNormalizados([...this.unidadesMedida, ...existentes])
       .sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
@@ -176,6 +217,10 @@ export class ExibePecaComponent implements OnInit {
         this.normalizarTexto(p.fabricante).includes(texto) ||
         this.normalizarTexto(p.modelo).includes(texto) ||
         this.normalizarTexto(p.norma).includes(texto) ||
+        this.normalizarTexto(p.viscosidadeSae).includes(texto) ||
+        this.normalizarTexto(p.classificacaoApi).includes(texto) ||
+        this.normalizarTexto(p.classificacaoAcea).includes(texto) ||
+        this.normalizarTexto(p.normaOem).includes(texto) ||
         this.normalizarTexto(p.unidade).includes(texto);
 
       const atendeTipo = !tipo || this.normalizarTexto(p.tipo) === tipo;
@@ -518,8 +563,12 @@ export class ExibePecaComponent implements OnInit {
     });
   }
 
-  campoMarcadoInvalido(model: Partial<Peca>, campo: CampoObrigatorioPeca): boolean {
+  campoMarcadoInvalido(model: Partial<Peca>, campo: CampoObrigatorioDiretoPeca): boolean {
     return this.camposInvalidos.includes(campo) && this.campoTextoInvalido(model[campo]);
+  }
+
+  especificacaoTecnicaMarcadaInvalida(model: Partial<Peca>): boolean {
+    return this.camposInvalidos.includes('especificacaoTecnica') && !this.possuiEspecificacaoTecnica(model);
   }
 
   dadosPecaPendentes(model: Partial<Peca>): boolean {
@@ -529,10 +578,105 @@ export class ExibePecaComponent implements OnInit {
   }
 
   classificacaoIncompleta(model: Partial<Peca>): boolean {
-    return !String(model.tipo || '').trim() ||
-      !String(model.especificacao || '').trim() ||
-      !String(model.modelo || '').trim() ||
-      !String(model.norma || '').trim();
+    if (this.campoTextoInvalido(model.tipo)) {
+      return true;
+    }
+
+    if (!this.ehOleoMotor(model)) {
+      return false;
+    }
+
+    return this.campoTextoInvalido(model.origemOleo) ||
+      this.campoTextoInvalido(model.viscosidadeSae) ||
+      !this.possuiEspecificacaoTecnica(model);
+  }
+
+  ehOleoMotor(model: Partial<Peca>): boolean {
+    const tipoNormalizado = this.normalizarTexto(model.tipo)
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return tipoNormalizado === 'oleo de motor'
+      || tipoNormalizado === 'oleo motor';
+  }
+
+  resumoEspecificacaoTecnica(peca: Partial<Peca>): string {
+    const itens: string[] = [];
+
+    if (this.ehOleoMotor(peca)) {
+      const viscosidade = this.formatarViscosidadeSae(peca.viscosidadeSae);
+      const classificacaoApi = this.caixaAltaTexto(peca.classificacaoApi);
+      const classificacaoAcea = this.caixaAltaTexto(peca.classificacaoAcea);
+      const normaOem = this.caixaAltaTexto(peca.normaOem);
+
+      if (viscosidade) {
+        itens.push(this.adicionarPrefixoTecnico('SAE', viscosidade));
+      }
+
+      if (classificacaoApi) {
+        itens.push(this.adicionarPrefixoTecnico('API', classificacaoApi));
+      }
+
+      if (classificacaoAcea) {
+        itens.push(this.adicionarPrefixoTecnico('ACEA', classificacaoAcea));
+      }
+
+      if (normaOem) {
+        itens.push(this.adicionarPrefixoTecnico('OEM', normaOem));
+      }
+    }
+
+    const especificacao = this.caixaAltaTexto(peca.especificacao);
+
+    if (especificacao && !itens.includes(especificacao)) {
+      itens.push(especificacao);
+    }
+
+    return itens.join(' · ') || '—';
+  }
+
+  possuiEspecificacaoTecnica(model: Partial<Peca>): boolean {
+    return !this.campoTextoInvalido(model.classificacaoApi) ||
+      !this.campoTextoInvalido(model.classificacaoAcea) ||
+      !this.campoTextoInvalido(model.normaOem);
+  }
+
+  aoAlterarTipoPeca(model: Partial<Peca>): void {
+    if (!this.ehOleoMotor(model)) {
+      model.origemOleo = '';
+      model.viscosidadeSae = '';
+      model.classificacaoApi = '';
+      model.classificacaoAcea = '';
+      model.normaOem = '';
+      this.camposInvalidos = this.camposInvalidos.filter(campo =>
+        campo !== 'origemOleo' &&
+        campo !== 'viscosidadeSae' &&
+        campo !== 'especificacaoTecnica'
+      );
+    }
+  }
+
+  normalizarViscosidadeSae(model: Partial<Peca>): void {
+    model.viscosidadeSae = this.formatarViscosidadeSae(model.viscosidadeSae);
+  }
+
+  rotuloOrigemOleo(origem: string | null | undefined): string {
+    const normalizada = this.normalizarTexto(origem).replace(/[-\s]/g, '');
+
+    if (normalizada === 'mineral') {
+      return 'Mineral';
+    }
+
+    if (normalizada === 'semissintetico') {
+      return 'Semissintético';
+    }
+
+    if (normalizada === 'sintetico') {
+      return 'Sintético';
+    }
+
+    return '—';
   }
 
   normalizarCampoCapitalizado(model: Partial<Peca>, campo: keyof Peca): void {
@@ -623,6 +767,10 @@ export class ExibePecaComponent implements OnInit {
   }
 
   private valorOrdenacao(peca: Peca, coluna: ColunaOrdenacaoPeca): string {
+    if (coluna === 'especificacao') {
+      return this.resumoEspecificacaoTecnica(peca);
+    }
+
     return String((peca as any)[coluna] ?? '').trim();
   }
 
@@ -630,6 +778,11 @@ export class ExibePecaComponent implements OnInit {
     return {
       nome: '',
       tipo: '',
+      origemOleo: '',
+      viscosidadeSae: '',
+      classificacaoApi: '',
+      classificacaoAcea: '',
+      normaOem: '',
       especificacao: '',
       fabricante: '',
       modelo: '',
@@ -647,17 +800,65 @@ export class ExibePecaComponent implements OnInit {
       return 'Informe o fabricante da peça ou insumo.';
     }
 
+    if (this.campoTextoInvalido(model.tipo)) {
+      return 'Selecione o tipo da peça ou insumo.';
+    }
+
     if (this.campoTextoInvalido(model.unidade)) {
       return 'Selecione a unidade de medida.';
+    }
+
+    if (this.ehOleoMotor(model)) {
+      if (this.campoTextoInvalido(model.origemOleo)) {
+        return 'Selecione a origem do óleo de motor: mineral, semissintético ou sintético.';
+      }
+
+      if (this.campoTextoInvalido(model.viscosidadeSae)) {
+        return 'Informe a viscosidade SAE do óleo de motor.';
+      }
+
+      if (!this.possuiEspecificacaoTecnica(model)) {
+        return 'Informe ao menos uma especificação técnica: API, ACEA ou norma/aprovação OEM.';
+      }
     }
 
     return null;
   }
 
   private camposObrigatoriosInvalidos(model: Partial<Peca>): CampoObrigatorioPeca[] {
-    const campos: CampoObrigatorioPeca[] = ['nome', 'fabricante', 'unidade'];
+    const invalidos: CampoObrigatorioPeca[] = [];
 
-    return campos.filter(campo => this.campoTextoInvalido(model[campo]));
+    if (this.campoTextoInvalido(model.nome)) {
+      invalidos.push('nome');
+    }
+
+    if (this.campoTextoInvalido(model.fabricante)) {
+      invalidos.push('fabricante');
+    }
+
+    if (this.campoTextoInvalido(model.tipo)) {
+      invalidos.push('tipo');
+    }
+
+    if (this.campoTextoInvalido(model.unidade)) {
+      invalidos.push('unidade');
+    }
+
+    if (this.ehOleoMotor(model)) {
+      if (this.campoTextoInvalido(model.origemOleo)) {
+        invalidos.push('origemOleo');
+      }
+
+      if (this.campoTextoInvalido(model.viscosidadeSae)) {
+        invalidos.push('viscosidadeSae');
+      }
+
+      if (!this.possuiEspecificacaoTecnica(model)) {
+        invalidos.push('especificacaoTecnica');
+      }
+    }
+
+    return invalidos;
   }
 
   private campoTextoInvalido(valor: any): boolean {
@@ -665,25 +866,40 @@ export class ExibePecaComponent implements OnInit {
   }
 
   private calcularProgressoPeca(model: Partial<Peca>): number {
-    const campos = [
-      model.nome,
-      model.fabricante,
-      model.unidade,
-      model.tipo,
-      model.especificacao,
-      model.modelo,
-      model.norma
+    if (this.validarPeca(model) === null) {
+      return 100;
+    }
+
+    const requisitosValidos: boolean[] = [
+      !this.campoTextoInvalido(model.nome),
+      !this.campoTextoInvalido(model.fabricante),
+      !this.campoTextoInvalido(model.tipo),
+      !this.campoTextoInvalido(model.unidade)
     ];
 
-    const preenchidos = campos.filter(valor => !!String(valor ?? '').trim()).length;
+    if (this.ehOleoMotor(model)) {
+      requisitosValidos.push(
+        !this.campoTextoInvalido(model.origemOleo),
+        !this.campoTextoInvalido(model.viscosidadeSae),
+        this.possuiEspecificacaoTecnica(model)
+      );
+    }
 
-    return Math.round((preenchidos / campos.length) * 100);
+    const validos = requisitosValidos.filter(Boolean).length;
+    const percentual = Math.round((validos / requisitosValidos.length) * 100);
+
+    return Math.max(0, Math.min(99, percentual));
   }
 
   private montarPayloadCadastro(model: Partial<Peca>): Omit<Peca, 'id'> {
     return {
       nome: this.capitalizarTexto(model.nome),
       tipo: this.capitalizarTexto(model.tipo),
+      origemOleo: this.ehOleoMotor(model) ? String(model.origemOleo || '').trim().toUpperCase() : '',
+      viscosidadeSae: this.ehOleoMotor(model) ? this.formatarViscosidadeSae(model.viscosidadeSae) : '',
+      classificacaoApi: this.ehOleoMotor(model) ? this.caixaAltaTexto(model.classificacaoApi) : '',
+      classificacaoAcea: this.ehOleoMotor(model) ? this.caixaAltaTexto(model.classificacaoAcea) : '',
+      normaOem: this.ehOleoMotor(model) ? this.caixaAltaTexto(model.normaOem) : '',
       especificacao: this.caixaAltaTexto(model.especificacao),
       fabricante: this.capitalizarTexto(model.fabricante),
       modelo: this.capitalizarTexto(model.modelo),
@@ -696,6 +912,11 @@ export class ExibePecaComponent implements OnInit {
     return {
       nome: this.capitalizarTexto(model.nome),
       tipo: this.capitalizarTexto(model.tipo),
+      origemOleo: this.ehOleoMotor(model) ? String(model.origemOleo || '').trim().toUpperCase() : '',
+      viscosidadeSae: this.ehOleoMotor(model) ? this.formatarViscosidadeSae(model.viscosidadeSae) : '',
+      classificacaoApi: this.ehOleoMotor(model) ? this.caixaAltaTexto(model.classificacaoApi) : '',
+      classificacaoAcea: this.ehOleoMotor(model) ? this.caixaAltaTexto(model.classificacaoAcea) : '',
+      normaOem: this.ehOleoMotor(model) ? this.caixaAltaTexto(model.normaOem) : '',
       especificacao: this.caixaAltaTexto(model.especificacao),
       fabricante: this.capitalizarTexto(model.fabricante),
       modelo: this.capitalizarTexto(model.modelo),
@@ -705,16 +926,127 @@ export class ExibePecaComponent implements OnInit {
   }
 
   private normalizarPecaExibicao(peca: Peca): Peca {
+    const respostaApi = peca as Peca & Record<string, unknown>;
+    const origemOleo = this.primeiroTextoInformado(
+      peca.origemOleo,
+      respostaApi['origem_oleo'],
+      respostaApi['origem']
+    );
+    const viscosidadeSae = this.primeiroTextoInformado(
+      peca.viscosidadeSae,
+      respostaApi['viscosidade_sae'],
+      respostaApi['viscosidadeSAE'],
+      respostaApi['viscosidade']
+    );
+    const classificacaoApi = this.primeiroTextoInformado(
+      peca.classificacaoApi,
+      respostaApi['classificacao_api'],
+      respostaApi['classificacaoAPI']
+    );
+    const classificacaoAcea = this.primeiroTextoInformado(
+      peca.classificacaoAcea,
+      respostaApi['classificacao_acea'],
+      respostaApi['classificacaoACEA']
+    );
+    const normaOem = this.primeiroTextoInformado(
+      peca.normaOem,
+      respostaApi['norma_oem'],
+      respostaApi['normaOEM']
+    );
+
     return {
       ...peca,
       nome: this.capitalizarTexto(peca.nome),
-      tipo: this.capitalizarTexto(peca.tipo),
+      tipo: this.formatarTipoPeca(peca.tipo),
+      origemOleo: origemOleo.toUpperCase(),
+      viscosidadeSae: this.formatarViscosidadeSae(viscosidadeSae),
+      classificacaoApi: this.caixaAltaTexto(classificacaoApi),
+      classificacaoAcea: this.caixaAltaTexto(classificacaoAcea),
+      normaOem: this.caixaAltaTexto(normaOem),
       especificacao: this.caixaAltaTexto(peca.especificacao),
       fabricante: this.capitalizarTexto(peca.fabricante),
       modelo: this.capitalizarTexto(peca.modelo),
       norma: this.caixaAltaTexto(peca.norma),
       unidade: this.capitalizarTexto(peca.unidade)
     };
+  }
+
+  private formatarViscosidadeSae(valor: string | null | undefined): string {
+    const texto = this.caixaAltaTexto(valor);
+
+    if (!texto) {
+      return '';
+    }
+
+    const compacto = texto.replace(/\s+/g, '');
+    const semHifen = compacto.match(/^(\d{1,2})W(\d{2})$/);
+
+    if (semHifen) {
+      return `${semHifen[1]}W-${semHifen[2]}`;
+    }
+
+    const comHifen = compacto.match(/^(\d{1,2})W-(\d{2})$/);
+
+    if (comHifen) {
+      return `${comHifen[1]}W-${comHifen[2]}`;
+    }
+
+    const monograduado = compacto.match(/^SAE(\d{2,3})$/);
+
+    if (monograduado) {
+      return `SAE ${monograduado[1]}`;
+    }
+
+    return texto;
+  }
+
+  private adicionarPrefixoTecnico(prefixo: string, valor: string): string {
+    const texto = this.caixaAltaTexto(valor);
+
+    if (!texto) {
+      return '';
+    }
+
+    const prefixoNormalizado = this.caixaAltaTexto(prefixo);
+
+    if (
+      texto === prefixoNormalizado ||
+      texto.startsWith(`${prefixoNormalizado} `) ||
+      texto.startsWith(`${prefixoNormalizado}-`)
+    ) {
+      return texto;
+    }
+
+    return `${prefixoNormalizado} ${texto}`;
+  }
+
+  private formatarTipoPeca(valor: string | null | undefined): string {
+    const identificador = this.normalizarTexto(valor)
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (identificador === 'oleo de motor' || identificador === 'oleo motor') {
+      return 'Óleo de motor';
+    }
+
+    return this.capitalizarTexto(valor);
+  }
+
+  private primeiroTextoInformado(...valores: unknown[]): string {
+    for (const valor of valores) {
+      if (valor === null || valor === undefined) {
+        continue;
+      }
+
+      const texto = String(valor).trim();
+
+      if (texto) {
+        return texto;
+      }
+    }
+
+    return '';
   }
 
   private capitalizarTexto(valor: string | null | undefined): string {
@@ -743,6 +1075,21 @@ export class ExibePecaComponent implements OnInit {
 
   private caixaAltaTexto(valor: string | null | undefined): string {
     return (valor ?? '').toString().replace(/\s+/g, ' ').trim().toUpperCase();
+  }
+
+  private removerDuplicadosNormalizados(valores: string[]): string[] {
+    const vistos = new Set<string>();
+
+    return valores.filter(valor => {
+      const chave = this.normalizarTexto(valor);
+
+      if (!chave || vistos.has(chave)) {
+        return false;
+      }
+
+      vistos.add(chave);
+      return true;
+    });
   }
 
   private normalizarTexto(valor: any): string {

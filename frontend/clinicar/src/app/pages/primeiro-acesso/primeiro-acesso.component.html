@@ -127,6 +127,20 @@
 
           </nav>
 
+          <div class="preenchimento-progresso">
+            <div class="preenchimento-resumo">
+              <span>Preenchimento do cadastro</span>
+              <strong>{{ progressoPreenchimento }}%</strong>
+            </div>
+            <div class="progress preenchimento-barra" role="progressbar"
+              aria-label="Preenchimento dos campos obrigatórios" aria-valuemin="0" aria-valuemax="100"
+              [attr.aria-valuenow]="progressoPreenchimento"
+              [attr.aria-valuetext]="camposObrigatoriosPreenchidos + ' de ' + totalCamposObrigatorios + ' campos obrigatórios preenchidos corretamente'">
+              <div class="progress-bar" [style.width.%]="progressoPreenchimento"></div>
+            </div>
+            <small>{{ camposObrigatoriosPreenchidos }} de {{ totalCamposObrigatorios }} campos obrigatórios preenchidos corretamente</small>
+          </div>
+
           <fieldset
             [disabled]="enviando"
             class="wizard-fieldset"

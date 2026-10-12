@@ -49,6 +49,64 @@ public class Agendamento {
     )
     private Veiculo veiculo;
 
+    @Column(name = "veiculo_preservado_em")
+    private LocalDateTime veiculoPreservadoEm;
+
+    @Column(name = "veiculo_placa_historica")
+    private String veiculoPlacaHistorica;
+
+    @Column(name = "veiculo_fabricante_historico")
+    private String veiculoFabricanteHistorico;
+
+    @Column(name = "veiculo_modelo_historico")
+    private String veiculoModeloHistorico;
+
+    @Column(name = "veiculo_cor_historica")
+    private String veiculoCorHistorica;
+
+    @Column(name = "veiculo_ano_modelo_combustivel_historico")
+    private String veiculoAnoModeloCombustivelHistorico;
+
+    public void vincularVeiculo(Veiculo selecionado) {
+        if (selecionado == null) throw new IllegalArgumentException("Veículo não informado.");
+        boolean mudouVeiculo = veiculo != null
+                && !java.util.Objects.equals(veiculo.getId(), selecionado.getId());
+        veiculo = selecionado;
+        if (mudouVeiculo) veiculoPreservadoEm = null;
+        preservarDadosVeiculo();
+    }
+
+    public void preservarDadosVeiculo() {
+        if (veiculoPreservadoEm != null) return;
+        if (veiculo == null) throw new IllegalStateException("Veículo não vinculado ao agendamento.");
+        veiculoPlacaHistorica = veiculo.getPlaca();
+        veiculoFabricanteHistorico = veiculo.getFabricante();
+        veiculoModeloHistorico = veiculo.getModelo();
+        veiculoCorHistorica = veiculo.getCor();
+        veiculoAnoModeloCombustivelHistorico = veiculo.getAnoModeloCombustivel();
+        veiculoPreservadoEm = LocalDateTime.now();
+    }
+
+    public String placaVeiculoDoAgendamento() {
+        return veiculoPreservadoEm != null ? veiculoPlacaHistorica : veiculo == null ? null : veiculo.getPlaca();
+    }
+
+    public String fabricanteVeiculoDoAgendamento() {
+        return veiculoPreservadoEm != null ? veiculoFabricanteHistorico : veiculo == null ? null : veiculo.getFabricante();
+    }
+
+    public String modeloVeiculoDoAgendamento() {
+        return veiculoPreservadoEm != null ? veiculoModeloHistorico : veiculo == null ? null : veiculo.getModelo();
+    }
+
+    public String corVeiculoDoAgendamento() {
+        return veiculoPreservadoEm != null ? veiculoCorHistorica : veiculo == null ? null : veiculo.getCor();
+    }
+
+    public String anoModeloCombustivelVeiculoDoAgendamento() {
+        return veiculoPreservadoEm != null ? veiculoAnoModeloCombustivelHistorico : veiculo == null ? null : veiculo.getAnoModeloCombustivel();
+    }
+
     @ManyToOne(optional = false)
     @JoinColumn(
             name = "id_servico",
@@ -147,6 +205,7 @@ public class Agendamento {
             criadoEm = LocalDateTime.now();
         }
 
+        preservarDadosVeiculo();
         aplicarDefaults();
     }
 
@@ -154,6 +213,7 @@ public class Agendamento {
     public void preUpdate() {
         atualizadoEm = LocalDateTime.now();
 
+        preservarDadosVeiculo();
         aplicarDefaults();
     }
 

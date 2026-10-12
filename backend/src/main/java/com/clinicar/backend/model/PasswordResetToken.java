@@ -23,6 +23,12 @@ public class PasswordResetToken {
     @Column(nullable = false)
     private Boolean usado = false;
 
+    @Column(name = "usado_em")
+    private LocalDateTime usadoEm;
+
+    public LocalDateTime getUsadoEm() { return usadoEm; }
+    public void setUsadoEm(LocalDateTime usadoEm) { this.usadoEm = usadoEm; }
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 

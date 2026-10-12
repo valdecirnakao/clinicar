@@ -99,6 +99,11 @@ export class ExibeAtendimentosComponent implements OnInit {
   modoItensAtendimento: 'novo' | 'existente' = 'existente';
 
   modalCadastro: any;
+  modalConclusao: any;
+  atendimentoConclusao: Atendimento | null = null;
+  quilometragemSaidaConclusao: number | null = null;
+  erroConclusao = '';
+  concluindo = false;
   modalEdicao: any;
   modalPecas: any;
   modalServicos: any;
@@ -2094,14 +2099,31 @@ private extrairLista<T>(resposta: any): T[] {
 
   concluir(item: Atendimento): void {
     if (!item.id) return;
+    this.atendimentoConclusao = item;
+    this.quilometragemSaidaConclusao = item.quilometragemSaida ?? null;
+    this.erroConclusao = '';
+    const el = document.getElementById('modalConclusaoAtendimento');
+    if (!el) return;
+    this.modalConclusao = bootstrap.Modal.getOrCreateInstance(el, { backdrop: 'static', keyboard: false });
+    this.modalConclusao.show();
+  }
 
-    if (!confirm('Confirma a conclusão do atendimento?')) {
+  confirmarConclusao(): void {
+    if (!this.atendimentoConclusao?.id || this.concluindo) return;
+    const km = this.quilometragemSaidaConclusao;
+    const entrada = this.atendimentoConclusao.quilometragemEntrada;
+    if (km == null || !Number.isInteger(km) || km < 0 || km > 2147483647) {
+      this.erroConclusao = 'Informe uma quilometragem de saída válida, em quilômetros inteiros.';
       return;
     }
-
-    this.service.concluir(item.id).subscribe({
-      next: () => this.recarregar(),
-      error: (erro) => alert(this.extrairMensagemErro(erro, 'Erro ao concluir atendimento.'))
+    if (entrada != null && km < entrada) {
+      this.erroConclusao = 'A quilometragem de saída não pode ser menor que a quilometragem de entrada.';
+      return;
+    }
+    this.concluindo = true; this.erroConclusao = '';
+    this.service.concluir(this.atendimentoConclusao.id, km).subscribe({
+      next: () => { this.concluindo = false; this.modalConclusao?.hide(); this.recarregar(); },
+      error: (erro) => { this.concluindo = false; this.erroConclusao = this.extrairMensagemErro(erro, 'Erro ao concluir atendimento.'); }
     });
   }
 

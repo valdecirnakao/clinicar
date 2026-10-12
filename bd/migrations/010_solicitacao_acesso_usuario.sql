@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS solicitacao_acesso_usuario (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ usuario_id BIGINT UNSIGNED NOT NULL,
+ usuario_nome VARCHAR(255) NOT NULL,
+ usuario_email VARCHAR(255) NOT NULL,
+ usuario_perfil VARCHAR(30) NOT NULL,
+ tipo VARCHAR(30) NOT NULL,
+ justificativa VARCHAR(1000) NOT NULL,
+ status VARCHAR(30) NOT NULL,
+ pendencia_usuario_id BIGINT UNSIGNED NULL,
+ solicitado_em TIMESTAMP(6) NOT NULL,
+ administrador_id BIGINT UNSIGNED NULL,
+ administrador_nome VARCHAR(255) NULL,
+ motivo_decisao VARCHAR(1000) NULL,
+ decidido_em TIMESTAMP(6) NULL,
+ UNIQUE KEY uk_solicitacao_acesso_pendente (pendencia_usuario_id),
+ INDEX idx_solicitacao_acesso_status_data (status, solicitado_em),
+ INDEX idx_solicitacao_acesso_usuario_data (usuario_id, solicitado_em),
+ CONSTRAINT fk_solicitacao_acesso_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE RESTRICT,
+ CONSTRAINT fk_solicitacao_acesso_administrador FOREIGN KEY (administrador_id) REFERENCES usuario(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -200,9 +200,10 @@ public class RegraManutencaoPreventivaController {
 
         if (origemOleo != null
                 && !"MINERAL".equals(origemOleo)
-                && !"SINTETICO".equals(origemOleo)) {
+                && !"SINTETICO".equals(origemOleo)
+                && !"SEMISSINTETICO".equals(origemOleo)) {
             throw new IllegalArgumentException(
-                    "Origem do óleo inválida. Use MINERAL ou SINTETICO."
+                    "Origem do óleo inválida. Use MINERAL, SINTETICO ou SEMISSINTETICO."
             );
         }
     }
@@ -302,7 +303,8 @@ public class RegraManutencaoPreventivaController {
             return null;
         }
 
-        return valor
+        return java.text.Normalizer.normalize(valor, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
                 .trim()
                 .toUpperCase(Locale.ROOT)
                 .replace("-", "_")

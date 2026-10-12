@@ -3,6 +3,7 @@ package com.clinicar.backend.service;
 import com.clinicar.backend.dto.UsuarioRequest;
 import com.clinicar.backend.dto.UsuarioResponse;
 import com.clinicar.backend.event.UsuarioAtivadoEvent;
+import com.clinicar.backend.event.UsuarioCadastradoEvent;
 import com.clinicar.backend.event.UsuarioAtualizadoEvent;
 import com.clinicar.backend.event.UsuarioInativadoEvent;
 import com.clinicar.backend.model.Usuario;
@@ -28,6 +29,9 @@ public class UsuarioService {
     private final UsuarioRepository repo;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private final ProtecaoAdministrativaService protecaoAdministrativa;
+    private final com.clinicar.backend.repository.AuthSessionRepository sessoes;
+    private final com.clinicar.backend.repository.SolicitacaoAcessoUsuarioRepository solicitacoesAcesso;
 
     @Transactional
     public UsuarioResponse criar(UsuarioRequest request) {
@@ -53,6 +57,7 @@ public class UsuarioService {
         String emailNormalizado = normalizarEmail(request.getEmail());
 
         validarEmailUnico(emailNormalizado, null);
+        validarCpfUnico(request.getCpf(), null);
 
         Usuario usuario = new Usuario();
 
@@ -70,31 +75,60 @@ public class UsuarioService {
             throw new IllegalArgumentException("Informe a senha do usuário.");
         }
 
-        Usuario salvo = repo.save(usuario);
+        Usuario salvo = repo.saveAndFlush(usuario);
+
+        eventPublisher.publishEvent(new UsuarioCadastradoEvent(
+                salvo.getId(), nomePreferencial(salvo), salvo.getTelefone()));
 
         return toResponse(salvo);
     }
 
     @Transactional
     public UsuarioResponse atualizarProprio(Long id, UsuarioRequest request) {
-        return atualizarComPermissoes(id, request, false);
+        if (request.getStatus() != null || request.getTipo_do_acesso() != null) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Somente um administrador pode alterar o status ou o tipo de acesso da sua conta.");
+        }
+        return atualizarComPermissoes(id, request, false, null, java.util.List.of());
     }
 
     @Transactional
-    public UsuarioResponse atualizarPorAdministrador(Long id, UsuarioRequest request) {
-        return atualizarComPermissoes(id, request, true);
+    public void inativarPorAdministrador(Long id, Long administradorId) {
+        var administradores = protecaoAdministrativa.bloquearEValidarAdministrador(administradorId);
+        var usuario = repo.buscarParaAtualizacao(id).orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        protecaoAdministrativa.validarAlteracao(usuario, "INATIVO", usuario.getTipo_do_acesso(), administradorId, administradores);
+        interromperPeriodo(id);
+        boolean mudou = !statusInativo(usuario.getStatus());
+        usuario.setStatus("INATIVO"); repo.saveAndFlush(usuario);
+        sessoes.revogarTodasDoUsuario(id);
+        if (mudou) eventPublisher.publishEvent(new UsuarioInativadoEvent(id, nomePreferencial(usuario), usuario.getTelefone()));
     }
 
-    private UsuarioResponse atualizarComPermissoes(Long id, UsuarioRequest request, boolean administrador) {
+    @Transactional
+    public UsuarioResponse atualizarPorAdministrador(Long id, UsuarioRequest request, Long administradorId) {
+        var administradores = protecaoAdministrativa.bloquearEValidarAdministrador(administradorId);
+        return atualizarComPermissoes(id, request, true, administradorId, administradores);
+    }
+
+    private void interromperPeriodo(Long id) {
+        for (var pedido : solicitacoesAcesso.findByUsuarioIdAndSituacaoPeriodoIn(id, java.util.List.of("AGENDADA", "EM_CURSO"))) {
+            pedido.setSituacaoPeriodo("INTERROMPIDA"); pedido.setInterrompidoEm(java.time.Instant.now());
+            solicitacoesAcesso.save(pedido);
+        }
+    }
+
+    private UsuarioResponse atualizarComPermissoes(Long id, UsuarioRequest request, boolean administrador,
+            Long administradorId, java.util.List<Usuario> administradores) {
         log.info("UsuarioService.atualizar iniciado para usuário ID {}.", id);
 
-        Usuario usuario = repo.findById(id)
+        Usuario usuario = (administrador ? repo.buscarParaAtualizacao(id) : repo.findById(id))
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         String emailNormalizado = administrador
                 ? normalizarEmail(request.getEmail()) : usuario.getEmail();
 
         validarEmailUnico(emailNormalizado, id);
+        if (administrador) validarCpfUnico(request.getCpf(), id);
 
         String assinaturaAntes = assinaturaDadosUsuario(usuario);
         boolean estavaInativo = statusInativo(usuario.getStatus());
@@ -112,6 +146,8 @@ public class UsuarioService {
             if (request.getStatus() != null && !java.util.Set.of("ATIVO", "INATIVO").contains(status)) {
                 throw new IllegalArgumentException("Status de usuário inválido.");
             }
+            protecaoAdministrativa.validarAlteracao(usuario, status, tipoAcesso, administradorId, administradores);
+            if (request.getStatus() != null || !Objects.equals(tipoAcesso, usuario.getTipo_do_acesso())) interromperPeriodo(id);
             preencherDadosUsuario(usuario, request, emailNormalizado);
             usuario.setTipo_do_acesso(tipoAcesso);
             usuario.setStatus(status);
@@ -146,7 +182,7 @@ public class UsuarioService {
                 usuario.getTelefone()
         );
 
-        Usuario salvo = repo.save(usuario);
+        Usuario salvo = repo.saveAndFlush(usuario);
 
         /*
          * Regra de prioridade:
@@ -155,6 +191,8 @@ public class UsuarioService {
          * 2. INATIVO -> ATIVO: envia alerta_ativa_usuario.
          * 3. Outras alterações: envia alerta_atualiza_usuario.
          */
+        if (ficouInativo) sessoes.revogarTodasDoUsuario(id);
+
         if (acabouDeSerInativado) {
             log.info("Publicando UsuarioInativadoEvent para usuário {}.", salvo.getId());
 
@@ -278,8 +316,37 @@ public class UsuarioService {
         resp.setTipo_do_acesso(salvo.getTipo_do_acesso());
         resp.setStatus(salvo.getStatus());
         resp.setNascimento(salvo.getNascimento());
-
+        resp.setCriadoEm(salvo.getCriadoEm());
+        resp.setAtualizadoEm(salvo.getAtualizadoEm());
         return resp;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean emailCadastrado(String email) {
+        String normalizado = normalizarEmail(email);
+        if (normalizado == null || normalizado.length() > 255
+                || !normalizado.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException("Informe um e-mail válido.");
+        }
+        return repo.existsByEmailIgnoreCase(normalizado);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean cpfCadastrado(String cpf) {
+        String documento = soDigitos(cpf);
+        if (documento == null || (documento.length() != 11 && documento.length() != 14)) {
+            throw new IllegalArgumentException("Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.");
+        }
+        return repo.existsByCpf(documento);
+    }
+
+    private void validarCpfUnico(String cpf, Long idIgnorado) {
+        String documento = soDigitos(cpf);
+        if (documento == null || documento.isBlank()) return;
+        boolean existe = idIgnorado == null ? repo.existsByCpf(documento)
+                : repo.existsByCpfAndIdNot(documento, idIgnorado);
+        if (existe) throw new IllegalArgumentException(documento.length() == 14
+                ? "CNPJ já cadastrado anteriormente." : "CPF já cadastrado anteriormente.");
     }
 
     private void validarEmailUnico(String email, Long usuarioIdIgnorado) {
@@ -301,7 +368,7 @@ public class UsuarioService {
         }
 
         if (emailJaExiste) {
-            throw new IllegalArgumentException("Já existe um usuário cadastrado com este e-mail.");
+            throw new IllegalArgumentException("E-mail já cadastrado anteriormente.");
         }
     }
 
@@ -343,7 +410,7 @@ public class UsuarioService {
             return null;
         }
 
-        return email.trim().toLowerCase();
+        return email.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     private String limparTexto(String valor) {

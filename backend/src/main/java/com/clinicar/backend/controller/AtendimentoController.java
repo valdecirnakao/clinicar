@@ -195,11 +195,12 @@ public class AtendimentoController {
 
     @PatchMapping("/{id}/concluir")
     public ResponseEntity<AtendimentoResponse> concluir(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @RequestBody(required = false) com.clinicar.backend.dto.AtendimentoConclusaoRequest request
     ) {
         return ResponseEntity.ok(
                 atendimentoMapper.toResponse(
-                        atendimentoService.concluir(id)
+                        atendimentoService.concluir(id, request == null ? null : request.quilometragemSaida())
                 )
         );
     }

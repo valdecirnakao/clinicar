@@ -8,6 +8,10 @@ public class PecaRequest {
     private String descricao;
     private String tipo;
     private String origemOleo;
+    private String viscosidadeSae;
+    private String classificacaoApi;
+    private String classificacaoAcea;
+    private String normaOem;
     private String especificacao;
     private String fabricante;
     private String modelo;

@@ -34,9 +34,11 @@ public class AgendamentoMapper {
 
         if (veiculo != null) {
             response.setIdVeiculo(veiculo.getId());
-            response.setPlacaVeiculo(veiculo.getPlaca());
-            response.setFabricanteVeiculo(veiculo.getFabricante());
-            response.setModeloVeiculo(veiculo.getModelo());
+            response.setPlacaVeiculo(agendamento.placaVeiculoDoAgendamento());
+            response.setFabricanteVeiculo(agendamento.fabricanteVeiculoDoAgendamento());
+            response.setModeloVeiculo(agendamento.modeloVeiculoDoAgendamento());
+            response.setCorVeiculo(agendamento.corVeiculoDoAgendamento());
+            response.setAnoModeloCombustivelVeiculo(agendamento.anoModeloCombustivelVeiculoDoAgendamento());
         }
 
         Servico servico = agendamento.getServico();

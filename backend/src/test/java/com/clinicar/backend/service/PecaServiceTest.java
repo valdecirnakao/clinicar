@@ -21,6 +21,9 @@ class PecaServiceTest {
     @Mock
     private PecaRepository repo;
 
+    @org.mockito.Spy
+    private com.clinicar.backend.mapper.PecaMapper pecaMapper = new com.clinicar.backend.mapper.PecaMapper();
+
     @InjectMocks
     private PecaService service;
 

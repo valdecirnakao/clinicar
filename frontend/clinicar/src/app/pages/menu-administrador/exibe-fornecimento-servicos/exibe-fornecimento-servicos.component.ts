@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 
 import {
   ExibeFornecimentoServicosService,
@@ -50,7 +52,7 @@ type CampoObrigatorioFornecimentoServico =
 @Component({
   selector: 'app-exibe-fornecimento-servicos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-fornecimento-servicos.component.html',
   styleUrls: ['./exibe-fornecimento-servicos.component.css']
 })
@@ -841,6 +843,10 @@ export class ExibeFornecimentoServicosComponent implements OnInit {
   }
 
   private calcularProgresso(model: Partial<FornecimentoServico>): number {
+    if (this.validarFornecimento(model, false) === null) {
+      return 100;
+    }
+
     const checks = [
       !!model.idFornecedor,
       !!model.idServico,
@@ -849,11 +855,11 @@ export class ExibeFornecimentoServicosComponent implements OnInit {
       !this.prazoExecucaoInvalido(model),
       !!String(model.unidadePrazo ?? '').trim(),
       !this.quantidadeMinimaInvalida(model),
-      !!String(model.disponibilidade ?? '').trim(),
-      !this.vigenciaInvalida(model)
+      !!String(model.disponibilidade ?? '').trim()
     ];
 
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+    const percentual = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+    return Math.max(0, Math.min(99, percentual));
   }
 
   private contarPendenciasAba(model: Partial<FornecimentoServico>, aba: AbaFornecimentoServico): number {

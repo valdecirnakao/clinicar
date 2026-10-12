@@ -86,10 +86,12 @@ public class PrevisaoManutencaoService {
         }
 
         Atendimento atendimento = atendimentoRepository
-                .findById(atendimentoId)
+                .buscarParaPrevisao(atendimentoId)
                 .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado."));
 
         validarAtendimentoParaPrevisao(atendimento);
+        List<PrevisaoManutencaoVeiculo> existentes = previsaoRepository.findByAtendimentoOrigem_Id(atendimentoId);
+        if (!existentes.isEmpty()) return existentes;
 
         Veiculo veiculo = atendimento.getVeiculo();
         Usuario cliente = atendimento.getCliente();
@@ -191,6 +193,9 @@ public class PrevisaoManutencaoService {
             throw new IllegalArgumentException("Atendimento sem cliente vinculado.");
         }
 
+        if (!List.of("CONCLUIDO", "ENTREGUE").contains(atendimento.getStatusAtendimento())) {
+            throw new IllegalArgumentException("Conclua o atendimento antes de gerar previsões.");
+        }
         Integer kmReferencia = resolverQuilometragemReferencia(atendimento);
 
         if (kmReferencia == null || kmReferencia <= 0) {
@@ -441,7 +446,9 @@ public class PrevisaoManutencaoService {
             return false;
         }
 
-        return Objects.equals(regra.getServico().getId(), servico.getId());
+        // Regras específicas de peça/origem só podem ser resolvidas pelas peças utilizadas.
+        return regra.getPeca() == null && normalizarCodigo(regra.getOrigemOleo()) == null
+                && Objects.equals(regra.getServico().getId(), servico.getId());
     }
 
     private boolean regraAplicavelPorPeca(
@@ -467,6 +474,7 @@ public class PrevisaoManutencaoService {
             return false;
         }
 
+        if (regra.getPeca() != null || regra.getServico() != null || !pecaPareceSerOleo(peca)) return false;
         String origemRegra = normalizarCodigo(regra.getOrigemOleo());
         String origemPeca = normalizarCodigo(peca.getOrigemOleo());
 
@@ -595,7 +603,7 @@ public class PrevisaoManutencaoService {
         Integer kmLimite = null;
 
         if (regra.getIntervaloKm() != null && regra.getIntervaloKm() > 0) {
-            kmLimite = kmReferencia + regra.getIntervaloKm();
+            kmLimite = Math.addExact(kmReferencia, regra.getIntervaloKm());
         }
 
         LocalDate dataLimiteTempo = null;

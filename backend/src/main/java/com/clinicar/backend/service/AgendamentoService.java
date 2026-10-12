@@ -427,7 +427,7 @@ public class AgendamentoService {
         BigDecimal valorFinal = parseMoedaOpcional(request.getValorFinal(), "Valor final");
 
         agendamento.setCliente(cliente);
-        agendamento.setVeiculo(veiculo);
+        agendamento.vincularVeiculo(veiculo);
         agendamento.setServico(servico);
         agendamento.setFornecedor(fornecedor);
         agendamento.setResponsavel(responsavel);

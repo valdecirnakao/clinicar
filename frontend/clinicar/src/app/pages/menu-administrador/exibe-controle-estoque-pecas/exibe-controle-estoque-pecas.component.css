@@ -428,16 +428,23 @@
 }
 
 .cadastro-progress {
+  width: 100%;
   height: 16px;
   border-radius: 999px;
   background: #eef6ff;
   border: 1px solid #d0e2f2;
+  overflow: hidden;
 }
 
-.cadastro-progress .progress-bar {
-  background-color: #35689b;
+.cadastro-progress-bar {
+  height: 100%;
+  background: #35689b;
+  color: #ffffff;
   font-size: .7rem;
   font-weight: 700;
+  line-height: 14px;
+  white-space: nowrap;
+  transition: width .25s ease-in-out;
 }
 
 .section-card,

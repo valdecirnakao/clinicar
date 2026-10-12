@@ -1162,7 +1162,7 @@
 
         <button
           type="button"
-          class="btn-close btn-close-white"
+          class="btn-close"
           data-bs-dismiss="modal"
           aria-label="Fechar"
         ></button>
@@ -1185,6 +1185,25 @@
           ></i>
 
           {{ mensagemErroModal }}
+
+        </div>
+
+
+        <div
+          class="progress regra-progress mb-3"
+          role="progressbar"
+          aria-label="Progresso do preenchimento da regra"
+          [attr.aria-valuenow]="progressoFormulario"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+
+          <div
+            class="progress-bar regra-progress-bar"
+            [style.width.%]="progressoFormulario"
+          >
+            {{ progressoFormulario }}%
+          </div>
 
         </div>
 
@@ -1270,6 +1289,7 @@
 
               <label class="form-label">
                 Prioridade
+                <span class="required">*</span>
               </label>
 
               <input
@@ -1321,6 +1341,11 @@
             qual serviço e/ou peça deverá ser considerado
             na manutenção prevista.
 
+            <br />
+
+            <span class="required">*</span>
+            Informe pelo menos um serviço ou uma peça.
+
           </div>
 
 
@@ -1369,6 +1394,7 @@
               <select
                 class="form-select"
                 [(ngModel)]="formulario.idPeca"
+                (ngModelChange)="aoAlterarPecaFormulario()"
               >
 
                 <option [ngValue]="null">
@@ -1413,6 +1439,13 @@
             Critérios de periodicidade
 
           </div>
+
+
+          <small class="form-text text-muted d-block mb-3">
+            <span class="required">*</span>
+            Informe pelo menos um intervalo: quilômetros ou dias.
+            Quando ambos forem cadastrados, prevalece o que for atingido primeiro.
+          </small>
 
 
           <div class="row g-3">
@@ -1473,6 +1506,10 @@
 
               <label class="form-label">
                 Tipo/origem do óleo
+                <span
+                  *ngIf="ehRegraTrocaOleoFormulario()"
+                  class="required"
+                >*</span>
               </label>
 
               <select
@@ -1503,7 +1540,13 @@
                 *ngIf="ehRegraTrocaOleoFormulario()"
                 class="form-text text-muted"
               >
-                Obrigatório para regras de troca de óleo.
+                <ng-container *ngIf="pecaSelecionadaEhOleoMotor(); else origemManual">
+                  Preenchido automaticamente com a origem cadastrada na peça selecionada.
+                </ng-container>
+
+                <ng-template #origemManual>
+                  Obrigatório para regras de troca de óleo.
+                </ng-template>
               </small>
 
             </div>
@@ -1629,6 +1672,19 @@
 
       <div class="modal-footer">
 
+        <div
+          class="me-auto footer-validation-message"
+          [class.footer-ok]="formularioProntoParaSalvar"
+        >
+          <i
+            class="bi"
+            [class.bi-info-circle]="!formularioProntoParaSalvar"
+            [class.bi-check-circle]="formularioProntoParaSalvar"
+          ></i>
+
+          {{ mensagemBloqueioFormulario || 'Regra pronta para salvar.' }}
+        </div>
+
         <button
           type="button"
           class="btn btn-outline-secondary"
@@ -1642,7 +1698,8 @@
         <button
           type="button"
           class="btn btn-primary"
-          [disabled]="salvando"
+          [disabled]="salvando || !formularioProntoParaSalvar"
+          [title]="mensagemBloqueioFormulario || 'Salvar regra de manutenção'"
           (click)="salvar()"
         >
 
@@ -1722,7 +1779,7 @@
 
         <button
           type="button"
-          class="btn-close btn-close-white"
+          class="btn-close"
           data-bs-dismiss="modal"
           aria-label="Fechar"
         ></button>
@@ -2087,7 +2144,7 @@
 
         <button
           type="button"
-          class="btn-close btn-close-white"
+          class="btn-close"
           data-bs-dismiss="modal"
           aria-label="Fechar"
         ></button>

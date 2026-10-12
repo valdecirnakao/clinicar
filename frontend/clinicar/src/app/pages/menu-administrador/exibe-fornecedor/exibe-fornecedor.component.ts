@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { HttpClient } from '@angular/common/http';
 import {
   ExibeFornecedorService,
@@ -40,12 +42,14 @@ type CampoObrigatorioFornecedor =
 @Component({
   selector: 'app-exibe-fornecedor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
   templateUrl: './exibe-fornecedor.component.html',
   styleUrls: ['./exibe-fornecedor.component.css']
 })
 export class ExibeFornecedorComponent implements OnInit {
 
+  camposInvalidosEdicao: string[] = [];
+  mensagemErroCadastro = '';
   fornecedores: Fornecedor[] = [];
   private todos: Fornecedor[] = [];
 
@@ -739,6 +743,12 @@ export class ExibeFornecedorComponent implements OnInit {
     return `${d.slice(0, 5)}-${d.slice(5, 8)}`;
   }
 
+
+
+  formatarTelefoneCadastro(): void {
+    this.novoFornecedor.telefone = this.exibirTelefoneFormatado(this.novoFornecedor.telefone);
+  }
+
   exibirTelefoneFormatado(telefone: string | null | undefined): string {
     if (!telefone) {
       return '';
@@ -1006,10 +1016,15 @@ export class ExibeFornecedorComponent implements OnInit {
   }
 
   private calcularProgresso(model: Partial<Fornecedor>): number {
-    const total = this.camposObrigatorios.length;
-    const preenchidos = this.camposObrigatorios.filter(campo => !this.campoInvalido(model, campo)).length;
+    if (this.validarFornecedor(model) === null) {
+      return 100;
+    }
 
-    return Math.round((preenchidos / total) * 100);
+    const total = this.camposObrigatorios.length || 1;
+    const validos = this.camposObrigatorios.filter(campo => !this.campoInvalido(model, campo)).length;
+    const percentual = Math.round((validos / total) * 100);
+
+    return Math.max(0, Math.min(99, percentual));
   }
 
   private ordenarFornecedores(lista: Fornecedor[]): Fornecedor[] {
