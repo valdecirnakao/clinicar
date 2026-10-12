@@ -13,10 +13,15 @@
         </div>
       </div>
       <div class="row mt-0">
-        <form #form="ngForm" (ngSubmit)="cadastrar(form)" class="container py-2">
+        <form data-help-scope="cadastra-cliente" #form="ngForm" (ngSubmit)="cadastrar(form)" class="container py-2">
+          <app-field-help-panel></app-field-help-panel>
           <!-- Mensagens -->
-          <div *ngIf="errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
-          <div *ngIf="successMsg" class="alert alert-success py-2">{{ successMsg }}</div>
+          @if (errorMsg) {
+            <div class="alert alert-danger py-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">{{ errorMsg }}</div>
+          }
+          @if (successMsg) {
+            <div class="alert alert-success py-2" [appFeedback]="successMsg" tipoFeedback="sucesso" (feedbackFechado)="successMsg = ''">{{ successMsg }}</div>
+          }
 
           <!-- DADOS DO CLIENTE -->
           <fieldset class="border rounded p-3 mb-3">
@@ -58,11 +63,15 @@
               <div class="col-md-2">
                 <label for="cep" class="form-label">CEP</label>
                 <input type="text" id="cep" name="cep" class="form-control"
-                   required [(ngModel)]="cliente.cep" (blur)="onCepBlur()"
-                   placeholder=""
-                   style="color:#35689b;">
-                <div class="form-text" *ngIf="cepStatus.loading">Consultando CEP…</div>
-                <div class="text-danger small" *ngIf="cepStatus.errorMsg">{{ cepStatus.errorMsg }}</div>
+                  required [(ngModel)]="cliente.cep" (blur)="onCepBlur()"
+                  placeholder=""
+                  style="color:#35689b;">
+                @if (cepStatus.loading) {
+                  <div class="form-text">Consultando CEP…</div>
+                }
+                @if (cepStatus.errorMsg) {
+                  <div class="text-danger small">{{ cepStatus.errorMsg }}</div>
+                }
               </div>
               <div class="col-md-6">
                 <label for="logradouro" class="form-label">Logradouro</label>
@@ -112,9 +121,13 @@
                 <select id="montadora" class="form-select" name="montadora" [(ngModel)]="marcaSelCode" style="color:#35689b;"
                   [disabled]="fipeCarregando.marcas" (ngModelChange)="onChangeMarca($event)">
                   <option value="" style="color:#35689b;">Selecione...</option>
-                  <option *ngFor="let m of marcas" [value]="m.code">{{ m.name }}</option>
+                  @for (m of marcas; track m) {
+                    <option [value]="m.code">{{ m.name }}</option>
+                  }
                 </select>
-                <small class="text-danger" *ngIf="fipeErro && marcas.length===0">{{ fipeErro }}</small>
+                @if (fipeErro && marcas.length===0) {
+                  <small class="text-danger">{{ fipeErro }}</small>
+                }
               </div>
 
               <!-- MODELO -->
@@ -123,7 +136,9 @@
                 <select id="modeloFipe" class="form-select" name="modeloFipe" [(ngModel)]="modeloSelCode" style="color:#35689b;"
                   [disabled]="!marcaSelCode || fipeCarregando.modelos" (ngModelChange)="onChangeModelo($event)">
                   <option value="">Selecione...</option>
-                  <option *ngFor="let mo of modelos" [value]="mo.code">{{ mo.name }}</option>
+                  @for (mo of modelos; track mo) {
+                    <option [value]="mo.code">{{ mo.name }}</option>
+                  }
                 </select>
               </div>
 
@@ -133,11 +148,15 @@
                 <select id="anoFipe" class="form-select" name="anoFipe" [(ngModel)]="anoSelCode" style="color:#35689b;"
                   [disabled]="!modeloSelCode || fipeCarregando.anos" (ngModelChange)="onChangeAno($event)">
                   <option value="" style="color:#35689b;">Selecione...</option>
-                  <option *ngFor="let a of anos" [value]="a.code">{{ a.name }}</option>
+                  @for (a of anos; track a) {
+                    <option [value]="a.code">{{ a.name }}</option>
+                  }
                 </select>
-                <div class="form-text" *ngIf="veiculo.anoModeloCombustivel">
-                  Selecionado: {{ veiculo.fabricante }} / {{ veiculo.modelo }} — {{ veiculo.anoModeloCombustivel }}
-                </div>
+                @if (veiculo.anoModeloCombustivel) {
+                  <div class="form-text">
+                    Selecionado: {{ veiculo.fabricante }} / {{ veiculo.modelo }} — {{ veiculo.anoModeloCombustivel }}
+                  </div>
+                }
               </div>
             </div>
           </fieldset>

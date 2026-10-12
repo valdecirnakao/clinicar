@@ -13,13 +13,24 @@ public class FornecedorService {
         this.fornecedorRepository = fornecedorRepository;
     }
 
+    public boolean cnpjCadastrado(String cnpj, Long idIgnorado) {
+        String documento = soDigitos(cnpj);
+        if (documento == null || documento.length() != 14) {
+            throw new IllegalArgumentException("CNPJ inválido.");
+        }
+        return fornecedorRepository.findByCnpj(documento)
+                .map(fornecedor -> !fornecedor.getId().equals(idIgnorado))
+                .orElse(false);
+    }
+
     public Fornecedor criar(FornecedorRequest request) {
+        validarEmailUnico(request.getEmail(), null);
         String cnpjNormalizado = soDigitos(request.getCnpj());
         if (cnpjNormalizado == null || cnpjNormalizado.length() != 14) {
             throw new IllegalArgumentException("CNPJ inválido.");
         }
         fornecedorRepository.findByCnpj(cnpjNormalizado).ifPresent(fornecedor -> {
-            throw new IllegalArgumentException("Já existe um fornecedor cadastrado com este CNPJ.");
+            throw new IllegalArgumentException("CNPJ já cadastrado anteriormente.");
         });
         Fornecedor fornecedor = new Fornecedor();
         preencherDados(fornecedor, request);
@@ -31,13 +42,14 @@ public class FornecedorService {
             .findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Fornecedor não encontrado."));
         String cnpjNormalizado = soDigitos(request.getCnpj());
+        validarEmailUnico(request.getEmail(), id);
         if (cnpjNormalizado == null || cnpjNormalizado.length() != 14) {
             throw new IllegalArgumentException("CNPJ inválido.");
         }
         fornecedorRepository.findByCnpj(cnpjNormalizado)
                 .ifPresent(fornecedorEncontrado -> {
                     if (!fornecedorEncontrado.getId().equals(id)) {
-                        throw new IllegalArgumentException("Já existe outro fornecedor cadastrado com este CNPJ.");
+                        throw new IllegalArgumentException("CNPJ já cadastrado anteriormente.");
                     }
                 });
         preencherDados(fornecedor, request);
@@ -45,12 +57,13 @@ public class FornecedorService {
     }
 
     private void preencherDados(Fornecedor fornecedor, FornecedorRequest request) {
+        if (request.getAtivo() != null) fornecedor.setAtivo(request.getAtivo());
         fornecedor.setCnpj(soDigitos(request.getCnpj()));
         fornecedor.setRazaoSocial(request.getRazaoSocial());
         fornecedor.setNomeFantasia(request.getNomeFantasia());
         fornecedor.setItemFornecido(request.getItemFornecido());
         fornecedor.setTelefone(request.getTelefone());
-        fornecedor.setEmail(request.getEmail());
+        fornecedor.setEmail(normalizarEmail(request.getEmail()));
         fornecedor.setFundacao(parseFundacao(request.getFundacao()));
         fornecedor.setCep(soDigitos(request.getCep()));
         fornecedor.setLogradouro(request.getLogradouro());
@@ -63,6 +76,25 @@ public class FornecedorService {
 
     private String soDigitos(String valor) {
         return valor == null ? null : valor.replaceAll("\\D", "");
+    }
+
+    private String normalizarEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    public boolean emailCadastrado(String email, Long idIgnorado) {
+        String normalizado = normalizarEmail(email);
+        if (normalizado == null || normalizado.length() > 255
+                || !normalizado.matches("^[^\\s@]+@[^\\s@.]+(?:\\.[^\\s@.]+)*\\.[^\\s@.]{2,}$")) {
+            throw new IllegalArgumentException("Informe um e-mail válido.");
+        }
+        return fornecedorRepository.emailCadastrado(normalizado, idIgnorado);
+    }
+
+    private void validarEmailUnico(String email, Long idIgnorado) {
+        if (email != null && !email.isBlank() && emailCadastrado(email, idIgnorado)) {
+            throw new IllegalArgumentException("E-mail já cadastrado anteriormente.");
+        }
     }
 
     private LocalDate parseFundacao(String fundacao) {

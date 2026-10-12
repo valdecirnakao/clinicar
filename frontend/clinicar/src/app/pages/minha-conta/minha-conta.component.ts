@@ -1,3 +1,6 @@
+import { FieldHelpDirective } from '../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../shared/field-help/field-help-panel.component';
+import { FeedbackDirective } from '../../shared/feedback/feedback.directive';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -5,8 +8,10 @@ import { Router } from '@angular/router';
 import { LoginService, UsuarioLogado } from '../login/login.service';
 import { PaginaSolicitacoes, SolicitacoesAcessoService, mensagemSolicitacao } from '../../services/solicitacoes-acesso.service';
 
-@Component({ selector: 'app-minha-conta', standalone: true, imports: [CommonModule, FormsModule],
-  templateUrl: './minha-conta.component.html', styleUrl: './minha-conta.component.css' })
+@Component({
+    selector: 'app-minha-conta', imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, CommonModule, FormsModule],
+    templateUrl: './minha-conta.component.html', styleUrl: './minha-conta.component.css'
+})
 export class MinhaContaComponent implements OnInit {
   private readonly login = inject(LoginService);
   private readonly service = inject(SolicitacoesAcessoService);

@@ -1,3 +1,4 @@
+import { provideZoneChangeDetection } from '@angular/core';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
@@ -8,7 +9,7 @@ describe('MinhaContaComponent', () => {
   let fixture: ComponentFixture<MinhaContaComponent>, component: MinhaContaComponent, http: HttpTestingController;
   const vazia = { itens: [], total: 0, pagina: 0, tamanho: 10, totalPaginas: 0, pendentes: 0 };
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [MinhaContaComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [MinhaContaComponent], providers: [provideZoneChangeDetection(), provideHttpClient(), provideHttpClientTesting(), provideRouter([])] }).compileComponents();
     fixture = TestBed.createComponent(MinhaContaComponent); component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController); fixture.detectChanges();
     http.expectOne('/api/auth/me').flush({ id: 42, nome: 'Cliente teste', email: 'teste@example.com', status: 'ATIVO', tipo_do_acesso: 'CLIENTE' });

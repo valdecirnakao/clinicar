@@ -17,7 +17,7 @@ public final class PoliticaAlertaManutencao {
         if (hoje.isBefore(p.getDataRecomendada().minusDays(c.getAntecedenciaDias()))
                 || hoje.isAfter(p.getDataRecomendada().plusDays(c.getDiasAposVencimento()))) return false;
         // Falhas/resultado desconhecido exigem conciliação, evitando reenvio cego após timeout.
-        if (historico.stream().anyMatch(e -> List.of("EM_PROCESSAMENTO", "ERRO").contains(e.getStatus()))) return false;
+        if (historico.stream().anyMatch(e -> List.of("EM_PROCESSAMENTO", "PENDENTE", "ERRO").contains(e.getStatus()))) return false;
         List<EnvioAlertaManutencao> enviados = historico.stream().filter(e -> "ENVIADO".equals(e.getStatus())).toList();
         if (enviados.size() >= c.getMaximoEnvios()) return false;
         return enviados.stream().map(EnvioAlertaManutencao::getCriadoEm).max(Instant::compareTo)

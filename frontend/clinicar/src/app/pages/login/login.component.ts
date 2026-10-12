@@ -1,7 +1,9 @@
+import { FieldHelpDirective } from '../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../shared/field-help/field-help-panel.component';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { Router, RouterLink, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+
 import { SetupService, mensagemSetupErro } from '../../services/setup.service';
 import { MfaPendenteService } from '../../services/mfa-pendente.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -11,11 +13,10 @@ import { LoginService, LoginResponse, UsuarioLogado } from '../login/login.servi
 
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [RouterModule, RouterLink, FormsModule, CommonModule],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+    selector: 'app-login',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent, RouterModule, RouterLink, FormsModule],
+    templateUrl: './login.component.html',
+    styleUrls: ['./login.component.css']
 })
 
 export class LoginComponent {

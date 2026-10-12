@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/fornecedor")
@@ -52,6 +53,26 @@ public class FornecedorController {
         );
 
         return ResponseEntity.ok(fornecedores);
+    }
+
+    @GetMapping("/verificar-email")
+    public ResponseEntity<Map<String, Boolean>> verificarEmail(
+            @RequestParam String email,
+            @RequestParam(required = false) Long idIgnorado
+    ) {
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(Map.of("cadastrado", fornecedorService.emailCadastrado(email, idIgnorado)));
+    }
+
+    @GetMapping("/verificar-cnpj")
+    public ResponseEntity<Map<String, Boolean>> verificarCnpj(
+            @RequestParam String cnpj,
+            @RequestParam(required = false) Long idIgnorado
+    ) {
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(Map.of("cadastrado", fornecedorService.cnpjCadastrado(cnpj, idIgnorado)));
     }
 
     @GetMapping("/{id}")

@@ -6,10 +6,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "configuracao_alerta_manutencao")
+@Table(name = "configuracao_alerta_manutencao_usuario")
 @Getter @Setter
 public class ConfiguracaoAlertaManutencao {
-    @Id private Long id = 1L;
+    // Chave compartilhada com o usuário destinatário: uma configuração por usuário.
+    @Id private Long id;
     @Version private Long versao;
     @NotNull @Column(nullable = false) private Boolean ativo = false;
     @NotNull @Min(0) @Max(365) @Column(nullable = false) private Integer antecedenciaDias = 15;

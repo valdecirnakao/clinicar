@@ -30,5 +30,11 @@ public class Veiculo {
 
   @Column(name = "id_proprietario", nullable = false)
   private Long idProprietario;
+
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "id_proprietario", insertable = false, updatable = false,
+      foreignKey = @ForeignKey(value = ConstraintMode.NO_CONSTRAINT))
+  private Usuario usuarioProprietario;
 }
 

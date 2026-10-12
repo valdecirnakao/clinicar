@@ -10,15 +10,20 @@
         </p>
       </div>
 
-      <div *ngIf="mensagemSucesso" class="alert alert-success">
-        {{ mensagemSucesso }}
-      </div>
+      @if (mensagemSucesso) {
+        <div class="alert alert-success" [appFeedback]="mensagemSucesso" tipoFeedback="sucesso" (feedbackFechado)="mensagemSucesso = ''">
+          {{ mensagemSucesso }}
+        </div>
+      }
 
-      <div *ngIf="mensagemErro" class="alert alert-danger">
-        {{ mensagemErro }}
-      </div>
+      @if (mensagemErro) {
+        <div class="alert alert-danger">
+          {{ mensagemErro }}
+        </div>
+      }
 
-      <form (ngSubmit)="solicitarRedefinicao()">
+      <form data-help-scope="esqueci-senha" (ngSubmit)="solicitarRedefinicao()">
+        <app-field-help-panel></app-field-help-panel>
 
         <div class="mb-3">
           <label for="email" class="form-label">E-mail</label>
@@ -31,7 +36,7 @@
             [(ngModel)]="email"
             [disabled]="carregando"
             autocomplete="email"
-          >
+            >
         </div>
 
         <button
@@ -39,12 +44,16 @@
           class="btn w-100 text-white"
           style="background-color: #35689b;"
           [disabled]="carregando"
-        >
-          <span *ngIf="!carregando">Enviar link de recuperação</span>
-          <span *ngIf="carregando">
-            <span class="spinner-border spinner-border-sm me-1"></span>
-            Enviando...
-          </span>
+          >
+          @if (!carregando) {
+            <span>Enviar link de recuperação</span>
+          }
+          @if (carregando) {
+            <span>
+              <span class="spinner-border spinner-border-sm me-1"></span>
+              Enviando...
+            </span>
+          }
         </button>
 
       </form>

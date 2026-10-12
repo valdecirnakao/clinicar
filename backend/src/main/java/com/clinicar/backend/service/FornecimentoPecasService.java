@@ -28,11 +28,14 @@ public class FornecimentoPecasService {
 
     // CREATE
     public FornecimentoPecas criar(FornecimentoPecasRequest req) {
+        validarDuplicidade(req, -1L);
 
         Fornecedor fornecedor = fornecedorRepository
                 .findById(req.getIdFornecedor())
                 .orElseThrow(() ->
                     new NoSuchElementException("Fornecedor não encontrado"));
+
+        if (!fornecedor.isAtivo()) throw new IllegalArgumentException("Selecione um fornecedor ativo para cadastrar o fornecimento.");
 
         Peca peca = pecaRepository
                 .findById(req.getIdPeca())
@@ -81,6 +84,10 @@ public FornecimentoPecas atualizar(
                         "Peça não encontrada. Id: "
                             + req.getIdPeca()));
 
+    if (!fornecedor.isAtivo() && (!fornecedor.getId().equals(existente.getFornecedor().getId())
+            || !req.getIdPeca().equals(existente.getPeca().getId())))
+        throw new IllegalArgumentException("Selecione um fornecedor ativo para alterar o vínculo do fornecimento.");
+    validarDuplicidade(req, id);
     preencherDados(existente, req, fornecedor, peca);
 
     return repo.save(existente);
@@ -96,6 +103,11 @@ public FornecimentoPecas atualizar(
         repo.deleteById(id);
 
         return true;
+    }
+
+    private void validarDuplicidade(FornecimentoPecasRequest req, Long id) {
+        if (repo.existsByFornecedor_IdAndPeca_IdAndIdNot(req.getIdFornecedor(), req.getIdPeca(), id))
+            throw new IllegalArgumentException("Já existe um fornecimento cadastrado para este fornecedor e peça.");
     }
 
     // MÉTODO AUXILIAR

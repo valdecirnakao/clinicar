@@ -1,15 +1,24 @@
-import { Component, OnInit } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { LoginService, UsuarioLogado } from '../login/login.service';
+import { FormulariosPendentesService } from '../../services/formularios-pendentes.service';
+import { NotificacaoService } from '../../shared/feedback/notificacao.service';
+
+declare const bootstrap: { Collapse: { getOrCreateInstance(elemento: HTMLElement, opcoes: { toggle: boolean }): { hide(): void } } };
 
 @Component({
-  selector: 'app-menu-administrador',
-  standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
-  templateUrl: './menu-administrador.component.html',
-  styleUrl: './menu-administrador.component.css'
+    selector: 'app-menu-administrador',
+    imports: [RouterLink, RouterLinkActive, RouterOutlet],
+    templateUrl: './menu-administrador.component.html',
+    styleUrl: './menu-administrador.component.css'
 })
 export class MenuAdministradorComponent implements OnInit {
+  private readonly destroy = inject(DestroyRef);
+  private readonly formularios = inject(FormulariosPendentesService);
+  private readonly notificacoes = inject(NotificacaoService);
+  encerrando = false;
   constructor(
     private readonly router: Router,
     private readonly loginService: LoginService
@@ -18,6 +27,16 @@ export class MenuAdministradorComponent implements OnInit {
   usuarioLogado: UsuarioLogado | null = null;
 
   ngOnInit(): void {
+    this.router.events.pipe(
+      filter(evento => evento instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroy)
+    ).subscribe(() => {
+      const menu = document.getElementById('topNav');
+      if (menu?.classList.contains('show')) {
+        bootstrap.Collapse.getOrCreateInstance(menu, { toggle: false }).hide();
+      }
+    });
+
     this.loginService.obterUsuarioLogado().subscribe({
       next: (usuario) => {
         this.usuarioLogado = usuario;
@@ -29,18 +48,16 @@ export class MenuAdministradorComponent implements OnInit {
   }
 
   logout(): void {
-    this.loginService.logout().subscribe({
+    if (this.encerrando || !this.formularios.podeSair()) return;
+    this.encerrando = true;
+    this.loginService.logout().pipe(takeUntilDestroyed(this.destroy)).subscribe({
       next: () => {
         sessionStorage.clear();
-        this.router.navigate(['/login']);
+        void this.router.navigate(['/login'], { replaceUrl: true });
       },
-      error: (erro) => {
-        console.error('Erro ao fazer logout:', erro);
-        /*
-        * Mesmo se o backend falhar, limpamos dados locais e voltamos ao login.
-        */
-        sessionStorage.clear();
-        this.router.navigate(['/login']);
+      error: () => {
+        this.encerrando = false;
+        this.notificacoes.erro('Não foi possível encerrar a sessão. Tente novamente.');
       }
     });
   }

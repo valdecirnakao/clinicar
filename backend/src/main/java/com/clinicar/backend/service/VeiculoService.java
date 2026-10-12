@@ -1,6 +1,8 @@
 package com.clinicar.backend.service;
 
 import com.clinicar.backend.dto.VeiculoRequest;
+import com.clinicar.backend.dto.VeiculoExclusaoResponse;
+import com.clinicar.backend.event.VeiculoExcluidoEvent;
 import com.clinicar.backend.event.VeiculoAtualizadoEvent;
 import com.clinicar.backend.model.Usuario;
 import com.clinicar.backend.model.Veiculo;
@@ -23,6 +25,26 @@ public class VeiculoService {
     private final UsuarioRepository usuarioRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final WhatsAppService whatsAppService;
+
+    @Transactional
+    public VeiculoExclusaoResponse excluir(Long id, Long administradorId) {
+        Veiculo veiculo = repo.buscarParaExclusao(id).orElseThrow(() ->
+                new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Veículo não encontrado."));
+        Usuario proprietario = buscarProprietario(veiculo);
+        String placa = normalizaPlaca(veiculo.getPlaca());
+        if (placa != null && placa.length() == 7) placa = placa.substring(0, 3) + "-" + placa.substring(3);
+        String descricao = (valorSeguro(veiculo.getFabricante()) + " " + valorSeguro(veiculo.getModelo())).trim();
+        if (descricao.isBlank()) descricao = "Veículo";
+        if (placa != null && !placa.isBlank()) descricao += " - Placa " + placa;
+        var resultado = new VeiculoExclusaoResponse();
+        var evento = new VeiculoExcluidoEvent(id, administradorId,
+                proprietario == null ? "Cliente" : nomePreferencial(proprietario),
+                proprietario == null ? null : proprietario.getTelefone(), descricao, resultado);
+        repo.delete(veiculo);
+        repo.flush(); // Qualquer vínculo/restrição impede o commit e a notificação.
+        eventPublisher.publishEvent(evento);
+        return resultado;
+    }
 
     @Transactional
     public Veiculo criar(VeiculoRequest req) {

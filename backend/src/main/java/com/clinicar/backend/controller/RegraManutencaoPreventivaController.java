@@ -1,4 +1,5 @@
 package com.clinicar.backend.controller;
+import com.clinicar.backend.dto.RegraManutencaoPreventivaResponse;
 
 import com.clinicar.backend.model.Peca;
 import com.clinicar.backend.model.RegraManutencaoPreventiva;
@@ -43,6 +44,7 @@ public class RegraManutencaoPreventivaController {
     ) {
         validarRequest(request);
 
+        validarDuplicidade(request, -1L);
         RegraManutencaoPreventiva regra = new RegraManutencaoPreventiva();
 
         preencherEntidade(regra, request);
@@ -102,6 +104,7 @@ public class RegraManutencaoPreventivaController {
         validarRequest(request);
 
         RegraManutencaoPreventiva regra = buscarRegra(id);
+        validarDuplicidade(request, id);
 
         preencherEntidade(regra, request);
 
@@ -164,6 +167,11 @@ public class RegraManutencaoPreventivaController {
         return regraRepository
                 .findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Regra de manutenção preventiva não encontrada."));
+    }
+
+    private void validarDuplicidade(RegraManutencaoPreventivaRequest request, Long id) {
+        if (regraRepository.existsByGrupoManutencaoAndDescricaoIgnoreCaseAndIdNot(request.grupoManutencao().trim().toUpperCase(Locale.ROOT), request.descricao().trim(), id))
+            throw new IllegalArgumentException("Já existe uma regra com esta descrição neste grupo de manutenção.");
     }
 
     private void validarRequest(RegraManutencaoPreventivaRequest request) {
@@ -262,33 +270,7 @@ public class RegraManutencaoPreventivaController {
                 .orElseThrow(() -> new IllegalArgumentException("Peça não encontrada."));
     }
 
-    private RegraManutencaoPreventivaResponse toResponse(
-            RegraManutencaoPreventiva regra
-    ) {
-        Long idServico = regra.getServico() != null ? regra.getServico().getId() : null;
-        String nomeServico = regra.getServico() != null ? regra.getServico().getNome() : null;
-
-        Long idPeca = regra.getPeca() != null ? regra.getPeca().getId() : null;
-        String nomePeca = regra.getPeca() != null ? regra.getPeca().getNome() : null;
-
-        return new RegraManutencaoPreventivaResponse(
-                regra.getId(),
-                regra.getGrupoManutencao(),
-                regra.getDescricao(),
-                idServico,
-                nomeServico,
-                idPeca,
-                nomePeca,
-                regra.getOrigemOleo(),
-                regra.getIntervaloKm(),
-                regra.getIntervaloDias(),
-                regra.getPrioridade(),
-                regra.getAtivo(),
-                regra.getObservacoes(),
-                regra.getCriadoEm(),
-                regra.getAtualizadoEm()
-        );
-    }
+    private RegraManutencaoPreventivaResponse toResponse(RegraManutencaoPreventiva regra){return com.clinicar.backend.mapper.RegraManutencaoPreventivaMapper.converter(regra);}
 
     private String limparTexto(String valor) {
         if (valor == null || valor.trim().isBlank()) {
@@ -325,22 +307,4 @@ public class RegraManutencaoPreventivaController {
     ) {
     }
 
-    public record RegraManutencaoPreventivaResponse(
-            Long id,
-            String grupoManutencao,
-            String descricao,
-            Long idServico,
-            String nomeServico,
-            Long idPeca,
-            String nomePeca,
-            String origemOleo,
-            Integer intervaloKm,
-            Integer intervaloDias,
-            Integer prioridade,
-            Boolean ativo,
-            String observacoes,
-            LocalDateTime criadoEm,
-            LocalDateTime atualizadoEm
-    ) {
-    }
 }

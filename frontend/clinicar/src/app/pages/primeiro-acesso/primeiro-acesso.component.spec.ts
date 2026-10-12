@@ -1,3 +1,4 @@
+import { provideZoneChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -5,7 +6,7 @@ import { provideRouter } from '@angular/router';
 import { PrimeiroAcessoComponent } from './primeiro-acesso.component';
 
 describe('Progresso do primeiro acesso', () => {
-  beforeEach(() => TestBed.configureTestingModule({ imports: [PrimeiroAcessoComponent], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] }));
+  beforeEach(() => TestBed.configureTestingModule({ imports: [PrimeiroAcessoComponent], providers: [provideZoneChangeDetection(), provideRouter([]), provideHttpClient(), provideHttpClientTesting()] }));
 
   it('atualiza a barra ao preencher e apagar um campo sem exibir erros prematuros', async () => {
     const fixture = TestBed.createComponent(PrimeiroAcessoComponent);

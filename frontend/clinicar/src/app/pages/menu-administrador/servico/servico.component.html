@@ -1,0 +1,1237 @@
+@if (!cadastroIntegrado) {
+  <div class="container-fluid mt-0 mb-0 servicos-page" style="color:#35689b; max-height: 80vh;">
+    <div class="row justify-content-center">
+      <div class="col-md-12 mt-sm-0">
+        <div class="row mt-0">
+          <div class="col text-center mb-2">
+            <div class="card clinicar-card page-title-card">
+              <div class="card-body">
+                <i class="bi bi-tools me-1"></i>
+                Gerenciamento de Serviços
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="summary-grid mb-2">
+          <div class="summary-card">
+            <span>Total</span>
+            <strong>{{ totalServicos }}</strong>
+          </div>
+          <div class="summary-card border-success-card">
+            <span>Ativos</span>
+            <strong>{{ totalAtivos }}</strong>
+          </div>
+          <div class="summary-card border-secondary-card">
+            <span>Inativos</span>
+            <strong>{{ totalInativos }}</strong>
+          </div>
+          <div class="summary-card border-warning-card">
+            <span>Necessitam peças</span>
+            <strong>{{ totalNecessitaPecas }}</strong>
+          </div>
+          <div class="summary-card border-info-card">
+            <span>Valor médio</span>
+            <strong>{{ valorMedioBase }}</strong>
+          </div>
+        </div>
+        <div class="card clinicar-card servicos-list-card">
+          <div class="card-body servicos-list-body p-2" style="color:#35689b;">
+            <div class="toolbar-filters mb-2">
+              <div class="row g-2 align-items-end">
+                <div class="col-lg-3 col-md-6">
+                  <label class="form-label fw-bold" for="filtro-servicos">Buscar</label>
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="bi bi-search"></i>
+                    </span>
+                    <input
+                      id="filtro-servicos"
+                      type="search"
+                      class="form-control"
+                      placeholder="Nome, categoria, prestador, fornecedor ou status"
+                      [(ngModel)]="filtroTexto"
+                      (ngModelChange)="aoAlterarFiltros()"
+                      />
+                  </div>
+                </div>
+                <div class="col-lg-1 col-md-3">
+                  <label class="form-label fw-bold" for="filtro-status-servico">Status</label>
+                  <select
+                    id="filtro-status-servico"
+                    class="form-select"
+                    [(ngModel)]="filtroStatus"
+                    (ngModelChange)="aoAlterarFiltros()"
+                    >
+                    <option value="">Todos</option>
+                    <option value="ATIVO">Ativos</option>
+                    <option value="INATIVO">Inativos</option>
+                    <option value="PECAS">Necessitam peças</option>
+                  </select>
+                </div>
+                <div class="col-lg-2 col-md-3">
+                  <label class="form-label fw-bold" for="filtro-categoria-servico">Categoria</label>
+                  <select
+                    id="filtro-categoria-servico"
+                    class="form-select"
+                    [(ngModel)]="filtroCategoria"
+                    (ngModelChange)="aoAlterarFiltros()"
+                    >
+                    <option value="">Todas</option>
+                    @for (categoria of categoriasDisponiveis; track categoria) {
+                      <option [value]="categoria">
+                        {{ categoria }}
+                      </option>
+                    }
+                  </select>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                  <label class="form-label fw-bold" for="filtro-fornecedor-servico">Fornecedor</label>
+                  <select
+                    id="filtro-fornecedor-servico"
+                    class="form-select"
+                    [(ngModel)]="filtroFornecedor"
+                    (ngModelChange)="aoAlterarFiltros()"
+                    >
+                    <option value="">Todos</option>
+                    @for (fornecedor of fornecedoresDisponiveisFiltro; track fornecedor) {
+                      <option [value]="fornecedor.id">
+                        {{ fornecedor.razaoSocial }}
+                      </option>
+                    }
+                  </select>
+                </div>
+                <div class="col-lg-1 col-md-6">
+                  <button
+                    type="button"
+                    class="btn btn-md btn-outline-secondary btn-limpar-filtros"
+                    [disabled]="!possuiFiltrosAplicados"
+                    (click)="limparFiltros()"
+                    >
+                    <i class="bi bi-eraser me-1"></i>
+                    Limpar Filtros
+                  </button>
+                </div>
+                <div class="col-lg-3 col-md-6 toolbar-actions">
+                  <button
+                    type="button"
+                    class="btn btn-md"
+                    style="background:#35689b;color:white;"
+                    (click)="abrirModalCadastro()"
+                    >
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Novo Serviço
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-md btn-outline-primary"
+                    (click)="recarregar()"
+                    >
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Atualizar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-md btn-outline-secondary"
+                    (click)="voltar()"
+                    >
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Voltar
+                  </button>
+                </div>
+              </div>
+              @if (possuiFiltrosAplicados) {
+                <div class="filter-chip-row mt-2">
+                  @if (filtroTexto) {
+                    <span class="filter-chip">
+                      Busca: {{ filtroTexto }}
+                      <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+                    </span>
+                  }
+                  @if (filtroStatus) {
+                    <span class="filter-chip">
+                      Status: {{ filtroStatus === 'PECAS' ? 'Necessitam peças' : (filtroStatus === 'ATIVO' ? 'Ativos' : 'Inativos') }}
+                      <button type="button" (click)="filtroStatus = ''; aoAlterarFiltros()" aria-label="Remover status">×</button>
+                    </span>
+                  }
+                  @if (filtroCategoria) {
+                    <span class="filter-chip">
+                      Categoria: {{ filtroCategoria }}
+                      <button type="button" (click)="filtroCategoria = ''; aoAlterarFiltros()" aria-label="Remover categoria">×</button>
+                    </span>
+                  }
+                  @if (filtroFornecedor) {
+                    <span class="filter-chip">
+                      Fornecedor selecionado
+                      <button type="button" (click)="filtroFornecedor = ''; aoAlterarFiltros()" aria-label="Remover fornecedor">×</button>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+            @if (loading) {
+              <div class="alert alert-info py-2 mb-2">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Carregando serviços…
+              </div>
+            }
+            @if (!loading && errorMsg) {
+              <div class="alert alert-danger py-2 mb-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ errorMsg }}
+              </div>
+            }
+            @if (!loading) {
+              <div class="servico-table-shell">
+                <div class="servico-table-scroll">
+                  <table class="table table-hover align-middle table-compact table-sticky-header">
+                    <thead>
+                      <tr>
+                        <th scope="col" class="sortable" (click)="ordenarPor('nome')">
+                          Serviço <i class="bi ms-1" [ngClass]="iconeOrdenacao('nome')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('categoria')">
+                          Categoria <i class="bi ms-1" [ngClass]="iconeOrdenacao('categoria')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('tipoDoPrestador')">
+                          Prestador <i class="bi ms-1" [ngClass]="iconeOrdenacao('tipoDoPrestador')"></i>
+                        </th>
+                        <th scope="col" class="sortable text-center" (click)="ordenarPor('duracaoEstimada')">
+                          Duração <i class="bi ms-1" [ngClass]="iconeOrdenacao('duracaoEstimada')"></i>
+                        </th>
+                        <th scope="col" class="sortable text-end" (click)="ordenarPor('valorBase')">
+                          Valor <i class="bi ms-1" [ngClass]="iconeOrdenacao('valorBase')"></i>
+                        </th>
+                        <th scope="col" class="sortable text-center" (click)="ordenarPor('garantiaDias')">
+                          Garantia <i class="bi ms-1" [ngClass]="iconeOrdenacao('garantiaDias')"></i>
+                        </th>
+                        <th scope="col" class="sortable text-center" (click)="ordenarPor('ativo')">
+                          Status <i class="bi ms-1" [ngClass]="iconeOrdenacao('ativo')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('razaoSocialFornecedor')">
+                          Fornecedor <i class="bi ms-1" [ngClass]="iconeOrdenacao('razaoSocialFornecedor')"></i>
+                        </th>
+                        <th scope="col" class="text-center coluna-acoes">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (servico of servicosPaginados; track trackByServico($index, servico)) {
+                        <tr [class.row-inativo]="!servico.ativo">
+                          <td>
+                            <div class="fw-semibold">{{ servico.nome }}</div>
+                            <small>{{ descricaoCurta(servico) }}</small>
+                          </td>
+                          <td>
+                            <span class="badge categoria-badge">{{ servico.categoria }}</span>
+                          </td>
+                          <td>{{ servico.tipoDoPrestador }}</td>
+                          <td class="text-center">{{ formatarDuracao(servico) }}</td>
+                          <td class="text-end">
+                            <div class="fw-semibold">{{ formatarValorServico(servico.valorBase) }}</div>
+                            <small>{{ formatarUnidade(servico.unidadeCobranca) }}</small>
+                          </td>
+                          <td class="text-center">
+                            {{ servico.garantiaDias || 0 }} dia(s)
+                            <div>
+                              <span [ngClass]="pecasBadgeClass(servico)">
+                                {{ servico.necessitaPecas ? 'Com peças' : 'Sem peças' }}
+                              </span>
+                            </div>
+                          </td>
+                          <td class="text-center">
+                            <span [ngClass]="statusBadgeClass(servico)">
+                              {{ statusTexto(servico) }}
+                            </span>
+                          </td>
+                          <td>
+                            @if (servico.razaoSocialFornecedor) {
+                              <span>
+                                {{ servico.razaoSocialFornecedor }}
+                              </span>
+                            } @else {
+                              <span class="text-muted">Sem vínculo</span>
+                            }
+                          </td>
+                          <td class="text-center coluna-acoes">
+                            <div class="action-buttons">
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-info"
+                                title="Visualizar detalhes"
+                                (click)="abrirDetalhes(servico)"
+                                >
+                                <i class="bi bi-eye"></i>
+                              </button>
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                title="Editar serviço"
+                                (click)="abrirModalEdicao(servico)"
+                                >
+                                <i class="bi bi-pencil-square"></i>
+                              </button>
+                              @if (!servico.ativo) {
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-outline-success"
+                                  title="Ativar serviço"
+                                  (click)="abrirConfirmacao(servico, 'ativar')"
+                                  >
+                                  <i class="bi bi-toggle-on"></i>
+                                </button>
+                              }
+                              @if (servico.ativo) {
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-outline-secondary"
+                                  title="Inativar serviço"
+                                  (click)="abrirConfirmacao(servico, 'inativar')"
+                                  >
+                                  <i class="bi bi-toggle-off"></i>
+                                </button>
+                              }
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                title="Excluir logicamente"
+                                (click)="abrirConfirmacao(servico, 'excluir')"
+                                >
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                      @if (totalRegistrosFiltrados === 0) {
+                        <tr>
+                          <td colspan="9" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox me-1"></i>
+                            Nenhum serviço encontrado.
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                @if (totalRegistrosFiltrados > 0) {
+                  <div class="table-pagination-footer">
+<app-paginacao [pagina]="paginaAtual-1" [tamanho]="itensPorPagina" [total]="totalRegistrosFiltrados" [carregando]="loading" [tamanhos]="opcoesItensPorPagina" (paginaChange)="irParaPagina($event+1)" (tamanhoChange)="itensPorPagina=$event;aoAlterarItensPorPagina()" />
+</div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<div class="modal fade" id="modalContinuidadeFornecimentoServico" tabindex="-1" aria-labelledby="tituloContinuidadeFornecimentoServico" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title" id="tituloContinuidadeFornecimentoServico"><i class="bi bi-link-45deg me-1"></i>Continuar cadastro do serviço</h5>
+        <button type="button" class="btn-close" aria-label="Fechar" [disabled]="continuandoFornecimento" (click)="concluirContinuidadeFornecimento()"></button>
+      </div>
+      <div class="modal-body">
+        <app-field-help-panel></app-field-help-panel>
+        <div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>Serviço cadastrado com sucesso.</div>
+        <div class="owner-card mb-3"><strong>{{ servicoCadastrado?.nome }}</strong><div>{{ servicoCadastrado?.categoria }}</div></div>
+        <p>Deseja cadastrar o fornecimento deste serviço? Você poderá selecionar um fornecedor ativo ou cadastrar um novo e informar as condições comerciais.</p>
+        <p class="mb-0">Se o serviço for executado pela própria oficina ou você preferir continuar depois, conclua por enquanto. O serviço permanecerá cadastrado.</p>
+        @if (servicoCadastrado?.ativo === false) {
+          <div class="alert alert-warning mt-3 mb-0">Ative o serviço no gerenciamento para cadastrar seu fornecimento.</div>
+        }
+        @if (erroContinuidadeFornecimento) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert">{{ erroContinuidadeFornecimento }}</div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" [disabled]="continuandoFornecimento" (click)="concluirContinuidadeFornecimento()">Concluir por enquanto</button>
+        <button type="button" class="btn btn-primary" [disabled]="continuandoFornecimento || !servicoCadastrado?.id || servicoCadastrado?.ativo === false" (click)="continuarFornecimentoDoServico()">{{ continuandoFornecimento ? 'Abrindo...' : 'Cadastrar fornecimento deste serviço' }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cadastro -->
+<div
+  class="modal fade"
+  id="modalCadastroServico"
+  tabindex="-1"
+  aria-labelledby="modalCadastroServicoLabel"
+  aria-hidden="true"
+  >
+  <div class="modal-dialog modal-xl modal-dialog-centered servico-modal-dialog">
+    <div class="modal-content servico-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalCadastroServicoLabel">
+            <i class="bi bi-plus-circle me-1"></i>
+            Novo Serviço
+          </h5>
+          <small>{{ novoServico.nome || 'Informe os dados principais do serviço' }}</small>
+        </div>
+        <button type="button" class="btn-close" [disabled]="salvandoCadastro" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body servico-modal-body">
+        @if (fornecedorFluxo) {
+          <div class="alert alert-info" role="status">
+            Novo serviço para <strong>{{ fornecedorFluxo.razaoSocial }}</strong>. Após salvar, informe as condições de fornecimento.
+          </div>
+        }
+        <div class="servico-modal-tabs-area">
+          @if (mensagemErroCadastro) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroCadastro }}
+            </div>
+          }
+
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+            <div class="progress-bar" [style.width.%]="progressoCadastroServico">
+              {{ progressoCadastroServico }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button data-help-guia="dados" [disabled]="!podeAcessarAbaCadastro('dados')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroServico === 'dados'" (click)="trocarAbaCadastroServico('dados')">
+                <i class="bi bi-tools me-1"></i>
+                Dados
+                @if (pendenciasCadastroAba('dados')) {
+                  <span class="tab-alert">{{ pendenciasCadastroAba('dados') }}</span>
+                }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="cobranca" [disabled]="!podeAcessarAbaCadastro('cobranca')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroServico === 'cobranca'" (click)="trocarAbaCadastroServico('cobranca')">
+                <i class="bi bi-cash-coin me-1"></i>
+                Cobrança
+                @if (pendenciasCadastroAba('cobranca')) {
+                  <span class="tab-alert">{{ pendenciasCadastroAba('cobranca') }}</span>
+                }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="fornecedor" [disabled]="!podeAcessarAbaCadastro('fornecedor')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroServico === 'fornecedor'" (click)="trocarAbaCadastroServico('fornecedor')">
+                <i class="bi bi-building me-1"></i>
+                Fornecedor
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="revisao" [disabled]="!podeAcessarAbaCadastro('revisao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroServico === 'revisao'" (click)="trocarAbaCadastroServico('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="servico-modal-scroll-area">
+          @if (abaCadastroServico === 'dados') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-tools me-1"></i>
+                Dados do serviço
+              </div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="nomeServicoCadastro">Nome *</label>
+                  <input
+                    id="nomeServicoCadastro"
+                    class="form-control"
+                    [(ngModel)]="novoServico.nome" (blur)="verificarDuplicidade(novoServico)"
+                    (ngModelChange)="limparCampoInvalido('nome')"
+                    [class.is-invalid]="campoMarcadoInvalido(novoServico, 'nome')"
+                    autocomplete="off"
+                    />
+                  @if (campoMarcadoInvalido(novoServico, 'nome') && !servicoDuplicado(novoServico)) {
+                    <div class="invalid-feedback d-block">Informe o nome do serviço.</div>
+                  }
+                  @if (servicoDuplicado(novoServico)) {
+                    <div class="invalid-feedback d-block">Já existe um serviço cadastrado com este nome nesta categoria. Selecione o serviço existente ou altere o nome ou a categoria.</div>
+                  }
+                  @if (servicoDuplicado(novoServico)) {
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" [disabled]="consultandoDuplicidade || !servicoExistenteId || carregandoServicoExistente" (click)="usarServicoExistente()"><i class="bi bi-check-circle me-1"></i>Usar serviço existente</button>
+                  }
+                  @if (consultandoDuplicidade) {
+                    <div class="form-text" role="status">Verificando nome e categoria...</div>
+                  }
+                  @if (erroConsultaDuplicidade) {
+                    <div class="text-danger small">{{ erroConsultaDuplicidade }}</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="categoriaServicoCadastro">Categoria *</label>
+                  <select
+                    id="categoriaServicoCadastro"
+                    class="form-select"
+                    [(ngModel)]="novoServico.categoria" (blur)="verificarDuplicidade(novoServico)" (change)="verificarDuplicidade(novoServico)"
+                    (ngModelChange)="limparCampoInvalido('categoria')"
+                    [class.is-invalid]="campoMarcadoInvalido(novoServico, 'categoria')"
+                    >
+                    <option value="">Selecione...</option>
+                    @for (categoria of categoriasSugeridas; track categoria) {
+                      <option [ngValue]="categoria">
+                        {{ categoria }}
+                      </option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(novoServico, 'categoria') && !servicoDuplicado(novoServico)) {
+                    <div class="invalid-feedback d-block">Selecione a categoria.</div>
+                  }
+                  @if (servicoDuplicado(novoServico)) {
+                    <div class="invalid-feedback d-block">Já existe um serviço cadastrado com este nome nesta categoria. Selecione o serviço existente ou altere o nome ou a categoria.</div>
+                  }
+                  @if (consultandoDuplicidade) {
+                    <div class="form-text" role="status">Verificando nome e categoria...</div>
+                  }
+                  @if (erroConsultaDuplicidade) {
+                    <div class="text-danger small">{{ erroConsultaDuplicidade }}</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="tipoPrestadorCadastro">Tipo do Prestador *</label>
+                  <select
+                    id="tipoPrestadorCadastro"
+                    class="form-select"
+                    [(ngModel)]="novoServico.tipoDoPrestador"
+                    (ngModelChange)="limparCampoInvalido('tipoDoPrestador')"
+                    [class.is-invalid]="campoMarcadoInvalido(novoServico, 'tipoDoPrestador')"
+                    >
+                    <option value="">Selecione...</option>
+                    @for (tipo of tiposPrestadorSugeridos; track tipo) {
+                      <option [ngValue]="tipo">
+                        {{ tipo }}
+                      </option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(novoServico, 'tipoDoPrestador')) {
+                    <div class="invalid-feedback d-block">Selecione o tipo do prestador.</div>
+                  }
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label" for="descricaoServicoCadastro">Descrição</label>
+                  <textarea
+                    id="descricaoServicoCadastro"
+                    class="form-control"
+                    rows="3"
+                    [(ngModel)]="novoServico.descricao"
+                    placeholder="Descreva o que será realizado neste serviço."
+                  ></textarea>
+                </div>
+                <div class="col-md-4">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Prévia</div>
+                    <div class="preview-main">{{ novoServico.nome || 'Nome do serviço' }}</div>
+                    <div class="preview-sub">
+                      {{ novoServico.categoria || 'Categoria' }}
+                      @if (novoServico.tipoDoPrestador) {
+                        <span> · {{ novoServico.tipoDoPrestador }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroServico === 'cobranca') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-cash-coin me-1"></i>
+                Duração, cobrança e regras
+              </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="duracaoCadastro">Duração Estimada *</label>
+                  <input
+                    id="duracaoCadastro" data-help="Tempo normalmente necessário para executar o serviço. A unidade de duração deve ser selecionada no campo correspondente."
+                    class="form-control"
+                    type="text"
+                    [(ngModel)]="novoServico.duracaoEstimada"
+                    (ngModelChange)="limparCampoInvalido('duracaoEstimada')"
+                    [class.is-invalid]="campoMarcadoInvalido(novoServico, 'duracaoEstimada')"
+                    placeholder="Ex.: 40 ou 1,50"
+                    />
+                  @if (campoMarcadoInvalido(novoServico, 'duracaoEstimada')) {
+                    <div class="invalid-feedback d-block">Informe uma duração maior que zero.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="unidadeDuracaoCadastro">Unidade Duração *</label>
+                  <select id="unidadeDuracaoCadastro" class="form-select" [(ngModel)]="novoServico.unidadeDuracao">
+                    @for (u of unidadesDuracao; track u) {
+                      <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="valorBaseCadastro">Valor Base *</label>
+                  <input
+                    id="valorBaseCadastro"
+                    class="form-control"
+                    type="text"
+                    [(ngModel)]="novoServico.valorBase"
+                    (ngModelChange)="limparCampoInvalido('valorBase')"
+                    (blur)="formatarValorBaseCadastro()"
+                    [class.is-invalid]="campoMarcadoInvalido(novoServico, 'valorBase')"
+                    placeholder="R$ 0,00"
+                    />
+                  @if (campoMarcadoInvalido(novoServico, 'valorBase')) {
+                    <div class="invalid-feedback d-block">Informe um valor base válido.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="unidadeCobrancaCadastro">Unidade Cobrança *</label>
+                  <select id="unidadeCobrancaCadastro" class="form-select" [(ngModel)]="novoServico.unidadeCobranca">
+                    @for (u of unidadesCobranca; track u) {
+                      <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="garantiaCadastro">Garantia em dias *</label>
+                  <input
+                    id="garantiaCadastro" data-help="Quantidade de dias de garantia oferecida para o serviço. Use 0 quando o serviço não possuir garantia."
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    [(ngModel)]="novoServico.garantiaDias"
+                    (ngModelChange)="limparCampoInvalido('garantiaDias')"
+                    (blur)="normalizarGarantia(novoServico)"
+                    [class.is-invalid]="campoMarcadoInvalido(novoServico, 'garantiaDias')"
+                    />
+                  @if (campoMarcadoInvalido(novoServico, 'garantiaDias')) {
+                    <div class="invalid-feedback d-block">Informe uma garantia válida.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="necessitaPecasCadastro">Necessita Peças?</label>
+                  <select id="necessitaPecasCadastro" class="form-select" [(ngModel)]="novoServico.necessitaPecas">
+                    <option [ngValue]="true">Sim</option>
+                    <option [ngValue]="false">Não</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="ativoCadastro">Status</label>
+                  <select [disabled]="cadastroIntegrado" id="ativoCadastro" class="form-select" [(ngModel)]="novoServico.ativo">
+                    <option [ngValue]="true">Ativo</option>
+                    <option [ngValue]="false">Inativo</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Resumo financeiro</div>
+                    <div class="preview-main">{{ formatarValorServico(novoServico.valorBase) }}</div>
+                    <div class="preview-sub">
+                      {{ formatarDuracao(novoServico) }} · {{ formatarUnidade(novoServico.unidadeCobranca || '') }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroServico === 'fornecedor') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-building me-1"></i>
+                Fornecedor vinculado
+              </div>
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <div class="owner-card" [class.owner-card-empty]="!novoServico.idFornecedor">
+                    <div class="preview-title">Fornecedor</div>
+                    <div class="owner-name">{{ fornecedorTexto(novoServico) || 'Nenhum fornecedor vinculado' }}</div>
+                    <div class="owner-meta">
+                      O vínculo é opcional e pode ser usado quando o serviço é terceirizado ou executado por parceiro.
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 d-flex flex-column gap-2 justify-content-center">
+                  <button type="button" class="btn btn-outline-primary" [disabled]="!!fornecedorFluxo" (click)="abrirModalFornecedor('cadastro')">
+                    <i class="bi bi-search me-1"></i>
+                    Selecionar fornecedor
+                  </button>
+                  @if (novoServico.idFornecedor) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      [disabled]="!!fornecedorFluxo"
+                      (click)="removerFornecedorSelecionado(novoServico)"
+                      >
+                      <i class="bi bi-x-circle me-1"></i>
+                      Remover vínculo
+                    </button>
+                  }
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label" for="observacoesCadastro">Observações</label>
+                  <textarea id="observacoesCadastro" class="form-control" rows="3" [(ngModel)]="novoServico.observacoes"></textarea>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroServico === 'revisao') {
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Serviço</div>
+                  <div class="review-main">{{ novoServico.nome || '—' }}</div>
+                  <div class="details-line">Categoria: {{ novoServico.categoria || '—' }}</div>
+                  <div class="details-line">Prestador: {{ novoServico.tipoDoPrestador || '—' }}</div>
+                  <div class="details-line">Status: {{ statusTexto(novoServico) }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Cobrança</div>
+                  <div class="review-main">{{ formatarValorServico(novoServico.valorBase) }}</div>
+                  <div class="details-line">Duração: {{ formatarDuracao(novoServico) }}</div>
+                  <div class="details-line">Unidade: {{ formatarUnidade(novoServico.unidadeCobranca || '') }}</div>
+                  <div class="details-line">Garantia: {{ novoServico.garantiaDias || 0 }} dia(s)</div>
+                  <div class="details-line">Fornecedor: {{ fornecedorTexto(novoServico) || 'Sem vínculo' }}</div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-totais">
+        <div class="footer-status me-auto">
+          @if (mensagemBloqueioCadastro) {
+            <div class="cadastro-footer-warning">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ mensagemBloqueioCadastro }}
+            </div>
+          }
+          @if (!mensagemBloqueioCadastro) {
+            <div class="cadastro-footer-ok">
+              <i class="bi bi-check-circle me-1"></i>
+              Cadastro pronto para salvar.
+            </div>
+          }
+        </div>
+
+        <button data-help-navegacao type="button" class="btn btn-outline-secondary" [disabled]="cadastroEhPrimeiraAba()" (click)="cadastroAbaAnterior()">
+          <i class="bi bi-chevron-left me-1"></i>
+          Anterior
+        </button>
+
+        <button data-help-navegacao type="button" class="btn btn-outline-primary" [disabled]="!podeAvancarCadastro || (cadastroEhUltimaAba())" (click)="cadastroAbaProxima()">
+          Próximo
+          <i class="bi bi-chevron-right ms-1"></i>
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary" [disabled]="salvandoCadastro" data-bs-dismiss="modal">Cancelar</button>
+
+        <button
+          type="button"
+          class="btn"
+          style="background:#35689b;color:white;"
+          [disabled]="salvandoCadastro || !cadastroServicoProntoParaSalvar"
+          [title]="mensagemBloqueioCadastro || 'Salvar serviço'"
+          (click)="salvarNovoServico()"
+          >
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar Serviço
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição -->
+<div
+  class="modal fade"
+  id="modalEdicaoServico"
+  tabindex="-1"
+  aria-labelledby="modalEdicaoServicoLabel"
+  aria-hidden="true"
+  >
+  <div class="modal-dialog modal-xl modal-dialog-centered servico-modal-dialog">
+    <div class="modal-content servico-modal-content servico-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalEdicaoServicoLabel">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar Serviço
+          </h5>
+          <small>ID #{{ editId || '—' }} · {{ edit.nome || 'Serviço não informado' }}</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body servico-modal-body">
+        <div class="servico-modal-tabs-area">
+          @if (mensagemErroEdicao) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroEdicao }}
+            </div>
+          }
+
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+            <div class="progress-bar" [style.width.%]="progressoEdicaoServico">
+              {{ progressoEdicaoServico }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button data-help-guia="dados" class="nav-link" type="button" [class.active]="abaEdicaoServico === 'dados'" (click)="trocarAbaEdicaoServico('dados')">
+                <i class="bi bi-tools me-1"></i>
+                Dados
+                @if (pendenciasEdicaoAba('dados')) {
+                  <span class="tab-alert">{{ pendenciasEdicaoAba('dados') }}</span>
+                }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="cobranca" class="nav-link" type="button" [class.active]="abaEdicaoServico === 'cobranca'" (click)="trocarAbaEdicaoServico('cobranca')">
+                <i class="bi bi-cash-coin me-1"></i>
+                Cobrança
+                @if (pendenciasEdicaoAba('cobranca')) {
+                  <span class="tab-alert">{{ pendenciasEdicaoAba('cobranca') }}</span>
+                }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="fornecedor" class="nav-link" type="button" [class.active]="abaEdicaoServico === 'fornecedor'" (click)="trocarAbaEdicaoServico('fornecedor')">
+                <i class="bi bi-building me-1"></i>
+                Fornecedor
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="revisao" class="nav-link" type="button" [class.active]="abaEdicaoServico === 'revisao'" (click)="trocarAbaEdicaoServico('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="servico-modal-scroll-area">
+          @if (abaEdicaoServico === 'dados') {
+            <div class="section-card">
+              <div class="section-card-title"><i class="bi bi-tools me-1"></i>Dados do serviço</div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="nomeServicoEdicao">Nome *</label>
+                  <input id="nomeServicoEdicao" class="form-control" [(ngModel)]="edit.nome" (blur)="verificarDuplicidade(edit)" (ngModelChange)="limparCampoInvalido('nome')" [class.is-invalid]="campoMarcadoInvalido(edit, 'nome')" />
+                  @if (campoMarcadoInvalido(edit, 'nome') && !servicoDuplicado(edit)) {
+                    <div class="invalid-feedback d-block">Informe o nome do serviço.</div>
+                  }
+                  @if (servicoDuplicado(edit)) {
+                    <div class="invalid-feedback d-block">Já existe um serviço cadastrado com este nome nesta categoria. Selecione o serviço existente ou altere o nome ou a categoria.</div>
+                  }
+                  @if (consultandoDuplicidade) {
+                    <div class="form-text" role="status">Verificando nome e categoria...</div>
+                  }
+                  @if (erroConsultaDuplicidade) {
+                    <div class="text-danger small">{{ erroConsultaDuplicidade }}</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="categoriaServicoEdicao">Categoria *</label>
+                  <select id="categoriaServicoEdicao" class="form-select" [(ngModel)]="edit.categoria" (blur)="verificarDuplicidade(edit)" (change)="verificarDuplicidade(edit)" (ngModelChange)="limparCampoInvalido('categoria')" [class.is-invalid]="campoMarcadoInvalido(edit, 'categoria')">
+                    <option value="">Selecione...</option>
+                    @for (categoria of categoriasSugeridas; track categoria) {
+                      <option [ngValue]="categoria">{{ categoria }}</option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(edit, 'categoria') && !servicoDuplicado(edit)) {
+                    <div class="invalid-feedback d-block">Selecione a categoria.</div>
+                  }
+                  @if (servicoDuplicado(edit)) {
+                    <div class="invalid-feedback d-block">Já existe um serviço cadastrado com este nome nesta categoria. Selecione o serviço existente ou altere o nome ou a categoria.</div>
+                  }
+                  @if (consultandoDuplicidade) {
+                    <div class="form-text" role="status">Verificando nome e categoria...</div>
+                  }
+                  @if (erroConsultaDuplicidade) {
+                    <div class="text-danger small">{{ erroConsultaDuplicidade }}</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="tipoPrestadorEdicao">Tipo do Prestador *</label>
+                  <select id="tipoPrestadorEdicao" class="form-select" [(ngModel)]="edit.tipoDoPrestador" (ngModelChange)="limparCampoInvalido('tipoDoPrestador')" [class.is-invalid]="campoMarcadoInvalido(edit, 'tipoDoPrestador')">
+                    <option value="">Selecione...</option>
+                    @for (tipo of tiposPrestadorSugeridos; track tipo) {
+                      <option [ngValue]="tipo">{{ tipo }}</option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(edit, 'tipoDoPrestador')) {
+                    <div class="invalid-feedback d-block">Selecione o tipo do prestador.</div>
+                  }
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label" for="descricaoServicoEdicao">Descrição</label>
+                  <textarea id="descricaoServicoEdicao" class="form-control" rows="3" [(ngModel)]="edit.descricao"></textarea>
+                </div>
+                <div class="col-md-4">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Prévia</div>
+                    <div class="preview-main">{{ edit.nome || 'Nome do serviço' }}</div>
+                    <div class="preview-sub">{{ edit.categoria || 'Categoria' }}@if (edit.tipoDoPrestador) {
+                      <span> · {{ edit.tipoDoPrestador }}</span>
+                    }</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoServico === 'cobranca') {
+            <div class="section-card">
+              <div class="section-card-title"><i class="bi bi-cash-coin me-1"></i>Duração, cobrança e regras</div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="duracaoEdicao">Duração Estimada *</label>
+                  <input id="duracaoEdicao" data-help="Tempo normalmente necessário para executar o serviço. A unidade de duração deve ser selecionada no campo correspondente." class="form-control" type="text" [(ngModel)]="edit.duracaoEstimada" (ngModelChange)="limparCampoInvalido('duracaoEstimada')" [class.is-invalid]="campoMarcadoInvalido(edit, 'duracaoEstimada')" />
+                  @if (campoMarcadoInvalido(edit, 'duracaoEstimada')) {
+                    <div class="invalid-feedback d-block">Informe uma duração maior que zero.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="unidadeDuracaoEdicao">Unidade Duração *</label>
+                  <select id="unidadeDuracaoEdicao" class="form-select" [(ngModel)]="edit.unidadeDuracao">
+                    @for (u of unidadesDuracao; track u) {
+                      <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="valorBaseEdicao">Valor Base *</label>
+                  <input id="valorBaseEdicao" class="form-control" type="text" [(ngModel)]="edit.valorBase" (ngModelChange)="limparCampoInvalido('valorBase')" (blur)="formatarValorBaseEdicao()" [class.is-invalid]="campoMarcadoInvalido(edit, 'valorBase')" />
+                  @if (campoMarcadoInvalido(edit, 'valorBase')) {
+                    <div class="invalid-feedback d-block">Informe um valor base válido.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="unidadeCobrancaEdicao">Unidade Cobrança *</label>
+                  <select id="unidadeCobrancaEdicao" class="form-select" [(ngModel)]="edit.unidadeCobranca">
+                    @for (u of unidadesCobranca; track u) {
+                      <option [ngValue]="u">{{ formatarUnidade(u) }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="garantiaEdicao">Garantia em dias *</label>
+                  <input id="garantiaEdicao" data-help="Quantidade de dias de garantia oferecida para o serviço. Use 0 quando o serviço não possuir garantia." class="form-control" type="number" min="0" [(ngModel)]="edit.garantiaDias" (ngModelChange)="limparCampoInvalido('garantiaDias')" (blur)="normalizarGarantia(edit)" [class.is-invalid]="campoMarcadoInvalido(edit, 'garantiaDias')" />
+                  @if (campoMarcadoInvalido(edit, 'garantiaDias')) {
+                    <div class="invalid-feedback d-block">Informe uma garantia válida.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="necessitaPecasEdicao">Necessita Peças?</label>
+                  <select id="necessitaPecasEdicao" class="form-select" [(ngModel)]="edit.necessitaPecas">
+                    <option [ngValue]="true">Sim</option>
+                    <option [ngValue]="false">Não</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="ativoEdicao">Status</label>
+                  <select id="ativoEdicao" class="form-select" [(ngModel)]="edit.ativo">
+                    <option [ngValue]="true">Ativo</option>
+                    <option [ngValue]="false">Inativo</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Resumo financeiro</div>
+                    <div class="preview-main">{{ formatarValorServico(edit.valorBase) }}</div>
+                    <div class="preview-sub">{{ formatarDuracao(edit) }} · {{ formatarUnidade(edit.unidadeCobranca || '') }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoServico === 'fornecedor') {
+            <div class="section-card">
+              <div class="section-card-title"><i class="bi bi-building me-1"></i>Fornecedor vinculado</div>
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <div class="owner-card" [class.owner-card-empty]="!edit.idFornecedor">
+                    <div class="preview-title">Fornecedor</div>
+                    <div class="owner-name">{{ fornecedorTexto(edit) || 'Nenhum fornecedor vinculado' }}</div>
+                    <div class="owner-meta">O vínculo é opcional e pode ser ajustado sem alterar o cadastro do fornecedor.</div>
+                  </div>
+                </div>
+                <div class="col-md-4 d-flex flex-column gap-2 justify-content-center">
+                  <button type="button" class="btn btn-outline-primary" (click)="abrirModalFornecedor('edicao')">
+                    <i class="bi bi-search me-1"></i>
+                    Selecionar fornecedor
+                  </button>
+                  @if (edit.idFornecedor) {
+                    <button type="button" class="btn btn-outline-secondary" (click)="removerFornecedorSelecionado(edit)">
+                      <i class="bi bi-x-circle me-1"></i>
+                      Remover vínculo
+                    </button>
+                  }
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label" for="observacoesEdicao">Observações</label>
+                  <textarea id="observacoesEdicao" class="form-control" rows="3" [(ngModel)]="edit.observacoes"></textarea>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoServico === 'revisao') {
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Serviço</div>
+                  <div class="review-main">{{ edit.nome || '—' }}</div>
+                  <div class="details-line">Categoria: {{ edit.categoria || '—' }}</div>
+                  <div class="details-line">Prestador: {{ edit.tipoDoPrestador || '—' }}</div>
+                  <div class="details-line">Status: {{ statusTexto(edit) }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Cobrança</div>
+                  <div class="review-main">{{ formatarValorServico(edit.valorBase) }}</div>
+                  <div class="details-line">Duração: {{ formatarDuracao(edit) }}</div>
+                  <div class="details-line">Unidade: {{ formatarUnidade(edit.unidadeCobranca || '') }}</div>
+                  <div class="details-line">Garantia: {{ edit.garantiaDias || 0 }} dia(s)</div>
+                  <div class="details-line">Fornecedor: {{ fornecedorTexto(edit) || 'Sem vínculo' }}</div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-totais">
+        <div class="footer-status me-auto">
+          @if (mensagemBloqueioEdicao) {
+            <div class="cadastro-footer-warning">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ mensagemBloqueioEdicao }}
+            </div>
+          }
+          @if (!mensagemBloqueioEdicao) {
+            <div class="cadastro-footer-ok">
+              <i class="bi bi-check-circle me-1"></i>
+              Edição pronta para salvar.
+            </div>
+          }
+        </div>
+
+        <button data-help-navegacao type="button" class="btn btn-outline-secondary" [disabled]="edicaoEhPrimeiraAba()" (click)="edicaoAbaAnterior()">
+          <i class="bi bi-chevron-left me-1"></i>
+          Anterior
+        </button>
+
+        <button data-help-navegacao type="button" class="btn btn-outline-primary" [disabled]="edicaoEhUltimaAba()" (click)="edicaoAbaProxima()">
+          Próximo
+          <i class="bi bi-chevron-right ms-1"></i>
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <button
+          type="button"
+          class="btn"
+          style="background:#35689b;color:white;"
+          [disabled]="!edicaoServicoProntoParaSalvar"
+          [title]="mensagemBloqueioEdicao || 'Salvar alterações'"
+          (click)="salvarEdicaoModal()"
+          >
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar alterações
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="modalDetalhesServico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-eye me-1"></i>
+            Detalhes do Serviço
+          </h5>
+          <small>ID #{{ servicoDetalhe?.id || '—' }}</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      @if (servicoDetalhe) {
+        <div class="modal-body">
+          <div class="details-card mb-3">
+            <div class="details-title">{{ servicoDetalhe.nome }}</div>
+            <div class="details-line">Categoria: <strong>{{ servicoDetalhe.categoria }}</strong></div>
+            <div class="details-line">Tipo do prestador: <strong>{{ servicoDetalhe.tipoDoPrestador }}</strong></div>
+            <div class="details-line">Descrição: {{ servicoDetalhe.descricao || 'Sem descrição cadastrada.' }}</div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Cobrança</div>
+                <div class="details-line">Valor base: <strong>{{ formatarValorServico(servicoDetalhe.valorBase) }}</strong></div>
+                <div class="details-line">Duração: {{ formatarDuracao(servicoDetalhe) }}</div>
+                <div class="details-line">Unidade de cobrança: {{ formatarUnidade(servicoDetalhe.unidadeCobranca) }}</div>
+                <div class="details-line">Garantia: {{ servicoDetalhe.garantiaDias || 0 }} dia(s)</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Regras</div>
+                <div class="details-line">Status: <span [ngClass]="statusBadgeClass(servicoDetalhe)">{{ statusTexto(servicoDetalhe) }}</span></div>
+                <div class="details-line">Peças: <span [ngClass]="pecasBadgeClass(servicoDetalhe)">{{ necessitaPecasTexto(servicoDetalhe) }}</span></div>
+                <div class="details-line">Fornecedor: {{ servicoDetalhe.razaoSocialFornecedor || 'Sem vínculo' }}</div>
+              </div>
+            </div>
+            @if (servicoDetalhe.observacoes) {
+              <div class="col-12">
+                <div class="details-card">
+                  <div class="details-title">Observações</div>
+                  <div class="details-line">{{ servicoDetalhe.observacoes }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Fornecedor -->
+<div
+  class="modal fade"
+  id="modalFornecedorServico"
+  tabindex="-1"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+  data-bs-keyboard="false"
+  >
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content fornecedor-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-building me-1"></i>
+            Selecionar Fornecedor
+          </h5>
+          <small>Escolha o fornecedor vinculado ao serviço.</small>
+        </div>
+        <button type="button" class="btn-close" (click)="cancelarSelecaoFornecedor()" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body fornecedor-modal-body">
+<app-field-help-panel></app-field-help-panel>
+@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true}" (selecionado)="selecionarFornecedor($event)" />}@else{
+
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Buscar por razão social, nome fantasia, CNPJ ou item fornecido..."
+            [(ngModel)]="fornecedorFiltro"
+            (ngModelChange)="aplicarFiltroFornecedor()"
+            />
+        </div>
+
+        <div class="selection-table-shell">
+          <table class="table table-hover align-middle table-compact table-sticky-header">
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th>CNPJ</th>
+                <th>Item</th>
+                <th class="text-center">Ação</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (fornecedor of fornecedoresFiltrados; track trackByFornecedor($index, fornecedor)) {
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ fornecedor.razaoSocial }}</div>
+                    <small>{{ fornecedor.nomeFantasia }}</small>
+                  </td>
+                  <td>{{ formatarCNPJ(fornecedor.cnpj) }}</td>
+                  <td>{{ fornecedor.itemFornecido || '—' }}</td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="selecionarFornecedor(fornecedor)">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Selecionar
+                    </button>
+                  </td>
+                </tr>
+              }
+
+              @if (fornecedoresFiltrados.length === 0) {
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-3">Nenhum fornecedor encontrado.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+</div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cancelarSelecaoFornecedor()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmação -->
+<div class="modal fade" id="modalConfirmacaoServico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          {{ tituloConfirmacao() }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="confirm-box">
+          <strong>{{ mensagemConfirmacao() }}</strong>
+          <small>Esta ação pode alterar a disponibilidade do serviço para agendamentos e atendimentos.</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" [class]="classeBotaoConfirmacao()" (click)="executarAcaoConfirmada()">
+          <i class="me-1" [ngClass]="iconeBotaoConfirmacao()"></i>
+          {{ textoBotaoConfirmacao() }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

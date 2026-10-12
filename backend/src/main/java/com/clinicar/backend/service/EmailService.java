@@ -15,6 +15,8 @@ import java.time.format.DateTimeFormatter;
 
 @Service
 public class EmailService {
+    @org.springframework.beans.factory.annotation.Autowired private NotificacaoOutboxService outbox;
+    @Value("${clinicar.notificacoes.outbox-enabled:true}") private boolean outboxEnabled;
 
     private final JavaMailSender mailSender;
 
@@ -50,6 +52,10 @@ public class EmailService {
                 "Equipe CliniCar"
         );
 
+        if (outboxEnabled && outbox != null) {
+            outbox.enfileirarEmail(destinatario,mensagem.getSubject(),mensagem.getText(),null,java.time.Instant.now().plusSeconds(1800));
+            return;
+        }
         mailSender.send(mensagem);
     }
 
@@ -78,6 +84,10 @@ public class EmailService {
                 + "<p>Este link pode ser usado uma vez e expira em " + validade
                 + " (horário do servidor CliniCar).</p>"
                 + "<p>Se não solicitou este cadastro, ignore este e-mail.</p><p>Equipe CliniCar</p>";
+        if (outboxEnabled && outbox != null) {
+            outbox.enfileirarEmail(destinatario,"Ative sua conta de administrador - CliniCar",texto,html,expiraEm.atZone(java.time.ZoneId.systemDefault()).toInstant());
+            return;
+        }
         MimeMessage mensagem = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mensagem, true, StandardCharsets.UTF_8.name());
         helper.setFrom(remetente);

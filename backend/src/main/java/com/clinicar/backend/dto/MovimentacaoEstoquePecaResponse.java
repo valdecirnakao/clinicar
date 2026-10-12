@@ -25,11 +25,21 @@ public class MovimentacaoEstoquePecaResponse {
     private BigDecimal valorTotal;
 
     private String origem;
+    private Long idMovimentacaoOrigem;
+    private Long idFornecedor;
+    private String nomeFornecedor;
     private String documentoReferencia;
     private String motivo;
     private String observacoes;
 
     private Long idUsuario;
+    private String nomeUsuario;
+    private Long idAtendimento;
+    private BigDecimal custoUnitarioEstoque;
+    private String tratamentoCobranca;
+    private BigDecimal valorRestituicao;
+    private BigDecimal quantidadeDevolvida;
+    private BigDecimal custoMedioAtual;
 
     private LocalDateTime criadoEm;
 }

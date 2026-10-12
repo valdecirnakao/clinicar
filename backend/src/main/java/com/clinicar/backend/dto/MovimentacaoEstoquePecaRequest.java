@@ -10,6 +10,8 @@ public class MovimentacaoEstoquePecaRequest {
     private String quantidade;
 
     private String valorUnitario;
+    private Long idMovimentacaoOrigem;
+    private Long idFornecedor;
 
     private String origem;
     private String documentoReferencia;
@@ -17,4 +19,6 @@ public class MovimentacaoEstoquePecaRequest {
     private String observacoes;
 
     private Long idUsuario;
+    private String tratamentoCobranca;
+    private String valorRestituicao;
 }

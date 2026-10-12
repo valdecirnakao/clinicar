@@ -1,3 +1,4 @@
+import { provideZoneChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -15,7 +16,7 @@ describe('HistoricoVeicularComponent', () => {
     resumo: { agendamentos: 0, atendimentos: 0, finalizados: 0, valorFinalizados: 0, ultimaQuilometragem: null }, registros: []
   });
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [HistoricoVeicularComponent], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [HistoricoVeicularComponent], providers: [provideZoneChangeDetection(), provideRouter([]), provideHttpClient(), provideHttpClientTesting()] }).compileComponents();
     fixture = TestBed.createComponent(HistoricoVeicularComponent); component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController); fixture.detectChanges();
     http.expectOne('/api/veiculo').flush([{ id: 1, placa: 'XYZ9999', fabricante: 'Toyota', modelo: 'Yaris' }]);
@@ -37,11 +38,24 @@ describe('HistoricoVeicularComponent', () => {
     component.veiculoId = 1; component.consultar(); const req = http.expectOne('/api/veiculo/1/historico?situacao=TODOS');
     component.limparResultado(); expect(req.cancelled).toBeTrue(); expect(component.relatorio).toBeNull(); expect(component.carregando).toBeFalse();
   });
+  it('apresenta os indicadores abaixo do título, cores do projeto e a placa formatada no filtro', () => {
+    component.relatorio = resposta(); fixture.detectChanges();
+    const pagina = fixture.nativeElement.querySelector('.historico-page') as HTMLElement;
+    expect(pagina.children[1].classList.contains('summary-row')).toBeTrue();
+    expect(fixture.nativeElement.querySelector('#historicoVeiculo').textContent).toContain('XYZ-9999');
+    expect(getComputedStyle(fixture.nativeElement.querySelector('.page-title-card')).color).toBe('rgb(53, 104, 155)');
+    expect(getComputedStyle(fixture.nativeElement.querySelector('#historicoVeiculo')).color).toBe('rgb(53, 104, 155)');
+    expect(fixture.nativeElement.querySelector('.timeline')).toBeNull();
+    expect(component.relatorio?.veiculo.placa).toBe('XYZ9999');
+    expect(component.formatarPlaca('abc1d23')).toBe('ABC-1D23');
+    expect(component.quilometragem(123456)).toBe('123.456');
+    expect(component.quilometragem(0)).toBe('0');
+  });
   it('exibe a placa histórica sem substituir pelo cadastro atual', () => {
     const r = resposta(); r.registros.push({ tipo: 'ATENDIMENTO', id: 7, codigo: 'AT-7', data: '2026-09-30T10:00:00', status: 'ENTREGUE', placa: 'ABC1234', fabricante: 'Toyota', modelo: 'Corolla', cor: 'Preto', anoModeloCombustivel: '2020 Flex', veiculoPreservado: true, kmEntrada: 0, kmSaida: 10, queixa: null, diagnostico: null, execucao: null, recomendacoes: null, valor: 100, finalizado: true, itens: [] });
     component.relatorio = r; fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.record-vehicle').textContent).toContain('ABC1234');
-    expect(fixture.nativeElement.querySelector('.vehicle-heading').textContent).toContain('XYZ9999');
+    expect(fixture.nativeElement.querySelector('.record-vehicle').textContent).toContain('ABC-1234');
+    expect(fixture.nativeElement.querySelector('.vehicle-heading').textContent).toContain('XYZ-9999');
     expect(fixture.nativeElement.querySelector('.record-metrics').textContent).toContain('0');
   });
   it('exporta o relatório completo com os mesmos filtros da consulta', () => {

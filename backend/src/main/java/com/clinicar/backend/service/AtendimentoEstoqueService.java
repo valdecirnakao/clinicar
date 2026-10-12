@@ -18,6 +18,8 @@ import java.util.List;
 @Slf4j
 @Service
 public class AtendimentoEstoqueService {
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private VersaoEstoqueService versaoEstoque;
 
     private final AtendimentoPecaUtilizadaRepository atendimentoPecaUtilizadaRepository;
     private final EstoquePecaRepository estoquePecaRepository;
@@ -142,6 +144,7 @@ public class AtendimentoEstoqueService {
 
         atualizarStatusEstoquePeloDisponivel(estoque);
 
+        if(versaoEstoque!=null)versaoEstoque.registrarAlteracao(estoque.getId());
         EstoquePeca estoqueSalvo = estoquePecaRepository.save(estoque);
 
         if (item.getEstoquePeca() == null || item.getEstoquePeca().getId() == null) {
@@ -202,6 +205,9 @@ public class AtendimentoEstoqueService {
         movimentacao.setValorUnitario(valorUnitario);
         movimentacao.setValorTotal(valorTotal);
         movimentacao.setOrigem("ATENDIMENTO");
+        movimentacao.setIdAtendimento(atendimento.getId());
+        movimentacao.setCustoUnitarioEstoque(estoque.getCustoMedio());
+        com.clinicar.backend.util.AutorMovimentacao.registrar(movimentacao);
         movimentacao.setDocumentoReferencia(atendimento.getCodigoAtendimento());
         movimentacao.setObservacoes("Baixa automática ao concluir atendimento ID " + atendimento.getId());
         movimentacao.setCriadoEm(LocalDateTime.now());
@@ -249,6 +255,7 @@ public class AtendimentoEstoqueService {
             BigDecimal quantidadeUtilizada
     ) {
         if (item.getEstoquePeca() != null && item.getEstoquePeca().getId() != null) {
+            if(versaoEstoque!=null)versaoEstoque.bloquear(item.getEstoquePeca().getId());
             return estoquePecaRepository.buscarPorIdComLock(item.getEstoquePeca().getId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Estoque vinculado à peça utilizada não foi encontrado."
@@ -276,6 +283,7 @@ public class AtendimentoEstoqueService {
                 continue;
             }
 
+            if(versaoEstoque!=null)versaoEstoque.bloquear(estoqueCandidato.getId());
             EstoquePeca estoqueComLock = estoquePecaRepository.buscarPorIdComLock(estoqueCandidato.getId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Estoque da peça utilizada não foi encontrado."

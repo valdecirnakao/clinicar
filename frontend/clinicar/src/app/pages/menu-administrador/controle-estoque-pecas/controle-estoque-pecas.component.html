@@ -1,0 +1,1546 @@
+<div class="container-fluid mt-0 mb-0 estoque-page" style="color:#35689b; max-height: 80vh;">
+  <div class="row justify-content-center">
+    <div class="col-md-12 mt-sm-0">
+
+      <div class="row mt-0">
+        <div class="col text-center mb-2">
+          <div class="card clinicar-title-card">
+            <div class="card-body py-3">
+              <i class="bi bi-box-seam me-1"></i>
+              Controle de Estoque de Peças e Insumos
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2 summary-row">
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="card resumo-card">
+            <div class="card-body py-2">
+              <div class="small">Total</div>
+              <div class="fs-5 fw-bold">{{ resumo.total }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="card resumo-card resumo-normal">
+            <div class="card-body py-2">
+              <div class="small">Normal</div>
+              <div class="fs-5 fw-bold">{{ resumo.normal }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="card resumo-card resumo-atencao">
+            <div class="card-body py-2">
+              <div class="small">Atenção</div>
+              <div class="fs-5 fw-bold">{{ resumo.atencao }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="card resumo-card resumo-critico">
+            <div class="card-body py-2">
+              <div class="small">Crítico</div>
+              <div class="fs-5 fw-bold">{{ resumo.critico }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <div class="card resumo-card resumo-zerado">
+            <div class="card-body py-2">
+              <div class="small">Zerado</div>
+              <div class="fs-5 fw-bold">{{ resumo.zerado }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4 col-6">
+          <button type="button" class="card resumo-card resumo-alerta w-100 text-start"
+            (click)="abrirModalAlertas()" (keydown.enter)="abrirModalAlertas()" (keyup.space)="abrirModalAlertas()">
+            <div class="card-body py-2">
+              <div class="small">Alertas Abertos</div>
+              <div class="fs-5 fw-bold">{{ resumo.alertasAbertos }}</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="card clinicar-card estoque-list-card" style="color:#35689b;">
+        <div class="card-body estoque-list-body">
+
+          <div class="row g-2 align-items-end mb-2 toolbar-filters">
+            <div class="col-lg-3 col-md-12">
+              <label class="form-label fw-bold" for="filtro-estoque">Buscar</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input id="filtro-estoque" type="search" class="form-control"
+                  placeholder="Peça, fabricante, modelo, local ou localização..." [(ngModel)]="filtroTexto"
+                  (ngModelChange)="aoAlterarFiltros()" />
+              </div>
+            </div>
+
+            <div class="col-lg-1 col-md-4">
+              <label class="form-label fw-bold" for="filtro-status">Status</label>
+              <select id="filtro-status" class="form-select" [(ngModel)]="filtroStatus"
+                (ngModelChange)="aoAlterarFiltros()">
+                @for (s of statusFiltro; track s) {
+                  <option [ngValue]="s">
+                    {{ s ? formatarStatus(s) : 'Todos' }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="col-lg-2 col-md-4">
+              <label class="form-label fw-bold" for="filtro-local">Local</label>
+              <select id="filtro-local" class="form-select" [(ngModel)]="filtroLocal"
+                (ngModelChange)="aoAlterarFiltros()">
+                <option value="">Todos os locais</option>
+                @for (local of locaisDisponiveisFiltro; track local) {
+                  <option [value]="local">
+                    {{ local }}
+                  </option>
+                }
+              </select>
+            </div>
+            <div class="col-lg-1 col-md-4">
+              <button class="btn btn-outline-secondary btn-md btn-limpar-filtros" type="button" [disabled]="!possuiFiltrosAplicados"
+                (click)="limparFiltros()">
+                <i class="bi bi-eraser me-1"></i>
+                Limpar Filtros
+              </button>
+            </div>
+
+            <div class="col-lg-5 col-md-4">
+              <div class="toolbar-actions">
+                <button class="btn btn-primary btn-md" type="button" (click)="abrirModalCadastro()">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Novo Controle
+                </button>
+
+                <button class="btn btn-outline-primary btn-md" type="button" (click)="abrirModalNovoLocal()">
+                  <i class="bi bi-geo-alt me-1"></i>
+                  Novo Local
+                </button>
+
+                <button class="btn btn-outline-warning btn-md" type="button" (click)="abrirModalAlertas()">
+                  <i class="bi bi-bell me-1"></i>
+                  Alertas
+                </button>
+
+                <button class="btn btn-outline-primary btn-md" type="button" (click)="recarregar()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>
+                  Atualizar
+                </button>
+
+                <button class="btn btn-outline-secondary btn-md" type="button" (click)="voltar()">
+                  <i class="bi bi-arrow-left me-1"></i>
+                  Voltar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          @if (possuiFiltrosAplicados) {
+            <div class="filter-chip-area mb-2">
+              @if (filtroTexto) {
+                <span class="filter-chip">
+                  Busca: {{ filtroTexto }}
+                  <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+                </span>
+              }
+              @if (filtroStatus) {
+                <span class="filter-chip">
+                  Status: {{ formatarStatus(filtroStatus) }}
+                  <button type="button" (click)="filtroStatus = ''; aoAlterarFiltros()"
+                  aria-label="Remover status">×</button>
+                </span>
+              }
+              @if (filtroLocal) {
+                <span class="filter-chip">
+                  Local: {{ filtroLocal }}
+                  <button type="button" (click)="filtroLocal = ''; aoAlterarFiltros()" aria-label="Remover local">×</button>
+                </span>
+              }
+            </div>
+          }
+
+          @if (loading) {
+            <div class="alert alert-info py-2 mb-2">
+              <i class="bi bi-hourglass-split me-1"></i>
+              Carregando controle de estoque…
+            </div>
+          }
+
+          @if (!loading && errorMsg) {
+            <div class="alert alert-danger py-2 mb-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ errorMsg }}
+            </div>
+          }
+
+          @if (!loading) {
+            <div class="estoque-table-shell">
+              <div class="estoque-table-scroll">
+                <table class="table table-hover align-middle table-compact table-sticky-header">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable" tabindex="0" (click)="ordenarPor('nomePeca')"
+                        (keydown.enter)="ordenarPor('nomePeca')">
+                        Peça <i class="bi ms-1" [ngClass]="iconeOrdenacao('nomePeca')"></i>
+                      </th>
+                      <th scope="col" class="sortable" tabindex="0" (click)="ordenarPor('fabricantePeca')"
+                        (keydown.enter)="ordenarPor('fabricantePeca')">
+                        Fabricante / Modelo <i class="bi ms-1" [ngClass]="iconeOrdenacao('fabricantePeca')"></i>
+                      </th>
+                      <!-- cspell:disable -->
+                      <th scope="col" class="sortable" tabindex="0" (click)="ordenarPor('nomeLocalEstoque')"
+                        (keydown.enter)="ordenarPor('nomeLocalEstoque')">
+                        Local <i class="bi ms-1" [ngClass]="iconeOrdenacao('nomeLocalEstoque')"></i>
+                      </th>
+                      <!-- cspell:enable -->
+                      <th scope="col" class="sortable text-end" tabindex="0" (click)="ordenarPor('quantidadeAtual')"
+                        (keydown.enter)="ordenarPor('quantidadeAtual')">
+                        Atual <i class="bi ms-1" [ngClass]="iconeOrdenacao('quantidadeAtual')"></i>
+                      </th>
+                      <!-- cspell:disable-next-line -->
+                      <th scope="col" class="sortable text-end" tabindex="0" (click)="ordenarPor('quantidadeReservada')"
+                        (keydown.enter)="ordenarPor('quantidadeReservada')">
+                        Reservada <i class="bi ms-1" [ngClass]="iconeOrdenacao('quantidadeReservada')"></i>
+                      </th>
+                      <th scope="col" class="sortable" tabindex="0" (click)="ordenarPor('estoqueMinimo')"
+                        (keydown.enter)="ordenarPor('estoqueMinimo')">
+                        Mín. / Crít. <i class="bi ms-1" [ngClass]="iconeOrdenacao('estoqueMinimo')"></i>
+                      </th>
+                      <!-- cspell:disable-next-line -->
+                      <th scope="col" class="sortable" tabindex="0" (click)="ordenarPor('custoMedio')"
+                        (keydown.enter)="ordenarPor('custoMedio')">
+                        Custo Médio <i class="bi ms-1" [ngClass]="iconeOrdenacao('custoMedio')"></i>
+                      </th>
+                      <th scope="col" class="sortable" tabindex="0" (click)="ordenarPor('statusEstoque')"
+                        (keydown.enter)="ordenarPor('statusEstoque')">
+                        Status <i class="bi ms-1" [ngClass]="iconeOrdenacao('statusEstoque')"></i>
+                      </th>
+                      <th scope="col" class="text-center">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of estoquesPaginados; track trackByEstoque($index, item)) {
+                      <tr
+                        [class.estoque-row-alerta]="statusCalculadoEstoque(item) === 'CRITICO' || statusCalculadoEstoque(item) === 'ZERADO'">
+                        <td>
+                          <div class="fw-semibold">{{ item?.nomePeca || '—' }}</div>
+                          <small>{{ unidadeEstoque(item) }}</small>
+                        </td>
+                        <td>
+                          <div>{{ item?.fabricantePeca || '—' }}</div>
+                          <small>{{ item?.modeloPeca || 'Sem modelo informado' }}</small>
+                        </td>
+                        <td>
+                          <div>{{ item?.nomeLocalEstoque || '—' }}</div>
+                          <small>{{ $any(item).localizacaoFisica || 'Localização não informada' }}</small>
+                        </td>
+                        <td class="text-end fw-semibold">
+                          <div class="estoque-qtd-principal">{{ formatarQuantidade(quantidadeAtualEstoque(item),
+                          unidadeEstoque(item)) }}</div>
+                          <div class="estoque-progress mt-1">
+                            <div class="estoque-progress-bar" [style.width.%]="percentualSaldoMinimo(item)"></div>
+                          </div>
+                        </td>
+                        <td class="text-end">
+                          <div class="estoque-qtd-principal"
+                            [class.estoque-reserva-alerta]="quantidadeReservadaEstoque(item) > 0">{{
+                          formatarQuantidade(quantidadeReservadaEstoque(item), unidadeEstoque(item)) }}</div>
+                          <small class="estoque-qtd-secundaria">Disp.: {{
+                          formatarQuantidade(quantidadeDisponivelEstoque(item), unidadeEstoque(item)) }}</small>
+                        </td>
+                        <td>
+                          <div>Mín.: {{ formatarQuantidade(item.estoqueMinimo, unidadeEstoque(item)) }}</div>
+                          <small>Crít.: {{ formatarQuantidade(item.estoqueCritico, unidadeEstoque(item)) }}</small>
+                        </td>
+                        <td>{{ formatarMoedaBR(item.custoMedio) || '—' }}</td>
+                        <td>
+                          <span class="badge" [ngClass]="statusBadgeClass(statusCalculadoEstoque(item))">
+                            {{ formatarStatus(statusCalculadoEstoque(item)) }}
+                          </span>
+                          <div>
+                            <small>{{ item.ativo === false ? 'Cadastro inativo' : 'Cadastro ativo' }}</small>
+                          </div>
+                        </td>
+                        <td class="text-center">
+                          <div class="btn-group btn-group-sm flex-wrap actions-group" style="gap: 0.25rem;">
+                            <button class="btn btn-outline-info" type="button" title="Visualizar detalhes"
+                              (click)="abrirDetalhes(item)">
+                              <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-success" type="button" title="Entrada"
+                              (click)="abrirModalMovimentacao(item, 'ENTRADA')">
+                              <i class="bi bi-box-arrow-in-down"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" type="button" title="Saída"
+                              (click)="abrirModalMovimentacao(item, 'SAIDA')">
+                              <i class="bi bi-box-arrow-up"></i>
+                            </button>
+                            <button class="btn btn-outline-warning" type="button" title="Ajuste"
+                              (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')">
+                              <i class="bi bi-sliders"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" title="Histórico"
+                              (click)="abrirModalMovimentacoes(item)">
+                              <i class="bi bi-clock-history"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" type="button" title="Editar"
+                              (click)="abrirModalEdicao(item)">
+                              <i class="bi bi-pencil-square"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                    @if (totalRegistrosFiltrados === 0) {
+                      <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                          Nenhum controle de estoque encontrado.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (totalRegistrosFiltrados > 0) {
+                <div class="table-pagination-footer">
+<app-paginacao [pagina]="paginaAtual-1" [tamanho]="itensPorPagina" [total]="totalRegistrosFiltrados" [carregando]="loading" [tamanhos]="opcoesItensPorPagina" (paginaChange)="irParaPagina($event+1)" (tamanhoChange)="itensPorPagina=$event;aoAlterarItensPorPagina()" />
+</div>
+              }
+            </div>
+          }
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cadastro -->
+<div class="modal fade" id="modalCadastroEstoquePeca" [appValidarDuplicidade]="{ tipo: 'estoque', model: novoEstoque, id: null, campos: { peca: '#peca-insumo', local: '#local-estoque' } }" (duplicidadeChange)="registrarDuplicidade($event)" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered estoque-modal-dialog">
+    <div class="modal-content estoque-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-plus-circle me-1"></i>
+            Novo Controle de Estoque
+          </h5>
+          <small>
+            {{ novoEstoque.nomePeca || 'Peça não selecionada' }} · {{ novoEstoque.nomeLocalEstoque || 'Local não selecionado' }}
+          </small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body estoque-modal-body">
+        <div class="estoque-modal-tabs-area">
+          @if (mensagemErroModal) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+          }
+
+          <div
+            class="progress cadastro-progress mb-3"
+            role="progressbar"
+            aria-label="Progresso do cadastro"
+            [attr.aria-valuenow]="progressoCadastroEstoque"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            >
+            <div
+              class="progress-bar cadastro-progress-bar"
+              [style.width.%]="progressoCadastroEstoque"
+              >
+              {{ progressoCadastroEstoque }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button data-help-guia="identificacao" [disabled]="!podeAcessarAbaCadastro('identificacao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'identificacao'"
+                (click)="trocarAbaCadastroEstoque('identificacao')">
+                <i class="bi bi-box-seam me-1"></i>
+                Identificação
+                @if (identificacaoEstoquePendente(novoEstoque, true)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="quantidades" [disabled]="!podeAcessarAbaCadastro('quantidades')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'quantidades'"
+                (click)="trocarAbaCadastroEstoque('quantidades')">
+                <i class="bi bi-123 me-1"></i>
+                Quantidades
+                @if (quantidadesEstoquePendentes(novoEstoque)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="reposicao" [disabled]="!podeAcessarAbaCadastro('reposicao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'reposicao'"
+                (click)="trocarAbaCadastroEstoque('reposicao')">
+                <i class="bi bi-graph-up-arrow me-1"></i>
+                Reposição e custo
+                @if (reposicaoEstoquePendente(novoEstoque)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+            <li class="nav-item">
+              <button data-help-guia="revisao" [disabled]="!podeAcessarAbaCadastro('revisao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroEstoque === 'revisao'"
+                (click)="trocarAbaCadastroEstoque('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="estoque-modal-scroll-area">
+          @if (pecaContinuidade) {
+            <div class="alert alert-info" role="status">
+              Continue o cadastro do estoque de <strong>{{ pecaContinuidade.nome }}</strong>, a peça vinculada ao fornecimento. Defina o local e informe o saldo físico real e os limites de reposição.
+            </div>
+          }
+          @if (estoquesDaPeca.length) {
+            <div class="alert alert-warning" role="status">
+              Esta peça já possui controle de estoque. Consulte um controle existente ou escolha outro local para cadastrar.
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                @for (estoque of estoquesDaPeca; track estoque) {
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="consultarEstoqueExistente(estoque)">
+                    <i class="bi bi-eye me-1"></i>{{ estoque.nomeLocalEstoque || 'Consultar controle existente' }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+          @if (abaCadastroEstoque === 'identificacao') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-box-seam me-1"></i>
+                Peça e local de estoque
+              </div>
+              <div class="row g-3">
+                <div class="col-md-7">
+                  <label class="form-label" for="peca-insumo">Peça / insumo *</label>
+                  <div class="input-group">
+                    <input id="peca-insumo" class="form-control"
+                      [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'idPeca', true)"
+                      [value]="pecaTexto(novoEstoque)" readonly placeholder="Selecione uma peça ou insumo" />
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!!pecaContinuidade" (click)="abrirModalPeca('cadastro')">
+                      <i class="bi bi-search me-1"></i>
+                      Selecionar
+                    </button>
+                  </div>
+                  @if (estoqueCampoInvalido(novoEstoque, 'idPeca', true)) {
+                    <div class="invalid-feedback d-block">
+                    Selecione a peça ou insumo.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="local-estoque">Local de Estoque *</label>
+                  <select id="local-estoque" class="form-select" [(ngModel)]="novoEstoque.idLocalEstoque"
+                    (ngModelChange)="atualizarNomeLocalCadastro()"
+                    [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)">
+                    <option [ngValue]="undefined">Selecione...</option>
+                    @for (local of locais; track trackByLocal($index, local)) {
+                      <option [ngValue]="local.id" [disabled]="localJaCadastrado(local.id)">
+                        {{ local.nome }}
+                      </option>
+                    }
+                  </select>
+                  @if (estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)) {
+                    <div class="invalid-feedback d-block"
+                    >Selecione um local sem controle cadastrado para esta peça.</div>
+                  }
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label invisible d-none d-md-block" for="btn-local-estoque" aria-hidden="true">
+                    Local
+                  </label>
+                  <button id="btn-local-estoque" type="button" class="btn btn-outline-primary w-100 btn-local-estoque"
+                    (click)="abrirModalNovoLocal()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Local
+                  </button>
+                </div>
+                <div class="col-md-12">
+                  <div class="preview-card">
+                    <div class="preview-title">Prévia do controle</div>
+                    <div class="preview-main">{{ novoEstoque.nomePeca || 'Peça não selecionada' }}</div>
+                    <div class="preview-sub">
+                      {{ novoEstoque.fabricantePeca || 'Fabricante não informado' }}
+                      @if (novoEstoque.modeloPeca) {
+                        <span> / {{ novoEstoque.modeloPeca }}</span>
+                      }
+                      @if (unidadeEstoque(novoEstoque)) {
+                        <span> · Unidade: {{ unidadeEstoque(novoEstoque) }}</span>
+                      }
+                      @if (novoEstoque?.nomeLocalEstoque) {
+                        <span> · Local: {{ novoEstoque?.nomeLocalEstoque }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroEstoque === 'quantidades') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-123 me-1"></i>
+                Quantidades e limites mínimos
+              </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="quantidade-atual">Quantidade Atual *</label>
+                  <input id="quantidade-atual" data-help="Saldo físico atualmente disponível no estoque. Para movimentações normais, prefira registrar entradas e saídas para manter o histórico auditável." class="form-control" [(ngModel)]="novoEstoque.quantidadeAtual"
+                    [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)" placeholder="0" />
+                  @if (estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)) {
+                    <div class="invalid-feedback d-block"
+                    >Informe um valor válido.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="quantidade-reservada">Quantidade Reservada *</label>
+                  <input id="quantidade-reservada" data-help="Quantidade já comprometida com agendamentos ou atendimentos e, portanto, indisponível para novos usos." class="form-control" [(ngModel)]="novoEstoque.quantidadeReservada"
+                    [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'quantidadeReservada', false)"
+                    placeholder="0" />
+                  @if (estoqueCampoInvalido(novoEstoque, 'quantidadeReservada', false)) {
+                    <div class="invalid-feedback d-block"
+                      >Informe um valor válido.
+                    </div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="estoque-minimo">Estoque Mínimo *</label>
+                  <input id="estoque-minimo" data-help="Limite de atenção do estoque. Quando o saldo disponível atingir ou ficar abaixo deste valor, o item deve entrar em atenção para reposição." class="form-control" [(ngModel)]="novoEstoque.estoqueMinimo"
+                    [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'estoqueMinimo', false)"
+                    placeholder="Ex.: 5" />
+                  @if (estoqueCampoInvalido(novoEstoque, 'estoqueMinimo', false)) {
+                    <div class="invalid-feedback d-block"
+                    >Informe o mínimo.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="estoque-critico">Estoque Crítico *</label>
+                  <input id="estoque-critico" data-help="Limite crítico do estoque. Deve ser menor ou igual ao estoque mínimo e representa uma situação de reposição urgente." class="form-control" [(ngModel)]="novoEstoque.estoqueCritico"
+                    [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'estoqueCritico', false)"
+                    placeholder="Ex.: 2" />
+                  @if (estoqueCampoInvalido(novoEstoque, 'estoqueCritico', false)) {
+                    <div class="invalid-feedback d-block"
+                    >Informe o crítico.</div>
+                  }
+                </div>
+                <div class="col-12">
+                  <div class="alert alert-light border mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    O status será calculado automaticamente com base na quantidade atual, estoque mínimo e estoque
+                    crítico.
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroEstoque === 'reposicao') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-graph-up-arrow me-1"></i>
+                Reposição, custo e localização
+              </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="estoque-maximo">Estoque Máximo</label>
+                  <input id="estoque-maximo" data-help="Limite superior desejado após a reposição. É usado para planejamento e não altera o saldo atual. Deve ser maior ou igual ao estoque mínimo." class="form-control" [(ngModel)]="$any(novoEstoque).estoqueMaximo"
+                    placeholder="Ex.: 30" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="ponto-reposicao">Ponto de Reposição</label>
+                  <input id="ponto-reposicao" data-help="Saldo em que uma nova compra ou reposição deve ser iniciada para evitar falta do item." class="form-control" [(ngModel)]="$any(novoEstoque).pontoReposicao"
+                    placeholder="Ex.: 6" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="quantidade-reposicao-sugerida">Qtd. Reposição Sugerida</label>
+                  <input id="quantidade-reposicao-sugerida" data-help="Quantidade normalmente recomendada em uma compra de reposição. É uma referência e não movimenta o estoque automaticamente." class="form-control"
+                    [(ngModel)]="$any(novoEstoque).quantidadeReposicaoSugerida" placeholder="Ex.: 15" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="custo-medio">
+                    Custo Médio @if (custoMedioObrigatorio(novoEstoque)) {
+                    <span>*</span>
+                  }
+                </label>
+                <input id="custo-medio" data-help="Custo médio unitário do item. É obrigatório quando a quantidade atual for maior que zero." class="form-control"
+                  [(ngModel)]="novoEstoque.custoMedio" (blur)="formatarCustoMedioCadastro()"
+                  [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'custoMedio', false)"
+                  [attr.aria-required]="custoMedioObrigatorio(novoEstoque)" placeholder="R$ 0,00" />
+                @if (estoqueCampoInvalido(novoEstoque, 'custoMedio', false)) {
+                  <div class="invalid-feedback d-block"
+                    >
+                    Informe o custo médio quando houver estoque inicial.
+                  </div>
+                }
+                <small class="text-muted">Obrigatório quando a quantidade atual for maior que zero.</small>
+              </div>
+              <div class="col-md-9">
+                <label class="form-label" for="localizacao-fisica">Localização Física</label>
+                <input id="localizacao-fisica" class="form-control" [(ngModel)]="$any(novoEstoque).localizacaoFisica"
+                  placeholder="Ex.: Prateleira A1" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="status-cadastro">Status do Cadastro</label>
+                <select id="status-cadastro" class="form-select" [(ngModel)]="novoEstoque.ativo">
+                  <option [ngValue]="true">Ativo</option>
+                  <option [ngValue]="false">Inativo</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (abaCadastroEstoque === 'revisao') {
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="review-card h-100">
+                <div class="review-label">Identificação</div>
+                <div class="review-main">{{ novoEstoque.nomePeca || '—' }}</div>
+                <div class="details-line">Fabricante/modelo: {{ novoEstoque.fabricantePeca || '—' }} @if (novoEstoque.modeloPeca) {
+                  <span
+                  >/ {{ novoEstoque.modeloPeca }}</span>
+                }</div>
+                <div class="details-line">Local: {{ novoEstoque?.nomeLocalEstoque || '—' }}</div>
+                <div class="details-line">Localização física: {{ $any(novoEstoque).localizacaoFisica || '—' }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="review-card h-100">
+                <div class="review-label">Quantidades</div>
+                <div class="details-line">Atual: {{ formatarQuantidade(novoEstoque.quantidadeAtual,
+                unidadeEstoque(novoEstoque)) }}</div>
+                <div class="details-line">Reservada: {{ formatarQuantidade(novoEstoque.quantidadeReservada,
+                unidadeEstoque(novoEstoque)) }}</div>
+                <div class="details-line">Mínimo: {{ formatarQuantidade(novoEstoque.estoqueMinimo,
+                unidadeEstoque(novoEstoque)) }}</div>
+                <div class="details-line">Crítico: {{ formatarQuantidade(novoEstoque.estoqueCritico,
+                unidadeEstoque(novoEstoque)) }}</div>
+              </div>
+            </div>
+            <div class="col-md-12">
+              <div class="review-card">
+                <div class="review-label">Reposição e custo</div>
+                <div class="row g-2">
+                  <div class="col-md-3">Máximo: <strong>{{ formatarQuantidade($any(novoEstoque).estoqueMaximo,
+                  unidadeEstoque(novoEstoque)) }}</strong></div>
+                  <div class="col-md-3">Ponto de reposição: <strong>{{
+                  formatarQuantidade($any(novoEstoque).pontoReposicao, unidadeEstoque(novoEstoque)) }}</strong></div>
+                  <div class="col-md-3">Qtd. sugerida: <strong>{{
+                    formatarQuantidade($any(novoEstoque).quantidadeReposicaoSugerida, unidadeEstoque(novoEstoque))
+                  }}</strong></div>
+                  <div class="col-md-3">Custo médio: <strong>{{ formatarMoedaBR(novoEstoque.custoMedio) || '—'
+                  }}</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="modal-footer modal-footer-totais">
+      <div class="me-auto footer-validation-message" [class.footer-ok]="cadastroEstoqueProntoParaSalvar">
+        <i class="bi" [class.bi-info-circle]="!cadastroEstoqueProntoParaSalvar"
+        [class.bi-check-circle]="cadastroEstoqueProntoParaSalvar"></i>
+        {{ mensagemBloqueioCadastro || 'Cadastro pronto para salvar.' }}
+      </div>
+
+      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      @if (abaCadastroEstoque !== 'identificacao') {
+        <button type="button" class="btn btn-outline-primary"
+        (click)="voltarAbaCadastroEstoque()">Anterior</button>
+      }
+      @if (abaCadastroEstoque !== 'revisao') {
+        <button [disabled]="!podeAvancarCadastro" type="button" class="btn btn-primary"
+        (click)="avancarAbaCadastroEstoque()">Próximo</button>
+      }
+      @if (abaCadastroEstoque === 'revisao') {
+        <button type="button" class="btn btn-primary"
+          [disabled]="salvandoCadastro || !cadastroEstoqueProntoParaSalvar" [title]="mensagemBloqueioCadastro || 'Salvar controle'"
+          (click)="salvarNovoEstoque()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar Controle
+        </button>
+      }
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Modal Edição -->
+<div class="modal fade" id="modalEdicaoEstoquePeca" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered estoque-modal-dialog">
+    <div class="modal-content estoque-modal-content estoque-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar Controle de Estoque
+          </h5>
+          <small>
+            ID #{{ editId || '—' }} · {{ edit.nomePeca || 'Peça não informada' }} · {{ edit?.nomeLocalEstoque || 'Local não informado' }}
+          </small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body estoque-modal-body">
+        <div class="estoque-modal-tabs-area">
+          @if (mensagemErroModal) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+          }
+
+          <div
+            class="progress cadastro-progress mb-3"
+            role="progressbar"
+            aria-label="Progresso da edição"
+            [attr.aria-valuenow]="progressoEdicaoEstoque"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            >
+            <div
+              class="progress-bar cadastro-progress-bar"
+              [style.width.%]="progressoEdicaoEstoque"
+              >
+              {{ progressoEdicaoEstoque }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item"><button data-help-guia="identificacao" class="nav-link" type="button"
+              [class.active]="abaEdicaoEstoque === 'identificacao'"
+              (click)="trocarAbaEdicaoEstoque('identificacao')"><i
+            class="bi bi-box-seam me-1"></i>Identificação</button></li>
+            <li class="nav-item"><button data-help-guia="quantidades" class="nav-link" type="button"
+              [class.active]="abaEdicaoEstoque === 'quantidades'" (click)="trocarAbaEdicaoEstoque('quantidades')"><i
+            class="bi bi-123 me-1"></i>Quantidades @if (quantidadesEstoquePendentes(edit)) {
+            <span class="tab-alert"
+            >!</span>
+          }</button></li>
+          <li class="nav-item"><button data-help-guia="reposicao" class="nav-link" type="button"
+            [class.active]="abaEdicaoEstoque === 'reposicao'" (click)="trocarAbaEdicaoEstoque('reposicao')"><i
+          class="bi bi-graph-up-arrow me-1"></i>Reposição e custo @if (reposicaoEstoquePendente(edit)) {
+          <span class="tab-alert"
+          >!</span>
+        }</button></li>
+        <li class="nav-item"><button data-help-guia="revisao" class="nav-link" type="button" [class.active]="abaEdicaoEstoque === 'revisao'"
+          (click)="trocarAbaEdicaoEstoque('revisao')"><i class="bi bi-clipboard-check me-1"></i>Revisão</button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="estoque-modal-scroll-area">
+      @if (abaEdicaoEstoque === 'identificacao') {
+        <div class="section-card">
+          <div class="section-card-title"><i class="bi bi-box-seam me-1"></i>Identificação vinculada</div>
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label" for="peca-insumo-edit">Peça / insumo</label>
+              <input id="peca-insumo-edit" class="form-control" [value]="pecaTexto(edit)" readonly />
+              <small class="text-muted">A peça vinculada ao controle não deve ser alterada após a criação. Crie um
+              novo controle caso precise vincular outro item.</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="local-estoque-edit">Local de Estoque</label>
+              <input id="local-estoque-edit" class="form-control" [value]="edit?.nomeLocalEstoque || ''" readonly />
+            </div>
+            <div class="col-md-12">
+              <div class="preview-card">
+                <div class="preview-title">Prévia</div>
+                <div class="preview-main">{{ edit.nomePeca || '—' }}</div>
+                <div class="preview-sub">{{ edit.fabricantePeca || '—' }} @if (edit.modeloPeca) {
+                  <span>/ {{
+                  edit.modeloPeca }}</span>
+                } · {{ edit?.nomeLocalEstoque || 'Sem local' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (abaEdicaoEstoque === 'quantidades') {
+        <div class="section-card">
+          <div class="section-card-title"><i class="bi bi-123 me-1"></i>Quantidades e limites</div>
+          <div class="row g-3">
+            <div class="col-md-3"><label class="form-label" for="quantidade-atual-edit">Quantidade Atual
+            *</label><input id="quantidade-atual-edit" data-help="Saldo físico atual. Alterações de saldo devem preferencialmente ser feitas por movimentações de entrada, saída ou ajuste para preservar o histórico." class="form-control" [(ngModel)]="edit.quantidadeAtual"
+            [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeAtual', false)" />
+          @if (estoqueCampoInvalido(edit, 'quantidadeAtual', false)) {
+            <div class="invalid-feedback d-block">
+            Informe um valor válido.</div>
+            }<small class="text-muted">Use movimentação para entrada/saída
+          normal.</small>
+        </div>
+        <div class="col-md-3"><label class="form-label" for="quantidade-reservada-edit">Quantidade Reservada
+        *</label><input id="quantidade-reservada-edit" data-help="Quantidade comprometida com reservas. Em uma evolução do controle, este saldo deve ser administrado automaticamente pelas reservas do sistema." class="form-control"
+        [(ngModel)]="edit.quantidadeReservada"
+        [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeReservada', false)" />
+      @if (estoqueCampoInvalido(edit, 'quantidadeReservada', false)) {
+        <div class="invalid-feedback d-block"
+        >Informe um valor válido.</div>
+      }
+    </div>
+    <div class="col-md-3"><label class="form-label" for="estoque-minimo-edit">Estoque Mínimo *</label><input
+    id="estoque-minimo-edit" data-help="Limite de atenção do estoque. Quando o saldo disponível atingir ou ficar abaixo deste valor, o item deve entrar em atenção para reposição." class="form-control" [(ngModel)]="edit.estoqueMinimo"
+    [class.is-invalid]="estoqueCampoInvalido(edit, 'estoqueMinimo', false)" />
+  @if (estoqueCampoInvalido(edit, 'estoqueMinimo', false)) {
+    <div class="invalid-feedback d-block">
+    Informe o mínimo.</div>
+  }
+</div>
+<div class="col-md-3"><label class="form-label" for="estoque-critico-edit">Estoque Crítico
+*</label><input id="estoque-critico-edit" data-help="Limite crítico do estoque. Deve ser menor ou igual ao estoque mínimo e indica reposição urgente." class="form-control" [(ngModel)]="edit.estoqueCritico"
+[class.is-invalid]="estoqueCampoInvalido(edit, 'estoqueCritico', false)" />
+@if (estoqueCampoInvalido(edit, 'estoqueCritico', false)) {
+  <div class="invalid-feedback d-block">
+  Informe o crítico.</div>
+}
+</div>
+</div>
+</div>
+}
+
+@if (abaEdicaoEstoque === 'reposicao') {
+  <div class="section-card">
+    <div class="section-card-title">
+      <i class="bi bi-graph-up-arrow me-1"></i>
+      Reposição, custo e localização
+    </div>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label" for="estoque-maximo-edit">Estoque Máximo</label>
+        <input id="estoque-maximo-edit" data-help="Limite superior desejado após reposição. Não representa o saldo atual e deve ser maior ou igual ao estoque mínimo." class="form-control" [(ngModel)]="$any(edit).estoqueMaximo"
+          placeholder="Ex.: 30" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="ponto-reposicao-edit">Ponto de Reposição</label>
+        <input id="ponto-reposicao-edit" data-help="Saldo que deve disparar o planejamento de uma nova reposição do item." class="form-control" [(ngModel)]="$any(edit).pontoReposicao"
+          placeholder="Ex.: 6" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="quantidade-reposicao-edit">Qtd. Reposição Sugerida</label>
+        <input id="quantidade-reposicao-edit" data-help="Quantidade sugerida para a próxima reposição. Serve como referência de compra." class="form-control"
+          [(ngModel)]="$any(edit).quantidadeReposicaoSugerida" placeholder="Ex.: 15" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="custo-medio-edit">
+          Custo Médio @if (custoMedioObrigatorio(edit)) {
+          <span>*</span>
+        }
+      </label>
+      <input id="custo-medio-edit" data-help="Custo médio unitário do item. É obrigatório quando a quantidade atual for maior que zero." class="form-control"
+        [(ngModel)]="edit.custoMedio" (blur)="formatarCustoMedioEdicao()"
+        [class.is-invalid]="estoqueCampoInvalido(edit, 'custoMedio', false)"
+        [attr.aria-required]="custoMedioObrigatorio(edit)" placeholder="R$ 0,00" />
+      @if (estoqueCampoInvalido(edit, 'custoMedio', false)) {
+        <div class="invalid-feedback d-block"
+          >
+          Informe o custo médio quando houver estoque atual.
+        </div>
+      }
+      <small class="text-muted">Obrigatório quando a quantidade atual for maior que zero.</small>
+    </div>
+    <div class="col-md-9">
+      <label class="form-label" for="localizacao-fisica-edit">Localização Física</label>
+      <input id="localizacao-fisica-edit" class="form-control" [(ngModel)]="$any(edit).localizacaoFisica"
+        placeholder="Ex.: Prateleira A1" />
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="status-cadastro-edit">Status do Cadastro</label>
+      <select id="status-cadastro-edit" class="form-select" [(ngModel)]="edit.ativo">
+        <option [ngValue]="true">Ativo</option>
+        <option [ngValue]="false">Inativo</option>
+      </select>
+    </div>
+  </div>
+</div>
+}
+
+@if (abaEdicaoEstoque === 'revisao') {
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="review-card h-100">
+        <div class="review-label">Controle</div>
+        <div class="review-main">{{ edit.nomePeca || '—' }}</div>
+        <div class="details-line">Local: {{ edit?.nomeLocalEstoque || '—' }}</div>
+        <div class="details-line">Localização: {{ $any(edit).localizacaoFisica || '—' }}</div>
+        <div class="details-line">Cadastro: {{ edit.ativo === false ? 'Inativo' : 'Ativo' }}</div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="review-card h-100">
+        <div class="review-label">Saldo e limites</div>
+        <div class="details-line">Atual: {{ formatarQuantidade(edit.quantidadeAtual, unidadeEstoque(edit)) }}</div>
+        <div class="details-line">Reservada: {{ formatarQuantidade(edit.quantidadeReservada, unidadeEstoque(edit)) }}</div>
+        <div class="details-line">Disponível: {{ formatarQuantidade(saldoDisponivel(edit), unidadeEstoque(edit)) }}</div>
+        <div class="details-line">Mínimo: {{ formatarQuantidade(edit.estoqueMinimo, unidadeEstoque(edit)) }}</div>
+        <div class="details-line">Crítico: {{ formatarQuantidade(edit.estoqueCritico, unidadeEstoque(edit)) }}</div>
+      </div>
+    </div>
+    <div class="col-md-12">
+      <div class="review-card">
+        <div class="review-label">Reposição e custo</div>
+        <div class="row g-2">
+          <div class="col-md-3">
+            Máximo:
+            <strong>{{ formatarQuantidade($any(edit).estoqueMaximo, unidadeEstoque(edit)) }}</strong>
+          </div>
+          <div class="col-md-3">
+            Ponto de reposição:
+            <strong>{{ formatarQuantidade($any(edit).pontoReposicao, unidadeEstoque(edit)) }}</strong>
+          </div>
+          <div class="col-md-3">
+            Qtd. sugerida:
+            <strong>{{ formatarQuantidade($any(edit).quantidadeReposicaoSugerida, unidadeEstoque(edit)) }}</strong>
+          </div>
+          <div class="col-md-3">
+            Custo médio:
+            <strong>{{ formatarMoedaBR(edit.custoMedio) || '—' }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+</div>
+</div>
+
+<div class="modal-footer modal-footer-totais">
+  <div class="me-auto footer-validation-message" [class.footer-ok]="edicaoEstoqueProntaParaSalvar">
+    <i class="bi" [class.bi-info-circle]="!edicaoEstoqueProntaParaSalvar"
+    [class.bi-check-circle]="edicaoEstoqueProntaParaSalvar"></i>
+    {{ mensagemBloqueioEdicao || 'Alterações prontas para salvar.' }}
+  </div>
+  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+  @if (abaEdicaoEstoque !== 'identificacao') {
+    <button type="button" class="btn btn-outline-primary"
+    (click)="voltarAbaEdicaoEstoque()">Anterior</button>
+  }
+  @if (abaEdicaoEstoque !== 'revisao') {
+    <button type="button" class="btn btn-primary"
+    (click)="avancarAbaEdicaoEstoque()">Próximo</button>
+  }
+  @if (abaEdicaoEstoque === 'revisao') {
+    <button type="button" class="btn btn-primary"
+      [disabled]="!edicaoEstoqueProntaParaSalvar" [title]="mensagemBloqueioEdicao || 'Salvar alterações'"
+      (click)="salvarEdicao()"><i class="bi bi-check-circle me-1"></i>Salvar Alterações</button>
+    }
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="modalDetalhesEstoquePeca" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title"><i class="bi bi-eye me-1"></i>Detalhes do Estoque</h5>
+          <small>{{ estoqueDetalhes?.nomePeca || '—' }}</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        @if (estoqueDetalhes) {
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Peça / insumo</div>
+                <div class="details-line"><strong>Nome:</strong> {{ estoqueDetalhes?.nomePeca || '—' }}</div>
+                <div class="details-line"><strong>Fabricante:</strong> {{ $any(estoqueDetalhes).fabricantePeca || $any(estoqueDetalhes).fabricante || '—' }}
+              </div>
+              <div class="details-line"><strong>Modelo:</strong> {{ $any(estoqueDetalhes).modeloPeca || $any(estoqueDetalhes).modelo || '—' }}</div>
+              <div class="details-line"><strong>Unidade:</strong> {{ unidadeEstoque(estoqueDetalhes) }}</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="details-card h-100">
+              <div class="details-title">Localização</div>
+              <div class="details-line"><strong>Local:</strong> {{ estoqueDetalhes?.nomeLocalEstoque || '—' }}</div>
+              <div class="details-line"><strong>Localização física:</strong> {{
+            $any(estoqueDetalhes).localizacaoFisica || '—' }}</div>
+            <div class="details-line"><strong>Status:</strong> <span class="badge"
+            [ngClass]="statusBadgeClass(statusCalculadoEstoque(estoqueDetalhes))">{{
+          formatarStatus(statusCalculadoEstoque(estoqueDetalhes)) }}</span></div>
+        </div>
+      </div>
+      <div class="col-md-12">
+        <div class="details-card">
+          <div class="details-title">Quantidades</div>
+          <div class="row g-2">
+            <div class="col-md-3">Atual:<br><strong>{{ formatarQuantidade(quantidadeAtualEstoque(estoqueDetalhes),
+            unidadeEstoque(estoqueDetalhes)) }}</strong></div>
+            <div class="col-md-3">Reservada:<br><strong>{{
+              formatarQuantidade(quantidadeReservadaEstoque(estoqueDetalhes), unidadeEstoque(estoqueDetalhes))
+            }}</strong></div>
+            <div class="col-md-3">Disponível:<br><strong>{{
+              formatarQuantidade(quantidadeDisponivelEstoque(estoqueDetalhes), unidadeEstoque(estoqueDetalhes))
+            }}</strong></div>
+            <div class="col-md-3">Custo médio:<br><strong>{{ formatarMoedaBR(estoqueDetalhes.custoMedio) || '—'
+            }}</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-12">
+        <div class="details-card">
+          <div class="details-title">Limites e reposição</div>
+          <div class="row g-2">
+            <div class="col-md-3">Mínimo:<br><strong>{{ formatarQuantidade(estoqueDetalhes.estoqueMinimo, unidadeEstoque(estoqueDetalhes)) }}</strong></div>
+            <div class="col-md-3">Crítico:<br><strong>{{ formatarQuantidade(estoqueDetalhes.estoqueCritico, unidadeEstoque(estoqueDetalhes)) }}</strong></div>
+            <div class="col-md-3">Máximo:<br><strong>{{ formatarQuantidade($any(estoqueDetalhes).estoqueMaximo, unidadeEstoque(estoqueDetalhes)) }}</strong></div>
+            <div class="col-md-3">Ponto reposição:<br><strong>{{ formatarQuantidade($any(estoqueDetalhes).pontoReposicao, unidadeEstoque(estoqueDetalhes)) }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+<div class="modal-footer"><button type="button" class="btn btn-outline-secondary"
+data-bs-dismiss="modal">Fechar</button></div>
+</div>
+</div>
+</div>
+
+<!-- Modal Selecionar Peça -->
+<div class="modal fade" id="modalSelecionarPecaEstoque" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+  data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content peca-selection-modal">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title"><i class="bi bi-search me-1"></i>Selecionar Peça / Insumo</h5>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="fecharModalPeca(true)"></button>
+      </div>
+      <div class="modal-body">
+<app-field-help-panel></app-field-help-panel>
+@if(modoPaginado){<app-selecao-cadastro recurso="peca" [colunas]="[{titulo:'Peça',campo:'nome'},{titulo:'Fabricante',campo:'fabricante'},{titulo:'Modelo',campo:'modelo'},{titulo:'Unidade',campo:'unidade',formato:'unidade'}]" [filtros]="{}" (selecionado)="selecionarPeca($event)" />}@else{
+
+        <label for="filtroPecaEstoque" class="form-label">Buscar peça</label>
+        <input id="filtroPecaEstoque" type="search" class="form-control mb-3"
+          placeholder="Buscar peça por nome, fabricante, modelo, tipo ou especificação..." [(ngModel)]="filtroPeca"
+          (input)="aplicarFiltroPeca()" />
+        <div class="selection-lista selection-lista-table">
+          @for (peca of pecasFiltradas; track trackByPeca($index, peca)) {
+            <button type="button" class="list-group-item list-group-item-action"
+              (click)="selecionarPeca(peca)">
+              <div class="fw-semibold">{{ peca.nome }}</div>
+              <small>{{ peca.fabricante }} @if (peca.modelo) {
+                <span>/ {{ peca.modelo }}</span>
+                } @if (peca.tipo) {
+                <span>·
+                {{ peca.tipo }}</span>
+                } @if (peca.unidade) {
+                <span>· Unidade: {{ peca.unidade | unidadePeca }}</span>
+              }</small>
+            </button>
+          }
+          @if (pecasFiltradas.length === 0) {
+            <div class="text-center text-muted py-3">Nenhuma peça encontrada.</div>
+          }
+        </div>
+      }
+</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="fecharModalPeca(true)">Voltar ao estoque</button>
+        @if (modoSelecaoPeca === 'cadastro' && !pecaContinuidade) {
+          <button type="button" class="btn btn-primary"
+            (click)="cadastrarNovaPeca()"><i class="bi bi-plus-circle me-1"></i>Cadastrar nova peça</button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (cadastrandoPeca) {
+    <app-peca [cadastroIntegrado]="true"
+    (registroCriado)="pecaCriadaNoEstoque($event)" (cadastroCancelado)="cancelarCadastroPeca()"></app-peca>
+  }
+
+  <!-- Modal Movimentação -->
+  <div class="modal fade" id="modalMovimentacaoEstoque" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title">{{ tituloMovimentacao() }}</h5>
+            <small>{{ descricaoMovimentacao() }}</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da movimentação"
+            [attr.aria-valuenow]="progressoMovimentacao" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar cadastro-progress-bar" [style.width.%]="progressoMovimentacao">{{ progressoMovimentacao }}%</div>
+          </div>
+          <app-field-help-panel></app-field-help-panel>
+          <div [ngClass]="classePainelMovimentacao()">
+            <div class="fw-semibold mb-1">{{ descricaoMovimentacao() }}</div><small>{{ textoAjudaTipoMovimentacao()
+          }}</small>
+        </div>
+        @if (isMovimentacaoAjuste()) {
+          <div class="ajuste-switch-card mt-3 mb-3"
+            [ngClass]="ajusteSaidaSelecionado ? 'ajuste-saida' : 'ajuste-entrada'">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <div class="fw-semibold">Tipo de ajuste</div><small class="text-muted">Escolha se a correção irá adicionar
+              ou retirar saldo do estoque.</small>
+            </div>
+            <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox"
+              id="switchTipoAjuste" [(ngModel)]="ajusteSaidaSelecionado" (change)="alternarTipoAjuste()" /><label
+              class="form-check-label fw-semibold" for="switchTipoAjuste">{{ ajusteSaidaSelecionado ? 'Ajuste de
+            saída' : 'Ajuste de entrada' }}</label></div>
+          </div>
+        </div>
+      }
+      <div class="row g-3">
+        <div class="col-12 col-md-4"><label class="form-label" for="movimentoQuantidade">{{
+        rotuloQuantidadeMovimentacao() }}</label><input id="movimentoQuantidade" class="form-control"
+        [(ngModel)]="movimento.quantidade" required [class.is-invalid]="!quantidadeMovimentacaoValida"
+        [attr.aria-invalid]="!quantidadeMovimentacaoValida" [placeholder]="placeholderQuantidadeMovimentacao()" />
+      <div class="invalid-feedback">Informe uma quantidade maior que zero, dentro do saldo permitido.</div>
+    </div>
+    @if (exibirCampoValorUnitario()) {
+      <div class="col-12 col-md-4"><label class="form-label"
+      for="movimentoValorUnitario">Custo unitário{{ custoMovimentacaoObrigatorio ? ' *' : '' }}</label><input id="movimentoValorUnitario" class="form-control"
+      [ngModel]="custoAutomaticoMovimentacao !== null ? (custoAutomaticoMovimentacao | currency:'BRL') : movimento.valorUnitario"
+      (ngModelChange)="movimento.valorUnitario = $event" (blur)="formatarValorUnitarioMovimento()"
+      [readOnly]="!custoMovimentacaoObrigatorio" [required]="custoMovimentacaoObrigatorio"
+      [class.is-invalid]="!custoMovimentacaoValido" [attr.aria-invalid]="!custoMovimentacaoValido"
+      [attr.data-help-options]="ajudaCustoMovimentacao"
+      placeholder="R$ 0,00" /><small class="text-muted">{{ ajudaCustoMovimentacao }}</small>
+      <div class="invalid-feedback">Informe o custo por unidade; em compras, o valor deve ser maior que zero.</div>
+    </div>
+  }
+  <div class="col-12" [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-8'"><label class="form-label"
+  for="movimentoOrigem">Origem *</label>
+  <select id="movimentoOrigem" class="form-select" [(ngModel)]="movimento.origem" (ngModelChange)="alterarOrigemMovimentacao()"
+    [class.is-invalid]="!origemMovimentacaoValida" [attr.aria-invalid]="!origemMovimentacaoValida"
+    [attr.data-help-options]="ajudaOrigensMovimentacao" required>
+    <option value="" disabled>Selecione a origem</option>
+    @for (opcao of opcoesOrigemMovimentacao; track opcao.valor) {
+      <option [value]="opcao.valor">{{ opcao.rotulo }}</option>
+    }
+  </select>
+  <div class="invalid-feedback">Selecione a origem da movimentação.</div>
+</div>
+@if (devolucaoFornecedorSelecionada) {
+  <div class="col-12">
+    <label class="form-label" for="movimentoRecebimentoFornecedor">Recebimento original *</label>
+    <select id="movimentoRecebimentoFornecedor" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem" [disabled]="carregandoSaidasDevolucao" required [class.is-invalid]="!recebimentoFornecedorSelecionado"
+      data-help-options="Selecione a compra ou recebimento que trouxe a peça ao estoque. A devolução reduz o saldo disponível desse recebimento, considerando devoluções e correções anteriores.">
+      <option [ngValue]="null" disabled>{{ carregandoSaidasDevolucao ? 'Consultando recebimentos...' : 'Selecione o recebimento original' }}</option>
+      @for (recebimento of recebimentosDisponiveisFornecedor; track recebimento) {
+        <option [ngValue]="recebimento.id">Entrada #{{ recebimento.id }} · {{ recebimento.criadoEm | date:'dd/MM/yyyy HH:mm' }} · {{ recebimento.nomeFornecedor || 'Fornecedor não registrado' }} · Disponível: {{ quantidadeOriginalCorrigida(recebimento) }}</option>
+      }
+    </select>
+    <div class="invalid-feedback">Selecione o recebimento original.</div>
+    @if (!carregandoSaidasDevolucao && !recebimentosDisponiveisFornecedor.length) {
+      <small>Nenhum recebimento com quantidade disponível para devolução.</small>
+    }
+  </div>
+}
+@if (exibirFornecedorMovimentacao) {
+  <div class="col-12">
+    <label class="form-label" for="movimentoFornecedor">Fornecedor{{ fornecedorMovimentacaoObrigatorio ? ' *' : '' }}</label>
+    @if (devolucaoFornecedorSelecionada && recebimentoFornecedorSelecionado?.idFornecedor) {
+      <div class="form-control">{{ recebimentoFornecedorSelecionado?.nomeFornecedor || 'Fornecedor registrado' }} · ID {{ recebimentoFornecedorSelecionado?.idFornecedor }}</div>
+    }
+    @if (!devolucaoFornecedorSelecionada || !recebimentoFornecedorSelecionado?.idFornecedor) {
+      <select id="movimentoFornecedor" class="form-select" [(ngModel)]="movimento.idFornecedor" [disabled]="carregandoFornecedoresMovimentacao" [required]="fornecedorMovimentacaoObrigatorio" [class.is-invalid]="!fornecedorMovimentacaoValido"
+        data-help-options="Identifique quem forneceu a peça. Na compra, selecione um fornecedor ativo. Na devolução, será usado o fornecedor do recebimento; se o registro antigo não o informar, identifique-o aqui.">
+        <option [ngValue]="null">{{ carregandoFornecedoresMovimentacao ? 'Consultando fornecedores...' : 'Selecione o fornecedor' }}</option>
+        @for (fornecedor of opcoesFornecedoresMovimentacao; track fornecedor) {
+          <option [ngValue]="fornecedor.id">{{ fornecedor.razaoSocial }} · ID {{ fornecedor.id }}{{ fornecedor.ativo ? '' : ' · Inativo' }}</option>
+        }
+      </select>
+    }
+    <div class="invalid-feedback">Identifique o fornecedor da movimentação.</div>
+    @if (devolucaoFornecedorSelecionada && recebimentoFornecedorSelecionado && !recebimentoFornecedorSelecionado.idFornecedor) {
+      <small>Este recebimento antigo não identifica o fornecedor. Informe-o para registrar a devolução; o recebimento original será preservado.</small>
+    }
+  </div>
+}
+@if (correcaoSelecionada) {
+  <div class="col-12">
+    <label class="form-label" for="movimentoOriginalCorrecao">Movimentação original *</label>
+    <select id="movimentoOriginalCorrecao" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem"
+      [disabled]="carregandoSaidasDevolucao" required [class.is-invalid]="!vinculoCorrecaoValido" [attr.aria-invalid]="!vinculoCorrecaoValido"
+      data-help-options="Selecione a entrada ou saída manual cujo lançamento está incorreto. Informe apenas a diferença: ajuste de entrada aumenta o estoque; ajuste de saída diminui. O lançamento original permanece no histórico.">
+      <option [ngValue]="null" disabled>{{ carregandoSaidasDevolucao ? 'Consultando movimentações...' : 'Selecione a movimentação original' }}</option>
+      @for (original of movimentacoesDisponiveisCorrecao; track original) {
+        <option [ngValue]="original.id">{{ original.tipoMovimento === 'ENTRADA' ? 'Entrada' : 'Saída' }} #{{ original.id }} · {{ original.criadoEm | date:'dd/MM/yyyy HH:mm' }} · Qtd. registrada: {{ original.quantidade }} · Qtd. após correções/devoluções: {{ quantidadeOriginalCorrigida(original) }}</option>
+      }
+    </select>
+    <div class="invalid-feedback">Selecione a movimentação que será corrigida.</div>
+    <small>Informe somente a diferença, com justificativa. Baixas de atendimento são tratadas pelo fluxo do atendimento.</small>
+    @if (!carregandoSaidasDevolucao && !movimentacoesDisponiveisCorrecao.length) {
+      <small class="d-block">Nenhuma entrada ou saída manual original disponível neste estoque.</small>
+    }
+  </div>
+}
+@if (devolucaoSelecionada) {
+  <div class="col-12">
+    <label class="form-label" for="movimentoSaidaOriginal">Saída original *</label>
+    <select id="movimentoSaidaOriginal" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem"
+      [disabled]="carregandoSaidasDevolucao" required [class.is-invalid]="!movimento.idMovimentacaoOrigem"
+      data-help-options="Selecione a saída manual que originou a devolução. O custo é recuperado desse registro. Para peças baixadas em atendimento, registre a devolução na tela de Atendimentos.">
+      <option [ngValue]="null" disabled>{{ carregandoSaidasDevolucao ? 'Consultando saídas...' : 'Selecione a saída original' }}</option>
+      @for (saida of saidasDisponiveisDevolucao; track saida) {
+        <option [ngValue]="saida.id">Saída #{{ saida.id }} · {{ saida.criadoEm | date:'dd/MM/yyyy HH:mm' }} · Saldo: {{ saldoDevolucao(saida) }} · Custo: {{ saida.valorUnitario | currency:'BRL' }}</option>
+      }
+    </select>
+    <div class="invalid-feedback">Selecione a saída original da peça.</div>
+    @if (!carregandoSaidasDevolucao && !saidasDisponiveisDevolucao.length) {
+      <small>Nenhuma saída manual disponível. Para diferenças de contagem, utilize ajuste de inventário com justificativa.</small>
+    }
+  </div>
+}
+<div class="col-12" [ngClass]="exibirCampoValorUnitario() ? 'col-md-4' : 'col-md-12'"><label
+class="form-label" for="movimentoDocumentoReferencia">Documento / Referência</label><input
+id="movimentoDocumentoReferencia" class="form-control" [(ngModel)]="movimento.documentoReferencia"
+placeholder="NF, OS, ajuste interno..." /></div>
+<div class="col-12" [ngClass]="exibirCampoValorUnitario() ? 'col-md-8' : 'col-md-12'"><label
+class="form-label" for="movimentoMotivo">Motivo{{ motivoMovimentacaoObrigatorio ? ' *' : '' }}</label><input id="movimentoMotivo" class="form-control"
+[(ngModel)]="movimento.motivo" [required]="motivoMovimentacaoObrigatorio"
+[class.is-invalid]="motivoMovimentacaoObrigatorio && !movimento.motivo?.trim()"
+placeholder="Explique a razão da movimentação" />
+<div class="invalid-feedback">Justifique o ajuste, outra origem ou a entrada com custo zero.</div>
+</div>
+<div class="col-md-12"><label class="form-label" for="movimentoObservacoes">Observações</label><textarea
+id="movimentoObservacoes" class="form-control" rows="2" [(ngModel)]="movimento.observacoes"
+placeholder="Detalhe a justificativa da movimentação, se necessário."></textarea></div>
+@if (isMovimentacaoAjuste()) {
+  <div class="col-md-12">
+    <div class="alert alert-warning py-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Ajustes devem ser
+  usados apenas para correções administrativas de saldo.</div>
+</div>
+}
+@if (!exibirCampoValorUnitario()) {
+  <div class="col-12">
+    @if (custoMovimentacaoValido) {
+      <small>Custo aplicado automaticamente: {{ custoAutomaticoMovimentacao | currency:'BRL' }} por unidade.</small>
+    }
+    @if (!custoMovimentacaoValido) {
+      <div class="alert alert-warning mb-0">Cadastre o custo médio na edição do controle de estoque antes de registrar esta saída.</div>
+    }
+  </div>
+}
+</div>
+</div>
+<div class="modal-footer"><button type="button" class="btn btn-outline-secondary"
+data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary"
+[disabled]="!movimentacaoProntaParaSalvar" (click)="salvarMovimentacao()"><i class="bi bi-check-circle me-1"></i>Confirmar Movimentação</button></div>
+</div>
+</div>
+</div>
+
+<!-- Modal Histórico -->
+<div class="modal fade" id="modalHistoricoMovimentacoes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered historico-modal-dialog">
+    <div class="modal-content modal-table-content historico-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title">
+            <i class="bi bi-clock-history me-1"></i>
+            Histórico de Movimentações
+          </h5>
+          <small>{{ estoqueSelecionado?.nomePeca || '—' }}</small>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body historico-modal-body">
+        @if (estoqueSelecionado) {
+          <div class="historico-resumo-card">
+            <div>
+              <span class="historico-resumo-label">Local</span>
+              <strong>{{ estoqueSelecionado?.nomeLocalEstoque || '—' }}</strong>
+            </div>
+            <div>
+              <span class="historico-resumo-label">Saldo atual</span>
+              <strong>{{ formatarQuantidade(quantidadeAtualEstoque(estoqueSelecionado),
+              unidadeEstoque(estoqueSelecionado)) }}</strong>
+            </div>
+          </div>
+        }
+
+        <div class="historico-table-shell">
+          <div class="historico-table-scroll">
+            <table
+              class="table table-hover align-middle table-compact table-sticky-header historico-movimentacoes-table">
+              <thead>
+                <tr>
+                  <th class="hist-col-data">Data</th>
+                  <th class="hist-col-tipo">Tipo</th>
+                  <th class="hist-col-qtd text-end">Qtd.</th>
+                  <th class="hist-col-saldo text-end">Saldo</th>
+                  <th class="hist-col-valores text-end">Valores</th>
+                  <th class="hist-col-origem">Origem / Documento</th>
+                  <th class="hist-col-motivo">Motivo</th>
+                  <th class="hist-col-usuario">Usuário responsável</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (mov of movimentacoes; track trackByMovimentacao($index, mov)) {
+                  <tr>
+                    <td class="hist-cell-data">
+                      <div class="hist-cell-main">{{ formatarDataHora(mov.criadoEm) }}</div>
+                    </td>
+                    <td>
+                      <span class="badge movimento-badge" [ngClass]="movimentoBadgeClass(mov.tipoMovimento)">
+                        {{ formatarTipoMovimento(mov.tipoMovimento) }}
+                      </span>
+                    </td>
+                    <td class="text-end">
+                      <strong>{{ formatarQuantidadeSemUnidade(mov.quantidade) }}</strong>
+                    </td>
+                    <td class="text-end">
+                      <div class="hist-stacked-value">
+                        <small>Antes</small>
+                        <strong>{{ formatarQuantidadeSemUnidade(mov.saldoAnterior) }}</strong>
+                      </div>
+                      <div class="hist-stacked-value mt-1">
+                        <small>Depois</small>
+                        <strong>{{ formatarQuantidadeSemUnidade(mov.saldoPosterior) }}</strong>
+                      </div>
+                    </td>
+                    <td class="text-end">
+                      <div class="hist-stacked-value">
+                        <small>Unit.</small>
+                        <strong>{{ formatarMoedaBR(mov.valorUnitario) || '—' }}</strong>
+                      </div>
+                      <div class="hist-stacked-value mt-1">
+                        <small>Total</small>
+                        <strong>{{ formatarMoedaBR(mov.valorTotal) || '—' }}</strong>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="hist-cell-main text-truncate" [title]="rotuloOrigemMovimentacao(mov.origem)">
+                        {{ rotuloOrigemMovimentacao(mov.origem) }}
+                      </div>
+                      @if (mov.idMovimentacaoOrigem) {
+                        <small class="hist-cell-muted d-block">{{ mov.origem === 'CORRECAO_LANCAMENTO' ? 'Correção da movimentação' : mov.origem === 'DEVOLUCAO_FORNECEDOR' ? 'Devolução do recebimento' : 'Devolução da saída' }} #{{ mov.idMovimentacaoOrigem }}</small>
+                      }
+                      @if (mov.idFornecedor) {
+                        <small class="hist-cell-muted d-block">{{ mov.nomeFornecedor || 'Nome não registrado' }} · ID {{ mov.idFornecedor }}</small>
+                      }
+                      <small class="hist-cell-muted text-truncate" [title]="mov.documentoReferencia || 'Sem documento'">
+                        {{ mov.documentoReferencia || 'Sem documento' }}
+                      </small>
+                    </td>
+                    <td>
+                      <div class="hist-motivo" [title]="mov.motivo || '—'">
+                        {{ mov.motivo || '—' }}
+                      </div>
+                      @if (mov.tratamentoCobranca === 'RESTITUICAO_PENDENTE') {
+                        <small>A restituir: {{ mov.valorRestituicao | currency:'BRL' }} (pendente)</small>
+                      }
+                    </td>
+                    <td>
+                      <div class="hist-cell-main">{{ mov.nomeUsuario || (mov.idUsuario ? 'Nome não registrado' : 'Responsável não registrado') }}</div>
+                      @if (mov.idUsuario) {
+                        <small class="hist-cell-muted">ID: {{ mov.idUsuario }}</small>
+                      }
+                    </td>
+                  </tr>
+                }
+
+                @if (movimentacoes.length === 0) {
+                  <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                      <i class="bi bi-inbox me-1"></i>
+                      Nenhuma movimentação encontrada.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Alertas -->
+<div class="modal fade" id="modalAlertasEstoque" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered alertas-modal-dialog">
+    <div class="modal-content alertas-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div><h5 class="modal-title"><i class="bi bi-bell me-1"></i>Alertas de Estoque</h5><small>{{ alertasExibidos.length }} alerta(s) encontrado(s)</small></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar alertas"></button>
+      </div>
+      <div class="modal-body alertas-modal-body">
+        <app-field-help-panel></app-field-help-panel>
+        <div class="alertas-toolbar">
+          <label class="form-check mb-0"><input type="checkbox" class="form-check-input" [(ngModel)]="incluirAlertasEncerrados" (ngModelChange)="atualizarListaAlertas()" /> Mostrar também alertas encerrados</label>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="configurarAlertasEstoque()"><i class="bi bi-gear me-1"></i>Configurar alertas</button>
+        </div>
+        <div class="alertas-orientacao small"><i class="bi bi-info-circle me-1"></i>Reconhecer mantém o acompanhamento. O saldo normalizado resolve o alerta. Aceito pela Meta não confirma entrega.</div>
+        <div class="alertas-table-shell">
+          <div class="alertas-table-responsive">
+            <table class="table table-hover align-middle alertas-table mb-0">
+              <thead><tr><th class="alerta-col-data">Data</th><th class="alerta-col-peca">Peça | Local</th><th class="alerta-col-nivel">Nível</th><th class="alerta-col-saldo">Saldo | Limites</th><th class="alerta-col-whatsapp">WhatsApp</th><th class="alerta-col-acompanhamento">Acompanhamento</th><th class="alerta-col-acoes text-center">Ações</th></tr></thead>
+              <tbody>
+                @for (alerta of alertasPaginados; track trackByAlerta($index, alerta)) {
+                  <tr>
+                    <td><span class="alerta-texto" [title]="formatarDataHora(alerta.criadoEm)">{{ formatarDataHora(alerta.criadoEm) }}</span></td>
+                    <td><strong class="alerta-texto" [title]="alerta.nomePeca || ''">{{ alerta.nomePeca }}</strong><small class="alerta-texto" [title]="alerta.nomeLocalEstoque || ''">{{ alerta.nomeLocalEstoque || '—' }}</small></td>
+                    <td><span class="badge" [ngClass]="statusBadgeClass(alerta.nivelAlerta)">{{ formatarStatus(alerta.nivelAlerta) }}</span></td>
+                    <td><strong class="alerta-texto">Atual: {{ formatarQuantidadeSemUnidade(alerta.quantidadeAtual) }}</strong><small class="alerta-texto">Mín.: {{ formatarQuantidadeSemUnidade(alerta.estoqueMinimo) }} · Crít.: {{ formatarQuantidadeSemUnidade(alerta.estoqueCritico) }}</small></td>
+                    <td><span class="badge" [ngClass]="alerta.whatsappEnviado ? 'bg-success' : 'bg-secondary'">{{ alerta.whatsappEnviado ? 'Aceito pela Meta' : alerta.statusAlerta === 'ABERTO' ? 'Pendente' : 'Não enviado' }}</span><small class="alerta-texto">{{ alerta.tentativasEnvio || 0 }} tentativa(s)@if (alerta.ultimoErro) {
+                    <span class="text-danger" [title]="alerta.ultimoErro"> · Falha no envio</span>
+                  }</small></td>
+                  <td><strong class="alerta-texto" [title]="statusAcompanhamentoAlerta(alerta)">{{ statusAcompanhamentoAlerta(alerta) }}</strong><small class="alerta-texto">{{ alerta.reconhecidoEm ? 'Ciência registrada' : 'Sem reconhecimento' }}</small></td>
+                  <td class="text-center"><div class="btn-group btn-group-sm actions-group alertas-actions">
+                    <button type="button" class="btn btn-outline-info" title="Visualizar detalhes" aria-label="Visualizar detalhes do alerta" (click)="visualizarAlerta(alerta)"><i class="bi bi-eye"></i></button>
+                    @if (alerta.statusAlerta === 'ABERTO') {
+                      <button type="button" class="btn btn-outline-success" title="Registrar entrada" aria-label="Registrar entrada de estoque" [disabled]="processandoAlerta" (click)="registrarEntradaDoAlerta(alerta)"><i class="bi bi-box-arrow-in-down"></i></button>
+                      <button type="button" class="btn btn-outline-primary" [title]="alerta.reconhecidoEm ? 'Alerta já reconhecido' : 'Reconhecer alerta'" aria-label="Reconhecer alerta" [disabled]="!!alerta.reconhecidoEm || processandoAlerta" (click)="reconhecerAlerta(alerta)"><i class="bi bi-check2-circle"></i></button>
+                      <button type="button" class="btn btn-outline-warning" title="Encerrar excepcionalmente" aria-label="Encerrar alerta excepcionalmente" [disabled]="processandoAlerta" (click)="abrirEncerramentoAlerta(alerta)"><i class="bi bi-slash-circle"></i></button>
+                      <button type="button" class="btn btn-outline-primary" title="Reenviar WhatsApp" aria-label="Reenviar alerta pelo WhatsApp" [disabled]="processandoAlerta" (click)="reenviarWhatsapp(alerta)"><i class="bi bi-whatsapp"></i></button>
+                    }
+                  </div></td>
+                </tr>
+              }
+              @if (alertasExibidos.length === 0) {
+                <tr><td colspan="7" class="text-center py-4">Nenhum alerta encontrado.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="table-pagination-footer alertas-pagination">
+          <div class="pagination-info">Mostrando <strong>{{ inicioPaginaAlertas }}</strong> a <strong>{{ fimPaginaAlertas }}</strong> de <strong>{{ alertasExibidos.length }}</strong> registro(s)</div>
+          <div class="pagination-size"><label for="itensPorPaginaAlertas">Exibir</label><select id="itensPorPaginaAlertas" class="form-select form-select-sm" [(ngModel)]="itensPorPaginaAlertas" (ngModelChange)="alterarTamanhoPaginaAlertas()">@for (opcao of opcoesItensAlertas; track opcao) {
+          <option [ngValue]="opcao">{{ opcao }}</option>
+          }</select><span>por página</span></div>
+          <div class="pagination-actions"><button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAlertas === 1" (click)="irParaPaginaAlertas(paginaAlertas - 1)"><i class="bi bi-chevron-left"></i> Anterior</button>@for (pagina of paginasVisiveisAlertas(); track pagina) {
+          <button type="button" class="btn btn-sm" [class.btn-primary]="paginaAlertas === pagina" [class.btn-outline-primary]="paginaAlertas !== pagina" [attr.aria-current]="paginaAlertas === pagina ? 'page' : null" (click)="irParaPaginaAlertas(pagina)">{{ pagina }}</button>
+          }<button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaAlertas === totalPaginasAlertas" (click)="irParaPaginaAlertas(paginaAlertas + 1)">Próxima <i class="bi bi-chevron-right"></i></button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal fade" id="modalDetalhesAlertaEstoque" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header modal-header-clinicar"><h5 class="modal-title"><i class="bi bi-bell me-1"></i>Detalhes do alerta</h5><button type="button" class="btn-close" (click)="voltarDetalhesAlerta()" aria-label="Voltar aos alertas"></button></div>
+    @if (alertaDetalhado; as alerta) {
+      <div class="modal-body">
+        <div class="clinicar-card p-3 mb-3"><strong>{{ alerta.nomePeca }}</strong><div>{{ alerta.nomeLocalEstoque || '—' }} · {{ formatarStatus(alerta.nivelAlerta) }}</div><small>{{ statusAcompanhamentoAlerta(alerta) }} · Criado em {{ formatarDataHora(alerta.criadoEm) }}</small></div>
+        <p>{{ alerta.mensagem }}</p>
+        <p class="mb-2">Saldo registrado: <strong>{{ formatarQuantidadeSemUnidade(alerta.quantidadeAtual) }}</strong> · Mínimo: {{ formatarQuantidadeSemUnidade(alerta.estoqueMinimo) }} · Crítico: {{ formatarQuantidadeSemUnidade(alerta.estoqueCritico) }}</p>
+        <p class="mb-2">WhatsApp: {{ alerta.whatsappEnviado ? 'Aceito pela Meta' : 'Não enviado' }} · {{ alerta.tentativasEnvio || 0 }} tentativa(s)@if (alerta.ultimaTentativaEm) {
+          <span> · Última tentativa: {{ formatarDataHora(alerta.ultimaTentativaEm) }}</span>
+        }</p>
+        @if (alerta.ultimoErro) {
+          <div class="alert alert-danger">{{ alerta.ultimoErro }}</div>
+        }
+        @if (alerta.reconhecidoEm) {
+          <p>Reconhecido por <strong>{{ alerta.nomeUsuarioReconhecimento }}</strong> (ID: {{ alerta.idUsuarioReconhecimento }}) em {{ formatarDataHora(alerta.reconhecidoEm) }}.</p>
+        }
+        @if (alerta.encerradoEm) {
+          <p>Encerrado em {{ formatarDataHora(alerta.encerradoEm) }}@if (alerta.idUsuarioEncerramento) {
+            <span> por <strong>{{ alerta.nomeUsuarioEncerramento }}</strong> (ID: {{ alerta.idUsuarioEncerramento }})</span>
+          }.</p>
+        }
+        @if (alerta.justificativaEncerramento) {
+          <div class="clinicar-card p-3"><strong>Justificativa do encerramento</strong><p class="mb-0 text-break">{{ alerta.justificativaEncerramento }}</p>@if (alerta.excecaoAtiva) {
+          <small>Lembretes suspensos neste nível.</small>
+        }</div>
+      }
+    </div>
+  }
+  <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="voltarDetalhesAlerta()"><i class="bi bi-arrow-left me-1"></i>Voltar aos alertas</button></div>
+</div></div>
+</div>
+
+<div class="modal fade" id="modalEncerramentoAlerta" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header modal-header-clinicar"><h5 class="modal-title">Encerramento excepcional</h5><button type="button" class="btn-close" [disabled]="processandoAlerta" (click)="voltarAosAlertas()" aria-label="Voltar aos alertas"></button></div>
+    <div class="modal-body">
+      <app-field-help-panel></app-field-help-panel>
+      <p><strong>{{ alertaParaEncerrar?.nomePeca }}</strong> · {{ alertaParaEncerrar?.nomeLocalEstoque }}</p>
+      <div class="alert alert-warning">Esta ação não altera o estoque. Os lembretes deste nível serão suspensos. Uma mudança de nível permite novos alertas. Use somente para uma exceção justificada, como a descontinuação da peça.</div>
+      <label class="form-label" for="justificativaEncerramentoAlerta">Justificativa *</label>
+      <textarea id="justificativaEncerramentoAlerta" class="form-control" rows="4" maxlength="1000" [class.is-invalid]="!justificativaEncerramentoValida" [disabled]="processandoAlerta" [(ngModel)]="justificativaEncerramento" aria-describedby="ajudaJustificativaEncerramento"></textarea>
+      <small id="ajudaJustificativaEncerramento" class="d-block">Explique por que o acompanhamento está sendo encerrado sem normalizar o estoque. Informe de 10 a 1.000 caracteres.</small>
+      @if (!justificativaEncerramentoValida) {
+        <div class="invalid-feedback d-block">Informe uma justificativa com pelo menos 10 caracteres.</div>
+      }
+      <small class="d-block mt-2">Seu nome, identificador e a data da ação serão registrados no histórico.</small>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" [disabled]="processandoAlerta" (click)="voltarAosAlertas()">Cancelar</button><button type="button" class="btn btn-warning" [disabled]="!justificativaEncerramentoValida || processandoAlerta" (click)="confirmarEncerramentoAlerta()">Confirmar encerramento</button></div>
+  </div></div>
+</div>
+
+<!-- Modal Novo Local -->
+<div class="modal fade" id="modalNovoLocalEstoque" [appValidarDuplicidade]="{ tipo: 'local', model: novoLocal, id: null, campos: { nome: '#novoLocalNome' } }" (duplicidadeChange)="registrarDuplicidade($event)" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title"><i class="bi bi-geo-alt me-1"></i>Novo Local de Estoque</h5><button type="button"
+      class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <app-field-help-panel></app-field-help-panel>
+      <div class="row g-3">
+        <div class="col-md-12"><label class="form-label" for="novoLocalNome">Nome *</label><input id="novoLocalNome"
+      class="form-control" [(ngModel)]="novoLocal.nome" placeholder="Ex.: Almoxarifado Principal" /></div>
+      <div class="col-md-12"><label class="form-label" for="novoLocalDescricao">Descrição</label><textarea
+      id="novoLocalDescricao" class="form-control" rows="2" [(ngModel)]="novoLocal.descricao"
+    placeholder="Descrição ou observações do local"></textarea></div>
+    <div class="col-md-12"><label class="form-label" for="novoLocalStatus">Status</label><select
+    id="novoLocalStatus" class="form-select" [(ngModel)]="novoLocal.ativo">
+    <option [ngValue]="true">Ativo</option>
+    <option [ngValue]="false">Inativo</option>
+  </select></div>
+</div>
+</div>
+<div class="modal-footer"><button type="button" class="btn btn-outline-secondary"
+data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary"
+[disabled]="!!erroDuplicidade(novoLocal)" (click)="salvarNovoLocal()"><i class="bi bi-check-circle me-1"></i>Salvar Local</button></div>
+</div>
+</div>
+</div>

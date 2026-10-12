@@ -1,0 +1,47 @@
+:host { display: block; color: #35689b; }
+.painel-page { height: 80vh; display: flex; flex-direction: column; min-height: 0; }
+.card { color: #35689b; border: 1px solid #d0e2f2; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+.page-title-card { background: #eef6ff; font-weight: 400; flex-shrink: 0; }
+.page-title-card .card-body { padding: 1rem; }
+.summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; flex-shrink: 0; }
+.summary-card { min-height: 70px; padding: .65rem .8rem; border: 1px solid #d0e2f2; border-left: 4px solid #35689b; border-radius: 10px; background: #fff; color: #35689b; }
+.summary-card span { display: block; text-transform: uppercase; font-size: .78rem; font-weight: 800; color: #355f88; letter-spacing: .02rem; }
+.summary-card strong { display: block; font-size: 1.25rem; line-height: 1.2; margin-top: .25rem; }
+.summary-card:hover { background: #f7fbff; }
+.summary-card:focus-visible { outline: 2px solid #35689b; outline-offset: 2px; }
+.border-success-card { border-left-color: #198754; }
+.border-warning-card { border-left-color: #ffc107; }
+.border-info-card { border-left-color: #0dcaf0; }
+.border-danger-card { border-left-color: #dc3545; }
+.continuidade-card { flex-shrink: 0; }
+.section-title { margin: 0 0 .5rem; font-size: .9rem; font-weight: 700; color: #35689b; }
+.continuidade-links { display: flex; flex-wrap: wrap; gap: .5rem; max-height: 120px; overflow-y: auto; padding: 2px; }
+.list-card, .list-card > .card-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.toolbar-filters { flex-shrink: 0; }
+.toolbar-actions { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+.form-label { color: #35689b; font-size: .9rem; font-weight: 700; }
+.form-select { border-color: #d0e2f2; color: #35689b; }
+.form-select:focus, .btn:focus-visible { border-color: #8fb4da; box-shadow: 0 0 0 .2rem rgba(53,104,155,.15); }
+.btn-outline-primary { --bs-btn-color: #35689b; --bs-btn-border-color: #35689b; --bs-btn-hover-bg: #35689b; --bs-btn-hover-border-color: #35689b; --bs-btn-active-bg: #35689b; --bs-btn-active-border-color: #35689b; }
+.table-shell { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 1px solid #d0e2f2; border-radius: 10px; overflow: hidden; background: #fff; }
+.table-orientacao { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; flex-shrink: 0; padding: .5rem .75rem; font-size: .8rem; background: #f7fbff; border-bottom: 1px solid #d0e2f2; }
+.table-orientacao > span:first-child { flex: 1 1 500px; }
+.table-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.table { --bs-table-color: #35689b; --bs-table-border-color: #d0e2f2; --bs-table-hover-color: #35689b; --bs-table-hover-bg: #f7fbff; border-collapse: separate; border-spacing: 0; }
+.table th, .table td { padding: .55rem; vertical-align: middle; }
+.table thead th { position: sticky; top: 0; z-index: 1; background: #eef6ff; color: #35689b; white-space: nowrap; box-shadow: 0 2px 0 #d0e2f2; }
+.mensagem-cell { min-width: 220px; overflow-wrap: anywhere; }
+.mensagem-detalhe { color: #5c7fa4; margin-top: .2rem; }
+.empty-state { padding: 2rem .75rem !important; }
+.empty-state > .bi { font-size: 1.8rem; }
+.table-pagination-footer { flex-shrink: 0; padding: .15rem .7rem; border-top: 1px solid #d0e2f2; background: #f8fbff; }
+.table-scroll::-webkit-scrollbar, .continuidade-links::-webkit-scrollbar { width: 9px; height: 9px; }
+.table-scroll::-webkit-scrollbar-track, .continuidade-links::-webkit-scrollbar-track { background: #f2f7fc; }
+.table-scroll::-webkit-scrollbar-thumb, .continuidade-links::-webkit-scrollbar-thumb { background: #b6cfe8; border-radius: 10px; }
+@media (max-width: 1200px) { .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 991.98px), (max-height: 600px) {
+  .painel-page { height: auto; min-height: 80vh; }
+  .table-scroll { max-height: 60vh; }
+  .toolbar-actions { justify-content: flex-start; }
+}
+@media (max-width: 575.98px) { .summary-grid { grid-template-columns: 1fr; } }

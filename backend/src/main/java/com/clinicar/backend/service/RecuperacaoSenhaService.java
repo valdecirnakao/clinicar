@@ -40,6 +40,7 @@ public class RecuperacaoSenhaService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void solicitarRedefinicaoSenha(String email) {
         if (email == null || email.isBlank()) {
             return;
@@ -167,16 +168,6 @@ public class RecuperacaoSenhaService {
     }
 
     private void validarForcaSenha(String senha) {
-        if (senha.length() < 8 || senha.length() > 128) {
-            throw new IllegalArgumentException("A senha deve ter de 8 a 128 caracteres.");
-        }
-
-        boolean maiuscula = senha.chars().anyMatch(Character::isUpperCase);
-        boolean minuscula = senha.chars().anyMatch(Character::isLowerCase);
-        boolean numero = senha.chars().anyMatch(Character::isDigit);
-        boolean especial = senha.chars().anyMatch(c -> !Character.isLetterOrDigit(c) && !Character.isWhitespace(c));
-        if (!maiuscula || !minuscula || !numero || !especial) {
-            throw new IllegalArgumentException("A senha deve conter letra maiúscula, letra minúscula, número e caractere especial.");
-        }
+        com.clinicar.backend.util.PoliticaSenha.validar(senha);
     }
 }

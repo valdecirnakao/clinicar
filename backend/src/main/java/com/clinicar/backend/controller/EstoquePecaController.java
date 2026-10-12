@@ -56,6 +56,10 @@ public class EstoquePecaController {
     public ResponseEntity<List<EstoquePecaResponse>> listarCriticos() {
         return ResponseEntity.ok(estoqueMapper.toResponseList(service.listarCriticos()));
     }
+    @GetMapping("/por-peca")
+    public ResponseEntity<List<EstoquePecaResponse>> listarDaPeca(@RequestParam Long pecaId) {
+        return ResponseEntity.ok(estoqueMapper.toResponseList(service.listarDaPeca(pecaId)));
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<EstoquePecaResponse> buscarPorId(@PathVariable Long id) {

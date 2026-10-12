@@ -19,6 +19,7 @@ public interface EstoquePecaRepository extends JpaRepository<EstoquePeca, Long> 
 
     List<EstoquePeca> findByAtivoTrue();
     List<EstoquePeca> findByStatusEstoqueIn(List<String> status);
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths={"peca","localEstoque"})
     List<EstoquePeca> findByPeca_Id(Long pecaId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -1,10 +1,19 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
 .top-nav-clinicar {
   border-bottom: 1px solid #dbe7f5;
-  height: 14vh;
+  min-height: 100px;
+  height: auto;
+  flex-shrink: 0;
 }
 
 .conteudo-clinicar {
-  height: 86vh;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .logo-clinicar {
@@ -77,7 +86,17 @@
   font-weight: 600;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 1199.98px) {
+  .top-nav-clinicar {
+    min-height: 88px;
+    padding-block: .5rem !important;
+  }
+
+  #topNav {
+    max-height: calc(100dvh - 100px);
+    overflow-y: auto;
+    padding-block: .5rem;
+  }
   .logo-clinicar {
     height: 72px;
   }
@@ -90,6 +109,7 @@
   .pill-btn {
     width: 100%;
     text-align: left;
+    min-height: 42px;
   }
 
   .nav-active::after,
@@ -104,7 +124,7 @@
   }
 }
 
-@media (min-width: 768px) and (max-width: 1399.98px) {
+@media (min-width: 1200px) and (max-width: 1399.98px) {
   .logo-clinicar {
     height: 80px;
   }

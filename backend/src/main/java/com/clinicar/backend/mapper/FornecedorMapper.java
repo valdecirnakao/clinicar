@@ -11,6 +11,7 @@ public class FornecedorMapper {
         }
         FornecedorResponse response = new FornecedorResponse();
         response.setId(fornecedor.getId());
+        response.setAtivo(fornecedor.isAtivo());
         response.setCnpj(fornecedor.getCnpj());
         response.setRazaoSocial(fornecedor.getRazaoSocial());
         response.setNomeFantasia(fornecedor.getNomeFantasia());

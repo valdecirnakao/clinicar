@@ -1,6 +1,7 @@
 package com.clinicar.backend.listener;
 
 import com.clinicar.backend.event.VeiculoAtualizadoEvent;
+import com.clinicar.backend.event.VeiculoExcluidoEvent;
 import com.clinicar.backend.service.WhatsAppService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +17,35 @@ public class VeiculoWhatsappNotificationListener {
 
     private final WhatsAppService whatsAppService;
 
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void aoExcluirVeiculo(VeiculoExcluidoEvent event) {
+        log.info("Exclusão confirmada. veiculoId={}, administradorId={}, veiculo={}",
+                event.veiculoId(), event.administradorId(), event.veiculo());
+        if (event.telefone() == null || event.telefone().isBlank()) {
+            event.resultado().notificacaoNaoEnviada("A notificação não foi enviada porque o proprietário não possui telefone disponível.");
+            log.warn("Notificação de exclusão não enviada: telefone indisponível. veiculoId={}", event.veiculoId());
+            return;
+        }
+        try {
+            whatsAppService.enviarAlertaExclusaoVeiculo(event.telefone(), event.nome(), event.veiculo());
+            if (whatsAppService.usaFila()) event.resultado().notificacaoAgendada();
+            else event.resultado().notificacaoAceita();
+            log.info("Notificação de exclusão encaminhada à Meta. veiculoId={}", event.veiculoId());
+        } catch (Exception e) {
+            if (e instanceof com.clinicar.backend.exception.NotificacaoPersistenciaException persistencia) throw persistencia;
+            if (e instanceof org.springframework.dao.DataAccessException databaseError) throw databaseError;
+            event.resultado().notificacaoNaoEnviada("Não foi possível enviar a notificação de exclusão por WhatsApp. A exclusão do veículo foi concluída.");
+            log.error("Falha no WhatsApp após exclusão confirmada. veiculoId={}", event.veiculoId(), e);
+        }
+    }
+
     @PostConstruct
     public void init() {
         log.info("VeiculoWhatsappNotificationListener carregado pelo Spring.");
     }
 
     @TransactionalEventListener(
-            phase = TransactionPhase.AFTER_COMMIT,
+            phase = TransactionPhase.BEFORE_COMMIT,
             fallbackExecution = true
     )
     public void aoAtualizarVeiculo(VeiculoAtualizadoEvent event) {
@@ -52,6 +75,8 @@ public class VeiculoWhatsappNotificationListener {
             );
 
         } catch (Exception e) {
+            if (e instanceof com.clinicar.backend.exception.NotificacaoPersistenciaException persistencia) throw persistencia;
+            if (e instanceof org.springframework.dao.DataAccessException databaseError) throw databaseError;
             log.error(
                     "Veículo ID {} foi atualizado, mas houve falha ao enviar WhatsApp.",
                     event.veiculoId(),

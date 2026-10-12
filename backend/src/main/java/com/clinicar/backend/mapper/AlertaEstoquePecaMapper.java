@@ -16,6 +16,14 @@ public class AlertaEstoquePecaMapper {
 
         AlertaEstoquePecaResponse response = new AlertaEstoquePecaResponse();
 
+        response.setReconhecidoEm(alerta.getReconhecidoEm());
+        response.setIdUsuarioReconhecimento(alerta.getIdUsuarioReconhecimento());
+        response.setNomeUsuarioReconhecimento(alerta.getNomeUsuarioReconhecimento());
+        response.setEncerradoEm(alerta.getEncerradoEm());
+        response.setIdUsuarioEncerramento(alerta.getIdUsuarioEncerramento());
+        response.setNomeUsuarioEncerramento(alerta.getNomeUsuarioEncerramento());
+        response.setJustificativaEncerramento(alerta.getJustificativaEncerramento());
+        response.setExcecaoAtiva(alerta.getExcecaoAtiva());
         response.setId(alerta.getId());
 
         if (alerta.getEstoquePeca() != null) {
@@ -46,6 +54,7 @@ public class AlertaEstoquePecaMapper {
         response.setWhatsappMessageId(alerta.getWhatsappMessageId());
 
         response.setTentativasEnvio(alerta.getTentativasEnvio());
+        response.setUltimaTentativaEm(alerta.getUltimaTentativaEm());
         response.setUltimoErro(alerta.getUltimoErro());
 
         response.setCriadoEm(alerta.getCriadoEm());

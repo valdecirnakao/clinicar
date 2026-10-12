@@ -1,0 +1,1125 @@
+@if (!cadastroIntegrado) {
+  <div class="container-fluid mt-0 mb-0 fornecedor-page" style="color:#35689b; max-height: 80vh;">
+    <div class="row justify-content-center">
+      <div class="col-md-12 mt-sm-0 fornecedor-page-column">
+        <div class="row mt-0 page-title-row">
+          <div class="col text-center mb-2">
+            <div class="card page-title-card">
+              <div class="card-body">
+                <i class="bi bi-truck me-1"></i>
+                Gerenciamento de Fornecedores
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-2 mb-2 summary-row">
+          <div class="col-md-3">
+            <div class="summary-card">
+              <div class="summary-icon"><i class="bi bi-truck"></i></div>
+              <div>
+                <div class="summary-label">Total</div>
+                <div class="summary-value">{{ totalFornecedores }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="summary-card">
+              <div class="summary-icon summary-icon-success"><i class="bi bi-whatsapp"></i></div>
+              <div>
+                <div class="summary-label">WhatsApp</div>
+                <div class="summary-value">{{ totalComContato }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="summary-card">
+              <div class="summary-icon summary-icon-warning"><i class="bi bi-geo-alt"></i></div>
+              <div>
+                <div class="summary-label">Estados atendidos</div>
+                <div class="summary-value">{{ totalEstadosAtendidos }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="summary-card">
+              <div class="summary-icon summary-icon-info"><i class="bi bi-buildings"></i></div>
+              <div>
+                <div class="summary-label">Cidades atendidas</div>
+                <div class="summary-value">{{ totalCidadesAtendidas }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card clinicar-card fornecedor-list-card">
+          <div class="card-body fornecedor-list-body p-2">
+            <div class="row g-2 align-items-end toolbar-filters mb-2">
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold" for="filtro-fornecedores">Buscar</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input
+                    id="filtro-fornecedores"
+                    type="search"
+                    class="form-control"
+                    placeholder="CNPJ, razão social, fantasia, item, e-mail ou cidade"
+                    [(ngModel)]="filtroTexto"
+                    (ngModelChange)="aoAlterarFiltros()"
+                    />
+                </div>
+              </div>
+              <div class="col-lg-1 col-md-3">
+                <label class="form-label fw-bold" for="filtro-estado">UF</label>
+                <select
+                  id="filtro-estado"
+                  class="form-select"
+                  [(ngModel)]="filtroEstado"
+                  (ngModelChange)="aoAlterarFiltros()"
+                  >
+                  <option value="">Todos</option>
+                  @for (estado of estadosDisponiveis; track estado) {
+                    <option [value]="estado">
+                      {{ estado }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="col-lg-2 col-md-3">
+                <label class="form-label fw-bold" for="filtro-item">Item fornecido</label>
+                <select
+                  id="filtro-item"
+                  class="form-select"
+                  [(ngModel)]="filtroItemFornecido"
+                  (ngModelChange)="aoAlterarFiltros()"
+                  >
+                  <option value="">Todos</option>
+                  @for (item of itensFornecidosDisponiveis; track item) {
+                    <option [value]="item">
+                      {{ item }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="col-lg-1 col-md-3">
+                <button
+                  class="btn btn-outline-secondary btn-md btn-limpar-filtros"
+                  type="button"
+                  [disabled]="!possuiFiltrosAplicados"
+                  (click)="limparFiltros()"
+                  >
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+              </div>
+              <div class="col-lg-5 col-md-12">
+                <div class="toolbar-actions">
+                  <button class="btn btn-primary btn-md" type="button" (click)="abrirModalCadastro()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Novo Fornecedor
+                  </button>
+                  <button class="btn btn-outline-primary btn-md" type="button" (click)="recarregar()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Atualizar
+                  </button>
+                  <button class="btn btn-outline-secondary btn-md" type="button" (click)="voltar()">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Voltar
+                  </button>
+                </div>
+              </div>
+            </div>
+            @if (possuiFiltrosAplicados) {
+              <div class="filter-chips">
+                @if (filtroTexto) {
+                  <span class="filter-chip">
+                    Busca: {{ filtroTexto }}
+                    <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+                  </span>
+                }
+                @if (filtroEstado) {
+                  <span class="filter-chip">
+                    UF: {{ filtroEstado }}
+                    <button type="button" (click)="filtroEstado = ''; aoAlterarFiltros()" aria-label="Remover UF">×</button>
+                  </span>
+                }
+                @if (filtroItemFornecido) {
+                  <span class="filter-chip">
+                    Item: {{ filtroItemFornecido }}
+                    <button type="button" (click)="filtroItemFornecido = ''; aoAlterarFiltros()" aria-label="Remover item">×</button>
+                  </span>
+                }
+              </div>
+            }
+            @if (loading) {
+              <div class="alert alert-info py-2 mb-2">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Carregando fornecedores…
+              </div>
+            }
+            @if (!loading && errorMsg) {
+              <div class="alert alert-danger py-2 mb-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ errorMsg }}
+              </div>
+            }
+            @if (!loading) {
+              <div class="table-helper">
+                <i class="bi bi-info-circle me-1"></i>
+                Clique nos cabeçalhos para ordenar. Use os filtros para refinar a consulta.
+              </div>
+            }
+            @if (!loading) {
+              <div class="fornecedor-table-shell">
+                <div class="fornecedor-table-scroll">
+                  <table class="table table-hover align-middle table-compact table-sticky-header">
+                    <thead>
+                      <tr>
+                        <th scope="col" class="sortable" (click)="ordenarPor('cnpj')">
+                          CNPJ <i class="bi ms-1" [ngClass]="iconeOrdenacao('cnpj')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('razaoSocial')">
+                          Razão Social <i class="bi ms-1" [ngClass]="iconeOrdenacao('razaoSocial')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('nomeFantasia')">
+                          Nome Fantasia <i class="bi ms-1" [ngClass]="iconeOrdenacao('nomeFantasia')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('itemFornecido')">
+                          Item <i class="bi ms-1" [ngClass]="iconeOrdenacao('itemFornecido')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('email')">
+                          E-mail <i class="bi ms-1" [ngClass]="iconeOrdenacao('email')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('telefone')">
+                          Telefone | WhatsApp <i class="bi ms-1" [ngClass]="iconeOrdenacao('telefone')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('cidade')">
+                          Cidade/UF <i class="bi ms-1" [ngClass]="iconeOrdenacao('cidade')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('fundacao')">
+                          Fundação <i class="bi ms-1" [ngClass]="iconeOrdenacao('fundacao')"></i>
+                        </th>
+                        <th scope="col" class="text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (f of fornecedoresPaginados; track trackByFornecedor($index, f)) {
+                        <tr>
+                          <td style="color:#35689b;">{{ formatarCNPJ(f.cnpj) }}</td>
+                          <td style="color:#35689b;">{{ f.razaoSocial }}<span class="badge ms-2" [ngClass]="f.ativo === false ? 'bg-secondary' : 'bg-success'">{{ f.ativo === false ? 'Inativo' : 'Ativo' }}</span></td>
+                          <td style="color:#35689b;">{{ f.nomeFantasia }}</td>
+                          <td>
+                            <span class="badge item-badge">{{ f.itemFornecido }}</span>
+                          </td>
+                          <td style="color:#35689b;">{{ (f.email || '').toLowerCase() }}</td>
+                          <td>
+                            <div style="color:#35689b;">{{ exibirTelefoneFormatado(f.telefone) || '—' }}</div>
+                            <span class="badge whatsapp-badge" [ngClass]="whatsappBadgeClass(f.telefone)">
+                              <i class="bi bi-whatsapp me-1"></i>
+                              {{ whatsappDescricao(f.telefone) }}
+                            </span>
+                          </td>
+                          <td style="color:#35689b;">
+                            <div>{{ f.cidade || '—' }}</div>
+                            <small>{{ f.estado || '—' }}</small>
+                          </td>
+                          <td style="color:#35689b;">{{ formatarDataBr(f.fundacao) }}</td>
+                          <td class="text-center actions-cell">
+                            <div class="btn-group btn-group-sm" style="gap: .45rem; border-radius: 3px;">
+                              <button
+                                class="btn btn-outline-info"
+                                title="Visualizar fornecedor"
+                                type="button"
+                                (click)="abrirDetalhes(f)"
+                                >
+                                <i class="bi bi-eye"></i>
+                              </button>
+                              <button
+                                class="btn btn-outline-primary"
+                                title="Editar fornecedor"
+                                type="button"
+                                (click)="abrirModalEdicao(f)"
+                                >
+                                <i class="bi bi-pencil-square"></i>
+                              </button>
+                              <button
+                                class="btn btn-outline-danger"
+                                title="Excluir fornecedor"
+                                type="button"
+                                (click)="solicitarRemocao(f)"
+                                >
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                      @if (totalRegistrosFiltrados === 0) {
+                        <tr>
+                          <td colspan="9" class="text-center text-muted py-4">
+                            <i class="bi bi-search me-1"></i>
+                            Nenhum fornecedor encontrado.
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                @if (totalRegistrosFiltrados > 0) {
+                  <div class="table-pagination-footer">
+<app-paginacao [pagina]="paginaAtual-1" [tamanho]="itensPorPagina" [total]="totalRegistrosFiltrados" [carregando]="loading" [tamanhos]="opcoesItensPorPagina" (paginaChange)="irParaPagina($event+1)" (tamanhoChange)="itensPorPagina=$event;aoAlterarItensPorPagina()" />
+</div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+<!-- Modal de cadastro do fornecedor -->
+<div class="modal fade" id="modalCadastroFornecedor" tabindex="-1" aria-labelledby="modalCadastroFornecedorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered fornecedor-modal-dialog">
+    <div class="modal-content fornecedor-modal-content fornecedor-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalCadastroFornecedorLabel">
+            <i class="bi bi-building-add me-1"></i>
+            Novo Fornecedor
+          </h5>
+          <small>
+            {{ novoFornecedor.razaoSocial || 'Razão social não informada' }} · {{ novoFornecedor.email || 'E-mail não informado' }}
+          </small>
+        </div>
+        <button type="button" class="btn-close" [disabled]="salvandoCadastro" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body fornecedor-modal-body">
+        <div class="fornecedor-modal-tabs-area">
+          @if (mensagemErroModal) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+          }
+
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+            <div class="progress-bar" [style.width.%]="progressoCadastroFornecedor">
+              {{ progressoCadastroFornecedor }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button data-help-guia="dados" [disabled]="!podeAcessarAbaCadastro('dados')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroFornecedor === 'dados'" (click)="trocarAbaCadastroFornecedor('dados')">
+                <i class="bi bi-building me-1"></i>
+                Dados do fornecedor
+                @if (dadosFornecedorPendentes(novoFornecedor)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="contato" [disabled]="!podeAcessarAbaCadastro('contato')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroFornecedor === 'contato'" (click)="trocarAbaCadastroFornecedor('contato')">
+                <i class="bi bi-telephone me-1"></i>
+                Contato
+                @if (contatoFornecedorPendente(novoFornecedor)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="endereco" [disabled]="!podeAcessarAbaCadastro('endereco')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroFornecedor === 'endereco'" (click)="trocarAbaCadastroFornecedor('endereco')">
+                <i class="bi bi-geo-alt me-1"></i>
+                Endereço
+                @if (enderecoFornecedorPendente(novoFornecedor)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="revisao" [disabled]="!podeAcessarAbaCadastro('revisao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroFornecedor === 'revisao'" (click)="trocarAbaCadastroFornecedor('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="fornecedor-modal-scroll-area">
+          @if (abaCadastroFornecedor === 'dados') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-building me-1"></i>
+                Dados do fornecedor
+              </div>
+              <div class="row g-3">
+                <div class="col-md-12"><label class="form-label" for="statusFornecedorCadastro">Status do fornecedor</label><select id="statusFornecedorCadastro" class="form-select" [(ngModel)]="novoFornecedor.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false" [disabled]="!!pecaFluxo || cadastroIntegrado">Inativo</option></select><small class="text-muted">Somente fornecedores ativos podem receber novos vínculos de fornecimento.</small></div>
+                <div class="col-md-3">
+                  <label class="form-label" for="cnpjFornecedorCadastro">CNPJ *</label>
+                  <input
+                    id="cnpjFornecedorCadastro"
+                    class="form-control"
+                    [(ngModel)]="novoFornecedor.cnpj"
+                    (ngModelChange)="alterarCnpj('cadastro')"
+                    (blur)="verificarCnpj('cadastro')"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'cnpj')"
+                    maxlength="18"
+                    autocomplete="off"
+                    />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'cnpj')) {
+                    <div class="invalid-feedback d-block">{{ mensagemCnpj('cadastro') }}</div>
+                  }
+                  @if (consultaCnpj.cadastro.consultando) {
+                    <small class="text-muted d-block">Verificando CNPJ...</small>
+                  }
+                  @if (consultaCnpj.cadastro.aviso) {
+                    <small class="text-warning d-block">{{ consultaCnpj.cadastro.aviso }}</small>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="razaoSocialFornecedorCadastro">Razão Social *</label>
+                  <input
+                    id="razaoSocialFornecedorCadastro"
+                    class="form-control"
+                    [(ngModel)]="novoFornecedor.razaoSocial"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'razaoSocial')"
+                    autocomplete="off"
+                    />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'razaoSocial')) {
+                    <div class="invalid-feedback d-block">Informe a razão social.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="nomeFantasiaFornecedorCadastro">Nome Fantasia *</label>
+                  <input
+                    id="nomeFantasiaFornecedorCadastro"
+                    class="form-control"
+                    [(ngModel)]="novoFornecedor.nomeFantasia"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'nomeFantasia')"
+                    autocomplete="off"
+                    />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'nomeFantasia')) {
+                    <div class="invalid-feedback d-block">Informe o nome fantasia.</div>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="itemFornecidoFornecedorCadastro">Item fornecido *</label>
+                  <select
+                    id="itemFornecidoFornecedorCadastro"
+                    class="form-select"
+                    [(ngModel)]="novoFornecedor.itemFornecido"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'itemFornecido')"
+                    >
+                    <option value="">Selecione...</option>
+                    @for (item of opcoesItemFornecidoFornecedor; track item) {
+                      <option [value]="item">
+                        {{ item }}
+                      </option>
+                    }
+                  </select>
+                  <small class="text-muted">Classifique o principal tipo de fornecimento deste fornecedor.</small>
+                  @if (campoMarcadoInvalido(novoFornecedor, 'itemFornecido')) {
+                    <div class="invalid-feedback d-block">
+                      Selecione uma categoria de item fornecido.
+                    </div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="fundacaoFornecedorCadastro">Fundação *</label>
+                  <input
+                    id="fundacaoFornecedorCadastro"
+                    type="date"
+                    class="form-control"
+                    [(ngModel)]="novoFornecedor.fundacao"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'fundacao')"
+                    />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'fundacao')) {
+                    <div class="invalid-feedback d-block">Informe uma data válida.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Prévia</div>
+                    <div class="preview-main">{{ novoFornecedor.nomeFantasia || 'Nome fantasia' }}</div>
+                    <div class="preview-sub">
+                      {{ novoFornecedor.razaoSocial || 'Razão social' }}
+                      @if (novoFornecedor.itemFornecido) {
+                        <span> · {{ novoFornecedor.itemFornecido }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroFornecedor === 'contato') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-telephone me-1"></i>
+                Contato
+              </div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="telefoneFornecedorCadastro">Telefone | WhatsApp *</label>
+                  <input
+                    id="telefoneFornecedorCadastro"
+                    class="form-control"
+                    [(ngModel)]="novoFornecedor.telefone"
+                    (blur)="formatarTelefoneCadastro()"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'telefone')"
+                    autocomplete="off"
+                    />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'telefone')) {
+                    <div class="invalid-feedback d-block">Informe um telefone com DDD.</div>
+                  }
+                  <small class="text-muted">Usado para contato administrativo e operacional.</small>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label" for="emailFornecedorCadastro">E-mail *</label>
+                  <input
+                    id="emailFornecedorCadastro"
+                    type="email"
+                    class="form-control"
+                    [(ngModel)]="novoFornecedor.email"
+                    (ngModelChange)="agendarVerificacaoEmail('cadastro')"
+                    (blur)="finalizarVerificacaoEmail('cadastro')"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'email')"
+                    autocomplete="off"
+                    />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'email')) {
+                    <div class="invalid-feedback d-block">{{ mensagemEmail('cadastro') }}</div>
+                  }
+                  @if (consultaEmail.cadastro.consultando) {
+                    <small class="text-muted d-block" role="status">Verificando e-mail...</small>
+                  }
+                  @if (consultaEmail.cadastro.aguardando) {
+                    <small class="text-muted d-block" role="status">A verificação automática começará assim que você terminar de digitar.</small>
+                  }
+                  @if (consultaEmail.cadastro.verificado) {
+                    <small class="text-success d-block" role="status">Formato correto e e-mail disponível para cadastro.</small>
+                  }
+                  @if (consultaEmail.cadastro.aviso) {
+                    <small class="text-warning d-block" role="status">{{ consultaEmail.cadastro.aviso }}</small>
+                  }
+                  @if (consultaEmail.cadastro.aviso) {
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-1 d-block" (click)="verificarEmail('cadastro')">Verificar novamente</button>
+                  }
+                  <small class="text-muted">Será utilizado para comunicação com o fornecedor.</small>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroFornecedor === 'endereco') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-geo-alt me-1"></i>
+                Endereço
+              </div>
+              @if (mensagemCepCadastro) {
+                <div class="alert py-2 mb-3" [ngClass]="mensagemCepCadastro.includes('localizado') ? 'alert-success' : 'alert-warning'">
+                  <i class="bi bi-info-circle me-1"></i>
+                  {{ mensagemCepCadastro }}
+                </div>
+              }
+              <div class="row g-3">
+                <div class="col-md-2">
+                  <label class="form-label" for="cepFornecedorCadastro">CEP *</label>
+                  <input
+                    id="cepFornecedorCadastro"
+                    class="form-control"
+                    [(ngModel)]="novoFornecedor.cep"
+                    (blur)="onCepBlurCadastro()"
+                    [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'cep')"
+                    maxlength="9"
+                    autocomplete="off"
+                    />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'cep')) {
+                    <div class="invalid-feedback d-block">Informe um CEP válido.</div>
+                  }
+                  @if (buscandoCepCadastro) {
+                    <small class="text-muted">Buscando CEP...</small>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="logradouroFornecedorCadastro">Logradouro *</label>
+                  <input id="logradouroFornecedorCadastro" class="form-control" [(ngModel)]="novoFornecedor.logradouro" [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'logradouro')" />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'logradouro')) {
+                    <div class="invalid-feedback d-block">Informe o logradouro.</div>
+                  }
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label" for="numeroEnderecoFornecedorCadastro">Número *</label>
+                  <input id="numeroEnderecoFornecedorCadastro" class="form-control" [(ngModel)]="novoFornecedor.numeroEndereco" [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'numeroEndereco')" />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'numeroEndereco')) {
+                    <div class="invalid-feedback d-block">Informe o número.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="complementoEnderecoFornecedorCadastro">Complemento</label>
+                  <input id="complementoEnderecoFornecedorCadastro" class="form-control" [(ngModel)]="novoFornecedor.complementoEndereco" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="bairroFornecedorCadastro">Bairro *</label>
+                  <input id="bairroFornecedorCadastro" class="form-control" [(ngModel)]="novoFornecedor.bairro" [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'bairro')" />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'bairro')) {
+                    <div class="invalid-feedback d-block">Informe o bairro.</div>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="cidadeFornecedorCadastro">Cidade *</label>
+                  <input id="cidadeFornecedorCadastro" class="form-control" [(ngModel)]="novoFornecedor.cidade" [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'cidade')" />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'cidade')) {
+                    <div class="invalid-feedback d-block">Informe a cidade.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="estadoFornecedorCadastro">UF *</label>
+                  <input id="estadoFornecedorCadastro" maxlength="2" class="form-control" [(ngModel)]="novoFornecedor.estado" (input)="normalizarUfCadastro()" [class.is-invalid]="campoMarcadoInvalido(novoFornecedor, 'estado')" />
+                  @if (campoMarcadoInvalido(novoFornecedor, 'estado')) {
+                    <div class="invalid-feedback d-block">Informe a UF com 2 letras.</div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroFornecedor === 'revisao') {
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Fornecedor</div>
+                  <div class="review-main">{{ novoFornecedor.nomeFantasia || '—' }}</div>
+                  <div class="details-line">Razão social: {{ novoFornecedor.razaoSocial || '—' }}</div>
+                  <div class="details-line">CNPJ: {{ formatarCNPJ(novoFornecedor.cnpj) || '—' }}</div>
+                  <div class="details-line">Item fornecido: {{ novoFornecedor.itemFornecido || '—' }}</div>
+                  <div class="details-line">Fundação: {{ formatarDataBr(novoFornecedor.fundacao) }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Contato e endereço</div>
+                  <div class="details-line">Telefone: {{ exibirTelefoneFormatado(novoFornecedor.telefone) || '—' }}</div>
+                  <div class="details-line">E-mail: {{ novoFornecedor.email || '—' }}</div>
+                  <div class="details-line">Endereço: {{ enderecoCompleto(novoFornecedor) }}</div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-totais">
+        <div class="modal-footer-message me-auto" [class.text-success]="cadastroFornecedorProntoParaSalvar" [class.text-warning]="!cadastroFornecedorProntoParaSalvar">
+          <i class="bi" [ngClass]="cadastroFornecedorProntoParaSalvar ? 'bi-check-circle' : 'bi-info-circle'"></i>
+          {{ cadastroFornecedorProntoParaSalvar ? 'Cadastro pronto para salvar.' : mensagemBloqueioCadastro }}
+        </div>
+
+        @if (abaCadastroFornecedor !== 'dados') {
+          <button data-help-navegacao type="button" class="btn btn-outline-primary" (click)="abaAnteriorCadastro()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+        }
+
+        @if (abaCadastroFornecedor !== 'revisao') {
+          <button data-help-navegacao [disabled]="!podeAvancarCadastro" type="button" class="btn btn-outline-primary" (click)="proximaAbaCadastro()">
+            Próximo
+            <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+        }
+
+        <button type="button" class="btn btn-outline-secondary" [disabled]="salvandoCadastro" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-primary" [disabled]="salvandoCadastro || !cadastroFornecedorProntoParaSalvar" [title]="mensagemBloqueioCadastro || 'Salvar fornecedor'" (click)="salvarNovoFornecedor()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar fornecedor
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de edição do fornecedor -->
+<div class="modal fade" id="modalEdicaoFornecedor" tabindex="-1" aria-labelledby="modalEdicaoFornecedorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered fornecedor-modal-dialog">
+    <div class="modal-content fornecedor-modal-content fornecedor-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalEdicaoFornecedorLabel">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar Fornecedor
+          </h5>
+          <small>
+            ID #{{ editId || '—' }} · {{ edit.nomeFantasia || edit.razaoSocial || 'Fornecedor não informado' }}
+          </small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body fornecedor-modal-body">
+        <div class="fornecedor-modal-tabs-area">
+          @if (mensagemErroModal) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+          }
+
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+            <div class="progress-bar" [style.width.%]="progressoEdicaoFornecedor">
+              {{ progressoEdicaoFornecedor }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+            defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."
+          ></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button data-help-guia="dados" class="nav-link" type="button" [class.active]="abaEdicaoFornecedor === 'dados'" (click)="trocarAbaEdicaoFornecedor('dados')">
+                <i class="bi bi-building me-1"></i>
+                Dados do fornecedor
+                @if (dadosFornecedorPendentes(edit)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="contato" class="nav-link" type="button" [class.active]="abaEdicaoFornecedor === 'contato'" (click)="trocarAbaEdicaoFornecedor('contato')">
+                <i class="bi bi-telephone me-1"></i>
+                Contato
+                @if (contatoFornecedorPendente(edit)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="endereco" class="nav-link" type="button" [class.active]="abaEdicaoFornecedor === 'endereco'" (click)="trocarAbaEdicaoFornecedor('endereco')">
+                <i class="bi bi-geo-alt me-1"></i>
+                Endereço
+                @if (enderecoFornecedorPendente(edit)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="revisao" class="nav-link" type="button" [class.active]="abaEdicaoFornecedor === 'revisao'" (click)="trocarAbaEdicaoFornecedor('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="fornecedor-modal-scroll-area">
+          @if (abaEdicaoFornecedor === 'dados') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-building me-1"></i>
+                Dados do fornecedor
+              </div>
+              <div class="row g-3">
+                <div class="col-md-12"><label class="form-label" for="statusFornecedorEdicao">Status do fornecedor</label><select id="statusFornecedorEdicao" class="form-select" [(ngModel)]="edit.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option></select><small class="text-muted">Somente fornecedores ativos podem receber novos vínculos de fornecimento.</small></div>
+                <div class="col-md-3">
+                  <label class="form-label" for="cnpjFornecedorEdicao">CNPJ *</label>
+                  <input id="cnpjFornecedorEdicao" class="form-control" [(ngModel)]="edit.cnpj" (ngModelChange)="alterarCnpj('edicao')" (blur)="verificarCnpj('edicao')" [class.is-invalid]="campoMarcadoInvalido(edit, 'cnpj')" maxlength="18" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'cnpj')) {
+                    <div class="invalid-feedback d-block">{{ mensagemCnpj('edicao') }}</div>
+                  }
+                  @if (consultaCnpj.edicao.consultando) {
+                    <small class="text-muted d-block">Verificando CNPJ...</small>
+                  }
+                  @if (consultaCnpj.edicao.aviso) {
+                    <small class="text-warning d-block">{{ consultaCnpj.edicao.aviso }}</small>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="razaoSocialFornecedorEdicao">Razão Social *</label>
+                  <input id="razaoSocialFornecedorEdicao" class="form-control" [(ngModel)]="edit.razaoSocial" [class.is-invalid]="campoMarcadoInvalido(edit, 'razaoSocial')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'razaoSocial')) {
+                    <div class="invalid-feedback d-block">Informe a razão social.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="nomeFantasiaFornecedorEdicao">Nome Fantasia *</label>
+                  <input id="nomeFantasiaFornecedorEdicao" class="form-control" [(ngModel)]="edit.nomeFantasia" [class.is-invalid]="campoMarcadoInvalido(edit, 'nomeFantasia')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'nomeFantasia')) {
+                    <div class="invalid-feedback d-block">Informe o nome fantasia.</div>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="itemFornecidoFornecedorEdicao">Item fornecido *</label>
+                  <select
+                    id="itemFornecidoFornecedorEdicao"
+                    class="form-select"
+                    [(ngModel)]="edit.itemFornecido"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'itemFornecido')"
+                    >
+                    <option value="">Selecione...</option>
+                    @for (item of opcoesItemFornecidoFornecedor; track item) {
+                      <option [value]="item">
+                        {{ item }}
+                      </option>
+                    }
+                  </select>
+                  <small class="text-muted">Atualize a classificação principal do fornecimento.</small>
+                  @if (campoMarcadoInvalido(edit, 'itemFornecido')) {
+                    <div class="invalid-feedback d-block">
+                      Selecione uma categoria de item fornecido.
+                    </div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="fundacaoFornecedorEdicao">Fundação *</label>
+                  <input id="fundacaoFornecedorEdicao" type="date" class="form-control" [(ngModel)]="edit.fundacao" [class.is-invalid]="campoMarcadoInvalido(edit, 'fundacao')" />
+                  @if (campoMarcadoInvalido(edit, 'fundacao')) {
+                    <div class="invalid-feedback d-block">Informe uma data válida.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Prévia</div>
+                    <div class="preview-main">{{ edit.nomeFantasia || 'Nome fantasia' }}</div>
+                    <div class="preview-sub">
+                      {{ edit.razaoSocial || 'Razão social' }}
+                      @if (edit.itemFornecido) {
+                        <span> · {{ edit.itemFornecido }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoFornecedor === 'contato') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-telephone me-1"></i>
+                Contato
+              </div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="telefoneFornecedorEdicao">Telefone *</label>
+                  <input id="telefoneFornecedorEdicao" class="form-control" [(ngModel)]="edit.telefone" (blur)="normalizarTelefoneEdicao()" [class.is-invalid]="campoMarcadoInvalido(edit, 'telefone')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'telefone')) {
+                    <div class="invalid-feedback d-block">Informe um telefone com DDD.</div>
+                  }
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label" for="emailFornecedorEdicao">E-mail *</label>
+                  <input id="emailFornecedorEdicao" type="email" class="form-control" [(ngModel)]="edit.email" (ngModelChange)="agendarVerificacaoEmail('edicao')" (blur)="finalizarVerificacaoEmail('edicao')" [class.is-invalid]="campoMarcadoInvalido(edit, 'email')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'email')) {
+                    <div class="invalid-feedback d-block">{{ mensagemEmail('edicao') }}</div>
+                  }
+                  @if (consultaEmail.edicao.consultando) {
+                    <small class="text-muted d-block" role="status">Verificando e-mail...</small>
+                  }
+                  @if (consultaEmail.edicao.aguardando) {
+                    <small class="text-muted d-block" role="status">A verificação automática começará assim que você terminar de digitar.</small>
+                  }
+                  @if (consultaEmail.edicao.verificado) {
+                    <small class="text-success d-block" role="status">Formato correto e e-mail disponível para este fornecedor.</small>
+                  }
+                  @if (consultaEmail.edicao.aviso) {
+                    <small class="text-warning d-block" role="status">{{ consultaEmail.edicao.aviso }}</small>
+                  }
+                  @if (consultaEmail.edicao.aviso) {
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-1 d-block" (click)="verificarEmail('edicao')">Verificar novamente</button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoFornecedor === 'endereco') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-geo-alt me-1"></i>
+                Endereço
+              </div>
+              @if (mensagemCepEdicao) {
+                <div class="alert py-2 mb-3" [ngClass]="mensagemCepEdicao.includes('localizado') ? 'alert-success' : 'alert-warning'">
+                  <i class="bi bi-info-circle me-1"></i>
+                  {{ mensagemCepEdicao }}
+                </div>
+              }
+              <div class="row g-3">
+                <div class="col-md-2">
+                  <label class="form-label" for="cepFornecedorEdicao">CEP *</label>
+                  <input id="cepFornecedorEdicao" class="form-control" [(ngModel)]="edit.cep" (blur)="onCepBlurEdicao()" [class.is-invalid]="campoMarcadoInvalido(edit, 'cep')" maxlength="9" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'cep')) {
+                    <div class="invalid-feedback d-block">Informe um CEP válido.</div>
+                  }
+                  @if (buscandoCepEdicao) {
+                    <small class="text-muted">Buscando CEP...</small>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="logradouroFornecedorEdicao">Logradouro *</label>
+                  <input id="logradouroFornecedorEdicao" class="form-control" [(ngModel)]="edit.logradouro" [class.is-invalid]="campoMarcadoInvalido(edit, 'logradouro')" />
+                  @if (campoMarcadoInvalido(edit, 'logradouro')) {
+                    <div class="invalid-feedback d-block">Informe o logradouro.</div>
+                  }
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label" for="numeroEnderecoFornecedorEdicao">Número *</label>
+                  <input id="numeroEnderecoFornecedorEdicao" class="form-control" [(ngModel)]="edit.numeroEndereco" [class.is-invalid]="campoMarcadoInvalido(edit, 'numeroEndereco')" />
+                  @if (campoMarcadoInvalido(edit, 'numeroEndereco')) {
+                    <div class="invalid-feedback d-block">Informe o número.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="complementoEnderecoFornecedorEdicao">Complemento</label>
+                  <input id="complementoEnderecoFornecedorEdicao" class="form-control" [(ngModel)]="edit.complementoEndereco" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="bairroFornecedorEdicao">Bairro *</label>
+                  <input id="bairroFornecedorEdicao" class="form-control" [(ngModel)]="edit.bairro" [class.is-invalid]="campoMarcadoInvalido(edit, 'bairro')" />
+                  @if (campoMarcadoInvalido(edit, 'bairro')) {
+                    <div class="invalid-feedback d-block">Informe o bairro.</div>
+                  }
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label" for="cidadeFornecedorEdicao">Cidade *</label>
+                  <input id="cidadeFornecedorEdicao" class="form-control" [(ngModel)]="edit.cidade" [class.is-invalid]="campoMarcadoInvalido(edit, 'cidade')" />
+                  @if (campoMarcadoInvalido(edit, 'cidade')) {
+                    <div class="invalid-feedback d-block">Informe a cidade.</div>
+                  }
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="estadoFornecedorEdicao">UF *</label>
+                  <input id="estadoFornecedorEdicao" maxlength="2" class="form-control" [(ngModel)]="edit.estado" (input)="normalizarUfEdicao()" [class.is-invalid]="campoMarcadoInvalido(edit, 'estado')" />
+                  @if (campoMarcadoInvalido(edit, 'estado')) {
+                    <div class="invalid-feedback d-block">Informe a UF com 2 letras.</div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoFornecedor === 'revisao') {
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Fornecedor</div>
+                  <div class="review-main">{{ edit.nomeFantasia || '—' }}</div>
+                  <div class="details-line">Razão social: {{ edit.razaoSocial || '—' }}</div>
+                  <div class="details-line">CNPJ: {{ formatarCNPJ(edit.cnpj) || '—' }}</div>
+                  <div class="details-line">Item fornecido: {{ edit.itemFornecido || '—' }}</div>
+                  <div class="details-line">Fundação: {{ formatarDataBr(edit.fundacao) }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="review-card h-100">
+                  <div class="review-label">Contato e endereço</div>
+                  <div class="details-line">Telefone: {{ exibirTelefoneFormatado(edit.telefone) || '—' }}</div>
+                  <div class="details-line">E-mail: {{ edit.email || '—' }}</div>
+                  <div class="details-line">Endereço: {{ enderecoCompleto(edit) }}</div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-totais">
+        <div class="modal-footer-message me-auto" [class.text-success]="edicaoFornecedorProntaParaSalvar" [class.text-warning]="!edicaoFornecedorProntaParaSalvar">
+          <i class="bi" [ngClass]="edicaoFornecedorProntaParaSalvar ? 'bi-check-circle' : 'bi-info-circle'"></i>
+          {{ edicaoFornecedorProntaParaSalvar ? 'Edição pronta para salvar.' : mensagemBloqueioEdicao }}
+        </div>
+
+        @if (abaEdicaoFornecedor !== 'dados') {
+          <button data-help-navegacao type="button" class="btn btn-outline-primary" (click)="abaAnteriorEdicao()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+        }
+
+        @if (abaEdicaoFornecedor !== 'revisao') {
+          <button data-help-navegacao type="button" class="btn btn-outline-primary" (click)="proximaAbaEdicao()">
+            Próximo
+            <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+        }
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-primary" [disabled]="!edicaoFornecedorProntaParaSalvar" [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar alterações
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de detalhes -->
+<div class="modal fade" id="modalDetalhesFornecedor" tabindex="-1" aria-labelledby="modalDetalhesFornecedorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content details-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalDetalhesFornecedorLabel">
+            <i class="bi bi-eye me-1"></i>
+            Detalhes do Fornecedor
+          </h5>
+          <small>{{ fornecedorDetalhes?.nomeFantasia || fornecedorDetalhes?.razaoSocial || 'Fornecedor' }}</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        @if (fornecedorDetalhes) {
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Dados do fornecedor</div>
+                <div class="details-line"><strong>CNPJ:</strong> {{ formatarCNPJ(fornecedorDetalhes.cnpj) }}</div>
+                <div class="details-line"><strong>Razão Social:</strong> {{ fornecedorDetalhes.razaoSocial }}</div>
+                <div class="details-line"><strong>Nome Fantasia:</strong> {{ fornecedorDetalhes.nomeFantasia }}</div>
+                <div class="details-line"><strong>Item Fornecido:</strong> {{ fornecedorDetalhes.itemFornecido }}</div>
+                <div class="details-line"><strong>Fundação:</strong> {{ formatarDataBr(fornecedorDetalhes.fundacao) }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Contato</div>
+                <div class="details-line"><strong>Telefone:</strong> {{ exibirTelefoneFormatado(fornecedorDetalhes.telefone) }}</div>
+                <div class="details-line"><strong>E-mail:</strong> {{ fornecedorDetalhes.email }}</div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="details-card">
+                <div class="details-title">Endereço</div>
+                <div class="details-line"><strong>CEP:</strong> {{ formatarCEP(fornecedorDetalhes.cep) }}</div>
+                <div class="details-line"><strong>Endereço:</strong> {{ enderecoCompleto(fornecedorDetalhes) }}</div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="modalConfirmarExclusaoFornecedor" tabindex="-1" aria-labelledby="modalConfirmarExclusaoFornecedorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content confirm-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title" id="modalConfirmarExclusaoFornecedorLabel">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Confirmar exclusão
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="confirm-box">
+          <div class="confirm-icon"><i class="bi bi-trash"></i></div>
+          <div>
+            <div class="confirm-title">Excluir fornecedor?</div>
+            <div class="confirm-text">
+              Esta ação removerá o fornecedor
+              <strong>{{ fornecedorParaExcluir?.nomeFantasia || fornecedorParaExcluir?.razaoSocial || 'selecionado' }}</strong>
+              da base de dados.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="confirmarRemocao()">
+          <i class="bi bi-trash me-1"></i>
+          Confirmar exclusão
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalContinuidadeFornecedor" tabindex="-1" aria-labelledby="modalContinuidadeFornecedorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content fornecedor-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title" id="modalContinuidadeFornecedorLabel"><i class="bi bi-link-45deg me-1"></i>Continuar cadastro do fornecedor</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      @if (fornecedorCadastrado) {
+        <div class="modal-body">
+          <app-field-help-panel></app-field-help-panel>
+          <div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>Fornecedor cadastrado com sucesso.</div>
+          <div class="section-card mb-3">
+            <strong>{{ fornecedorCadastrado.razaoSocial }}</strong>
+            <div>{{ formatarCNPJ(fornecedorCadastrado.cnpj) }} · {{ fornecedorCadastrado.itemFornecido }}</div>
+          </div>
+          <label class="form-label" for="tipoContinuidadeFornecedor">O que este fornecedor vai fornecer?</label>
+          <select id="tipoContinuidadeFornecedor" class="form-select mb-3" [(ngModel)]="tipoContinuidade">
+            <option value="peca">Peça ou insumo</option>
+            <option value="servico">Serviço</option>
+          </select>
+          <p>Selecione um item existente ou cadastre um novo. Em seguida, informe as condições do fornecimento para concluir o vínculo com este fornecedor.</p>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-outline-primary" (click)="continuarCadastroFornecedor(false)">
+              <i class="bi bi-search me-1"></i>Selecionar {{ tipoContinuidade === 'peca' ? 'peça existente' : 'serviço existente' }}
+            </button>
+            <button type="button" class="btn btn-primary" (click)="continuarCadastroFornecedor(true)">
+              <i class="bi bi-plus-circle me-1"></i>Cadastrar {{ tipoContinuidade === 'peca' ? 'nova peça' : 'novo serviço' }}
+            </button>
+          </div>
+        </div>
+      }
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Concluir por enquanto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalFornecedorPeca" tabindex="-1" aria-labelledby="tituloFornecedorPeca">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header modal-header-clinicar"><h5 class="modal-title" id="tituloFornecedorPeca">Selecionar fornecedor para a peça</h5><button type="button" class="btn-close" (click)="concluirFornecedorPeca()" aria-label="Fechar"></button></div>
+    <div class="modal-body" style="color:#35689b">
+<app-field-help-panel></app-field-help-panel>
+@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true}" (selecionado)="selecionarFornecedorDaPeca($event)" />}@else{
+    <div class="section-card mb-3"><strong>{{ pecaFluxo?.nome }}</strong><p class="mb-0">{{ pecaFluxo?.fabricante }} · {{ pecaFluxo?.modelo }}</p></div>
+    <p>Selecione um fornecedor ativo. Se ele não estiver cadastrado, cadastre-o para continuar com esta peça.</p>
+    @if (erroFornecedorPeca) {
+      <div class="alert alert-danger">{{ erroFornecedorPeca }}</div>
+    }
+    <label class="form-label" for="buscaFornecedorDaPeca">Buscar fornecedor</label><input id="buscaFornecedorDaPeca" class="form-control mb-3" [(ngModel)]="buscaFornecedorPeca" placeholder="Razão social, nome fantasia ou CNPJ" />
+    <div class="table-responsive"><table class="table table-hover"><thead><tr><th>Fornecedor</th><th>CNPJ</th><th>Ação</th></tr></thead><tbody>
+    @for (fornecedor of fornecedoresAtivosDaPeca; track fornecedor) {
+      <tr><td>{{ fornecedor.razaoSocial }}</td><td>{{ formatarCNPJ(fornecedor.cnpj) }}</td><td><button type="button" class="btn btn-outline-primary btn-sm" [disabled]="abrindoFornecimento" (click)="selecionarFornecedorDaPeca(fornecedor)">Selecionar</button></td></tr>
+    }
+    @if (!fornecedoresAtivosDaPeca.length) {
+      <tr><td colspan="3" class="text-center">Nenhum fornecedor ativo encontrado. Cadastre um novo ou ajuste a busca.</td></tr>
+    }
+  </tbody></table></div>
+  }
+</div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="concluirFornecedorPeca()">Concluir por enquanto</button><button type="button" class="btn btn-primary" [disabled]="abrindoFornecimento" (click)="cadastrarFornecedorDaPeca()">Cadastrar novo fornecedor</button></div>
+</div></div>
+</div>

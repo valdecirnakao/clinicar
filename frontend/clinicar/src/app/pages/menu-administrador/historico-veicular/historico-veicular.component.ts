@@ -1,3 +1,7 @@
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
+import { UnidadePecaPipe } from '../../../shared/forms/unidade-peca.pipe';
+import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,9 +11,9 @@ import { Subscription } from 'rxjs';
 import { FiltrosHistorico, HistoricoVeicular, HistoricoVeicularService } from './historico-veicular.service';
 
 @Component({
-  selector: 'app-historico-veicular', standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './historico-veicular.component.html', styleUrls: ['./historico-veicular.component.css']
+    selector: 'app-historico-veicular',
+    imports: [FieldHelpDirective, FieldHelpPanelComponent, UnidadePecaPipe, FeedbackDirective, CommonModule, FormsModule, RouterLink],
+    templateUrl: './historico-veicular.component.html', styleUrls: ['./historico-veicular.component.css']
 })
 export class HistoricoVeicularComponent implements OnInit, OnDestroy {
   veiculos: { id: number; placa: string; fabricante: string; modelo: string }[] = [];
@@ -83,6 +87,13 @@ export class HistoricoVeicularComponent implements OnInit, OnDestroy {
     const inicio = Math.max(1, this.pagina - 2);
     const fim = Math.min(this.totalPaginas, this.pagina + 2);
     return Array.from({ length: fim - inicio + 1 }, (_, indice) => inicio + indice);
+  }
+  formatarPlaca(valor: string | null | undefined): string {
+    const placa = (valor ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+    return placa.length > 3 ? `${placa.slice(0, 3)}-${placa.slice(3)}` : placa;
+  }
+  quilometragem(valor: number | null): string {
+    return valor == null ? 'Não informada' : new Intl.NumberFormat('pt-BR').format(valor);
   }
   dinheiro(valor: number | null): string { return valor == null ? 'Não informado' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor); }
   rotulo(valor: string): string {

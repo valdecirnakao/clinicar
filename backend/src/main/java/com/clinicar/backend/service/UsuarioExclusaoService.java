@@ -30,6 +30,7 @@ public class UsuarioExclusaoService {
         UNION SELECT usuario_id FROM auth_session
         UNION SELECT usuario_id FROM password_reset_token
         UNION SELECT id_proprietario FROM veiculo
+        UNION SELECT id_responsavel FROM configuracao_alerta_estoque
         UNION SELECT id_usuario FROM movimentacao_estoque_peca
         UNION SELECT id_cliente FROM agendamento
         UNION SELECT id_responsavel FROM agendamento
@@ -42,6 +43,7 @@ public class UsuarioExclusaoService {
         UNION SELECT administrador_id FROM auditoria_reset_mfa
         UNION SELECT usuario_id FROM auditoria_exclusao_usuario
         UNION SELECT administrador_id FROM auditoria_exclusao_usuario
+        UNION SELECT usuario_id FROM auditoria_consulta
         UNION SELECT usuario_id FROM solicitacao_acesso_usuario
         UNION SELECT administrador_id FROM solicitacao_acesso_usuario
         """;
@@ -52,6 +54,15 @@ public class UsuarioExclusaoService {
         for (Object id : entityManager.createNativeQuery(VINCULOS).getResultList()) {
             if (id instanceof Number numero) ids.add(numero.longValue());
         }
+        return ids;
+    }
+    @Transactional(readOnly = true)
+    public Set<Long> usuariosComVinculos(java.util.Collection<Long> pagina) {
+        if(pagina.isEmpty())return Set.of();
+        Set<Long> ids=new HashSet<>();
+        var consulta=entityManager.createNativeQuery("SELECT usuario_id FROM ("+VINCULOS+") vinculos WHERE usuario_id IN (:ids)")
+                .unwrap(org.hibernate.query.NativeQuery.class).setParameterList("ids",pagina);
+        for(Object id:consulta.getResultList())if(id instanceof Number numero)ids.add(numero.longValue());
         return ids;
     }
 
@@ -95,6 +106,9 @@ public class UsuarioExclusaoService {
         auditoria.setRealizadoEm(Instant.now());
         auditoriaRepository.saveAndFlush(auditoria);
         try {
+            // Preferências de notificação não são vínculos operacionais; remover junto ao cadastro.
+            entityManager.createNativeQuery("DELETE FROM configuracao_alerta_manutencao_usuario WHERE id = :id")
+                    .setParameter("id", id).executeUpdate();
             entityManager.remove(usuario);
             entityManager.flush();
         } catch (DataIntegrityViolationException | jakarta.persistence.PersistenceException ex) {

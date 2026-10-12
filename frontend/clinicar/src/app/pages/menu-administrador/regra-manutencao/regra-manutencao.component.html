@@ -1,0 +1,1518 @@
+<div class="container-fluid mt-0 mb-0 regras-page">
+  <div class="card page-title-card mb-2"><div class="card-body text-center"><i class="bi bi-tools me-1"></i>Gerenciamento de Manutenção Preventiva</div></div>
+  <div class="summary-grid mb-2">
+    <div class="summary-card"><span>Total de regras</span><strong>{{ totalRegras }}</strong></div>
+    <div class="summary-card border-success-card"><span>Ativas</span><strong>{{ totalAtivas }}</strong></div>
+    <div class="summary-card border-secondary-card"><span>Inativas</span><strong>{{ totalInativas }}</strong></div>
+    <div class="summary-card border-warning-card"><span>Troca de óleo</span><strong>{{ totalTrocaOleo }}</strong></div>
+  </div>
+  <div class="card regras-list-card"><div class="card-body regras-list-body p-2">
+    <div class="row g-2 align-items-end mb-2 toolbar-filters">
+      <div class="col-xl-3 col-md-6"><label for="buscarRegras" class="form-label fw-bold">Buscar</label><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="buscarRegras" type="search" class="form-control" [(ngModel)]="filtroTexto" (ngModelChange)="aoAlterarFiltros()" placeholder="Descrição, serviço, peça, observação..."></div></div>
+      <div class="col-xl-2 col-md-3"><label for="grupoRegras" class="form-label fw-bold">Grupo</label><select id="grupoRegras" class="form-select" [(ngModel)]="filtroGrupo" (ngModelChange)="aoAlterarFiltros()"><option value="">Todos</option>@for (grupo of gruposDisponiveis; track grupo) {
+      <option [value]="grupo">{{ formatarGrupo(grupo) }}</option>
+    }</select></div>
+    <div class="col-xl-2 col-md-3"><label for="oleoRegras" class="form-label fw-bold">Tipo de óleo</label><select id="oleoRegras" class="form-select" [(ngModel)]="filtroOrigemOleo" (ngModelChange)="aoAlterarFiltros()"><option value="">Todos</option>@for (origem of origensOleo; track origem) {
+    <option [value]="origem">{{ formatarOrigemOleo(origem) }}</option>
+  }</select></div>
+  <div class="col-xl-1 col-md-3"><label for="statusRegras" class="form-label fw-bold">Status</label><select id="statusRegras" class="form-select" [(ngModel)]="filtroStatus" (ngModelChange)="aoAlterarFiltros()"><option value="">Todos</option><option value="ativo">Ativas</option><option value="inativo">Inativas</option></select></div>
+  <div class="col-xl-4 col-md-9 toolbar-actions">
+    <button type="button" class="btn btn-outline-secondary btn-limpar-filtros" [disabled]="!possuiFiltrosAplicados" (click)="limparFiltros()"><i class="bi bi-eraser me-1"></i>Limpar filtros</button>
+    <button type="button" class="btn btn-primary" (click)="abrirCadastro()"><i class="bi bi-plus-circle me-1"></i>Nova Regra</button>
+    <button type="button" class="btn btn-outline-primary" [disabled]="loading" (click)="recarregar()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+    <button type="button" class="btn btn-outline-secondary" (click)="voltar()"><i class="bi bi-arrow-left me-1"></i>Voltar</button>
+  </div>
+</div>
+@if (errorMsg) {
+  <div class="alert alert-danger mb-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">{{ errorMsg }}</div>
+}
+<div class="card table-card">
+
+  <div class="card-header d-flex justify-content-between flex-wrap gap-2 small"><span><i class="bi bi-info-circle me-1"></i>Clique nos cabeçalhos para ordenar. Use os filtros para refinar a consulta.</span><span>As regras ativas definem as próximas manutenções.</span></div>
+
+  <!-- Loading -->
+
+  @if (loading) {
+    <div
+      class="loading-container"
+      >
+      <div
+        class="spinner-border
+               text-primary"
+        role="status"
+        >
+        <span class="visually-hidden">
+          Carregando...
+        </span>
+      </div>
+      <span>
+        Carregando regras de manutenção...
+      </span>
+    </div>
+  }
+
+
+  <!-- Tabela -->
+
+  @if (!loading) {
+    <div class="table-responsive table-wrapper">
+      <table
+          class="table
+                 table-hover
+                 align-middle
+                 mb-0
+                 regras-table"
+        >
+        <thead>
+          <tr>
+            <th
+                class="sortable
+                       prioridade-column"
+              (click)="ordenarPor('prioridade')"
+              >
+              Prioridade
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('prioridade')"
+              ></i>
+            </th>
+            <th
+              class="sortable"
+              (click)="ordenarPor('grupoManutencao')"
+              >
+              Grupo
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('grupoManutencao')"
+              ></i>
+            </th>
+            <th
+              class="sortable descricao-column"
+              (click)="ordenarPor('descricao')"
+              >
+              Regra
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('descricao')"
+              ></i>
+            </th>
+            <th
+              class="sortable"
+              (click)="ordenarPor('servico')"
+              >
+              Serviço
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('servico')"
+              ></i>
+            </th>
+            <th
+              class="sortable"
+              (click)="ordenarPor('peca')"
+              >
+              Peça
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('peca')"
+              ></i>
+            </th>
+            <th
+              class="sortable"
+              (click)="ordenarPor('intervalo')"
+              >
+              Periodicidade
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('intervalo')"
+              ></i>
+            </th>
+            <th
+              class="sortable text-center"
+              (click)="ordenarPor('origemOleo')"
+              >
+              Óleo
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('origemOleo')"
+              ></i>
+            </th>
+            <th
+              class="sortable text-center"
+              (click)="ordenarPor('ativo')"
+              >
+              Status
+              <i
+                class="bi ms-1"
+                [ngClass]="iconeOrdenacao('ativo')"
+              ></i>
+            </th>
+            <th class="text-center actions-column">
+              Ações
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (
+            regra of regrasPaginadas; track trackByRegra($index,
+            regra)) {
+            <tr
+              [class.regra-inativa]="!regraAtiva(regra)"
+              >
+              <!-- PRIORIDADE -->
+              <td>
+                <span class="priority-badge">
+                  {{ formatarPrioridade(regra.prioridade) }}
+                </span>
+              </td>
+              <!-- GRUPO -->
+              <td>
+                <span
+                  class="badge regra-grupo-badge"
+                  [ngClass]="classeGrupo(regra.grupoManutencao)"
+                  >
+                  {{ formatarGrupo(regra.grupoManutencao) }}
+                </span>
+              </td>
+              <!-- REGRA -->
+              <td>
+                <div class="rule-description">
+                  {{ regra.descricao }}
+                </div>
+                @if (regra.observacoes) {
+                  <small
+                    class="text-muted table-observation"
+                    >
+                    {{ regra.observacoes }}
+                  </small>
+                }
+              </td>
+              <!-- SERVIÇO -->
+              <td>
+                @if (servicoRegra(regra) !== '—') {
+                  <div
+                    >
+                    <i
+                    class="bi bi-wrench-adjustable-circle
+                           me-1 text-primary"
+                    ></i>
+                    {{ servicoRegra(regra) }}
+                  </div>
+                } @else {
+                  <span class="text-muted">
+                    —
+                  </span>
+                }
+              </td>
+              <!-- PEÇA -->
+              <td>
+                @if (pecaRegra(regra) !== '—') {
+                  <div
+                    >
+                    <i
+                    class="bi bi-gear
+                           me-1 text-secondary"
+                    ></i>
+                    {{ pecaRegra(regra) }}
+                  </div>
+                } @else {
+                  <span class="text-muted">
+                    —
+                  </span>
+                }
+              </td>
+              <!-- INTERVALO -->
+              <td>
+                <div class="interval-cell">
+                  @if (
+                    regra.intervaloKm
+                    && regra.intervaloKm > 0
+                    ) {
+                    <div
+                      >
+                      <i
+                      class="bi bi-speedometer2
+                             me-1"
+                      ></i>
+                      {{ formatarNumero(regra.intervaloKm) }}
+                      km
+                    </div>
+                  }
+                  @if (
+                    regra.intervaloDias
+                    && regra.intervaloDias > 0
+                    ) {
+                    <div
+                      >
+                      <i
+                      class="bi bi-calendar3
+                             me-1"
+                      ></i>
+                      {{ formatarNumero(regra.intervaloDias) }}
+                      dias
+                    </div>
+                  }
+                  @if (
+                    !regra.intervaloKm
+                    && !regra.intervaloDias
+                    ) {
+                    <span
+                      class="text-muted"
+                      >
+                      —
+                    </span>
+                  }
+                </div>
+              </td>
+              <!-- ÓLEO -->
+              <td class="text-center">
+                @if (regra.origemOleo) {
+                  <span
+                    class="badge oil-badge"
+                    >
+                    <i
+                      class="bi bi-droplet-half me-1"
+                    ></i>
+                    {{ formatarOrigemOleo(regra.origemOleo) }}
+                  </span>
+                }
+                @if (!regra.origemOleo) {
+                  <span
+                    class="text-muted"
+                    >
+                    —
+                  </span>
+                }
+              </td>
+              <!-- STATUS -->
+              <td class="text-center">
+                @if (regraAtiva(regra)) {
+                  <span
+                    class="badge status-active"
+                    >
+                    <i
+                      class="bi bi-check-circle me-1"
+                    ></i>
+                    Ativa
+                  </span>
+                }
+                @if (!regraAtiva(regra)) {
+                  <span
+                    class="badge status-inactive"
+                    >
+                    <i
+                      class="bi bi-pause-circle me-1"
+                    ></i>
+                    Inativa
+                  </span>
+                }
+              </td>
+              <!-- AÇÕES -->
+              <td class="text-center">
+                <div
+                  class="d-inline-flex
+                         align-items-center
+                         gap-1"
+                  >
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-info"
+                    title="Visualizar detalhes"
+                    (click)="abrirDetalhes(regra)"
+                    >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    title="Editar regra"
+                    (click)="abrirEdicao(regra)"
+                    >
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                  <div class="btn-group">
+                    <button
+                      type="button"
+                      class="btn btn-sm
+                             btn-outline-secondary
+                             dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      title="Mais ações"
+                      >
+                      <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul
+                      class="dropdown-menu
+                             dropdown-menu-end
+                             action-menu"
+                      >
+                      @if (!regraAtiva(regra)) {
+                        <li
+                          >
+                          <button
+                            type="button"
+                            class="dropdown-item"
+                          (click)="
+                            abrirConfirmacao(
+                              regra,
+                              'ativar'
+                            )
+                          "
+                            >
+                            <i
+                            class="bi bi-check-circle
+                                   me-2
+                                   text-success"
+                            ></i>
+                            Ativar
+                          </button>
+                        </li>
+                      }
+                      @if (regraAtiva(regra)) {
+                        <li
+                          >
+                          <button
+                            type="button"
+                            class="dropdown-item"
+                          (click)="
+                            abrirConfirmacao(
+                              regra,
+                              'desativar'
+                            )
+                          "
+                            >
+                            <i
+                            class="bi bi-pause-circle
+                                   me-2
+                                   text-warning"
+                            ></i>
+                            Desativar
+                          </button>
+                        </li>
+                      }
+                      <li>
+                        <hr class="dropdown-divider">
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          class="dropdown-item text-danger"
+                          (click)="
+                            abrirConfirmacao(
+                              regra,
+                              'excluir'
+                            )
+                          "
+                          >
+                          <i
+                            class="bi bi-trash
+                                   me-2"
+                          ></i>
+                          Remover
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          }
+          <!-- SEM RESULTADOS -->
+          @if (
+            totalRegistrosFiltrados === 0
+            ) {
+            <tr
+              >
+              <td
+                colspan="9"
+                class="text-center
+                       py-5
+                       text-muted"
+                >
+                <i
+                  class="bi bi-search
+                         empty-icon"
+                ></i>
+                <div class="mt-2 fw-semibold">
+                  Nenhuma regra de manutenção encontrada.
+                </div>
+                @if (possuiFiltrosAplicados) {
+                  <small
+                    >
+                    Tente alterar ou limpar os filtros aplicados.
+                  </small>
+                }
+                @if (!possuiFiltrosAplicados) {
+                  <small
+                    >
+                    Cadastre a primeira regra para iniciar
+                    a configuração das manutenções preventivas.
+                  </small>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <!-- =================================================
+    PAGINAÇÃO
+    ================================================= -->
+    <div
+      class="table-pagination-footer"
+      >
+<app-paginacao [pagina]="paginaAtual-1" [tamanho]="itensPorPagina" [total]="totalRegistrosFiltrados" [carregando]="loading" [tamanhos]="opcoesItensPorPagina" (paginaChange)="irParaPagina($event+1)" (tamanhoChange)="itensPorPagina=$event;aoAlterarItensPorPagina()" />
+</div>
+  }
+
+</div>
+
+</div></div>
+</div>
+
+
+<!-- =======================================================
+MODAL CADASTRO / EDIÇÃO
+======================================================= -->
+
+<div
+  class="modal fade"
+  id="modalRegraManutencao" [appValidarDuplicidade]="{ tipo: 'regra', model: formulario, id: editId, campos: { grupo: '#duplicidade-grupoManutencao', descricao: '#duplicidade-descricao' } }" (duplicidadeChange)="duplicidades.set($event.model, $event.estado)"
+  tabindex="-1"
+  aria-hidden="true"
+  >
+
+  <div
+    class="modal-dialog
+           modal-xl
+           modal-dialog-centered
+           modal-dialog-scrollable"
+    >
+
+    <div class="modal-content">
+
+      <div class="modal-header modal-header-clinicar">
+
+        <div>
+
+          <h5 class="modal-title mb-0">
+
+            <i
+              class="bi me-1"
+              [ngClass]="
+                modoFormulario === 'cadastro'
+                  ? 'bi-plus-circle'
+                  : 'bi-pencil-square'
+              "
+            ></i>
+
+            {{
+            modoFormulario === 'cadastro'
+            ? 'Nova Regra de Manutenção'
+            : 'Editar Regra de Manutenção'
+            }}
+
+          </h5>
+
+
+          <small>
+
+            {{
+            modoFormulario === 'cadastro'
+            ? 'Defina quando a manutenção preventiva deverá ser recomendada.'
+            : 'Atualize os critérios da regra selecionada.'
+            }}
+
+          </small>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+
+      </div>
+
+
+      <div class="modal-body">
+        <app-field-help-panel></app-field-help-panel>
+
+        <!-- ERRO -->
+
+        @if (mensagemErroModal) {
+          <div
+            class="alert alert-danger"
+            >
+            <i
+            class="bi bi-exclamation-triangle
+                   me-1"
+            ></i>
+            {{ mensagemErroModal }}
+          </div>
+        }
+
+
+        <div
+          class="progress regra-progress mb-3"
+          role="progressbar"
+          aria-label="Progresso do preenchimento da regra"
+          [attr.aria-valuenow]="progressoFormulario"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          >
+
+          <div
+            class="progress-bar regra-progress-bar"
+            [style.width.%]="progressoFormulario"
+            >
+            {{ progressoFormulario }}%
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+        IDENTIFICAÇÃO
+        ============================================= -->
+
+        <div class="form-section">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-card-list me-1"
+            ></i>
+
+            Identificação da regra
+
+          </div>
+
+
+          <div class="row g-3">
+
+            <div class="col-12 col-lg-4">
+
+              <label class="form-label">
+                Grupo de manutenção
+                <span class="required">*</span>
+              </label>
+
+
+              <input
+                type="text"
+                class="form-control"
+                list="listaGruposManutencao"
+                id="duplicidade-grupoManutencao" [(ngModel)]="formulario.grupoManutencao"
+                (change)="ajustarGrupoFormulario()"
+                placeholder="Ex.: TROCA_OLEO"
+                />
+
+
+              <datalist id="listaGruposManutencao">
+
+                @for (
+                  grupo of gruposSugeridos
+                  ; track
+                  grupo) {
+                  <option
+                    [value]="grupo"
+                    >
+                    {{ formatarGrupo(grupo) }}
+                  </option>
+                }
+
+              </datalist>
+
+
+              <small class="form-text text-muted">
+                O grupo identifica o tipo de manutenção
+                para evitar previsões duplicadas.
+              </small>
+
+            </div>
+
+
+            <div class="col-12 col-lg-6">
+
+              <label class="form-label">
+                Descrição
+                <span class="required">*</span>
+              </label>
+
+              <input
+                type="text"
+                class="form-control"
+                id="duplicidade-descricao" [(ngModel)]="formulario.descricao"
+                maxlength="200"
+                placeholder="Ex.: Troca de óleo sintético"
+                />
+
+            </div>
+
+
+            <div class="col-12 col-lg-2">
+
+              <label class="form-label">
+                Prioridade
+                <span class="required">*</span>
+              </label>
+
+              <input
+                type="number"
+                class="form-control"
+                [(ngModel)]="formulario.prioridade"
+                min="0"
+                step="1"
+                />
+
+              <small class="form-text text-muted">
+                Menor = maior prioridade.
+              </small>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+        VÍNCULOS
+        ============================================= -->
+
+        <div class="form-section">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-link-45deg me-1"
+            ></i>
+
+            Serviço e peça relacionados
+
+          </div>
+
+
+          <div
+            class="alert alert-info
+                   py-2"
+            >
+
+            <i
+              class="bi bi-info-circle me-1"
+            ></i>
+
+            Os vínculos ajudam o sistema a identificar
+            qual serviço e/ou peça deverá ser considerado
+            na manutenção prevista.
+
+            <br />
+
+            <span class="required">*</span>
+            Informe pelo menos um serviço ou uma peça.
+
+          </div>
+
+
+          <div class="row g-3">
+
+            <div class="col-12 col-md-6">
+
+              <label class="form-label">
+                Serviço
+              </label>
+
+              <select
+                class="form-select"
+                [(ngModel)]="formulario.idServico"
+                >
+
+                <option [ngValue]="null">
+                  Nenhum serviço vinculado
+                </option>
+
+                @for (servico of servicos; track servico) {
+                  <option
+                    [ngValue]="servico.id"
+                    >
+                    {{ nomeServico(servico) }}
+                    @if (servico.categoria) {
+                      — {{ servico.categoria }}
+                    }
+                  </option>
+                }
+
+              </select>
+
+            </div>
+
+
+            <div class="col-12 col-md-6">
+
+              <label class="form-label">
+                Peça
+              </label>
+
+              <select
+                class="form-select"
+                [(ngModel)]="formulario.idPeca"
+                (ngModelChange)="aoAlterarPecaFormulario()"
+                >
+
+                <option [ngValue]="null">
+                  Nenhuma peça vinculada
+                </option>
+
+                @for (peca of pecas; track peca) {
+                  <option
+                    [ngValue]="peca.id"
+                    >
+                    {{ nomePeca(peca) }}
+                    @if (peca.fabricante) {
+                      — {{ peca.fabricante }}
+                    }
+                  </option>
+                }
+
+              </select>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+        PERIODICIDADE
+        ============================================= -->
+
+        <div class="form-section">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-speedometer2 me-1"
+            ></i>
+
+            Critérios de periodicidade
+
+          </div>
+
+
+          <small class="form-text text-muted d-block mb-3">
+            <span class="required">*</span>
+            Informe pelo menos um intervalo: quilômetros ou dias.
+            Quando ambos forem cadastrados, prevalece o que for atingido primeiro.
+          </small>
+
+
+          <div class="row g-3">
+
+            <div class="col-12 col-md-4">
+
+              <label class="form-label">
+                Intervalo em quilômetros
+              </label>
+
+              <div class="input-group">
+
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="formulario.intervaloKm"
+                  min="1"
+                  step="1"
+                  placeholder="Ex.: 10000"
+                  />
+
+                <span class="input-group-text">
+                  km
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="col-12 col-md-4">
+
+              <label class="form-label">
+                Intervalo em dias
+              </label>
+
+              <div class="input-group">
+
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="formulario.intervaloDias"
+                  min="1"
+                  step="1"
+                  placeholder="Ex.: 365"
+                  />
+
+                <span class="input-group-text">
+                  dias
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="col-12 col-md-4">
+
+              <label class="form-label">
+                Tipo/origem do óleo
+                @if (ehRegraTrocaOleoFormulario()) {
+                  <span
+                    class="required"
+                  >*</span>
+                }
+              </label>
+
+              <select
+                class="form-select"
+                [(ngModel)]="formulario.origemOleo"
+                [disabled]="!ehRegraTrocaOleoFormulario()"
+                >
+
+                <option [ngValue]="null">
+                  {{
+                  ehRegraTrocaOleoFormulario()
+                  ? 'Selecione'
+                  : 'Não se aplica'
+                  }}
+                </option>
+
+                @for (origem of origensOleo; track origem) {
+                  <option
+                    [value]="origem"
+                    >
+                    {{ formatarOrigemOleo(origem) }}
+                  </option>
+                }
+
+              </select>
+
+
+              @if (ehRegraTrocaOleoFormulario()) {
+                <small
+                  class="form-text text-muted"
+                  >
+                  @if (pecaSelecionadaEhOleoMotor()) {
+                    Preenchido automaticamente com a origem cadastrada na peça selecionada.
+                  } @else {
+                    Obrigatório para regras de troca de óleo.
+                  }
+                </small>
+              }
+
+            </div>
+
+
+            <div class="col-12">
+
+              <div
+                class="periodicity-example"
+                >
+
+                <i
+                  class="bi bi-lightbulb me-1"
+                ></i>
+
+                <strong>
+                  Como funciona:
+                </strong>
+
+                se forem informados quilômetros e dias,
+                a manutenção poderá ser prevista quando
+                um dos critérios atingir o limite.
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =============================================
+        COMPLEMENTOS
+        ============================================= -->
+
+        <div class="form-section mb-0">
+
+          <div class="section-title">
+
+            <i
+              class="bi bi-chat-left-text me-1"
+            ></i>
+
+            Complementos
+
+          </div>
+
+
+          <div class="row g-3">
+
+            <div class="col-12">
+
+              <label class="form-label">
+                Observações
+              </label>
+
+              <textarea
+                class="form-control"
+                rows="3"
+                maxlength="500"
+                [(ngModel)]="formulario.observacoes"
+                placeholder="Informações adicionais sobre esta regra..."
+              ></textarea>
+
+            </div>
+
+
+            <div class="col-12">
+
+              <div
+                class="status-switch-wrapper"
+                >
+
+                <div>
+
+                  <div class="fw-semibold">
+                    Regra ativa
+                  </div>
+
+                  <small class="text-muted">
+                    Somente regras ativas devem participar
+                    dos cálculos e previsões de manutenção.
+                  </small>
+
+                </div>
+
+
+                <div class="form-check form-switch">
+
+                  <input
+                    id="regraAtivaFormulario"
+                    class="form-check-input
+                           status-switch"
+                    type="checkbox"
+                    role="switch"
+                    [(ngModel)]="formulario.ativo"
+                    />
+
+                  <label
+                    class="form-check-label"
+                    for="regraAtivaFormulario"
+                    >
+                    {{
+                    formulario.ativo
+                    ? 'Ativa'
+                    : 'Inativa'
+                    }}
+                  </label>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <div
+          class="me-auto footer-validation-message"
+          [class.footer-ok]="formularioProntoParaSalvar"
+          >
+          <i
+            class="bi"
+            [class.bi-info-circle]="!formularioProntoParaSalvar"
+            [class.bi-check-circle]="formularioProntoParaSalvar"
+          ></i>
+
+          {{ mensagemBloqueioFormulario || 'Regra pronta para salvar.' }}
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          [disabled]="salvando"
+          >
+          Cancelar
+        </button>
+
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="salvando || !formularioProntoParaSalvar"
+          [title]="mensagemBloqueioFormulario || 'Salvar regra de manutenção'"
+          (click)="salvar()"
+          >
+
+          @if (salvando) {
+            <span
+            class="spinner-border
+                   spinner-border-sm
+                   me-1"
+            ></span>
+          }
+
+          @if (!salvando) {
+            <i
+              class="bi bi-check-circle me-1"
+            ></i>
+          }
+
+          {{
+          salvando
+          ? 'Salvando...'
+          : (
+          modoFormulario === 'cadastro'
+          ? 'Cadastrar Regra'
+          : 'Salvar Alterações'
+          )
+          }}
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+MODAL DETALHES
+======================================================= -->
+
+<div
+  class="modal fade"
+  id="modalDetalhesRegraManutencao"
+  tabindex="-1"
+  aria-hidden="true"
+  >
+
+  <div
+    class="modal-dialog
+           modal-lg
+           modal-dialog-centered
+           modal-dialog-scrollable"
+    >
+
+    <div class="modal-content">
+
+      <div class="modal-header modal-header-clinicar">
+
+        <div>
+
+          <h5 class="modal-title mb-0">
+
+            <i
+              class="bi bi-eye me-1"
+            ></i>
+
+            Detalhes da Regra
+
+          </h5>
+
+          <small>
+            Critérios utilizados na manutenção preventiva.
+          </small>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+
+      </div>
+
+
+      @if (regraDetalhe) {
+        <div
+          class="modal-body"
+          >
+          <div class="details-card">
+            <div
+            class="d-flex
+                   flex-wrap
+                   justify-content-between
+                   align-items-start
+                   gap-2"
+              >
+              <div>
+                <div class="details-label">
+                  Descrição
+                </div>
+                <div class="details-main-value">
+                  {{ regraDetalhe.descricao }}
+                </div>
+              </div>
+              @if (regraAtiva(regraDetalhe)) {
+                <span
+                  class="badge status-active"
+                  >
+                  <i
+                    class="bi bi-check-circle me-1"
+                  ></i>
+                  Ativa
+                </span>
+              }
+              @if (!regraAtiva(regraDetalhe)) {
+                <span
+                  class="badge status-inactive"
+                  >
+                  <i
+                    class="bi bi-pause-circle me-1"
+                  ></i>
+                  Inativa
+                </span>
+              }
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-12 col-md-6">
+              <div class="details-card h-100">
+                <div class="details-label">
+                  Grupo
+                </div>
+                <span
+                  class="badge regra-grupo-badge"
+                [ngClass]="
+                  classeGrupo(
+                    regraDetalhe.grupoManutencao
+                  )
+                "
+                  >
+                  {{
+                  formatarGrupo(
+                  regraDetalhe.grupoManutencao
+                  )
+                  }}
+                </span>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="details-card h-100">
+                <div class="details-label">
+                  Prioridade
+                </div>
+                <div class="details-value">
+                  {{
+                  formatarPrioridade(
+                  regraDetalhe.prioridade
+                  )
+                  }}
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="details-card h-100">
+                <div class="details-label">
+                  Serviço vinculado
+                </div>
+                <div class="details-value">
+                  <i
+                  class="bi bi-wrench-adjustable-circle
+                         me-1
+                         text-primary"
+                  ></i>
+                  {{ servicoRegra(regraDetalhe) }}
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="details-card h-100">
+                <div class="details-label">
+                  Peça vinculada
+                </div>
+                <div class="details-value">
+                  <i
+                  class="bi bi-gear
+                         me-1
+                         text-secondary"
+                  ></i>
+                  {{ pecaRegra(regraDetalhe) }}
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="details-card h-100">
+                <div class="details-label">
+                  Intervalo em KM
+                </div>
+                <div class="details-value">
+                  {{
+                  regraDetalhe.intervaloKm
+                  ? (
+                  formatarNumero(
+                  regraDetalhe.intervaloKm
+                  ) + ' km'
+                  )
+                  : '—'
+                  }}
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="details-card h-100">
+                <div class="details-label">
+                  Intervalo em dias
+                </div>
+                <div class="details-value">
+                  {{
+                  regraDetalhe.intervaloDias
+                  ? (
+                  formatarNumero(
+                  regraDetalhe.intervaloDias
+                  ) + ' dias'
+                  )
+                  : '—'
+                  }}
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="details-card h-100">
+                <div class="details-label">
+                  Tipo/origem do óleo
+                </div>
+                <div class="details-value">
+                  {{
+                  formatarOrigemOleo(
+                  regraDetalhe.origemOleo
+                  )
+                  }}
+                </div>
+              </div>
+            </div>
+            @if (regraDetalhe.observacoes) {
+              <div
+                class="col-12"
+                >
+                <div class="details-card">
+                  <div class="details-label">
+                    Observações
+                  </div>
+                  <div class="details-text">
+                    {{ regraDetalhe.observacoes }}
+                  </div>
+                </div>
+              </div>
+            }
+            @if (regraDetalhe.criadoEm) {
+              <div
+                class="col-12 col-md-6"
+                >
+                <div class="details-card h-100">
+                  <div class="details-label">
+                    Criada em
+                  </div>
+                  <div class="details-value">
+                    {{
+                    formatarDataHora(
+                    regraDetalhe.criadoEm
+                    )
+                    }}
+                  </div>
+                </div>
+              </div>
+            }
+            @if (regraDetalhe.atualizadoEm) {
+              <div
+                class="col-12 col-md-6"
+                >
+                <div class="details-card h-100">
+                  <div class="details-label">
+                    Última atualização
+                  </div>
+                  <div class="details-value">
+                    {{
+                    formatarDataHora(
+                    regraDetalhe.atualizadoEm
+                    )
+                    }}
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          >
+          Fechar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+MODAL CONFIRMAÇÃO
+======================================================= -->
+
+<div
+  class="modal fade"
+  id="modalConfirmacaoRegraManutencao"
+  tabindex="-1"
+  aria-hidden="true"
+  >
+
+  <div
+    class="modal-dialog
+           modal-dialog-centered"
+    >
+
+    <div class="modal-content">
+
+      <div class="modal-header modal-header-clinicar">
+
+        <h5 class="modal-title">
+
+          <i
+            class="bi me-1"
+            [ngClass]="iconeConfirmacao"
+          ></i>
+
+          {{ tituloConfirmacao }}
+
+        </h5>
+
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar"
+        ></button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <div class="confirmation-content">
+
+          <div
+            class="confirmation-icon"
+            [class.confirmation-danger]="
+              tipoConfirmacao === 'excluir'
+            "
+            >
+
+            <i
+              class="bi"
+              [ngClass]="iconeConfirmacao"
+            ></i>
+
+          </div>
+
+
+          <div>
+
+            <div class="fw-semibold mb-1">
+              {{ mensagemConfirmacao }}
+            </div>
+
+
+            @if (regraAcao) {
+              <small
+                class="text-muted"
+                >
+                Grupo:
+                {{
+                formatarGrupo(
+                regraAcao.grupoManutencao
+                )
+                }}
+              </small>
+            }
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+          >
+          Cancelar
+        </button>
+
+
+        <button
+          type="button"
+          class="btn"
+          [ngClass]="{
+            'btn-success':
+              tipoConfirmacao === 'ativar',
+
+            'btn-warning':
+              tipoConfirmacao === 'desativar',
+
+            'btn-danger':
+              tipoConfirmacao === 'excluir'
+          }"
+          (click)="confirmarAcao()"
+          >
+
+          <i
+            class="bi me-1"
+            [ngClass]="iconeConfirmacao"
+          ></i>
+
+          Confirmar
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

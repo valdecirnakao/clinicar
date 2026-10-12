@@ -37,6 +37,10 @@ public class AuthSessionInterceptor implements HandlerInterceptor {
         String metodo = request.getMethod();
 
         if (rotaPublica(uri, metodo)) {
+            // O cadastro público continua disponível; uma sessão existente identifica o autor administrativo.
+            if(uri.equals("/api/usuario") && "POST".equals(metodo)) {
+                sessionService.validarSessao(extrairCookie(request)).ifPresent(usuario->request.setAttribute("usuarioLogado",usuario));
+            }
             return true;
         }
 
@@ -66,6 +70,9 @@ public class AuthSessionInterceptor implements HandlerInterceptor {
     }
 
     private boolean rotaPublica(String uri, String metodo) {
+        if (uri.equals("/api/webhooks/whatsapp") && java.util.Set.of("GET", "POST").contains(metodo)) return true;
+        if ("GET".equalsIgnoreCase(metodo) && uri.equals("/api/infra/health")) return true;
+        if ("GET".equalsIgnoreCase(metodo) && uri.equals("/api/auth/csrf")) return true;
         if ("GET".equalsIgnoreCase(metodo) && uri.equals("/api/auth/redefinir-senha/validar")) return true;
         // Primeiro acesso: a autorização é o estado transacional do setup/token.
         if ("GET".equalsIgnoreCase(metodo)

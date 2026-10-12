@@ -1,0 +1,1548 @@
+import { ContinuidadeService } from '../../../services/continuidade.service';
+import { SelecaoCadastroComponent } from '../../../shared/tabelas/selecao-cadastro.component';
+import { PaginacaoComponent } from '../../../shared/tabelas/paginacao.component';
+import { ConsultaPaginadaService, PaginaCadastro } from '../../../shared/tabelas/consulta-paginada.service';
+import { podeAcessarEtapa } from '../../../shared/forms/etapas-cadastro';
+import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
+import { inject as injectFeedback } from '@angular/core';
+import { NotificacaoService } from '../../../shared/feedback/notificacao.service';
+import { AfterViewInit, Input, Output, EventEmitter, Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription, forkJoin } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FluxoPecaService } from '../../../shared/fornecedores/fluxo-peca.service';
+import { Peca } from '../peca/peca.service';
+import { DestroyRef } from '@angular/core';
+import { FluxoFornecedorService, TipoItemFornecedor } from '../../../shared/fornecedores/fluxo-fornecedor.service';
+import { aposFecharModal } from '../../../shared/fornecedores/transicao-modal';
+import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
+import { HttpClient } from '@angular/common/http';
+import {
+  FornecedorService,
+  Fornecedor
+} from './fornecedor.service';
+
+declare var bootstrap: any;
+
+type AbaFornecedor = 'dados' | 'contato' | 'endereco' | 'revisao';
+type DirecaoOrdenacao = 'asc' | 'desc';
+type ColunaOrdenacaoFornecedor =
+  | 'cnpj'
+  | 'razaoSocial'
+  | 'nomeFantasia'
+  | 'itemFornecido'
+  | 'email'
+  | 'telefone'
+  | 'cidade'
+  | 'estado'
+  | 'fundacao';
+
+type CampoObrigatorioFornecedor =
+  | 'cnpj'
+  | 'razaoSocial'
+  | 'nomeFantasia'
+  | 'itemFornecido'
+  | 'telefone'
+  | 'email'
+  | 'fundacao'
+  | 'cep'
+  | 'logradouro'
+  | 'bairro'
+  | 'cidade'
+  | 'estado'
+  | 'numeroEndereco';
+
+@Component({
+    selector: 'app-fornecedor',
+    imports: [SelecaoCadastroComponent,PaginacaoComponent,FeedbackDirective, CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
+    templateUrl: './fornecedor.component.html',
+    styleUrls: ['./fornecedor.component.css']
+})
+export class FornecedorComponent implements OnInit, OnDestroy, AfterViewInit {
+  @Input() cadastroIntegrado = false;
+  @Input() itemCadastroIntegrado = 'Peças automotivas';
+  @Output() registroCriado = new EventEmitter<Fornecedor>();
+  @Output() cadastroCancelado = new EventEmitter<void>();
+  private cadastroIntegradoSalvo = false;
+  ngAfterViewInit(): void {
+    if (!this.cadastroIntegrado) return;
+    const el = document.getElementById('modalCadastroFornecedor');
+    const cancelado = () => { if (!this.cadastroIntegradoSalvo) this.cadastroCancelado.emit(); };
+    el?.addEventListener('hidden.bs.modal', cancelado);
+    let destruido = false;
+    this.destroyRef.onDestroy(() => {
+      destruido = true;
+      el?.removeEventListener('hidden.bs.modal', cancelado);
+      this.modalCadastro?.dispose?.();
+    });
+    queueMicrotask(() => {
+      if (destruido) return;
+      this.abrirModalCadastro();
+      this.novoFornecedor.itemFornecido = this.itemCadastroIntegrado;
+    });
+  }
+
+  private readonly continuidade = injectFeedback(ContinuidadeService);
+  private readonly notificacoes = injectFeedback(NotificacaoService);
+  private readonly fluxoFornecedor = injectFeedback(FluxoFornecedorService);
+  private readonly destroyRef = injectFeedback(DestroyRef);
+  private readonly fluxoPeca = injectFeedback(FluxoPecaService);
+  private readonly rota = injectFeedback(ActivatedRoute);
+  pecaFluxo: Peca | null = null;
+  fornecedoresDaPeca: Fornecedor[] = [];
+  buscaFornecedorPeca = '';
+  modalFornecedorPeca: any;
+  erroFornecedorPeca = '';
+  abrindoFornecimento = false;
+  retornandoFornecedorPeca = false;
+  get fornecedoresAtivosDaPeca(): Fornecedor[] {
+    const termo = this.normalizarTexto(this.buscaFornecedorPeca);
+    return this.fornecedoresDaPeca.filter(f => f.ativo !== false && this.normalizarTexto(
+      [f.razaoSocial, f.nomeFantasia, f.cnpj, this.formatarCNPJ(f.cnpj)].join(' ')).includes(termo));
+  }
+  iniciarFornecedorDaPeca(): void {
+    if (this.rota.snapshot.queryParamMap.get('continuarPeca') !== '1') return;
+    forkJoin({ peca: this.fluxoPeca.carregar(this.rota), fornecedores: this.fornecedorService.listarTodos() })
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: ({ peca, fornecedores }) => {
+          if (!peca) return;
+          this.pecaFluxo = peca;
+          this.fornecedoresDaPeca = fornecedores || [];
+          this.fluxoPeca.consumir(this.rota);
+          this.mostrarFornecedorPeca();
+        },
+        error: () => this.notificacoes.erro('Não foi possível carregar a peça e os fornecedores. Atualize a página para tentar novamente.')
+      });
+  }
+  mostrarFornecedorPeca(): void {
+    const el = document.getElementById('modalFornecedorPeca');
+    if (!el || !this.pecaFluxo) return;
+    this.modalFornecedorPeca = bootstrap.Modal.getOrCreateInstance(el, { backdrop: 'static', keyboard: false });
+    this.modalFornecedorPeca.show();
+  }
+  cadastrarFornecedorDaPeca(): void {
+    aposFecharModal('modalFornecedorPeca', this.modalFornecedorPeca, () => {
+      this.abrirModalCadastro();
+      this.novoFornecedor.itemFornecido = 'Peças automotivas';
+      this.retornandoFornecedorPeca = true;
+      document.getElementById('modalCadastroFornecedor')?.addEventListener('hidden.bs.modal', () => {
+        if (this.retornandoFornecedorPeca) this.mostrarFornecedorPeca();
+        this.retornandoFornecedorPeca = false;
+      }, { once: true });
+    }, this.destroyRef);
+  }
+  selecionarFornecedorDaPeca(fornecedor: Fornecedor, origem = 'modalFornecedorPeca'): void {
+    if (!fornecedor.id || !this.pecaFluxo?.id || fornecedor.ativo === false || this.abrindoFornecimento) return;
+    const pecaId = this.pecaFluxo.id;
+    this.abrindoFornecimento = true;
+    this.erroFornecedorPeca = '';
+    this.retornandoFornecedorPeca = false;
+    aposFecharModal(origem, origem === 'modalFornecedorPeca' ? this.modalFornecedorPeca : this.modalCadastro, () => {
+      const falhou = () => {
+        this.abrindoFornecimento = false;
+        this.erroFornecedorPeca = 'Não foi possível abrir o fornecimento. Os cadastros salvos foram preservados. Tente novamente.';
+        this.mostrarFornecedorPeca();
+      };
+      this.fluxoFornecedor.continuarComItem('peca', fornecedor.id!, pecaId).then(ok => { if (!ok) falhou(); }).catch(falhou);
+    }, this.destroyRef);
+  }
+  concluirFornecedorPeca(): void {
+    this.pecaFluxo = null;
+    this.modalFornecedorPeca?.hide();
+  }
+  fornecedorCadastrado: Fornecedor | null = null;
+  tipoContinuidade: TipoItemFornecedor = 'peca';
+  modalContinuidade: any;
+  salvandoCadastro = false;
+
+  oferecerContinuidade(fornecedor: Fornecedor): void {
+    if (!fornecedor?.id) {
+      this.modalCadastro?.hide();
+      this.notificacoes.aviso('Fornecedor salvo. Não foi possível abrir a continuação do cadastro; acesse Fornecimentos para associar o item.');
+      return;
+    }
+    this.fornecedorCadastrado = fornecedor;
+    this.tipoContinuidade = /servi/i.test(fornecedor.itemFornecido) ? 'servico' : 'peca';
+    this.continuidade.registrar(this.tipoContinuidade==='peca'?'fornecimentoPecas':'fornecimentoServico',{continuarCadastro:'1',fornecedorId:String(fornecedor.id)});
+    const el = document.getElementById('modalContinuidadeFornecedor');
+    if (!el || !fornecedor.id) return;
+    aposFecharModal('modalCadastroFornecedor', this.modalCadastro, () => {
+      this.modalContinuidade = bootstrap.Modal.getOrCreateInstance(el, { backdrop: 'static', keyboard: false });
+      this.modalContinuidade.show();
+    }, this.destroyRef);
+  }
+
+  continuarCadastroFornecedor(novoItem: boolean): void {
+    const id = this.fornecedorCadastrado?.id;
+    if (!id) return;
+    const tipo = this.tipoContinuidade;
+    aposFecharModal('modalContinuidadeFornecedor', this.modalContinuidade, () => {
+      void this.fluxoFornecedor.iniciar(tipo, novoItem, id);
+    }, this.destroyRef);
+  }
+
+  camposInvalidosEdicao: string[] = [];
+  mensagemErroCadastro = '';
+  fornecedores: Fornecedor[] = [];
+  private todos: Fornecedor[] = [];
+
+  novoFornecedor: Partial<Fornecedor> = {};
+  edit: Partial<Fornecedor> = {};
+  editId: number | null = null;
+
+  fornecedorDetalhes: Fornecedor | null = null;
+  fornecedorParaExcluir: Fornecedor | null = null;
+
+  modalCadastro: any;
+  modalEdicao: any;
+  modalDetalhes: any;
+  modalConfirmacao: any;
+
+  loading = false;
+  errorMsg = '';
+  mensagemErroModal = '';
+  mensagemCepCadastro = '';
+  mensagemCepEdicao = '';
+  buscandoCepCadastro = false;
+  buscandoCepEdicao = false;
+
+  camposInvalidos: CampoObrigatorioFornecedor[] = [];
+  readonly consultaCnpj = {
+    cadastro: { verificado: false, duplicado: false, consultando: false, aviso: '', requisicao: undefined as Subscription | undefined },
+    edicao: { verificado: false, duplicado: false, consultando: false, aviso: '', requisicao: undefined as Subscription | undefined }
+  };
+  readonly consultaEmail = {
+    cadastro: { aguardando: false, temporizador: undefined as ReturnType<typeof setTimeout> | undefined, verificado: false, duplicado: false, formatoInvalido: false, consultando: false, aviso: '', requisicao: undefined as Subscription | undefined },
+    edicao: { aguardando: false, temporizador: undefined as ReturnType<typeof setTimeout> | undefined, verificado: false, duplicado: false, formatoInvalido: false, consultando: false, aviso: '', requisicao: undefined as Subscription | undefined }
+  };
+
+  ngOnDestroy(): void {
+    clearTimeout(this.consultaEmail.cadastro.temporizador);
+    clearTimeout(this.consultaEmail.edicao.temporizador);
+    this.consultaEmail.cadastro.requisicao?.unsubscribe();
+    this.consultaEmail.edicao.requisicao?.unsubscribe();
+    this.consultaCnpj.cadastro.requisicao?.unsubscribe();
+    this.consultaCnpj.edicao.requisicao?.unsubscribe();
+  }
+
+  alterarCnpj(tipo: 'cadastro' | 'edicao'): void {
+    const estado = this.consultaCnpj[tipo];
+    estado.verificado = false;
+    estado.requisicao?.unsubscribe();
+    estado.duplicado = false;
+    estado.consultando = false;
+    estado.aviso = '';
+  }
+
+  verificarCnpj(tipo: 'cadastro' | 'edicao'): void {
+    this.alterarCnpj(tipo);
+    const model = tipo === 'cadastro' ? this.novoFornecedor : this.edit;
+    model.cnpj = this.formatarCNPJ(model.cnpj);
+    const cnpj = this.onlyDigits(model.cnpj);
+    if (cnpj.length !== 14) return;
+    const estado = this.consultaCnpj[tipo];
+    estado.consultando = true;
+    estado.requisicao = this.fornecedorService.verificarCnpjCadastrado(
+      cnpj, tipo === 'edicao' ? this.editId ?? undefined : undefined
+    ).subscribe({
+      next: resposta => {
+        if (this.onlyDigits(model.cnpj) !== cnpj) return;
+        estado.consultando = false;
+        estado.duplicado = resposta.cadastrado;
+        estado.verificado = !resposta.cadastrado;
+      },
+      error: () => {
+        if (this.onlyDigits(model.cnpj) !== cnpj) return;
+        estado.consultando = false;
+        estado.aviso = tipo === 'cadastro'
+          ? 'Não foi possível consultar o CNPJ. Saia novamente do campo para tentar de novo antes de avançar.'
+          : 'Não foi possível consultar o CNPJ agora. A verificação será feita ao salvar.';
+      }
+    });
+  }
+
+  mensagemCnpj(tipo: 'cadastro' | 'edicao'): string {
+    return this.consultaCnpj[tipo].duplicado ? 'CNPJ já cadastrado anteriormente.' : 'Informe um CNPJ válido.';
+  }
+
+  alterarEmail(tipo: 'cadastro' | 'edicao'): void {
+    const estado = this.consultaEmail[tipo];
+    clearTimeout(estado.temporizador);
+    estado.temporizador = undefined;
+    estado.aguardando = false;
+    estado.verificado = false;
+    estado.formatoInvalido = false;
+    estado.requisicao?.unsubscribe();
+    estado.duplicado = false;
+    estado.consultando = false;
+    estado.aviso = '';
+  }
+
+  agendarVerificacaoEmail(tipo: 'cadastro' | 'edicao'): void {
+    this.alterarEmail(tipo);
+    const model = tipo === 'cadastro' ? this.novoFornecedor : this.edit;
+    if (!String(model.email || '').trim()) return;
+    const estado = this.consultaEmail[tipo];
+    estado.aguardando = this.emailValido(model.email);
+    estado.temporizador = setTimeout(() => this.verificarEmail(tipo), 500);
+  }
+
+  finalizarVerificacaoEmail(tipo: 'cadastro' | 'edicao'): void {
+    const estado = this.consultaEmail[tipo];
+    if (estado.verificado || estado.duplicado || estado.consultando) return;
+    this.verificarEmail(tipo);
+  }
+
+  verificarEmail(tipo: 'cadastro' | 'edicao'): void {
+    this.alterarEmail(tipo);
+    const model = tipo === 'cadastro' ? this.novoFornecedor : this.edit;
+    model.email = String(model.email || '').trim().toLowerCase();
+    const email = model.email;
+    const estado = this.consultaEmail[tipo];
+    if (!this.emailValido(email)) {
+      estado.formatoInvalido = true;
+      return;
+    }
+    estado.consultando = true;
+    estado.requisicao = this.fornecedorService.verificarEmailCadastrado(
+      email, tipo === 'edicao' ? this.editId ?? undefined : undefined
+    ).subscribe({
+      next: resposta => {
+        if (model.email !== email) return;
+        estado.consultando = false;
+        estado.duplicado = resposta.cadastrado;
+        estado.verificado = !resposta.cadastrado;
+      },
+      error: () => {
+        if (model.email !== email) return;
+        estado.consultando = false;
+        estado.aviso = tipo === 'cadastro'
+          ? 'Não foi possível consultar o e-mail. Clique em Verificar novamente antes de avançar.'
+          : 'Não foi possível consultar o e-mail agora. A verificação será feita ao salvar.';
+      }
+    });
+  }
+
+  mensagemEmail(tipo: 'cadastro' | 'edicao'): string {
+    return this.consultaEmail[tipo].duplicado ? 'E-mail já cadastrado anteriormente.' : 'Informe um e-mail válido, como nome@empresa.com.';
+  }
+
+  filtroTexto = '';
+  filtroEstado = '';
+  filtroItemFornecido = '';
+
+  readonly opcoesItemFornecidoFornecedor = [
+    'Peças automotivas',
+    'Óleos e lubrificantes',
+    'Fluidos automotivos',
+    'Peças e lubrificantes',
+    'Serviços automotivos',
+    'Equipamentos e ferramentas',
+    'Materiais de consumo',
+    'Outros'
+  ];
+
+  paginaAtual = 1;
+  itensPorPagina = 10;
+  opcoesItensPorPagina = [5, 10, 20, 50];
+
+  colunaOrdenacao: ColunaOrdenacaoFornecedor = 'razaoSocial';
+  direcaoOrdenacao: DirecaoOrdenacao = 'asc';
+
+  abaCadastroFornecedor: AbaFornecedor = 'dados';
+  abaEdicaoFornecedor: AbaFornecedor = 'dados';
+
+  private readonly camposObrigatorios: CampoObrigatorioFornecedor[] = [
+    'cnpj',
+    'razaoSocial',
+    'nomeFantasia',
+    'itemFornecido',
+    'telefone',
+    'email',
+    'fundacao',
+    'cep',
+    'logradouro',
+    'bairro',
+    'cidade',
+    'estado',
+    'numeroEndereco'
+  ];
+
+  constructor(
+    private readonly fornecedorService: FornecedorService,
+    private readonly http: HttpClient,
+    private readonly location: Location
+  ) {}
+
+  modoPaginado=false;
+  private readonly consultaPaginada=injectFeedback(ConsultaPaginadaService);
+  private paginaServidor?:PaginaCadastro<Fornecedor>;
+  private consultaPagina?:Subscription;
+  private filtroTimer?:ReturnType<typeof setTimeout>;
+  private carregarPagina(esperar=false):void {
+    if(!this.modoPaginado)return;
+    clearTimeout(this.filtroTimer);
+    if(esperar){this.filtroTimer=setTimeout(()=>this.carregarPagina(),250);return;}
+    this.consultaPagina?.unsubscribe();this.loading=true;this.errorMsg='';
+    this.consultaPagina=this.consultaPaginada.consultar<Fornecedor>('fornecedor',{pagina:this.paginaAtual-1,tamanho:this.itensPorPagina,busca:this.filtroTexto,ordenar:this.colunaOrdenacao,decrescente:this.direcaoOrdenacao==='desc',estado:this.filtroEstado,itemFornecido:this.filtroItemFornecido}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:pagina=>{
+      this.paginaServidor=pagina;this.todos=pagina.content.map(item=>this.normalizarFornecedorParaTela(item));this.fornecedores=this.todos;this.loading=false;
+      if(this.paginaAtual>Math.max(1,pagina.totalPages)){this.paginaAtual=Math.max(1,pagina.totalPages);this.carregarPagina();}
+    },error:erro=>{this.loading=false;this.errorMsg=this.extrairMensagemErro(erro,'Não foi possível carregar a página.');}});
+  }
+  ngOnInit(): void {
+    if (this.cadastroIntegrado) return;
+    this.modoPaginado=true;this.destroyRef.onDestroy(()=>clearTimeout(this.filtroTimer));this.recarregar();
+    this.iniciarFornecedorDaPeca();
+  }
+
+  recarregar(): void {if(this.modoPaginado){this.carregarPagina();return;}
+    this.loading = true;
+    this.errorMsg = '';
+
+    this.fornecedorService.listarTodos().subscribe({
+      next: (lista) => {
+        this.todos = (lista || []).map(f => this.normalizarFornecedorParaTela(f));
+        this.fornecedores = [...this.todos];
+        this.paginaAtual = 1;
+        this.loading = false;
+        this.cancelarEdicao();
+      },
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+        this.errorMsg = this.extrairMensagemErro(
+          err,
+          'Falha ao carregar fornecedores.'
+        );
+      }
+    });
+  }
+
+  get totalFornecedores(): number {if(this.modoPaginado)return this.paginaServidor?.resumo['total']??0;
+    return this.todos.length;
+  }
+
+  get totalEstadosAtendidos(): number {if(this.modoPaginado)return this.paginaServidor?.resumo['estados']??0;
+    return new Set(
+      this.todos
+        .map(f => (f.estado || '').toUpperCase().trim())
+        .filter(Boolean)
+    ).size;
+  }
+
+  get totalCidadesAtendidas(): number {if(this.modoPaginado)return this.paginaServidor?.resumo['cidades']??0;
+    return new Set(
+      this.todos
+        .map(f => this.normalizarTexto(f.cidade))
+        .filter(Boolean)
+    ).size;
+  }
+
+  get totalComContato(): number {if(this.modoPaginado)return this.paginaServidor?.resumo['whatsapp']??0;
+    return this.todos.filter(f => this.telefoneWhatsappValido(f.telefone)).length;
+  }
+
+  get estadosDisponiveis(): string[] {if(this.modoPaginado)return this.paginaServidor?.opcoes['estado']??[];
+    return Array.from(
+      new Set(
+        this.todos
+          .map(f => (f.estado || '').toUpperCase().trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  get itensFornecidosDisponiveis(): string[] {if(this.modoPaginado)return [...new Set([...this.opcoesItemFornecidoFornecedor,...(this.paginaServidor?.opcoes['itemFornecido']??[])])].sort();
+    const itensCadastradosForaDoPadrao = Array.from(
+      new Set(
+        this.todos
+          .map(f => (f.itemFornecido || '').trim())
+          .filter(Boolean)
+          .filter(item => !this.opcoesItemFornecidoFornecedor.some(opcao =>
+            this.normalizarTexto(opcao) === this.normalizarTexto(item)
+          ))
+      )
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    return [
+      ...this.opcoesItemFornecidoFornecedor,
+      ...itensCadastradosForaDoPadrao
+    ];
+  }
+
+  get possuiFiltrosAplicados(): boolean {
+    return !!(
+      this.filtroTexto.trim() ||
+      this.filtroEstado.trim() ||
+      this.filtroItemFornecido.trim()
+    );
+  }
+
+  get fornecedoresFiltrados(): Fornecedor[] {if(this.modoPaginado)return this.todos;
+    const texto = this.normalizarTexto(this.filtroTexto);
+    const textoNumerico = this.onlyDigits(this.filtroTexto);
+    const estado = (this.filtroEstado || '').toUpperCase().trim();
+    const item = this.normalizarTexto(this.filtroItemFornecido);
+
+    const filtrados = this.todos.filter(f => {
+      const atendeTexto = !texto ||
+        this.onlyDigits(f.cnpj).includes(textoNumerico) ||
+        this.normalizarTexto(this.formatarCNPJ(f.cnpj)).includes(texto) ||
+        this.normalizarTexto(f.razaoSocial).includes(texto) ||
+        this.normalizarTexto(f.nomeFantasia).includes(texto) ||
+        this.normalizarTexto(f.itemFornecido).includes(texto) ||
+        this.normalizarTexto(f.email).includes(texto) ||
+        this.normalizarTexto(f.telefone).includes(texto) ||
+        this.onlyDigits(f.telefone).includes(textoNumerico) ||
+        this.normalizarTexto(f.cidade).includes(texto) ||
+        this.normalizarTexto(f.estado).includes(texto);
+
+      const atendeEstado = !estado || (f.estado || '').toUpperCase().trim() === estado;
+      const atendeItem = !item || this.normalizarTexto(f.itemFornecido) === item;
+
+      return atendeTexto && atendeEstado && atendeItem;
+    });
+
+    return this.ordenarFornecedores(filtrados);
+  }
+
+  get totalRegistrosFiltrados(): number {if(this.modoPaginado)return this.paginaServidor?.totalElements??0;
+    return this.fornecedoresFiltrados.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalRegistrosFiltrados / this.itensPorPagina));
+  }
+
+  get indiceInicialPagina(): number {
+    if (this.totalRegistrosFiltrados === 0) {
+      return 0;
+    }
+
+    return (this.paginaAtual - 1) * this.itensPorPagina + 1;
+  }
+
+  get indiceFinalPagina(): number {
+    return Math.min(this.paginaAtual * this.itensPorPagina, this.totalRegistrosFiltrados);
+  }
+
+  get fornecedoresPaginados(): Fornecedor[] {if(this.modoPaginado)return this.todos;
+    this.ajustarPaginaAtual();
+
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+
+    return this.fornecedoresFiltrados.slice(inicio, fim);
+  }
+
+  get progressoCadastroFornecedor(): number {
+    return this.calcularProgresso(this.novoFornecedor);
+  }
+
+  get progressoEdicaoFornecedor(): number {
+    return this.calcularProgresso(this.edit);
+  }
+
+  get cadastroFornecedorProntoParaSalvar(): boolean {
+    return this.validarFornecedor(this.novoFornecedor) === null
+      && this.consultaCnpj.cadastro.verificado && this.consultaEmail.cadastro.verificado;
+  }
+
+  get edicaoFornecedorProntaParaSalvar(): boolean {
+    return this.validarFornecedor(this.edit) === null;
+  }
+
+  get mensagemBloqueioCadastro(): string {
+    return this.validarFornecedor(this.novoFornecedor) || '';
+  }
+
+  get mensagemBloqueioEdicao(): string {
+    return this.validarFornecedor(this.edit) || '';
+  }
+
+  filtrar(term: string): void {
+    this.filtroTexto = term;
+    this.aoAlterarFiltros();
+  }
+
+  aoAlterarFiltros(): void {
+    this.paginaAtual = 1;
+  this.carregarPagina(true); }
+
+  limparFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroEstado = '';
+    this.filtroItemFornecido = '';
+    this.paginaAtual = 1;
+  this.carregarPagina(); }
+
+  aoAlterarItensPorPagina(): void {
+    this.paginaAtual = 1;
+    this.ajustarPaginaAtual();
+  this.carregarPagina(); }
+
+  irParaPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) {
+      this.carregarPagina();return;
+    }
+
+    this.paginaAtual = pagina;
+  this.carregarPagina(); }
+
+  paginaAnterior(): void {
+    if (this.paginaAtual > 1) {
+      this.paginaAtual--;
+    }
+  this.carregarPagina(); }
+
+  proximaPagina(): void {
+    if (this.paginaAtual < this.totalPaginas) {
+      this.paginaAtual++;
+    }
+  this.carregarPagina(); }
+
+  paginasVisiveis(): number[] {
+    const total = this.totalPaginas;
+    const atual = this.paginaAtual;
+    const paginas: number[] = [];
+    const inicio = Math.max(1, atual - 2);
+    const fim = Math.min(total, atual + 2);
+
+    for (let i = inicio; i <= fim; i++) {
+      paginas.push(i);
+    }
+
+    return paginas;
+  }
+
+  ordenarPor(coluna: ColunaOrdenacaoFornecedor): void {
+    if (this.colunaOrdenacao === coluna) {
+      this.direcaoOrdenacao = this.direcaoOrdenacao === 'asc' ? 'desc' : 'asc';
+      this.carregarPagina();return;
+    }
+
+    this.colunaOrdenacao = coluna;
+    this.direcaoOrdenacao = 'asc';
+  this.carregarPagina(); }
+
+  iconeOrdenacao(coluna: ColunaOrdenacaoFornecedor): string {
+    if (this.colunaOrdenacao !== coluna) {
+      return 'bi-arrow-down-up';
+    }
+
+    return this.direcaoOrdenacao === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
+  }
+
+  trackByFornecedor = (_: number, f: Fornecedor) => f.id ?? f.cnpj;
+
+  abrirModalCadastro(): void {
+    this.alterarEmail('cadastro');
+    this.alterarCnpj('cadastro');
+    this.camposInvalidos = [...this.camposObrigatorios];
+    this.mensagemErroModal = '';
+    this.mensagemCepCadastro = '';
+    this.abaCadastroFornecedor = 'dados';
+
+    this.novoFornecedor = {
+      ativo: true,
+      cnpj: '',
+      razaoSocial: '',
+      nomeFantasia: '',
+      itemFornecido: '',
+      telefone: '',
+      email: '',
+      fundacao: '',
+      cep: '',
+      logradouro: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
+      complementoEndereco: '',
+      numeroEndereco: ''
+    };
+
+    const el = document.getElementById('modalCadastroFornecedor');
+
+    if (!el) {
+      console.error('Modal modalCadastroFornecedor não encontrado.');
+      return;
+    }
+
+    this.modalCadastro = bootstrap.Modal.getOrCreateInstance(el, {
+      backdrop: 'static',
+      keyboard: false
+    });
+    this.modalCadastro.show();
+  }
+
+  salvarNovoFornecedor(): void {
+    if (this.salvandoCadastro) return;
+    const erro = this.validarFornecedor(this.novoFornecedor);
+
+    if (erro) {
+      this.camposInvalidos = this.camposObrigatorios.filter(campo => this.campoInvalido(this.novoFornecedor, campo));
+      this.mensagemErroModal = erro;
+      this.abaCadastroFornecedor = this.abaComPendencia(this.novoFornecedor) || 'dados';
+      return;
+    }
+
+    const payload = this.montarPayloadFornecedor(this.novoFornecedor);
+    this.salvandoCadastro = true;
+
+    this.fornecedorService.cadastrarFornecedor(payload).subscribe({
+      next: (fornecedor) => {
+        this.salvandoCadastro = false;
+        if (this.cadastroIntegrado) {
+          this.cadastroIntegradoSalvo = true;
+          aposFecharModal('modalCadastroFornecedor', this.modalCadastro, () => this.registroCriado.emit(fornecedor), this.destroyRef);
+          return;
+        }
+        this.mensagemErroModal = '';
+        this.notificacoes.sucesso('Fornecedor cadastrado com sucesso.');
+        this.recarregar();
+        if (this.pecaFluxo) {
+          this.fornecedoresDaPeca = [...this.fornecedoresDaPeca, fornecedor];
+          this.selecionarFornecedorDaPeca(fornecedor, 'modalCadastroFornecedor');
+        } else this.oferecerContinuidade(fornecedor);
+      },
+      error: (err) => {
+        this.salvandoCadastro = false;
+        console.error(err);
+        this.mensagemErroModal = this.extrairMensagemErro(
+          err,
+          'Erro ao cadastrar fornecedor.'
+        );
+        this.marcarDuplicidadeAoSalvar('cadastro');
+      }
+    });
+  }
+
+  abrirModalEdicao(fornecedor: Fornecedor): void {
+    this.alterarEmail('edicao');
+    this.alterarCnpj('edicao');
+    this.camposInvalidos = [];
+    this.mensagemErroModal = '';
+    this.mensagemCepEdicao = '';
+    this.abaEdicaoFornecedor = 'dados';
+    this.editId = fornecedor.id ?? null;
+
+    this.edit = {
+      ...fornecedor,
+      fundacao: this.asInputDateString(fornecedor.fundacao),
+      cnpj: this.formatarCNPJ(fornecedor.cnpj),
+      cep: this.formatarCEP(fornecedor.cep),
+      telefone: this.exibirTelefoneFormatado(fornecedor.telefone),
+      estado: (fornecedor.estado || '').toUpperCase()
+    };
+
+    const el = document.getElementById('modalEdicaoFornecedor');
+
+    if (!el) {
+      console.error('Modal modalEdicaoFornecedor não encontrado.');
+      return;
+    }
+
+    this.modalEdicao = bootstrap.Modal.getOrCreateInstance(el, {
+      backdrop: 'static',
+      keyboard: false
+    });
+    this.modalEdicao.show();
+  }
+
+  salvarEdicaoModal(): void {
+    if (!this.editId) {
+      return;
+    }
+
+    const erro = this.validarFornecedor(this.edit);
+
+    if (erro) {
+      this.camposInvalidos = this.camposObrigatorios.filter(campo => this.campoInvalido(this.edit, campo));
+      this.mensagemErroModal = erro;
+      this.abaEdicaoFornecedor = this.abaComPendencia(this.edit) || 'dados';
+      return;
+    }
+
+    const payload = this.montarPayloadFornecedor(this.edit);
+
+    this.fornecedorService.atualizarFornecedor(this.editId, payload).subscribe({
+      next: () => {
+        this.modalEdicao?.hide();
+        this.cancelarEdicao();
+        this.notificacoes.sucesso('Fornecedor atualizado com sucesso.');
+        this.recarregar();
+      },
+      error: (err) => {
+        console.error(err);
+        this.mensagemErroModal = this.extrairMensagemErro(
+          err,
+          'Erro ao salvar alterações do fornecedor.'
+        );
+        this.marcarDuplicidadeAoSalvar('edicao');
+      }
+    });
+  }
+
+  cancelarEdicao(): void {
+    this.alterarEmail('edicao');
+    this.alterarCnpj('edicao');
+    this.editId = null;
+    this.edit = {};
+  }
+
+  private marcarDuplicidadeAoSalvar(tipo: 'cadastro' | 'edicao'): void {
+    if (this.mensagemErroModal.includes('E-mail já cadastrado')) {
+      this.consultaEmail[tipo].duplicado = true;
+      if (tipo === 'cadastro') this.abaCadastroFornecedor = 'contato';
+      else this.abaEdicaoFornecedor = 'contato';
+      return;
+    }
+    if (!this.mensagemErroModal.includes('CNPJ já cadastrado')) return;
+    this.consultaCnpj[tipo].duplicado = true;
+    if (tipo === 'cadastro') this.abaCadastroFornecedor = 'dados';
+    else this.abaEdicaoFornecedor = 'dados';
+  }
+
+  abrirDetalhes(fornecedor: Fornecedor): void {
+    this.fornecedorDetalhes = fornecedor;
+
+    const el = document.getElementById('modalDetalhesFornecedor');
+
+    if (!el) {
+      console.error('Modal modalDetalhesFornecedor não encontrado.');
+      return;
+    }
+
+    this.modalDetalhes = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalDetalhes.show();
+  }
+
+  solicitarRemocao(fornecedor: Fornecedor): void {
+    this.fornecedorParaExcluir = fornecedor;
+
+    const el = document.getElementById('modalConfirmarExclusaoFornecedor');
+
+    if (!el) {
+      console.error('Modal modalConfirmarExclusaoFornecedor não encontrado.');
+      return;
+    }
+
+    this.modalConfirmacao = bootstrap.Modal.getOrCreateInstance(el);
+    this.modalConfirmacao.show();
+  }
+
+  confirmarRemocao(): void {
+    if (!this.fornecedorParaExcluir?.id) {
+      return;
+    }
+
+    const id = this.fornecedorParaExcluir.id;
+
+    this.fornecedorService.removerFornecedor(id).subscribe({
+      next: () => {
+        this.modalConfirmacao?.hide();
+        this.fornecedorParaExcluir = null;
+        this.notificacoes.sucesso('Fornecedor removido com sucesso.');
+        this.recarregar();
+      },
+      error: (err) => {
+        console.error(err);
+        this.notificacoes.erro(
+          this.extrairMensagemErro(
+            err,
+            'Erro ao remover fornecedor.'
+          )
+        );
+      }
+    });
+  }
+
+  remover(id?: number): void {
+    const fornecedor = this.todos.find(f => f.id === id);
+
+    if (!fornecedor) {
+      return;
+    }
+
+    this.solicitarRemocao(fornecedor);
+  }
+
+  podeAcessarAbaCadastro(aba: AbaFornecedor): boolean {
+    const ordem: (AbaFornecedor)[] = ['dados', 'contato', 'endereco', 'revisao'];
+    return podeAcessarEtapa(ordem, this.abaCadastroFornecedor, aba, etapa => {
+      switch (etapa) {
+        case 'dados': return !this.dadosFornecedorPendentes(this.novoFornecedor) && this.consultaCnpj.cadastro.verificado;
+        case 'contato': return !this.contatoFornecedorPendente(this.novoFornecedor) && this.consultaEmail.cadastro.verificado;
+        case 'endereco': return !this.enderecoFornecedorPendente(this.novoFornecedor) && !this.buscandoCepCadastro;
+        case 'revisao': return true;
+      }
+    });
+  }
+
+  get podeAvancarCadastro(): boolean {
+    const ordem: (AbaFornecedor)[] = ['dados', 'contato', 'endereco', 'revisao'];
+    const proxima = ordem[ordem.indexOf(this.abaCadastroFornecedor) + 1];
+    return !!proxima && this.podeAcessarAbaCadastro(proxima);
+  }
+
+  trocarAbaCadastroFornecedor(aba: AbaFornecedor): void {
+    if (!this.podeAcessarAbaCadastro(aba)) return;
+    this.abaCadastroFornecedor = aba;
+  }
+
+  trocarAbaEdicaoFornecedor(aba: AbaFornecedor): void {
+    this.abaEdicaoFornecedor = aba;
+  }
+
+  proximaAbaCadastro(): void {
+    if (!this.podeAvancarCadastro) return;
+    this.abaCadastroFornecedor = this.proximaAba(this.abaCadastroFornecedor);
+  }
+
+  abaAnteriorCadastro(): void {
+    this.abaCadastroFornecedor = this.abaAnterior(this.abaCadastroFornecedor);
+  }
+
+  proximaAbaEdicao(): void {
+    this.abaEdicaoFornecedor = this.proximaAba(this.abaEdicaoFornecedor);
+  }
+
+  abaAnteriorEdicao(): void {
+    this.abaEdicaoFornecedor = this.abaAnterior(this.abaEdicaoFornecedor);
+  }
+
+  onCepBlurCadastro(): void {
+    this.consultarCep(this.novoFornecedor, 'cadastro');
+  }
+
+  onCepBlurEdicao(): void {
+    this.consultarCep(this.edit, 'edicao');
+  }
+
+  dadosFornecedorPendentes(model: Partial<Fornecedor>): boolean {
+    return this.cnpjInvalido(model) ||
+      this.campoTextoInvalido(model.razaoSocial) ||
+      this.campoTextoInvalido(model.nomeFantasia) ||
+      this.itemFornecidoInvalido(model) ||
+      this.fundacaoInvalida(model);
+  }
+
+  contatoFornecedorPendente(model: Partial<Fornecedor>): boolean {
+    return this.telefoneInvalido(model) || this.emailInvalido(model);
+  }
+
+  enderecoFornecedorPendente(model: Partial<Fornecedor>): boolean {
+    return this.cepInvalido(model) ||
+      this.campoTextoInvalido(model.logradouro) ||
+      this.campoTextoInvalido(model.bairro) ||
+      this.campoTextoInvalido(model.cidade) ||
+      this.estadoInvalido(model) ||
+      this.campoTextoInvalido(model.numeroEndereco);
+  }
+
+  campoInvalido(model: Partial<Fornecedor>, campo: CampoObrigatorioFornecedor): boolean {
+    switch (campo) {
+      case 'cnpj':
+        return this.cnpjInvalido(model);
+      case 'telefone':
+        return this.telefoneInvalido(model);
+      case 'email':
+        return this.emailInvalido(model);
+      case 'itemFornecido':
+        return this.itemFornecidoInvalido(model);
+      case 'cep':
+        return this.cepInvalido(model);
+      case 'estado':
+        return this.estadoInvalido(model);
+      case 'fundacao':
+        return this.fundacaoInvalida(model);
+      default:
+        return this.campoTextoInvalido(model[campo]);
+    }
+  }
+
+  campoMarcadoInvalido(model: Partial<Fornecedor>, campo: CampoObrigatorioFornecedor): boolean {
+    if (campo === 'email') {
+      const estado = this.estadoEmail(model);
+      return estado.duplicado || estado.formatoInvalido || (this.camposInvalidos.includes(campo) && !this.emailValido(model.email));
+    }
+    if (campo === 'cnpj' && this.estadoCnpj(model).duplicado) return true;
+    return this.camposInvalidos.includes(campo) && this.campoInvalido(model, campo);
+  }
+
+  private estadoCnpj(model: Partial<Fornecedor>) {
+    return model === this.novoFornecedor ? this.consultaCnpj.cadastro : this.consultaCnpj.edicao;
+  }
+
+  private estadoEmail(model: Partial<Fornecedor>) {
+    return model === this.novoFornecedor ? this.consultaEmail.cadastro : this.consultaEmail.edicao;
+  }
+
+  cnpjInvalido(model: Partial<Fornecedor>): boolean {
+    const estado = this.estadoCnpj(model);
+    return !this.validarCNPJ(model.cnpj) || estado.duplicado || estado.consultando;
+  }
+
+  itemFornecidoInvalido(model: Partial<Fornecedor>): boolean {
+    const item = (model.itemFornecido || '').toString().trim();
+
+    if (!item) {
+      return true;
+    }
+
+    return !this.opcoesItemFornecidoFornecedor.some(opcao =>
+      this.normalizarTexto(opcao) === this.normalizarTexto(item)
+    );
+  }
+
+  telefoneInvalido(model: Partial<Fornecedor>): boolean {
+    return !this.telefoneValido(model.telefone);
+  }
+
+  emailInvalido(model: Partial<Fornecedor>): boolean {
+    const estado = this.estadoEmail(model);
+    return !this.emailValido(model.email) || estado.duplicado || estado.consultando || estado.aguardando;
+  }
+
+  cepInvalido(model: Partial<Fornecedor>): boolean {
+    return this.onlyDigits(model.cep).length !== 8;
+  }
+
+  estadoInvalido(model: Partial<Fornecedor>): boolean {
+    return !/^[A-Z]{2}$/.test((model.estado || '').toString().trim().toUpperCase());
+  }
+
+  fundacaoInvalida(model: Partial<Fornecedor>): boolean {
+    const data = this.asInputDateString(model.fundacao);
+
+    if (!data) {
+      return true;
+    }
+
+    return data > new Date().toISOString().slice(0, 10);
+  }
+
+  normalizarCnpjCadastro(): void {
+    this.novoFornecedor.cnpj = this.formatarCNPJ(this.novoFornecedor.cnpj);
+  }
+
+  normalizarCnpjEdicao(): void {
+    this.edit.cnpj = this.formatarCNPJ(this.edit.cnpj);
+  }
+
+  normalizarTelefoneCadastro(): void {
+    this.novoFornecedor.telefone = this.exibirTelefoneFormatado(this.novoFornecedor.telefone);
+  }
+
+  normalizarTelefoneEdicao(): void {
+    this.edit.telefone = this.exibirTelefoneFormatado(this.edit.telefone);
+  }
+
+  normalizarUfCadastro(): void {
+    this.novoFornecedor.estado = (this.novoFornecedor.estado || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+  }
+
+  normalizarUfEdicao(): void {
+    this.edit.estado = (this.edit.estado || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+  }
+
+  normalizarTextoCadastro(campo: keyof Fornecedor): void {
+    const valor = this.novoFornecedor[campo];
+
+    if (typeof valor === 'string') {
+      (this.novoFornecedor as any)[campo] = this.capitalizar(valor);
+    }
+  }
+
+  normalizarTextoEdicao(campo: keyof Fornecedor): void {
+    const valor = this.edit[campo];
+
+    if (typeof valor === 'string') {
+      (this.edit as any)[campo] = this.capitalizar(valor);
+    }
+  }
+
+  formatarCNPJ(cnpj: string | null | undefined): string {
+    const d = this.onlyDigits(cnpj);
+
+    if (d.length !== 14) {
+      return cnpj ?? '';
+    }
+
+    return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12, 14)}`;
+  }
+
+  formatarCEP(cep: string | null | undefined): string {
+    const d = this.onlyDigits(cep);
+
+    if (d.length !== 8) {
+      return cep ?? '';
+    }
+
+    return `${d.slice(0, 5)}-${d.slice(5, 8)}`;
+  }
+
+
+
+  formatarTelefoneCadastro(): void {
+    this.novoFornecedor.telefone = this.exibirTelefoneFormatado(this.novoFornecedor.telefone);
+  }
+
+  exibirTelefoneFormatado(telefone: string | null | undefined): string {
+    if (!telefone) {
+      return '';
+    }
+
+    const n = this.onlyDigits(telefone);
+    const codigoPais = '55';
+
+    if (n.length >= 13 && n.startsWith('55')) {
+      const ddd = n.slice(-11, -9);
+      const parte1 = n.slice(-9, -4);
+      const parte2 = n.slice(-4);
+
+      return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
+    }
+
+    if (n.length === 12 && n.startsWith('55')) {
+      const ddd = n.slice(-10, -8);
+      const parte1 = n.slice(-8, -4);
+      const parte2 = n.slice(-4);
+
+      return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
+    }
+
+    if (n.length >= 10) {
+      const ddd = n.slice(0, 2);
+      const parte1 = n.slice(2, 6);
+      const parte2 = n.slice(6, 10);
+
+      return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
+    }
+
+    return n;
+  }
+
+  formatarDataBr(data: string | Date | null | undefined): string {
+    const input = this.asInputDateString(data);
+
+    if (!input) {
+      return '—';
+    }
+
+    const [ano, mes, dia] = input.split('-');
+
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  formatarTexto(valor: string | null | undefined): string {
+    const texto = (valor || '').trim();
+    return texto || '—';
+  }
+
+  enderecoCompleto(fornecedor: Partial<Fornecedor> | null | undefined): string {
+    if (!fornecedor) {
+      return '—';
+    }
+
+    const partes = [
+      fornecedor.logradouro,
+      fornecedor.numeroEndereco,
+      fornecedor.complementoEndereco,
+      fornecedor.bairro,
+      fornecedor.cidade,
+      fornecedor.estado
+    ].map(p => (p || '').toString().trim()).filter(Boolean);
+
+    return partes.length ? partes.join(' · ') : '—';
+  }
+
+  telefoneWhatsappValido(telefone: string | null | undefined): boolean {
+    const digitos = this.onlyDigits(telefone);
+    const numero = !digitos ? '' : digitos.startsWith('55') ? digitos
+      : digitos.length === 10 || digitos.length === 11 ? `55${digitos}`
+      : digitos.length === 8 || digitos.length === 9 ? `5511${digitos}` : digitos;
+    return numero.length === 12 || numero.length === 13;
+  }
+
+  whatsappDescricao(telefone: string | null | undefined): string {
+    return this.telefoneWhatsappValido(telefone) ? 'WhatsApp' : 'Verificar telefone';
+  }
+
+  whatsappBadgeClass(telefone: string | null | undefined): string {
+    return this.telefoneWhatsappValido(telefone)
+      ? 'bg-success-subtle text-success border border-success-subtle'
+      : 'bg-warning-subtle text-warning border border-warning-subtle';
+  }
+
+  voltar(): void {
+    this.location.back();
+  }
+
+  capitalizar(s: string | null | undefined): string {
+    const texto = (s || '').toString().replace(/\s+/g, ' ').trim();
+
+    if (!texto) {
+      return '';
+    }
+
+    const excecoesMinusculas = ['de', 'da', 'do', 'das', 'dos', 'e'];
+
+    return texto
+      .split(' ')
+      .map((p, index) => {
+        const lower = p.toLowerCase();
+
+        if (index > 0 && excecoesMinusculas.includes(lower)) {
+          return lower;
+        }
+
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+      })
+      .join(' ');
+  }
+
+  private consultarCep(model: Partial<Fornecedor>, origem: 'cadastro' | 'edicao'): void {
+    const cepNums = this.onlyDigits(model.cep);
+
+    if (origem === 'cadastro') {
+      this.mensagemCepCadastro = '';
+    } else {
+      this.mensagemCepEdicao = '';
+    }
+
+    if (!cepNums) {
+      return;
+    }
+
+    if (cepNums.length !== 8) {
+      const mensagem = 'CEP deve conter 8 dígitos.';
+      origem === 'cadastro' ? this.mensagemCepCadastro = mensagem : this.mensagemCepEdicao = mensagem;
+      return;
+    }
+
+    model.cep = this.formatarCEP(cepNums);
+    origem === 'cadastro' ? this.buscandoCepCadastro = true : this.buscandoCepEdicao = true;
+
+    this.http.get<any>(`https://viacep.com.br/ws/${cepNums}/json/`).subscribe({
+      next: (resp) => {
+        if (resp?.erro) {
+          const mensagem = 'CEP não encontrado.';
+          origem === 'cadastro' ? this.mensagemCepCadastro = mensagem : this.mensagemCepEdicao = mensagem;
+          return;
+        }
+
+        model.logradouro = resp.logradouro || model.logradouro || '';
+        model.bairro = resp.bairro || model.bairro || '';
+        model.cidade = resp.localidade || model.cidade || '';
+        model.estado = (resp.uf || model.estado || '').toUpperCase();
+
+        if (!model.complementoEndereco && resp.complemento) {
+          model.complementoEndereco = resp.complemento;
+        }
+
+        const mensagem = 'Endereço localizado e preenchido automaticamente.';
+        origem === 'cadastro' ? this.mensagemCepCadastro = mensagem : this.mensagemCepEdicao = mensagem;
+      },
+      error: (err) => {
+        console.error(err);
+        const mensagem = 'Falha ao consultar o CEP.';
+        origem === 'cadastro' ? this.mensagemCepCadastro = mensagem : this.mensagemCepEdicao = mensagem;
+      },
+      complete: () => {
+        origem === 'cadastro' ? this.buscandoCepCadastro = false : this.buscandoCepEdicao = false;
+      }
+    });
+  }
+
+  private normalizarItemFornecido(itemFornecido: string | null | undefined): string {
+    const item = (itemFornecido || '').toString().trim();
+
+    const opcaoPadrao = this.opcoesItemFornecidoFornecedor.find(opcao =>
+      this.normalizarTexto(opcao) === this.normalizarTexto(item)
+    );
+
+    return opcaoPadrao || item;
+  }
+
+  private montarPayloadFornecedor(model: Partial<Fornecedor>): Partial<Fornecedor> {
+    return {
+      ...model,
+      ativo: model.ativo !== false,
+      cnpj: this.onlyDigits(model.cnpj),
+      cep: this.onlyDigits(model.cep),
+      telefone: this.onlyDigits(model.telefone),
+      razaoSocial: (model.razaoSocial || '').trim(),
+      nomeFantasia: (model.nomeFantasia || '').trim(),
+      itemFornecido: this.normalizarItemFornecido(model.itemFornecido),
+      email: (model.email || '').trim().toLowerCase(),
+      logradouro: (model.logradouro || '').trim(),
+      bairro: (model.bairro || '').trim(),
+      cidade: (model.cidade || '').trim(),
+      complementoEndereco: (model.complementoEndereco || '').trim(),
+      numeroEndereco: (model.numeroEndereco || '').trim(),
+      estado: (model.estado || '').toString().toUpperCase().trim(),
+      fundacao: this.inputDateToBr(model.fundacao)
+    };
+  }
+
+  private normalizarFornecedorParaTela(f: Fornecedor): Fornecedor {
+    return {
+      ...f,
+      ativo: f.ativo !== false,
+      cnpj: this.formatarCNPJ(f.cnpj),
+      cep: this.formatarCEP(f.cep),
+      telefone: this.exibirTelefoneFormatado(f.telefone),
+      fundacao: this.asInputDateString(f.fundacao),
+      estado: (f.estado || '').toUpperCase()
+    };
+  }
+
+  private validarFornecedor(model: Partial<Fornecedor>): string | null {
+    if (this.estadoEmail(model).duplicado) return 'E-mail já cadastrado anteriormente.';
+    if (this.estadoEmail(model).consultando) return 'Aguarde a verificação do e-mail.';
+    if (this.estadoCnpj(model).duplicado) return 'CNPJ já cadastrado anteriormente.';
+    if (this.estadoCnpj(model).consultando) return 'Aguarde a verificação do CNPJ.';
+    if (this.cnpjInvalido(model)) {
+      return 'Informe um CNPJ válido para o fornecedor.';
+    }
+
+    if (this.campoTextoInvalido(model.razaoSocial)) {
+      return 'Informe a razão social do fornecedor.';
+    }
+
+    if (this.campoTextoInvalido(model.nomeFantasia)) {
+      return 'Informe o nome fantasia do fornecedor.';
+    }
+
+    if (this.itemFornecidoInvalido(model)) {
+      return 'Selecione a categoria de item fornecido pelo fornecedor.';
+    }
+
+    if (this.telefoneInvalido(model)) {
+      return 'Informe um telefone válido com DDD.';
+    }
+
+    if (this.emailInvalido(model)) {
+      return 'Informe um e-mail válido.';
+    }
+
+    if (this.fundacaoInvalida(model)) {
+      return 'Informe uma data de fundação válida.';
+    }
+
+    if (this.cepInvalido(model)) {
+      return 'Informe um CEP válido com 8 dígitos.';
+    }
+
+    if (this.campoTextoInvalido(model.logradouro)) {
+      return 'Informe o logradouro do fornecedor.';
+    }
+
+    if (this.campoTextoInvalido(model.numeroEndereco)) {
+      return 'Informe o número do endereço.';
+    }
+
+    if (this.campoTextoInvalido(model.bairro)) {
+      return 'Informe o bairro.';
+    }
+
+    if (this.campoTextoInvalido(model.cidade)) {
+      return 'Informe a cidade.';
+    }
+
+    if (this.estadoInvalido(model)) {
+      return 'Informe a UF com 2 letras.';
+    }
+
+    return null;
+  }
+
+  private abaComPendencia(model: Partial<Fornecedor>): AbaFornecedor | null {
+    if (this.dadosFornecedorPendentes(model)) {
+      return 'dados';
+    }
+
+    if (this.contatoFornecedorPendente(model)) {
+      return 'contato';
+    }
+
+    if (this.enderecoFornecedorPendente(model)) {
+      return 'endereco';
+    }
+
+    return null;
+  }
+
+  private calcularProgresso(model: Partial<Fornecedor>): number {
+    if (this.validarFornecedor(model) === null) {
+      return 100;
+    }
+
+    const total = this.camposObrigatorios.length || 1;
+    const validos = this.camposObrigatorios.filter(campo => !this.campoInvalido(model, campo)).length;
+    const percentual = Math.round((validos / total) * 100);
+
+    return Math.max(0, Math.min(99, percentual));
+  }
+
+  private ordenarFornecedores(lista: Fornecedor[]): Fornecedor[] {
+    const direcao = this.direcaoOrdenacao === 'asc' ? 1 : -1;
+
+    return [...lista].sort((a, b) => {
+      const va = this.valorOrdenacao(a, this.colunaOrdenacao);
+      const vb = this.valorOrdenacao(b, this.colunaOrdenacao);
+
+      return va.localeCompare(vb, 'pt-BR', { numeric: true }) * direcao;
+    });
+  }
+
+  private valorOrdenacao(fornecedor: Fornecedor, coluna: ColunaOrdenacaoFornecedor): string {
+    switch (coluna) {
+      case 'cnpj':
+        return this.onlyDigits(fornecedor.cnpj);
+      case 'telefone':
+        return this.onlyDigits(fornecedor.telefone);
+      case 'fundacao':
+        return this.asInputDateString(fornecedor.fundacao);
+      default:
+        return this.normalizarTexto(fornecedor[coluna]);
+    }
+  }
+
+  private ajustarPaginaAtual(): void {
+    if (this.paginaAtual > this.totalPaginas) {
+      this.paginaAtual = this.totalPaginas;
+    }
+
+    if (this.paginaAtual < 1) {
+      this.paginaAtual = 1;
+    }
+  }
+
+  private proximaAba(aba: AbaFornecedor): AbaFornecedor {
+    if (aba === 'dados') {
+      return 'contato';
+    }
+
+    if (aba === 'contato') {
+      return 'endereco';
+    }
+
+    return 'revisao';
+  }
+
+  private abaAnterior(aba: AbaFornecedor): AbaFornecedor {
+    if (aba === 'revisao') {
+      return 'endereco';
+    }
+
+    if (aba === 'endereco') {
+      return 'contato';
+    }
+
+    return 'dados';
+  }
+
+  private campoTextoInvalido(valor: any): boolean {
+    return !String(valor ?? '').trim();
+  }
+
+  private telefoneValido(telefone: string | null | undefined): boolean {
+    const digitos = this.onlyDigits(telefone);
+    return digitos.length >= 10 && digitos.length <= 13;
+  }
+
+  private emailValido(email: string | null | undefined): boolean {
+    const texto = (email || '').trim();
+    return texto.length <= 255 && /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)*\.[^\s@.]{2,}$/.test(texto);
+  }
+
+  private validarCNPJ(cnpj: string | null | undefined): boolean {
+    /*
+     * Para manter compatibilidade com os dados de teste do TCC,
+     * a validação no frontend exige o formato com 14 dígitos.
+     * A validação fiscal completa, se necessária, pode ficar no backend.
+     */
+    return this.onlyDigits(cnpj).length === 14;
+  }
+
+  private onlyDigits(v: any): string {
+    return (v ?? '').toString().replace(/\D/g, '');
+  }
+
+  private normalizarTexto(valor: any): string {
+    return (valor ?? '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private asInputDateString(v: any): string {
+    if (!v) {
+      return '';
+    }
+
+    if (typeof v === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        return v;
+      }
+
+      const re = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      const m = re.exec(v);
+
+      if (m) {
+        return `${m[3]}-${m[2]}-${m[1]}`;
+      }
+
+      const d = new Date(v);
+
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+    }
+
+    if (v instanceof Date) {
+      return v.toISOString().slice(0, 10);
+    }
+
+    try {
+      const d = new Date(v);
+
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+    } catch {
+      return '';
+    }
+  }
+
+  private inputDateToBr(v: any): string {
+    const input = this.asInputDateString(v);
+
+    if (!input) {
+      return '';
+    }
+
+    const [ano, mes, dia] = input.split('-');
+
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  private extrairMensagemErro(erro: any, mensagemPadrao: string): string {
+    if (typeof erro?.error === 'string') {
+      return erro.error;
+    }
+
+    if (typeof erro?.error?.mensagem === 'string') {
+      return erro.error.mensagem;
+    }
+
+    if (typeof erro?.message === 'string') {
+      return erro.message;
+    }
+
+    return mensagemPadrao;
+  }
+}

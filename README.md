@@ -1,216 +1,160 @@
 # CliniCar
 
-Para a instalação atual em `C:\TG`, leia primeiro [o guia de atualização e recuperação](entrega-2026-09-30/LEIA-ME.md).
+Sistema web desenvolvido como Trabalho de Conclusão de Curso para apoiar a gestão de oficinas mecânicas. Reúne cadastros, estoque, agendamentos, atendimentos, histórico veicular e alertas com controle de acesso e autenticação em duas etapas.
 
-Sistema web desenvolvido como Trabalho de Conclusão de Curso para apoio à gestão de oficinas mecânicas.
+Esta versão incorpora a migração para Angular 21 LTS e melhorias de funcionalidade, segurança, desempenho e responsividade. As melhorias implementadas e as etapas ainda em andamento estão em [Modernização do projeto](documentacao/modernizacao-profissional.md).
 
-O CliniCar reúne funcionalidades relacionadas a clientes, usuários, veículos, fornecedores, peças, serviços, estoque, agendamentos, atendimentos, manutenção preventiva e autenticação segura.
+## Funcionalidades
 
-## Tecnologias utilizadas
+| Módulo | Recursos principais |
+| --- | --- |
+| Painel operacional | Indicadores de agendamentos, atendimentos, estoque e notificações; retomada de cadastros pendentes. |
+| Usuários | Administradores, colaboradores e clientes; validação de CPF/CNPJ e e-mail; gestão de acesso, reset de 2FA com justificativa e suspensão temporária. |
+| Veículos | Associação ao proprietário, validação de placa duplicada e acesso ao histórico veicular. |
+| Fornecedores | Identificação, contato e endereço; validação de CNPJ e e-mail; continuidade para peças ou serviços. |
+| Peças e insumos | Classificação técnica, unidades de medida, atributos de óleos de motor e validação de duplicidade. |
+| Serviços e fornecimentos | Serviços, fornecedores e condições comerciais; prevenção de vínculos duplicados. |
+| Estoque | Controle por peça e local, reservas, custo médio, entradas, saídas, ajustes e devoluções vinculadas à movimentação de origem. |
+| Agendamentos e atendimentos | Cliente, veículo, responsáveis, peças e serviços; continuidade entre agendamento e atendimento. |
+| Manutenção e alertas | Regras preventivas, configurações por destinatário e alertas de reposição com responsável pelo estoque. |
+| Auditoria | Consulta administrativa, filtros, paginação, detalhes e exportação CSV. |
 
-### Backend
+Os fluxos integrados permitem selecionar registros existentes ou cadastrar novos itens preservando a associação de origem, como fornecedor → peça → fornecimento → estoque e usuário → veículo → configuração de alertas.
 
-- Java 23
-- Spring Boot 3.5.5
-- Spring Data JPA
-- Hibernate
-- Maven
-- MySQL 8.0.42
+A interface utiliza paginação, filtros, indicadores e modais com orientação geral e ajuda por campo ou guia. Há adaptações para tablet e celular e proteção para formulários não salvos. O botão **Encerrar** faz logoff e retorna ao login.
 
-### Frontend
+## Tecnologias
 
-- Angular 18
-- TypeScript
-- Bootstrap
-- Bootstrap Icons
-- Nginx
+| Camada | Tecnologias |
+| --- | --- |
+| Frontend | Angular 21 LTS, TypeScript 5.9, RxJS, Bootstrap 5 e Bootstrap Icons. |
+| Backend | Java 23, Spring Boot 3.5.5, Spring Data JPA, Hibernate e Maven Wrapper. |
+| Banco | MySQL 8.0.42 na imagem local; migrações versionadas com Flyway. |
+| Infraestrutura | Docker Compose, Nginx e Mailpit para captura local de e-mails. |
+| Testes | JUnit, Mockito, integração com MySQL, Jasmine/Karma e Playwright. |
 
-### Infraestrutura
+O frontend usa Node.js 22.14.0 para instalação e compilação. As páginas administrativas são carregadas sob demanda, e as listas principais consultam páginas, filtros e ordenação no servidor.
 
-- Docker
-- Docker Compose
-- Mailpit
+## Execução local com Docker
 
-## Requisitos para execução
-
-Para executar o projeto pelo procedimento recomendado é necessário possuir:
-
-- Docker Desktop instalado e em execução;
-- Docker Compose disponível.
-
-Não é necessário instalar localmente Java, Maven, Node.js, Angular CLI ou MySQL.
-
-## Como executar
-
-Clone o repositório:
+Requisitos: Docker Desktop em execução e Docker Compose disponível. Pelo procedimento abaixo, não é necessário instalar Java, Maven, Node.js ou MySQL na máquina.
 
 ```powershell
-git clone https://github.com/valdecirnakao/clinicar
+git clone --branch desenvolvimento-pos-entrega https://github.com/valdecirnakao/clinicar.git
 cd clinicar
 ```
 
-Antes de iniciar, configure o arquivo `.env` a partir de `.env.example`. Em instalações existentes, preserve o `.env` original e o volume MySQL.
+Em uma instalação nova, crie o arquivo de configuração:
 
-Para compilar o código local, use os dois arquivos Compose:
+```powershell
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Edite o `.env` e configure `MYSQL_ROOT_PASSWORD`, `MYSQL_APP_PASSWORD` e `MFA_ENCRYPTION_KEY`. A chave MFA deve conter 32 bytes aleatórios codificados em Base64. Configure também o servidor de e-mail. Para demonstração local com Mailpit, use `MAIL_HOST=mailpit`, `MAIL_PORT=1025`, `MAIL_AUTH=false`, `MAIL_STARTTLS=false` e `MAIL_STARTTLS_REQUIRED=false`.
+
+Em uma instalação existente, preserve o `.env`, a chave MFA e o volume MySQL. Alterar as senhas no arquivo não redefine as contas de um banco já inicializado. Faça backup antes de atualizar. Veja [Recuperação do ambiente](documentacao/recuperacao-ambiente.md).
+
+Compile o código desta branch e inicie os serviços:
 
 ```powershell
 docker compose --env-file .env -f compose.yaml -f compose.dev.yaml up -d --build
 ```
 
-Na primeira execução, o Docker realizará o download das imagens necessárias, compilará o backend e o frontend, criará o banco de dados e inicializará os serviços.
+Use os dois arquivos Compose para compilar as alterações locais; o arquivo principal sozinho referencia imagens publicadas. Aguarde a inicialização e confira:
 
-Aguarde até que os serviços estejam iniciados.
-
-## Endereços da aplicação
-
-### CliniCar
-
-```text
-http://localhost
+```powershell
+docker compose --env-file .env -f compose.yaml -f compose.dev.yaml ps
 ```
 
-### Mailpit
+O backend e o MySQL devem apresentar saúde `healthy`; frontend e Mailpit devem estar em execução. As migrações são aplicadas na inicialização e o backend valida o esquema do banco.
 
-```text
-http://localhost:8025
+| Serviço | Endereço local |
+| --- | --- |
+| Aplicação | [http://localhost](http://localhost) |
+| Caixa de e-mails do Mailpit | [http://localhost:8025](http://localhost:8025) |
+| Verificação de saúde | [http://localhost/api/infra/health](http://localhost/api/infra/health) |
+
+Para parar os serviços preservando os dados:
+
+```powershell
+docker compose --env-file .env -f compose.yaml -f compose.dev.yaml stop
 ```
 
-O Mailpit é utilizado no ambiente acadêmico/local para capturar os e-mails enviados pela aplicação.
+Para iniciá-los novamente:
+
+```powershell
+docker compose --env-file .env -f compose.yaml -f compose.dev.yaml up -d
+```
+
+O botão **Encerrar** encerra somente a sessão do usuário. A administração dos serviços é feita pelo Docker Compose.
 
 ## Primeiro acesso
 
-Em uma instalação nova:
+1. Abra a aplicação e selecione **Primeiro acesso?**.
+2. Cadastre o administrador inicial.
+3. Abra o e-mail de ativação no servidor configurado ou no Mailpit.
+4. Acesse o link de ativação e defina a senha.
+5. Faça login com e-mail e senha.
+6. Configure o aplicativo autenticador TOTP e informe o código solicitado.
 
-1. Acesse `http://localhost`.
-2. Na tela de login, clique em `Primeiro acesso?`.
-3. Preencha o cadastro do administrador inicial.
-4. Abra a caixa de e-mail do administrador (ou o Mailpit se `MAIL_HOST=mailpit`).
-5. Abra o e-mail de ativação recebido.
-6. Clique no link de ativação.
-7. Defina a senha do administrador.
-8. Retorne à tela de login.
-9. Faça o primeiro login.
-10. Configure a autenticação multifator TOTP utilizando um aplicativo autenticador.
-11. Informe o código TOTP solicitado.
-12. Após a validação, o Menu Administrador será carregado.
+Nos próximos acessos, use a senha e o código do aplicativo já configurado. O QR Code não é reapresentado a cada login. Links de ativação e recuperação têm validade e uso único.
 
-Nos acessos seguintes, o usuário utiliza e-mail e senha e informa o código TOTP já configurado. O QR Code de configuração não é apresentado novamente.
+## Notificações e alertas
 
-## Arquitetura Docker
+E-mails e mensagens de WhatsApp são enfileirados para processamento em segundo plano. Acompanhe estados e falhas pelo Painel operacional. A aceitação do envio pelo provedor é diferente da confirmação de entrega ou leitura.
 
-A solução é composta por quatro serviços principais:
+Para WhatsApp, configure `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_ACCESS_TOKEN`, habilite `CLINICAR_WHATSAPP_ENABLED` e utilize templates aprovados na Meta. Template e idioma são configurações técnicas do servidor.
 
-```text
-Navegador
-    |
-    v
-Frontend / Nginx
-    |
-    | /api
-    v
-Backend Spring Boot
-    |
-    +------> MySQL
-    |
-    +------> Mailpit
-```
+Os alertas de estoque exigem um responsável ativo, com telefone cadastrado, definido em **Alertas → Colaboradores**. Os alertas de manutenção dependem das regras, das configurações do destinatário e das opções de habilitação do agendador e do envio no `.env`.
 
-### frontend
+Para receber confirmações da Meta, configure o webhook em uma URL pública acessível ao provedor e defina `WHATSAPP_WEBHOOK_APP_SECRET` e `WHATSAPP_WEBHOOK_VERIFY_TOKEN`. O backend valida a assinatura dos retornos.
 
-Aplicação Angular compilada e servida pelo Nginx.
+Consulte [Alertas de estoque](documentacao/alertas-estoque-whatsapp.md), [Alertas de manutenção](documentacao/alerta-manutencao-whatsapp.md) e [Notificação de exclusão de veículo](documentacao/notificacao-exclusao-veiculo.md).
 
-### backend
+## Segurança e integridade
 
-API REST desenvolvida com Spring Boot.
+- Senhas protegidas com BCrypt, sessões no backend, cookies HttpOnly, perfis de acesso e autenticação TOTP.
+- Segredos MFA criptografados e tokens com expiração e consumo único.
+- Proteção CSRF e limitação de tentativas nos fluxos de autenticação.
+- Verificação de duplicidades durante o preenchimento e no servidor.
+- Proteção contra repetição de operações e alterações concorrentes em registros.
+- Auditoria administrativa e movimentações de estoque com identificação do responsável.
 
-### mysql
+Não versione o `.env`, credenciais, tokens ou backups. Em produção, utilize HTTPS, segredos próprios, configuração adequada dos cookies, SMTP real e políticas de acesso e rede compatíveis com a implantação.
 
-Banco de dados relacional utilizado pela aplicação.
+## Testes e desenvolvimento
 
-### mailpit
+Para desenvolvimento fora do Docker, utilize Java 23 e Node.js 22.14.0, além das configurações locais necessárias ao backend.
 
-Servidor SMTP local utilizado para captura dos e-mails durante testes e demonstrações.
-
-## Verificar os serviços
-
-Em outro terminal:
+Backend, a partir da pasta `backend`:
 
 ```powershell
-docker compose ps
+./mvnw.cmd -B test
 ```
 
-O MySQL, o Mailpit e o backend devem aparecer como `healthy`. O frontend deve aparecer como `Up`.
-
-## Encerrar a aplicação
-
-Para parar os containers preservando os dados:
+Frontend, a partir da pasta `frontend/clinicar`:
 
 ```powershell
-docker compose down
+npm ci
+npm test -- --watch=false --browsers=ChromeHeadless
+npm run build
+npx playwright test
 ```
 
-## Iniciar novamente
+Os testes de navegador utilizam respostas simuladas da API para não alterar cadastros nem enviar notificações reais. Localmente, o Playwright está configurado para Google Chrome; no CI, utiliza Chromium.
 
-```powershell
-docker compose --env-file .env -f compose.yaml -f compose.dev.yaml up -d --build
-```
+Os testes `ModernizacaoMySqlIT` exigem um banco MySQL descartável, configurado por `CLINICAR_TEST_MYSQL_URL` e `CLINICAR_TEST_MYSQL_PASSWORD`. Execute-os com `./mvnw.cmd -B -Dtest=ModernizacaoMySqlIT test`. Nunca utilize o banco operacional nesses testes.
 
-Os dados permanecem armazenados no volume Docker.
+O workflow de qualidade executa testes, compilação, validação de migrações, configuração do Nginx e testes de navegador. É acionado em pushes e pull requests para `main`, ou manualmente. A publicação de imagens depende dos checks e das credenciais configuradas no GitHub.
 
-## Configuração obrigatória por `.env`
+## Documentação
 
-O Compose exige `MYSQL_ROOT_PASSWORD` e `MYSQL_APP_PASSWORD` no `.env`.
-Alterar esses valores não redefine contas em um volume já inicializado.
-Não versionar o `.env` nem senhas/tokens. Preserve a chave MFA da instalação.
+- [Modernização e pendências do projeto](documentacao/modernizacao-profissional.md).
+- [Responsividade visual](documentacao/responsividade-visual.md).
+- [Auditoria](documentacao/auditoria.md).
+- [Validação de duplicidades](documentacao/validacao-duplicidade-cadastros.md).
+- [Continuidade do cadastro de fornecedor](documentacao/continuidade-cadastro-fornecedor.md).
+- [Continuidade entre fornecimento e estoque](documentacao/continuidade-fornecimento-estoque.md).
+- [Fluxo de usuário, veículo e alertas](documentacao/fluxo-usuario-veiculo-alertas.md).
 
-Se MySQL estiver unhealthy com ERROR 1045, siga
-[documentacao/recuperacao-ambiente.md](documentacao/recuperacao-ambiente.md).
-O guia inclui diagnóstico e recuperação com backup integral, sem apagar o volume.
-
-## E-mails no ambiente local
-
-O servidor SMTP é configurado pelas variáveis `MAIL_*` do `.env`. Para Gmail use `smtp.gmail.com:587`, autenticação, STARTTLS e senha de app.
-
-Com `MAIL_HOST=mailpit`, os e-mails são capturados pelo Mailpit.
-
-Os e-mails capturados pelo Mailpit podem ser consultados em:
-
-```text
-http://localhost:8025
-```
-
-## Segurança
-
-O projeto implementa controles como:
-
-- armazenamento de senhas com BCrypt;
-- sessões autenticadas no backend;
-- cookies HttpOnly;
-- autenticação multifator TOTP;
-- criptografia do segredo MFA;
-- tokens de ativação armazenados por hash;
-- expiração e consumo único de desafios de autenticação;
-- controle de acesso de acordo com o perfil do usuário;
-- ativação do administrador inicial;
-- bloqueio do fluxo de primeiro acesso após a conclusão da configuração.
-
-## Ambiente acadêmico
-
-As configurações padrão presentes no Docker Compose foram preparadas para facilitar a execução e demonstração acadêmica do projeto.
-
-Elas não devem ser utilizadas como configuração de produção.
-
-Em uma implantação real devem ser utilizados, entre outros recursos:
-
-- segredos próprios e seguros;
-- gerenciamento apropriado de credenciais;
-- HTTPS;
-- cookies com configuração de produção;
-- servidor SMTP real;
-- infraestrutura e políticas de rede adequadas.
-
-## Projeto acadêmico
-
-**CliniCar — Sistema de gestão para oficina mecânica**
-
-Trabalho de Conclusão de Curso.
+**CliniCar — Sistema de gestão para oficina mecânica. Trabalho de Conclusão de Curso.**

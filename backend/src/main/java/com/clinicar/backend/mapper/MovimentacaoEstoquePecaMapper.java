@@ -36,11 +36,19 @@ public class MovimentacaoEstoquePecaMapper {
         response.setValorTotal(mov.getValorTotal());
 
         response.setOrigem(mov.getOrigem());
+        response.setIdMovimentacaoOrigem(mov.getIdMovimentacaoOrigem());
+        response.setIdFornecedor(mov.getIdFornecedor());
+        response.setNomeFornecedor(mov.getNomeFornecedor());
         response.setDocumentoReferencia(mov.getDocumentoReferencia());
         response.setMotivo(mov.getMotivo());
         response.setObservacoes(mov.getObservacoes());
 
         response.setIdUsuario(mov.getIdUsuario());
+        response.setNomeUsuario(mov.getNomeUsuario());
+        response.setIdAtendimento(mov.getIdAtendimento());
+        response.setCustoUnitarioEstoque(mov.getCustoUnitarioEstoque());
+        response.setTratamentoCobranca(mov.getTratamentoCobranca());
+        response.setValorRestituicao(mov.getValorRestituicao());
         response.setCriadoEm(mov.getCriadoEm());
 
         return response;

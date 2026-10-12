@@ -39,6 +39,25 @@ class UsuarioServiceTest {
     }
 
     @Test
+    void rejeitaFormatoInvalidoMesmoQuandoEnviadoDiretamenteAoCadastro() {
+        for (String email : java.util.List.of("semarroba.com", "@empresa.com", "nome@", "nome@empresa",
+                "nome@@empresa.com", "nome sobrenome@empresa.com", "nome@empresa..com")) {
+            UsuarioRequest request = new UsuarioRequest(); request.setEmail(email);
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                    () -> service.criarPorAdministrador(request));
+        }
+        org.mockito.Mockito.verifyNoInteractions(repo, eventPublisher);
+    }
+
+    @Test
+    void consultaEmailNaEdicaoIgnoraOProprioUsuarioENormalizaOValor() {
+        when(repo.existsByEmailIgnoreCaseAndIdNot("cliente@example.com", 7L)).thenReturn(true);
+        org.junit.jupiter.api.Assertions.assertTrue(service.emailCadastrado(" Cliente@Example.com ", 7L));
+        org.junit.jupiter.api.Assertions.assertFalse(service.emailCadastrado("livre@example.com", 7L));
+        verify(repo).existsByEmailIgnoreCaseAndIdNot("cliente@example.com", 7L);
+    }
+
+    @Test
     void rejeitaEmailDuplicadoAoSalvarSemGravarOuNotificar() {
         UsuarioRequest req = new UsuarioRequest();
         req.setEmail(" Cliente@Example.com ");
@@ -73,6 +92,14 @@ class UsuarioServiceTest {
     }
 
     @org.mockito.Mock com.clinicar.backend.repository.SolicitacaoAcessoUsuarioRepository solicitacoesAcesso;
+    @Test
+    void consultaCpfNaEdicaoIgnoraOProprioUsuario() {
+        when(repo.existsByCpfAndIdNot("22222222222", 7L)).thenReturn(true);
+        org.junit.jupiter.api.Assertions.assertTrue(service.cpfCadastrado("222.222.222-22", 7L));
+        org.junit.jupiter.api.Assertions.assertFalse(service.cpfCadastrado("33333333333", 7L));
+        verify(repo).existsByCpfAndIdNot("22222222222", 7L);
+    }
+
     @InjectMocks
     private UsuarioService service;
 
@@ -83,7 +110,7 @@ class UsuarioServiceTest {
         req.setCpf("123.456.789-00");
         req.setNome("Maria");
         req.setNome_social("Maria S.");
-        req.setSenha("secret");
+        req.setSenha("SenhaDeTeste123!");
         req.setTelefone("(11) 99999-1111");
         req.setEmail("maria@example.com");
         req.setCep("12.345-678");
@@ -96,7 +123,7 @@ class UsuarioServiceTest {
         req.setTipo_do_acesso("ADMIN");
         req.setNascimento("31/12/2024");
 
-        when(passwordEncoder.encode("secret"))
+        when(passwordEncoder.encode("SenhaDeTeste123!"))
                 .thenReturn("$2a$10$senhaCriptografadaParaTeste");
 
         when(repo.saveAndFlush(any(Usuario.class)))
@@ -145,7 +172,7 @@ class UsuarioServiceTest {
         req.setCep("00000-000");
         req.setNascimento("data-invalida");
         req.setEmail("teste@example.com");
-        req.setSenha("secret");
+        req.setSenha("SenhaDeTeste123!");
 
         when(repo.saveAndFlush(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

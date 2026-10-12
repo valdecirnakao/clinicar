@@ -1,0 +1,1094 @@
+@if (!cadastroIntegrado) {
+  <div class="container-fluid mt-0 mb-0 peca-page" style="color:#35689b; max-height: 80vh;">
+    <div class="row justify-content-center">
+      <div class="col-md-12 mt-sm-0">
+        <div class="row mt-0">
+          <div class="col text-center mb-2">
+            <div class="card page-title-card">
+              <div class="card-body py-3">
+                <i class="bi bi-gear me-1"></i>
+                Gerenciamento de Peças e Insumos
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-2 mb-2 summary-row">
+          <div class="col-md-4 col-6">
+            <div class="summary-card">
+              <div class="summary-icon"><i class="bi bi-box-seam"></i></div>
+              <div>
+                <div class="summary-label">Total cadastrado</div>
+                <div class="summary-value">{{ totalPecas }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 col-6">
+            <div class="summary-card">
+              <div class="summary-icon"><i class="bi bi-tags"></i></div>
+              <div>
+                <div class="summary-label">Tipos</div>
+                <div class="summary-value">{{ totalTipos }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 col-6">
+            <div class="summary-card">
+              <div class="summary-icon"><i class="bi bi-buildings"></i></div>
+              <div>
+                <div class="summary-label">Fabricantes</div>
+                <div class="summary-value">{{ totalFabricantes }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card clinicar-card peca-list-card">
+          <div class="card-body peca-list-body">
+            <div class="row g-2 align-items-end mb-2 toolbar-filters">
+              <div class="col-lg-3 col-md-5">
+                <label class="form-label fw-bold" for="filtro-pecas">Buscar</label>
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input id="filtro-pecas" type="search" class="form-control"
+                    placeholder="Nome, tipo, especificação, fabricante, modelo" [(ngModel)]="filtroTexto"
+                    (ngModelChange)="aoAlterarFiltros()" autocomplete="off" />
+                </div>
+              </div>
+              <div class="col-lg-2 col-md-3">
+                <label class="form-label fw-bold" for="filtro-tipo">Tipo</label>
+                <select id="filtro-tipo" class="form-select" [(ngModel)]="filtroTipo"
+                  (ngModelChange)="aoAlterarFiltros()">
+                  <option value="">Todos</option>
+                  @for (tipo of tiposParaFiltro; track tipo) {
+                    <option [value]="tipo">
+                      {{ tipo }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="col-lg-1 col-md-3">
+                <label class="form-label fw-bold" for="filtro-unidade">Unidade</label>
+                <select id="filtro-unidade" class="form-select" [(ngModel)]="filtroUnidade"
+                  (ngModelChange)="aoAlterarFiltros()">
+                  <option value="">Todas</option>
+                  @for (unidade of unidadesParaFiltro; track unidade) {
+                    <option [value]="unidade">
+                      {{ unidade | unidadePeca }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="col-lg-1 col-md-3">
+                <button class="btn btn-outline-secondary btn-md btn-limpar-filtros" type="button" (click)="limparFiltros()"
+                  [disabled]="!possuiFiltrosAplicados">
+                  <i class="bi bi-eraser me-1"></i>
+                  Limpar Filtros
+                </button>
+              </div>
+              <div class="col-lg-5 col-md-12">
+                <div class="toolbar-actions">
+                  <button class="btn btn-primary btn-md" type="button" (click)="abrirModalCadastro()">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Nova Peça
+                  </button>
+                  <button class="btn btn-outline-primary btn-md" type="button" (click)="recarregar()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Atualizar
+                  </button>
+                  <button class="btn btn-outline-secondary btn-md" type="button" (click)="voltar()">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Voltar
+                  </button>
+                </div>
+              </div>
+            </div>
+            @if (possuiFiltrosAplicados) {
+              <div class="filter-chip-row">
+                @if (filtroTexto) {
+                  <span class="filter-chip">
+                    Busca: {{ filtroTexto }}
+                    <button type="button" (click)="filtroTexto = ''; aoAlterarFiltros()" aria-label="Remover busca">×</button>
+                  </span>
+                }
+                @if (filtroTipo) {
+                  <span class="filter-chip">
+                    Tipo: {{ filtroTipo }}
+                    <button type="button" (click)="filtroTipo = ''; aoAlterarFiltros()" aria-label="Remover tipo">×</button>
+                  </span>
+                }
+                @if (filtroUnidade) {
+                  <span class="filter-chip">
+                    Unidade: {{ filtroUnidade }}
+                    <button type="button" (click)="filtroUnidade = ''; aoAlterarFiltros()"
+                    aria-label="Remover unidade">×</button>
+                  </span>
+                }
+              </div>
+            }
+            @if (loading) {
+              <div class="alert alert-info py-2 mb-2">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Carregando peças…
+              </div>
+            }
+            @if (!loading && errorMsg) {
+              <div class="alert alert-danger py-2 mb-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ errorMsg }}
+              </div>
+            }
+            @if (!loading) {
+              <div class="peca-table-shell d-none d-md-flex">
+                <div class="peca-table-scroll">
+                  <table class="table table-hover align-middle table-compact table-sticky-header">
+                    <thead>
+                      <tr>
+                        <th scope="col" class="sortable" (click)="ordenarPor('nome')">
+                          Nome <i class="bi ms-1" [ngClass]="iconeOrdenacao('nome')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('tipo')">
+                          Tipo <i class="bi ms-1" [ngClass]="iconeOrdenacao('tipo')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('especificacao')">
+                          Especificação técnica <i class="bi ms-1" [ngClass]="iconeOrdenacao('especificacao')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('fabricante')">
+                          Fabricante <i class="bi ms-1" [ngClass]="iconeOrdenacao('fabricante')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('modelo')">
+                          Modelo <i class="bi ms-1" [ngClass]="iconeOrdenacao('modelo')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('norma')">
+                          Norma <i class="bi ms-1" [ngClass]="iconeOrdenacao('norma')"></i>
+                        </th>
+                        <th scope="col" class="sortable" (click)="ordenarPor('unidade')">
+                          Unidade <i class="bi ms-1" [ngClass]="iconeOrdenacao('unidade')"></i>
+                        </th>
+                        <th scope="col" class="text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of pecasPaginadas; track trackByPeca($index, p)) {
+                        <tr>
+                          <td>
+                            <div class="fw-semibold">{{ exibirCapitalizado(p.nome) }}</div>
+                            <small>{{ p.fabricante || 'Fabricante não informado' }}</small>
+                          </td>
+                          <td>
+                            <span class="badge tipo-badge" [ngClass]="tipoBadgeClass(p.tipo)">
+                              {{ p.tipo || 'Sem tipo' }}
+                            </span>
+                          </td>
+                          <td class="technical-spec-cell">{{ resumoEspecificacaoTecnica(p) }}</td>
+                          <td>{{ exibirCapitalizado(p.fabricante) }}</td>
+                          <td>{{ exibirCapitalizado(p.modelo) }}</td>
+                          <td>
+                            @if (p.norma) {
+                              <span class="badge norma-badge">
+                                {{ exibirCaixaAlta(p.norma) }}
+                              </span>
+                            } @else {
+                              —
+                            }
+                          </td>
+                          <td>
+                            <span class="badge unidade-badge">{{ p.unidade | unidadePeca }}</span>
+                          </td>
+                          <td class="text-center ">
+                            <div class="btn-group btn-group-sm table-actions" style="gap: .25rem; border-radius: 3px;">
+                              <button class="btn btn-outline-info" type="button" title="Visualizar detalhes"
+                                (click)="abrirDetalhes(p)" style="border-radius: 3px;">
+                                <i class="bi bi-eye"></i>
+                              </button>
+                              <button class="btn btn-outline-primary" type="button" title="Editar peça"
+                                (click)="abrirModalEdicao(p)" style="border-radius: 3px;">
+                                <i class="bi bi-pencil-square"></i>
+                              </button>
+                              <button class="btn btn-outline-danger" type="button" title="Excluir peça"
+                                (click)="abrirConfirmacaoExclusao(p)" style="border-radius: 3px;">
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                      @if (totalRegistrosFiltrados === 0) {
+                        <tr>
+                          <td colspan="8" class="text-center text-muted py-4">
+                            Nenhuma peça encontrada.
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                @if (totalRegistrosFiltrados > 0) {
+                  <div class="table-pagination-footer">
+<app-paginacao [pagina]="paginaAtual-1" [tamanho]="itensPorPagina" [total]="totalRegistrosFiltrados" [carregando]="loading" [tamanhos]="opcoesItensPorPagina" (paginaChange)="irParaPagina($event+1)" (tamanhoChange)="itensPorPagina=$event;aoAlterarItensPorPagina()" />
+</div>
+                }
+              </div>
+            }
+            @if (!loading) {
+              <div class="mobile-card-list d-md-none">
+                @for (p of pecasPaginadas; track trackByPeca($index, p)) {
+                  <div class="mobile-record-card">
+                    <div class="mobile-record-header">
+                      <div>
+                        <div class="mobile-record-title">{{ exibirCapitalizado(p.nome) }}</div>
+                        <div class="mobile-record-subtitle">{{ p.fabricante || 'Fabricante não informado' }}</div>
+                      </div>
+                      <span class="badge tipo-badge" [ngClass]="tipoBadgeClass(p.tipo)">{{ p.tipo || 'Sem tipo' }}</span>
+                    </div>
+                    <div class="mobile-record-line"><strong>Modelo:</strong> {{ exibirCapitalizado(p.modelo) }}</div>
+                    <div class="mobile-record-line"><strong>Especificação técnica:</strong> {{ resumoEspecificacaoTecnica(p) }}
+                  </div>
+                  <div class="mobile-record-line"><strong>Norma:</strong> {{ exibirCaixaAlta(p.norma) }}</div>
+                  <div class="mobile-record-line"><strong>Unidade:</strong> {{ p.unidade | unidadePeca }}</div>
+                  <div class="mobile-record-actions">
+                    <button class="btn btn-sm btn-outline-info" type="button" (click)="abrirDetalhes(p)">
+                      <i class="bi bi-eye me-1"></i>
+                      Visualizar
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirModalEdicao(p)">
+                      <i class="bi bi-pencil-square me-1"></i>
+                      Editar
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" type="button" (click)="abrirConfirmacaoExclusao(p)">
+                      <i class="bi bi-trash me-1"></i>
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (totalRegistrosFiltrados === 0) {
+                <div class="text-center text-muted py-4">
+                  Nenhuma peça encontrada.
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal Cadastro -->
+<div class="modal fade" id="modalCadastroPeca" [appValidarDuplicidade]="{ tipo: 'peca', model: novaPeca, id: null, campos: { nome: '#nomePecaCadastro', fabricante: '#fabricantePecaCadastro', tipo: '#tipoPecaCadastro', unidade: '#unidadePecaCadastro', modelo: '#modeloPecaCadastro', especificacao: '#especificacaoPecaCadastro', norma: '#normaPecaCadastro', origemOleo: '#origemOleoPecaCadastro', viscosidadeSae: '#viscosidadeSaePecaCadastro', classificacaoApi: '#classificacaoApiPecaCadastro', classificacaoAcea: '#classificacaoAceaPecaCadastro', normaOem: '#normaOemPecaCadastro' } }" (duplicidadeChange)="registrarDuplicidade($event)" tabindex="-1" aria-labelledby="modalCadastroPecaLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered peca-modal-dialog">
+    <div class="modal-content peca-modal-content">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalCadastroPecaLabel">
+            <i class="bi bi-plus-circle me-1"></i>
+            Nova Peça / Insumo
+          </h5>
+          <small>
+            {{ novaPeca.nome || 'Nome não informado' }} · {{ novaPeca.fabricante || 'Fabricante não informado' }}
+          </small>
+        </div>
+        <button type="button" class="btn-close" [disabled]="salvandoCadastro" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body peca-modal-body">
+        @if (fornecedorFluxo) {
+          <div class="alert alert-info" role="status">
+            Nova peça para <strong>{{ fornecedorFluxo.razaoSocial }}</strong>. Após salvar, informe as condições de fornecimento.
+          </div>
+        }
+        <div class="peca-modal-tabs-area">
+          @if (mensagemErroModal) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+          }
+
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso do cadastro">
+            <div class="progress-bar" [style.width.%]="progressoCadastroPeca">
+              {{ progressoCadastroPeca }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+          defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button data-help-guia="dados" [disabled]="!podeAcessarAbaCadastro('dados')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroPeca === 'dados'"
+                (click)="trocarAbaCadastroPeca('dados')">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+                @if (dadosPecaPendentes(novaPeca)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="classificacao" [disabled]="!podeAcessarAbaCadastro('classificacao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroPeca === 'classificacao'"
+                (click)="trocarAbaCadastroPeca('classificacao')">
+                <i class="bi bi-tags me-1"></i>
+                Classificação
+                @if (classificacaoIncompleta(novaPeca)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="revisao" [disabled]="!podeAcessarAbaCadastro('revisao')" title="Preencha e valide os campos obrigatórios das etapas anteriores para avançar." class="nav-link" type="button" [class.active]="abaCadastroPeca === 'revisao'"
+                (click)="trocarAbaCadastroPeca('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="peca-modal-scroll-area">
+          @if (abaCadastroPeca === 'dados') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+              </div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="nomePecaCadastro">Nome *</label>
+                  <input id="nomePecaCadastro" class="form-control" [(ngModel)]="novaPeca.nome"
+                    (blur)="normalizarCampoCapitalizado(novaPeca, 'nome')"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'nome')" [attr.data-obrigatorio-invalido]="campoMarcadoInvalido(novaPeca, 'nome')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(novaPeca, 'nome')) {
+                    <div class="invalid-feedback d-block">Informe o nome da
+                    peça ou insumo.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="fabricantePecaCadastro">Fabricante *</label>
+                  <input id="fabricantePecaCadastro" class="form-control" [(ngModel)]="novaPeca.fabricante"
+                    (blur)="normalizarCampoCapitalizado(novaPeca, 'fabricante')"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'fabricante')" [attr.data-obrigatorio-invalido]="campoMarcadoInvalido(novaPeca, 'fabricante')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(novaPeca, 'fabricante')) {
+                    <div class="invalid-feedback d-block">Informe o
+                    fabricante.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="unidadePecaCadastro">Unidade *</label>
+                  <select id="unidadePecaCadastro" class="form-select" [(ngModel)]="novaPeca.unidade"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'unidade')" [attr.data-obrigatorio-invalido]="campoMarcadoInvalido(novaPeca, 'unidade')">
+                    <option value="">Selecione...</option>
+                    @for (unidade of unidadesMedida; track unidade) {
+                      <option [ngValue]="unidade">{{ unidade | unidadePeca }}</option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(novaPeca, 'unidade')) {
+                    <div class="invalid-feedback d-block">Selecione a
+                    unidade de medida.</div>
+                  }
+                </div>
+                <div class="col-md-8">
+                  <div class="preview-card h-100">
+                    <div class="preview-title">Prévia</div>
+                    <div class="preview-main">{{ novaPeca.nome || 'Nome da peça ou insumo' }}</div>
+                    <div class="preview-sub">
+                      {{ novaPeca.fabricante || 'Fabricante' }}
+                      @if (novaPeca.modelo) {
+                        <span> · {{ novaPeca.modelo }}</span>
+                      }
+                      @if (novaPeca.unidade) {
+                        <span> · {{ novaPeca.unidade | unidadePeca }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="info-card h-100">
+                    <div class="preview-title">Orientação</div>
+                    <div class="details-line">
+                      Use este cadastro para peças instaladas no veículo e também para insumos controlados em estoque,
+                      como óleos, fluidos e consumíveis.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroPeca === 'classificacao') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-tags me-1"></i>
+                Classificação e especificações
+              </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="tipoPecaCadastro">Tipo *</label>
+                  <select id="tipoPecaCadastro"
+                    data-help="Classifique o item para facilitar filtros, estoque, orçamentos e regras específicas. Este campo é obrigatório. Para óleo de motor, selecione Óleo de motor."
+                    class="form-select" [(ngModel)]="novaPeca.tipo" (ngModelChange)="aoAlterarTipoPeca(novaPeca)"
+                    [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'tipo')" [attr.data-obrigatorio-invalido]="campoMarcadoInvalido(novaPeca, 'tipo')">
+                    <option value="">Selecione...</option>
+                    @for (tipo of tiposPeca; track tipo) {
+                      <option [ngValue]="tipo">{{ tipo }}</option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(novaPeca, 'tipo')) {
+                    <div class="invalid-feedback d-block">
+                      Selecione o tipo da peça ou insumo.
+                    </div>
+                  }
+                  <small class="text-muted">Para cadastrar óleo de motor, selecione “Óleo de motor” e preencha origem, viscosidade SAE e especificações API, ACEA ou OEM.</small>
+                </div>
+                @if (ehOleoMotor(novaPeca)) {
+                  <div class="col-md-3">
+                    <label class="form-label" for="origemOleoPecaCadastro">Origem do óleo *</label>
+                    <select id="origemOleoPecaCadastro"
+                      data-help="Informe a base do óleo de motor. Para o cadastro técnico do CliniCar, escolha Mineral, Semissintético ou Sintético."
+                      class="form-select" [(ngModel)]="novaPeca.origemOleo"
+                      [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'origemOleo')" [attr.data-obrigatorio-invalido]="campoMarcadoInvalido(novaPeca, 'origemOleo')">
+                      <option value="">Selecione...</option>
+                      @for (origem of origensOleo; track origem) {
+                        <option [ngValue]="origem.valor">{{ origem.rotulo }}</option>
+                      }
+                    </select>
+                    @if (campoMarcadoInvalido(novaPeca, 'origemOleo')) {
+                      <div class="invalid-feedback d-block">
+                        Informe se o óleo é mineral, semissintético ou sintético.
+                      </div>
+                    }
+                  </div>
+                }
+                <div class="col-md-3">
+                  <label class="form-label" for="modeloPecaCadastro">Linha / modelo</label>
+                  <input id="modeloPecaCadastro"
+                    data-help="Informe a linha comercial ou modelo do produto, quando houver. Exemplo: Magnatec."
+                    class="form-control" [(ngModel)]="novaPeca.modelo"
+                    (blur)="normalizarCampoCapitalizado(novaPeca, 'modelo')" autocomplete="off" />
+                </div>
+                @if (ehOleoMotor(novaPeca)) {
+                  <div class="col-md-3">
+                    <label class="form-label" for="viscosidadeSaePecaCadastro">Viscosidade SAE *</label>
+                    <input id="viscosidadeSaePecaCadastro"
+                      data-help="Informe o grau de viscosidade SAE do óleo. Exemplo: 5W-40. O CliniCar aceita a digitação 5W40 e padroniza para 5W-40."
+                      class="form-control" [(ngModel)]="novaPeca.viscosidadeSae"
+                      (blur)="normalizarViscosidadeSae(novaPeca)"
+                      [class.is-invalid]="campoMarcadoInvalido(novaPeca, 'viscosidadeSae')" [attr.data-obrigatorio-invalido]="campoMarcadoInvalido(novaPeca, 'viscosidadeSae')"
+                      list="viscosidadesSaeCadastro" placeholder="Ex.: 5W-40" autocomplete="off" />
+                    <datalist id="viscosidadesSaeCadastro">
+                      @for (viscosidade of viscosidadesSaeComuns; track viscosidade) {
+                        <option [value]="viscosidade"></option>
+                      }
+                    </datalist>
+                    @if (campoMarcadoInvalido(novaPeca, 'viscosidadeSae')) {
+                      <div class="invalid-feedback d-block">
+                        Informe a viscosidade SAE do óleo.
+                      </div>
+                    }
+                  </div>
+                  <div class="col-12">
+                    <div class="alert alert-info py-2 mb-0">
+                      <i class="bi bi-info-circle me-1"></i>
+                      <strong>Especificação técnica *</strong> — informe pelo menos um dos campos: API, ACEA ou norma/aprovação OEM.
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="classificacaoApiPecaCadastro">Classificação API</label>
+                    <input id="classificacaoApiPecaCadastro"
+                      data-help="Classificação de desempenho API do óleo. Exemplos: API SP, SN PLUS ou SN. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="novaPeca.classificacaoApi" [class.is-invalid]="especificacaoTecnicaMarcadaInvalida(novaPeca)" [attr.data-obrigatorio-invalido]="especificacaoTecnicaMarcadaInvalida(novaPeca)"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'classificacaoApi')"
+                      placeholder="Ex.: SP" autocomplete="off" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="classificacaoAceaPecaCadastro">Classificação ACEA</label>
+                    <input id="classificacaoAceaPecaCadastro"
+                      data-help="Classificação europeia ACEA. Exemplos: A3/B4 ou C3. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="novaPeca.classificacaoAcea" [class.is-invalid]="especificacaoTecnicaMarcadaInvalida(novaPeca)" [attr.data-obrigatorio-invalido]="especificacaoTecnicaMarcadaInvalida(novaPeca)"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'classificacaoAcea')"
+                      placeholder="Ex.: C3" autocomplete="off" />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="normaOemPecaCadastro">Norma / aprovação OEM</label>
+                    <input id="normaOemPecaCadastro"
+                      data-help="Informe uma aprovação ou especificação do fabricante do veículo quando aplicável. Exemplo: VW 502 00 / 505 00. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="novaPeca.normaOem" [class.is-invalid]="especificacaoTecnicaMarcadaInvalida(novaPeca)" [attr.data-obrigatorio-invalido]="especificacaoTecnicaMarcadaInvalida(novaPeca)"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'normaOem')"
+                      placeholder="Ex.: VW 502 00 / 505 00" autocomplete="off" />
+                    @if (especificacaoTecnicaMarcadaInvalida(novaPeca)) {
+                      <div class="alert alert-warning py-2 mt-2 mb-0"
+                        >
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Informe pelo menos uma especificação técnica: API, ACEA ou norma/aprovação OEM.
+                      </div>
+                    }
+                    <small class="text-muted">Para óleo de motor, pelo menos um dos três campos técnicos acima deve ser informado.</small>
+                  </div>
+                } @else {
+                  <div class="col-md-4">
+                    <label class="form-label" for="normaPecaCadastro">Norma</label>
+                    <input id="normaPecaCadastro"
+                      data-help="Informe uma norma técnica aplicável à peça ou insumo, quando houver."
+                      class="form-control" [(ngModel)]="novaPeca.norma"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'norma')"
+                      placeholder="Ex.: DOT 4, NBR" autocomplete="off" />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="especificacaoPecaCadastro">Especificação</label>
+                    <input id="especificacaoPecaCadastro"
+                      data-help="Registre características técnicas complementares da peça ou insumo."
+                      class="form-control" [(ngModel)]="novaPeca.especificacao"
+                      (blur)="normalizarCampoCaixaAlta(novaPeca, 'especificacao')"
+                      placeholder="Ex.: aplicação, material ou característica técnica" autocomplete="off" />
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (abaCadastroPeca === 'revisao') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão antes de salvar
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Dados principais</div>
+                    <div class="review-main">{{ novaPeca.nome || '—' }}</div>
+                    <div class="details-line">Fabricante: {{ novaPeca.fabricante || '—' }}</div>
+                    <div class="details-line">Unidade: {{ novaPeca.unidade | unidadePeca }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Classificação</div>
+                    <div class="details-line">Tipo: {{ novaPeca.tipo || '—' }}</div>
+                    @if (ehOleoMotor(novaPeca)) {
+                      <div class="details-line">Origem do óleo: {{ rotuloOrigemOleo(novaPeca.origemOleo) }}</div>
+                    }
+                    <div class="details-line">Linha / modelo: {{ novaPeca.modelo || '—' }}</div>
+                    @if (ehOleoMotor(novaPeca)) {
+                      <div class="details-line">Viscosidade SAE: {{ novaPeca.viscosidadeSae || '—' }}</div>
+                      <div class="details-line">API: {{ novaPeca.classificacaoApi || '—' }}</div>
+                      <div class="details-line">ACEA: {{ novaPeca.classificacaoAcea || '—' }}</div>
+                      <div class="details-line">OEM: {{ novaPeca.normaOem || '—' }}</div>
+                    } @else {
+                      <div class="details-line">Norma: {{ novaPeca.norma || '—' }}</div>
+                      <div class="details-line">Especificação: {{ novaPeca.especificacao || '—' }}</div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-totais">
+        <div class="totais-footer me-auto">
+          @if (mensagemBloqueioCadastro) {
+            <div class="pendencia-salvar">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ mensagemBloqueioCadastro }}
+            </div>
+          }
+          @if (!mensagemBloqueioCadastro) {
+            <div class="cadastro-pronto">
+              <i class="bi bi-check-circle me-1"></i>
+              Cadastro pronto para salvar.
+            </div>
+          }
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary" [disabled]="salvandoCadastro" data-bs-dismiss="modal">Cancelar</button>
+
+        @if (abaCadastroPeca !== 'dados') {
+          <button data-help-navegacao type="button" class="btn btn-outline-primary"
+            (click)="abaAnteriorCadastro()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+        }
+
+        @if (abaCadastroPeca !== 'revisao') {
+          <button data-help-navegacao [disabled]="!podeAvancarCadastro" type="button" class="btn btn-outline-primary"
+            (click)="proximaAbaCadastro()">
+            Próximo
+            <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+        }
+
+        <button type="button" class="btn btn-primary" [disabled]="salvandoCadastro || !cadastroPecaProntoParaSalvar"
+          [title]="mensagemBloqueioCadastro || 'Salvar peça'" (click)="salvarNovaPeca()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar peça
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição -->
+<div class="modal fade" id="modalEdicaoPeca" [appValidarDuplicidade]="{ tipo: 'peca', model: edit, id: editId, campos: { nome: '#nomePecaEdicao', fabricante: '#fabricantePecaEdicao', tipo: '#tipoPecaEdicao', unidade: '#unidadePecaEdicao', modelo: '#modeloPecaEdicao', especificacao: '#especificacaoPecaEdicao', norma: '#normaPecaEdicao', origemOleo: '#origemOleoPecaEdicao', viscosidadeSae: '#viscosidadeSaePecaEdicao', classificacaoApi: '#classificacaoApiPecaEdicao', classificacaoAcea: '#classificacaoAceaPecaEdicao', normaOem: '#normaOemPecaEdicao' } }" (duplicidadeChange)="registrarDuplicidade($event)" tabindex="-1" aria-labelledby="modalEdicaoPecaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered peca-modal-dialog">
+    <div class="modal-content peca-modal-content peca-modal-content-auto">
+      <div class="modal-header modal-header-clinicar">
+        <div>
+          <h5 class="modal-title" id="modalEdicaoPecaLabel">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar Peça / Insumo
+          </h5>
+          <small>
+            ID #{{ editId || '—' }} · {{ edit.nome || 'Nome não informado' }} · {{ edit.fabricante || 'Fabricante não
+            informado' }}
+          </small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body peca-modal-body">
+        <div class="peca-modal-tabs-area">
+          @if (mensagemErroModal) {
+            <div class="alert alert-danger py-2 mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ mensagemErroModal }}
+            </div>
+          }
+
+          <div class="progress cadastro-progress mb-3" role="progressbar" aria-label="Progresso da edição">
+            <div class="progress-bar" [style.width.%]="progressoEdicaoPeca">
+              {{ progressoEdicaoPeca }}%
+            </div>
+          </div>
+
+          <app-field-help-panel
+          defaultText="Campos marcados com * são obrigatórios. Ao posicionar o foco em um campo, esta área explica o que deve ser informado."></app-field-help-panel>
+
+          <ul class="nav nav-pills clinicar-tabs">
+            <li class="nav-item">
+              <button data-help-guia="dados" class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'dados'"
+                (click)="trocarAbaEdicaoPeca('dados')">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+                @if (dadosPecaPendentes(edit)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="classificacao" class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'classificacao'"
+                (click)="trocarAbaEdicaoPeca('classificacao')">
+                <i class="bi bi-tags me-1"></i>
+                Classificação
+                @if (classificacaoIncompleta(edit)) {
+                  <span class="tab-alert">!</span>
+                }
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button data-help-guia="revisao" class="nav-link" type="button" [class.active]="abaEdicaoPeca === 'revisao'"
+                (click)="trocarAbaEdicaoPeca('revisao')">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="peca-modal-scroll-area">
+          @if (abaEdicaoPeca === 'dados') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-box-seam me-1"></i>
+                Dados principais
+              </div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="nomePecaEdicao">Nome *</label>
+                  <input id="nomePecaEdicao" class="form-control" [(ngModel)]="edit.nome"
+                    (blur)="normalizarCampoCapitalizado(edit, 'nome')"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'nome')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'nome')) {
+                    <div class="invalid-feedback d-block">Informe o nome da
+                    peça ou insumo.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="fabricantePecaEdicao">Fabricante *</label>
+                  <input id="fabricantePecaEdicao" class="form-control" [(ngModel)]="edit.fabricante"
+                    (blur)="normalizarCampoCapitalizado(edit, 'fabricante')"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'fabricante')" autocomplete="off" />
+                  @if (campoMarcadoInvalido(edit, 'fabricante')) {
+                    <div class="invalid-feedback d-block">Informe o
+                    fabricante.</div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="unidadePecaEdicao">Unidade *</label>
+                  <select id="unidadePecaEdicao" class="form-select" [(ngModel)]="edit.unidade"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'unidade')">
+                    <option value="">Selecione...</option>
+                    @if (unidadeForaDaLista(edit.unidade)) {
+                      <option [ngValue]="edit.unidade">{{ edit.unidade | unidadePeca }}
+                      </option>
+                    }
+                    @for (unidade of unidadesMedida; track unidade) {
+                      <option [ngValue]="unidade">{{ unidade | unidadePeca }}</option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(edit, 'unidade')) {
+                    <div class="invalid-feedback d-block">Selecione a
+                    unidade de medida.</div>
+                  }
+                </div>
+                <div class="col-12">
+                  <div class="preview-card">
+                    <div class="preview-title">Prévia do item</div>
+                    <div class="preview-main">{{ edit.nome || 'Nome da peça ou insumo' }}</div>
+                    <div class="preview-sub">
+                      {{ edit.fabricante || 'Fabricante' }}
+                      @if (edit.modelo) {
+                        <span> · {{ edit.modelo }}</span>
+                      }
+                      @if (edit.unidade) {
+                        <span> · {{ edit.unidade | unidadePeca }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoPeca === 'classificacao') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-tags me-1"></i>
+                Classificação e especificações
+              </div>
+              <div class="row g-3">
+                <div [ngClass]="ehOleoMotor(edit) ? 'col-md-3' : 'col-md-4'">
+                  <label class="form-label" for="tipoPecaEdicao">Tipo *</label>
+                  <select id="tipoPecaEdicao"
+                    data-help="Classifique o item para facilitar filtros, estoque, orçamentos e regras específicas. Este campo é obrigatório. Para óleo de motor, selecione Óleo de motor."
+                    class="form-select" [(ngModel)]="edit.tipo" (ngModelChange)="aoAlterarTipoPeca(edit)"
+                    [class.is-invalid]="campoMarcadoInvalido(edit, 'tipo')">
+                    <option value="">Selecione...</option>
+                    @if (tipoForaDaLista(edit.tipo)) {
+                      <option [ngValue]="edit.tipo">{{ edit.tipo }}</option>
+                    }
+                    @for (tipo of tiposPeca; track tipo) {
+                      <option [ngValue]="tipo">{{ tipo }}</option>
+                    }
+                  </select>
+                  @if (campoMarcadoInvalido(edit, 'tipo')) {
+                    <div class="invalid-feedback d-block">
+                      Selecione o tipo da peça ou insumo.
+                    </div>
+                  }
+                </div>
+                @if (ehOleoMotor(edit)) {
+                  <div class="col-md-3">
+                    <label class="form-label" for="origemOleoPecaEdicao">Origem do óleo *</label>
+                    <select id="origemOleoPecaEdicao"
+                      data-help="Informe a base do óleo de motor. Para o cadastro técnico do CliniCar, escolha Mineral, Semissintético ou Sintético."
+                      class="form-select" [(ngModel)]="edit.origemOleo"
+                      [class.is-invalid]="campoMarcadoInvalido(edit, 'origemOleo')">
+                      <option value="">Selecione...</option>
+                      @for (origem of origensOleo; track origem) {
+                        <option [ngValue]="origem.valor">{{ origem.rotulo }}</option>
+                      }
+                    </select>
+                    @if (campoMarcadoInvalido(edit, 'origemOleo')) {
+                      <div class="invalid-feedback d-block">
+                        Informe se o óleo é mineral, semissintético ou sintético.
+                      </div>
+                    }
+                  </div>
+                }
+                <div [ngClass]="ehOleoMotor(edit) ? 'col-md-3' : 'col-md-4'">
+                  <label class="form-label" for="modeloPecaEdicao">Linha / modelo</label>
+                  <input id="modeloPecaEdicao"
+                    data-help="Informe a linha comercial ou modelo do produto, quando houver. Exemplo: Magnatec."
+                    class="form-control" [(ngModel)]="edit.modelo"
+                    (blur)="normalizarCampoCapitalizado(edit, 'modelo')" autocomplete="off" />
+                </div>
+                @if (ehOleoMotor(edit)) {
+                  <div class="col-md-3">
+                    <label class="form-label" for="viscosidadeSaePecaEdicao">Viscosidade SAE *</label>
+                    <input id="viscosidadeSaePecaEdicao"
+                      data-help="Informe o grau de viscosidade SAE do óleo. Exemplo: 5W-40. O CliniCar aceita a digitação 5W40 e padroniza para 5W-40."
+                      class="form-control" [(ngModel)]="edit.viscosidadeSae"
+                      (blur)="normalizarViscosidadeSae(edit)"
+                      [class.is-invalid]="campoMarcadoInvalido(edit, 'viscosidadeSae')"
+                      list="viscosidadesSaeEdicao" placeholder="Ex.: 5W-40" autocomplete="off" />
+                    <datalist id="viscosidadesSaeEdicao">
+                      @for (viscosidade of viscosidadesSaeComuns; track viscosidade) {
+                        <option [value]="viscosidade"></option>
+                      }
+                    </datalist>
+                    @if (campoMarcadoInvalido(edit, 'viscosidadeSae')) {
+                      <div class="invalid-feedback d-block">
+                        Informe a viscosidade SAE do óleo.
+                      </div>
+                    }
+                  </div>
+                  <div class="col-12">
+                    <div class="alert alert-info py-2 mb-0">
+                      <i class="bi bi-info-circle me-1"></i>
+                      <strong>Especificação técnica *</strong> — informe pelo menos um dos campos: API, ACEA ou norma/aprovação OEM.
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="classificacaoApiPecaEdicao">Classificação API</label>
+                    <input id="classificacaoApiPecaEdicao"
+                      data-help="Classificação de desempenho API do óleo. Exemplos: API SP, SN PLUS ou SN. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="edit.classificacaoApi" [class.is-invalid]="especificacaoTecnicaMarcadaInvalida(edit)" [attr.data-obrigatorio-invalido]="especificacaoTecnicaMarcadaInvalida(edit)"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'classificacaoApi')"
+                      placeholder="Ex.: SP" autocomplete="off" />
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="classificacaoAceaPecaEdicao">Classificação ACEA</label>
+                    <input id="classificacaoAceaPecaEdicao"
+                      data-help="Classificação europeia ACEA. Exemplos: A3/B4 ou C3. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="edit.classificacaoAcea" [class.is-invalid]="especificacaoTecnicaMarcadaInvalida(edit)" [attr.data-obrigatorio-invalido]="especificacaoTecnicaMarcadaInvalida(edit)"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'classificacaoAcea')"
+                      placeholder="Ex.: C3" autocomplete="off" />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="normaOemPecaEdicao">Norma / aprovação OEM</label>
+                    <input id="normaOemPecaEdicao"
+                      data-help="Informe uma aprovação ou especificação do fabricante do veículo quando aplicável. Exemplo: VW 502 00 / 505 00. API, ACEA e OEM formam um grupo: informe pelo menos um deles."
+                      class="form-control" [(ngModel)]="edit.normaOem" [class.is-invalid]="especificacaoTecnicaMarcadaInvalida(edit)" [attr.data-obrigatorio-invalido]="especificacaoTecnicaMarcadaInvalida(edit)"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'normaOem')"
+                      placeholder="Ex.: VW 502 00 / 505 00" autocomplete="off" />
+                    @if (especificacaoTecnicaMarcadaInvalida(edit)) {
+                      <div class="alert alert-warning py-2 mt-2 mb-0"
+                        >
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Informe pelo menos uma especificação técnica: API, ACEA ou norma/aprovação OEM.
+                      </div>
+                    }
+                    <small class="text-muted">Para óleo de motor, pelo menos um dos três campos técnicos acima deve ser informado.</small>
+                  </div>
+                } @else {
+                  <div class="col-md-4">
+                    <label class="form-label" for="normaPecaEdicao">Norma</label>
+                    <input id="normaPecaEdicao"
+                      data-help="Informe uma norma técnica aplicável à peça ou insumo, quando houver."
+                      class="form-control" [(ngModel)]="edit.norma"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'norma')" autocomplete="off" />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="especificacaoPecaEdicao">Especificação</label>
+                    <input id="especificacaoPecaEdicao"
+                      data-help="Registre características técnicas complementares da peça ou insumo."
+                      class="form-control" [(ngModel)]="edit.especificacao"
+                      (blur)="normalizarCampoCaixaAlta(edit, 'especificacao')" autocomplete="off" />
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (abaEdicaoPeca === 'revisao') {
+            <div class="section-card">
+              <div class="section-card-title">
+                <i class="bi bi-clipboard-check me-1"></i>
+                Revisão das alterações
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Dados principais</div>
+                    <div class="review-main">{{ edit.nome || '—' }}</div>
+                    <div class="details-line">Fabricante: {{ edit.fabricante || '—' }}</div>
+                    <div class="details-line">Unidade: {{ edit.unidade | unidadePeca }}</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="review-card h-100">
+                    <div class="review-label">Classificação</div>
+                    <div class="details-line">Tipo: {{ edit.tipo || '—' }}</div>
+                    @if (ehOleoMotor(edit)) {
+                      <div class="details-line">Origem do óleo: {{ rotuloOrigemOleo(edit.origemOleo) }}</div>
+                    }
+                    <div class="details-line">Linha / modelo: {{ edit.modelo || '—' }}</div>
+                    @if (ehOleoMotor(edit)) {
+                      <div class="details-line">Viscosidade SAE: {{ edit.viscosidadeSae || '—' }}</div>
+                      <div class="details-line">API: {{ edit.classificacaoApi || '—' }}</div>
+                      <div class="details-line">ACEA: {{ edit.classificacaoAcea || '—' }}</div>
+                      <div class="details-line">OEM: {{ edit.normaOem || '—' }}</div>
+                    } @else {
+                      <div class="details-line">Norma: {{ edit.norma || '—' }}</div>
+                      <div class="details-line">Especificação: {{ edit.especificacao || '—' }}</div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-totais">
+        <div class="totais-footer me-auto">
+          @if (mensagemBloqueioEdicao) {
+            <div class="pendencia-salvar">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ mensagemBloqueioEdicao }}
+            </div>
+          }
+          @if (!mensagemBloqueioEdicao) {
+            <div class="cadastro-pronto">
+              <i class="bi bi-check-circle me-1"></i>
+              Edição pronta para salvar.
+            </div>
+          }
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        @if (abaEdicaoPeca !== 'dados') {
+          <button data-help-navegacao type="button" class="btn btn-outline-primary"
+            (click)="abaAnteriorEdicao()">
+            <i class="bi bi-chevron-left me-1"></i>
+            Anterior
+          </button>
+        }
+
+        @if (abaEdicaoPeca !== 'revisao') {
+          <button data-help-navegacao type="button" class="btn btn-outline-primary"
+            (click)="proximaAbaEdicao()">
+            Próximo
+            <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+        }
+
+        <button type="button" class="btn btn-primary" [disabled]="!edicaoPecaProntaParaSalvar"
+          [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
+          <i class="bi bi-check-circle me-1"></i>
+          Salvar alterações
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="modalDetalhesPeca" tabindex="-1" aria-labelledby="modalDetalhesPecaLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    @if (pecaSelecionada) {
+      <div class="modal-content details-modal-content">
+        <div class="modal-header modal-header-clinicar">
+          <div>
+            <h5 class="modal-title" id="modalDetalhesPecaLabel">
+              <i class="bi bi-eye me-1"></i>
+              Detalhes da peça / insumo
+            </h5>
+            <small>ID #{{ pecaSelecionada.id || '—' }} · {{ pecaSelecionada.nome }}</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Dados principais</div>
+                <div class="details-line"><strong>Nome:</strong> {{ pecaSelecionada.nome || '—' }}</div>
+                <div class="details-line"><strong>Fabricante:</strong> {{ pecaSelecionada.fabricante || '—' }}</div>
+                <div class="details-line"><strong>Unidade:</strong> {{ pecaSelecionada.unidade | unidadePeca }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="details-card h-100">
+                <div class="details-title">Classificação</div>
+                <div class="details-line"><strong>Tipo:</strong> {{ pecaSelecionada.tipo || '—' }}</div>
+                <div class="details-line"><strong>Linha / modelo:</strong> {{ pecaSelecionada.modelo || '—' }}</div>
+                @if (ehOleoMotor(pecaSelecionada)) {
+                  <div class="details-line"><strong>Origem:</strong> {{ rotuloOrigemOleo(pecaSelecionada.origemOleo) }}</div>
+                  <div class="details-line"><strong>Viscosidade SAE:</strong> {{ pecaSelecionada.viscosidadeSae || '—' }}</div>
+                  <div class="details-line"><strong>API:</strong> {{ pecaSelecionada.classificacaoApi || '—' }}</div>
+                  <div class="details-line"><strong>ACEA:</strong> {{ pecaSelecionada.classificacaoAcea || '—' }}</div>
+                  <div class="details-line"><strong>OEM:</strong> {{ pecaSelecionada.normaOem || '—' }}</div>
+                } @else {
+                  <div class="details-line"><strong>Norma:</strong> {{ pecaSelecionada.norma || '—' }}</div>
+                  <div class="details-line"><strong>Especificação:</strong> {{ pecaSelecionada.especificacao || '—' }}</div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+            (click)="abrirModalEdicao(pecaSelecionada)">
+            <i class="bi bi-pencil-square me-1"></i>
+            Editar
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal Confirmação Exclusão -->
+<div class="modal fade" id="modalConfirmacaoExclusaoPeca" tabindex="-1"
+  aria-labelledby="modalConfirmacaoExclusaoPecaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    @if (pecaParaExcluir) {
+      <div class="modal-content">
+        <div class="modal-header modal-header-clinicar">
+          <h5 class="modal-title" id="modalConfirmacaoExclusaoPecaLabel">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Confirmar exclusão
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="confirm-box">
+            <div class="fw-bold mb-2">Deseja excluir esta peça / insumo?</div>
+            <div>{{ pecaParaExcluir.nome }}</div>
+            <small>{{ pecaParaExcluir.fabricante || 'Fabricante não informado' }} · {{ pecaParaExcluir.unidade | unidadePeca }}</small>
+            <div class="alert alert-warning py-2 mt-3 mb-0">
+              <i class="bi bi-info-circle me-1"></i>
+              Esta ação não poderá ser desfeita.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" (click)="confirmarExclusao()">
+            <i class="bi bi-trash me-1"></i>
+            Excluir
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<div class="modal fade" id="modalFornecedorDaPeca" tabindex="-1" aria-labelledby="tituloFornecedorDaPeca">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header modal-header-clinicar"><h5 class="modal-title" id="tituloFornecedorDaPeca">Continuar cadastro da peça</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
+    <div class="modal-body" style="color:#35689b"><app-field-help-panel></app-field-help-panel>
+    <div class="alert alert-success">Peça cadastrada com sucesso: <strong>{{ pecaCadastrada?.nome }}</strong>.</div>
+    <p>Escolha um fornecedor ativo ou cadastre um novo. Depois, confira o fornecimento e complete o controle de estoque da peça.</p>
+    @if (erroContinuidade) {
+      <div class="alert alert-danger">{{ erroContinuidade }}</div>
+    }
+    <button type="button" class="btn btn-primary w-100" [disabled]="abrindoFornecedor" (click)="continuarFornecedorDaPeca()">Associar fornecedor</button>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Concluir por enquanto</button></div>
+</div></div>
+</div>

@@ -1,2 +1,11 @@
 
 .setup-link { color: #35689b; }
+
+@media (max-width: 767.98px) {
+  #logotop { margin-top: 1.25rem !important; }
+  .logo-img { max-width: 160px; height: auto; }
+  #comcadastro { border-right: 0 !important; border-bottom: 1px solid #d0e2f2; padding-bottom: 1rem; }
+  #semcadastro { padding-top: 1rem; }
+  .form-control { min-height: 42px; font-size: 1rem; }
+  .btn { min-height: 40px; }
+}

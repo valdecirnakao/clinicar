@@ -1,0 +1,54 @@
+<section class="alertas-tabela-page">
+  <div class="card page-title-card mb-2"><div class="card-body text-center"><i class="bi bi-bell me-1"></i>Configurações de alertas dos clientes</div></div>
+  @if (erro) {
+    <div class="alert alert-danger" [appFeedback]="erro" tipoFeedback="erro" (feedbackFechado)="erro=''">{{erro}}</div>
+  }
+  @if (sucesso) {
+    <div class="alert alert-success" [appFeedback]="sucesso" tipoFeedback="sucesso" (feedbackFechado)="sucesso=''">{{sucesso}}</div>
+  }
+  <div class="card list-card"><div class="card-body">
+    <div class="d-flex align-items-end flex-wrap gap-2 mb-3">
+      <div class="flex-grow-1"><label for="buscaAlertasClientes" class="form-label fw-semibold">Buscar cliente</label><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="buscaAlertasClientes" type="search" class="form-control" placeholder="Nome ou e-mail do cliente" [(ngModel)]="busca" (ngModelChange)="filtrar()"></div></div>
+      <button class="btn btn-outline-primary" (click)="carregar()" [disabled]="carregando"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+      <a class="btn btn-outline-secondary" routerLink="../usuario"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+    </div>
+    <div class="table-orientacao small"><i class="bi bi-info-circle me-1"></i>Todos os clientes são exibidos. Sem configuração salva, os alertas ficam desativados. Usuários inativos ou sem telefone não recebem avisos.</div>
+    <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+      <thead><tr>
+        <th><button class="sort-button" (click)="ordenarPor('nome')">Cliente <i class="bi bi-arrow-down-up"></i></button></th>
+        <th><button class="sort-button" (click)="ordenarPor('email')">E-mail <i class="bi bi-arrow-down-up"></i></button></th>
+        <th>Telefone | WhatsApp</th><th>Alertas</th><th>Antecedência<br><small>dias</small></th><th>Intervalo<br><small>dias</small></th><th>Máximo por previsão</th><th>Após vencer<br><small>dias</small></th><th>Hora inicial</th><th>Hora final</th><th>Fuso horário</th><th class="text-center">Ações</th>
+      </tr></thead>
+      <tbody>@for (c of clientes; track c) {
+        <tr>
+          <td><strong>{{c.nome}}</strong><small class="d-block">ID {{c.usuarioId}} · {{c.statusUsuario==='ATIVO'?'Ativo':'Inativo'}}</small></td><td>{{c.email}}</td><td><app-telefone-whatsapp [telefone]="c.telefone"></app-telefone-whatsapp></td>
+          <td><span class="badge" [class.text-bg-success]="c.configuracao.ativo" [class.text-bg-secondary]="!c.configuracao.ativo">{{c.configuracao.ativo?'Ativos':'Desativados'}}</span>@if (!c.configurada) {
+          <small class="d-block">Não configurado</small>
+        }</td>
+        <td>{{c.configuracao.antecedenciaDias}}</td><td>{{c.configuracao.intervaloDias}}</td><td>{{c.configuracao.maximoEnvios}}</td><td>{{c.configuracao.diasAposVencimento}}</td><td>{{hora(c.configuracao.horaInicio)}}</td><td>{{hora(c.configuracao.horaFim)}}</td><td>{{c.configuracao.fusoHorario}}</td>
+        <td><div class="d-flex justify-content-center gap-1"><button class="btn btn-sm btn-outline-info" (click)="abrir(c,true)" title="Visualizar configuração" [attr.aria-label]="'Visualizar configuração de '+c.nome"><i class="bi bi-eye"></i></button><button class="btn btn-sm btn-outline-primary" (click)="abrir(c,false)" title="Editar configuração" [attr.aria-label]="'Editar configuração de '+c.nome"><i class="bi bi-pencil-square"></i></button></div></td>
+      </tr>
+      }@if (carregando) {
+      <tr><td colspan="12" class="text-center py-3" role="status">Carregando configurações…</td></tr>
+      }@if (!carregando && !clientes.length) {
+      <tr><td colspan="12" class="text-center py-4">Nenhum cliente encontrado.</td></tr>
+    }</tbody>
+  </table></div>
+  <div class="table-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <small>Mostrando <strong>{{primeiro}}</strong> a <strong>{{ultimo}}</strong> de <strong>{{total}}</strong> registro(s)</small>
+    <label class="d-flex align-items-center gap-2 small">Exibir <select class="form-select form-select-sm page-size" [(ngModel)]="tamanho" (ngModelChange)="alterarTamanho()" [disabled]="carregando"><option [ngValue]="5">5</option><option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option></select> por página</label>
+    <nav class="d-flex gap-1" aria-label="Paginação dos clientes"><button class="btn btn-sm btn-outline-secondary" [disabled]="carregando||pagina===0" (click)="mudarPagina(pagina-1)"><i class="bi bi-chevron-left"></i> Anterior</button>@for (p of numerosPaginas; track p) {
+    <button class="btn btn-sm" [class.btn-primary]="p===pagina" [class.btn-outline-primary]="p!==pagina" [attr.aria-current]="p===pagina?'page':null" (click)="mudarPagina(p)" [disabled]="carregando">{{p+1}}</button>
+    }<button class="btn btn-sm btn-outline-secondary" [disabled]="carregando||pagina+1>=totalPaginas" (click)="mudarPagina(pagina+1)">Próxima <i class="bi bi-chevron-right"></i></button></nav>
+  </div>
+</div></div>
+</section>
+<div class="modal fade" id="modalConfiguracaoCliente" tabindex="-1" aria-labelledby="tituloConfiguracaoCliente" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><div><h5 id="tituloConfiguracaoCliente" class="modal-title"><i class="bi bi-bell me-1"></i>{{modoLeitura?'Detalhes':'Editar configuração'}} de alertas</h5><small>{{selecionado?.nome}} · ID {{selecionado?.usuarioId}}</small></div><button type="button" class="btn-close" aria-label="Fechar" (click)="fechar()" [disabled]="editor?.salvando"></button></div>
+    <div class="modal-body">@if (selecionado) {
+      <app-configuracao-alertas [usuarioSelecionado]="selecionado.usuarioId" [modoLeitura]="modoLeitura" (configuracaoSalva)="salvo()"></app-configuracao-alertas>
+    }</div>
+    <div class="modal-footer"><button class="btn btn-outline-secondary" (click)="fechar()" [disabled]="editor?.salvando">Fechar</button></div>
+  </div></div>
+</div>

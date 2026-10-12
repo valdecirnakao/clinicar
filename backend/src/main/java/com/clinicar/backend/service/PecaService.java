@@ -33,6 +33,7 @@ public class PecaService {
 
         pecaMapper.preencherEntidade(peca, request);
 
+        validarDuplicidade(peca);
         return pecaRepository.save(peca);
     }
 
@@ -58,6 +59,7 @@ public class PecaService {
 
         pecaMapper.preencherEntidade(peca, request);
 
+        validarDuplicidade(peca);
         return pecaRepository.save(peca);
     }
 
@@ -65,6 +67,13 @@ public class PecaService {
     public void excluir(Long id) {
         Peca peca = buscarPorId(id);
         pecaRepository.delete(peca);
+    }
+
+    private void validarDuplicidade(Peca peca) {
+        String chave = com.clinicar.backend.util.IdentidadePeca.chave(peca);
+        boolean duplicada = pecaRepository.findByNomeIgnoreCaseAndFabricanteIgnoreCase(peca.getNome(), peca.getFabricante()).stream()
+            .anyMatch(item -> (peca.getId() == null || !java.util.Objects.equals(item.getId(), peca.getId())) && chave.equals(com.clinicar.backend.util.IdentidadePeca.chave(item)));
+        if (duplicada) throw new IllegalArgumentException("Já existe uma peça com esta identificação e especificações.");
     }
 
     private void validarRequest(PecaRequest request) {

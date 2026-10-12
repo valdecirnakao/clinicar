@@ -17,6 +17,8 @@ import java.util.Map;
 
 @Service
 public class WhatsappEstoqueService {
+    @org.springframework.beans.factory.annotation.Autowired private NotificacaoOutboxService outbox;
+    @Value("${clinicar.notificacoes.outbox-enabled:true}") private boolean outboxEnabled;
 
     @Value("${clinicar.whatsapp.enabled:false}")
     private boolean whatsappEnabled;
@@ -33,6 +35,14 @@ public class WhatsappEstoqueService {
     @Value("${clinicar.whatsapp.access-token:}")
     private String accessToken;
 
+    private final com.clinicar.backend.repository.UsuarioRepository usuarios;
+    private final com.clinicar.backend.config.TemplateAlertaEstoqueConfig template;
+    public WhatsappEstoqueService(com.clinicar.backend.repository.UsuarioRepository usuarios, com.clinicar.backend.config.TemplateAlertaEstoqueConfig template) {
+        this.usuarios = usuarios;
+        this.template = template;
+        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10000); factory.setReadTimeout(20000); restTemplate.setRequestFactory(factory);
+    }
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -67,7 +77,12 @@ public class WhatsappEstoqueService {
         EstoquePeca estoque = alerta.getEstoquePeca();
         Peca peca = alerta.getPeca();
 
-        String nomeAdministrador = "Administrador";
+        String nomeAdministrador = configuracao.getNomeResponsavel() == null ? "Responsável pelo estoque" : configuracao.getNomeResponsavel();
+        if (configuracao.getIdResponsavel() != null) {
+            var usuario = usuarios.findById(configuracao.getIdResponsavel()).orElseThrow(() -> new IllegalArgumentException("Responsável não encontrado. Atualize a configuração dos alertas de estoque."));
+            if (!"ATIVO".equalsIgnoreCase(usuario.getStatus()) || !java.util.Set.of("ADMINISTRADOR", "COLABORADOR").contains(usuario.getTipo_do_acesso()))
+                throw new IllegalArgumentException("O responsável está inativo ou sem acesso administrativo. Escolha outro responsável na página Alertas.");
+        }
         String nomePeca = peca != null ? peca.getNome() : "Peça não identificada";
         String nivel = alerta.getNivelAlerta();
         String saldoAtual = formatarQuantidade(alerta.getQuantidadeAtual(), peca);
@@ -83,9 +98,9 @@ public class WhatsappEstoqueService {
                 "to", telefone,
                 "type", "template",
                 "template", Map.of(
-                        "name", configuracao.getTemplateWhatsapp(),
+                        "name", template.nome(),
                         "language", Map.of(
-                                "code", configuracao.getIdiomaTemplate()
+                                "code", template.idioma()
                         ),
                         "components", List.of(
                                 Map.of(
@@ -102,6 +117,8 @@ public class WhatsappEstoqueService {
                         )
                 )
         );
+
+        if (outboxEnabled && outbox != null) return outbox.enfileirar("estoque:" + alerta.getId() + ":" + nivel + ":" + (alerta.getTentativasEnvio()==null?0:alerta.getTentativasEnvio()), telefone, template.nome(), template.idioma(), body, "ESTOQUE", alerta.getId());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -165,7 +182,14 @@ public class WhatsappEstoqueService {
         String unidade = "unidade(s)";
 
         if (peca != null && peca.getUnidade() != null && !peca.getUnidade().isBlank()) {
-            unidade = peca.getUnidade();
+            unidade = peca.getUnidade().trim();
+            if (!unidade.matches(".*\\((?:s|es|ões)\\)$")) {
+                unidade += switch (unidade.toLowerCase(java.util.Locale.ROOT)) {
+                    case "par" -> "(es)";
+                    case "galão", "galao" -> "(ões)";
+                    default -> "(s)";
+                };
+            }
         }
 
         return valor.toPlainString() + " " + unidade;

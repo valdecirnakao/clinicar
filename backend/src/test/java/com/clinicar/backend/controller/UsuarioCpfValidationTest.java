@@ -82,16 +82,18 @@ class UsuarioCpfValidationTest {
         solicitante.setId(1L);
         solicitante.setTipo_do_acesso("CLIENTE");
         solicitante.setStatus("ATIVO");
-        assertEquals(403, controller.validarEmail("cliente@example.com", solicitante).getStatusCode().value());
-        assertEquals(401, controller.validarEmail("cliente@example.com", null).getStatusCode().value());
+        assertEquals(403, controller.validarEmail("cliente@example.com", null, solicitante).getStatusCode().value());
+        assertEquals(401, controller.validarEmail("cliente@example.com", null, null).getStatusCode().value());
         verifyNoInteractions(service);
         solicitante.setTipo_do_acesso("ADMINISTRADOR");
-        when(service.emailCadastrado("cliente@example.com")).thenReturn(true);
-        var resposta = controller.validarEmail("cliente@example.com", solicitante);
+        when(service.emailCadastrado("cliente@example.com", null)).thenReturn(true);
+        var resposta = controller.validarEmail("cliente@example.com", null, solicitante);
         assertEquals(java.util.Map.of("cadastrado", true), resposta.getBody());
         assertEquals("no-store", resposta.getHeaders().getCacheControl());
         var erro = new DataIntegrityViolationException("Duplicidade",
                 new ConstraintViolationException("Duplicidade", new SQLException(), "usuario.uk_usuario_email"));
+        controller.validarEmail("cliente@example.com", 7L, solicitante);
+        verify(service).emailCadastrado("cliente@example.com", 7L);
         assertEquals("E-mail já cadastrado anteriormente.", new GlobalExceptionHandler()
                 .tratarDataIntegrityViolationException(erro).getBody().getMensagem());
     }
@@ -104,14 +106,16 @@ class UsuarioCpfValidationTest {
         solicitante.setId(1L);
         solicitante.setTipo_do_acesso("CLIENTE");
         solicitante.setStatus("ATIVO");
-        assertEquals(403, controller.validarCpf("22222222222", solicitante).getStatusCode().value());
-        assertEquals(401, controller.validarCpf("22222222222", null).getStatusCode().value());
+        assertEquals(403, controller.validarCpf("22222222222", null, solicitante).getStatusCode().value());
+        assertEquals(401, controller.validarCpf("22222222222", null, null).getStatusCode().value());
         verifyNoInteractions(service);
         solicitante.setTipo_do_acesso("ADMINISTRADOR");
-        when(service.cpfCadastrado("22222222222")).thenReturn(true);
-        var resposta = controller.validarCpf("22222222222", solicitante);
+        when(service.cpfCadastrado("22222222222", null)).thenReturn(true);
+        var resposta = controller.validarCpf("22222222222", null, solicitante);
         assertEquals(java.util.Map.of("cadastrado", true), resposta.getBody());
         assertEquals("no-store", resposta.getHeaders().getCacheControl());
+        controller.validarCpf("22222222222", 7L, solicitante);
+        verify(service).cpfCadastrado("22222222222", 7L);
     }
 
     @Test

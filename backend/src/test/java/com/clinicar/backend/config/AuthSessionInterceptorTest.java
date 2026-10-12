@@ -9,6 +9,18 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 class AuthSessionInterceptorTest {
+    @Test void auditoriaProtegidaParaTodosOsEndpoints() throws Exception {
+        var sessions=mock(SessionService.class); var user=new UsuarioResponse();
+        var interceptor=new AuthSessionInterceptor(sessions);ReflectionTestUtils.setField(interceptor,"cookieName","SESSION");
+        when(sessions.validarSessao("teste")).thenReturn(Optional.of(user));
+        for(String perfil:new String[]{"CLIENTE","COLABORADOR"}) {
+            user.setTipo_do_acesso(perfil);
+            for(String path:new String[]{"/api/auditoria","/api/auditoria/exportar","/api/auditoria/RESET_2FA/1"}) {
+                var req=new MockHttpServletRequest("GET",path);req.setCookies(new Cookie("SESSION","teste"));
+                var res=new MockHttpServletResponse();assertFalse(interceptor.preHandle(req,res,new Object()));assertEquals(403,res.getStatus());
+            }
+        }
+    }
     @Test void validarLinkRecuperacaoNaoExigeSessao() throws Exception {
         var sessions = mock(SessionService.class); var interceptor = new AuthSessionInterceptor(sessions);
         assertTrue(interceptor.preHandle(new MockHttpServletRequest("GET","/api/auth/redefinir-senha/validar"), new MockHttpServletResponse(), new Object()));

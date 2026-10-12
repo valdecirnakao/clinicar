@@ -58,6 +58,8 @@ public class AlertaEstoquePeca {
     @Column(name = "tentativas_envio", nullable = false)
     private Integer tentativasEnvio = 0;
 
+    @Column(name = "ultima_tentativa_em")
+    private LocalDateTime ultimaTentativaEm;
     @Column(name = "ultimo_erro", length = 1000)
     private String ultimoErro;
 
@@ -66,6 +68,17 @@ public class AlertaEstoquePeca {
 
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
+
+
+    private LocalDateTime reconhecidoEm;
+    private Long idUsuarioReconhecimento;
+    private String nomeUsuarioReconhecimento;
+    private LocalDateTime encerradoEm;
+    private Long idUsuarioEncerramento;
+    private String nomeUsuarioEncerramento;
+    @Column(length = 1000)
+    private String justificativaEncerramento;
+    private Boolean excecaoAtiva = false;
 
     @PrePersist
     public void prePersist() {

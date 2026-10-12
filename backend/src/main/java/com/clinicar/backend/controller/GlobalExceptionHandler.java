@@ -31,8 +31,16 @@ public class GlobalExceptionHandler {
     }
 
        @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErroResponse> tratarDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        String mensagem = "Não foi possível salvar o registro porque existe uma restrição no banco de dados.";
+    public ResponseEntity<ErroResponse> tratarDataIntegrityViolationException(DataIntegrityViolationException ex, jakarta.servlet.http.HttpServletRequest request) {
+        String metodo = request == null ? null : request.getMethod();
+        String uri = request == null ? null : request.getRequestURI();
+        String duplicidade = com.clinicar.backend.util.MensagemDuplicidade.obter(ex);
+        if (duplicidade != null) return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErroResponse(duplicidade));
+        String vinculo = com.clinicar.backend.util.MensagemVinculo.obter(ex, metodo, uri);
+        if (vinculo != null) return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErroResponse(vinculo));
+        String mensagem = "DELETE".equalsIgnoreCase(metodo)
+            ? com.clinicar.backend.util.MensagemVinculo.exclusaoSemDetalhe(uri)
+            : "Não foi possível salvar o registro porque existe uma restrição no banco de dados.";
 
         Throwable causa = ex.getCause();
 
@@ -65,5 +73,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(new ErroResponse(mensagem));
+    }
+
+    public ResponseEntity<ErroResponse> tratarDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        return tratarDataIntegrityViolationException(ex, null);
     }
 }

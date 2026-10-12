@@ -1,60 +1,128 @@
-<section class="alertas-page">
-  <div class="card clinicar-header-card mb-3"><div class="card-body">
-    <h4 class="mb-1"><i class="bi bi-bell me-2" aria-hidden="true"></i>Alertas de manutenção preventiva</h4>
-    <small>Defina quando o proprietário atual do veículo recebe os lembretes pelo WhatsApp.</small>
-  </div></div>
-  <div *ngIf="erro" class="alert alert-danger" role="alert">{{ erro }}</div>
-  <div *ngIf="sucesso" class="alert alert-success" role="status">{{ sucesso }}</div>
-  <p *ngIf="carregando" role="status">Carregando configurações…</p>
-  <form *ngIf="config as c" #form="ngForm" (ngSubmit)="salvar()" class="card p-3 mb-4">
-    <fieldset [disabled]="carregando || salvando">
-      <legend class="fs-6 fw-semibold">Frequência e período de envio</legend>
-      <div class="form-check form-switch mb-3">
-        <input id="ativo" name="ativo" type="checkbox" class="form-check-input" [(ngModel)]="c.ativo">
-        <label for="ativo" class="form-check-label">Ativar alertas de manutenção pelo WhatsApp</label>
+<section data-help-scope="configuracao-alertas" class="alertas-page">
+  @if (!usuarioSelecionado) {
+    <div class="card clinicar-header-card mb-3"><div class="card-body">
+      <h4 class="mb-1"><i class="bi bi-bell me-2" aria-hidden="true"></i>Alertas de manutenção preventiva</h4>
+      <small>Configure os lembretes pelo WhatsApp individualmente para cada proprietário de veículo.</small>
+    </div></div>
+  }
+  @if (erro) {
+    <div class="alert alert-danger" role="alert" [appFeedback]="erro" tipoFeedback="erro" (feedbackFechado)="erro = ''">{{ erro }}</div>
+  }
+  @if (sucesso) {
+    <div class="alert alert-success" role="status" [appFeedback]="sucesso" tipoFeedback="sucesso" (feedbackFechado)="sucesso = ''">{{ sucesso }}</div>
+  }
+  @if (config && !modoLeitura) {
+    <div class="cadastro-progresso mb-3">
+      <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+        <div><strong>Progresso da configuração</strong><div class="small">Preencha os campos obrigatórios para salvar os alertas.</div></div>
+        <span class="badge" [class.bg-success]="configuracaoValida" [class.bg-primary]="!configuracaoValida">{{ configuracaoValida ? 'Pronto para salvar' : progresso + '%' }}</span>
       </div>
-      <div class="row g-3">
-        <div class="col-md-6 col-xl-3"><label for="antecedencia" class="form-label">Antecedência (dias) *</label>
-          <input id="antecedencia" name="antecedencia" class="form-control" type="number" required min="0" max="365" step="1" [(ngModel)]="c.antecedenciaDias"></div>
-        <div class="col-md-6 col-xl-3"><label for="intervalo" class="form-label">Intervalo entre avisos (dias) *</label>
-          <input id="intervalo" name="intervalo" class="form-control" type="number" required min="1" max="365" step="1" [(ngModel)]="c.intervaloDias"></div>
-        <div class="col-md-6 col-xl-3"><label for="maximo" class="form-label">Máximo por previsão *</label>
-          <input id="maximo" name="maximo" class="form-control" type="number" required min="1" max="100" step="1" [(ngModel)]="c.maximoEnvios"></div>
-        <div class="col-md-6 col-xl-3"><label for="apos" class="form-label">Enviar até após vencer (dias) *</label>
-          <input id="apos" name="apos" class="form-control" type="number" required min="0" max="365" step="1" [(ngModel)]="c.diasAposVencimento"></div>
-        <div class="col-md-3"><label for="inicio" class="form-label">Hora inicial (0–23) *</label>
-          <input id="inicio" name="inicio" class="form-control" type="number" required min="0" max="23" step="1" [(ngModel)]="c.horaInicio"></div>
-        <div class="col-md-3"><label for="fim" class="form-label">Hora final (1–24, exclusiva) *</label>
-          <input id="fim" name="fim" class="form-control" type="number" required min="1" max="24" step="1" [(ngModel)]="c.horaFim"></div>
-        <div class="col-md-6"><label for="fuso" class="form-label">Fuso horário *</label>
-          <select id="fuso" name="fuso" class="form-select" required [(ngModel)]="c.fusoHorario">
+      <div class="progress" role="progressbar" aria-label="Preenchimento da configuração de alertas" [attr.aria-valuenow]="progresso" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar" [style.width.%]="progresso">{{ progresso }}%</div>
+      </div>
+      <div class="small mt-2">{{ camposPreenchidos }} de {{ camposObrigatorios.length }} campos obrigatórios preenchidos corretamente</div>
+    </div>
+  }
+  <app-field-help-panel></app-field-help-panel>
+  @if (carregando) {
+    <p role="status">Carregando configurações…</p>
+  }
+  @if (!usuarioSelecionado) {
+    <div class="card p-3 mb-3">
+      <label for="usuarioManutencao" class="form-label fw-semibold">Usuário destinatário *</label>
+      <select id="usuarioManutencao" class="form-select" [(ngModel)]="usuarioId" (ngModelChange)="carregar()" [disabled]="salvando">
+        <option [ngValue]="null">Selecione um usuário</option>
+        @for (u of usuarios; track u) {
+          <option [ngValue]="u.id">{{ u.nome }} · {{ u.email }}{{ u.status === 'INATIVO' ? ' · Inativo' : '' }}</option>
+        }
+      </select>
+      <small class="mt-2">As regras valem para todos os veículos pertencentes a este usuário. Usuários inativos ou sem telefone não recebem avisos. Novos usuários começam com os alertas desativados.</small>
+    </div>
+  }
+  @if (config; as c) {
+    <form #form="ngForm" (ngSubmit)="salvar()" class="card p-3 mb-4">
+      <fieldset [disabled]="modoLeitura || carregando || salvando">
+        <legend class="fs-6 fw-semibold">Frequência e período de envio</legend>
+        <div class="form-check form-switch mb-3">
+          <input id="ativo" name="ativo" type="checkbox" class="form-check-input" [(ngModel)]="c.ativo">
+          <label for="ativo" class="form-check-label">Ativar alertas de manutenção pelo WhatsApp</label>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6 col-xl-3"><label for="antecedencia" class="form-label">Antecedência (dias) *</label>
+          <input id="antecedencia" name="antecedencia" class="form-control" type="number" required min="0" max="365" step="1" [(ngModel)]="c.antecedenciaDias" [class.is-invalid]="campoInvalido('antecedenciaDias')" [attr.aria-invalid]="campoInvalido('antecedenciaDias')" aria-describedby="erro-antecedencia">
+          @if (campoInvalido('antecedenciaDias')) {
+            <div id="erro-antecedencia" class="invalid-feedback">{{ mensagemCampo('antecedenciaDias') }}</div>
+          }</div>
+          <div class="col-md-6 col-xl-3"><label for="intervalo" class="form-label">Intervalo entre avisos (dias) *</label>
+          <input id="intervalo" name="intervalo" class="form-control" type="number" required min="1" max="365" step="1" [(ngModel)]="c.intervaloDias" [class.is-invalid]="campoInvalido('intervaloDias')" [attr.aria-invalid]="campoInvalido('intervaloDias')" aria-describedby="erro-intervalo">
+          @if (campoInvalido('intervaloDias')) {
+            <div id="erro-intervalo" class="invalid-feedback">{{ mensagemCampo('intervaloDias') }}</div>
+          }</div>
+          <div class="col-md-6 col-xl-3"><label for="maximo" class="form-label">Máximo por previsão *</label>
+          <input id="maximo" name="maximo" class="form-control" type="number" required min="1" max="100" step="1" [(ngModel)]="c.maximoEnvios" [class.is-invalid]="campoInvalido('maximoEnvios')" [attr.aria-invalid]="campoInvalido('maximoEnvios')" aria-describedby="erro-maximo">
+          @if (campoInvalido('maximoEnvios')) {
+            <div id="erro-maximo" class="invalid-feedback">{{ mensagemCampo('maximoEnvios') }}</div>
+          }</div>
+          <div class="col-md-6 col-xl-3"><label for="apos" class="form-label">Enviar até após vencer (dias) *</label>
+          <input id="apos" name="apos" class="form-control" type="number" required min="0" max="365" step="1" [(ngModel)]="c.diasAposVencimento" [class.is-invalid]="campoInvalido('diasAposVencimento')" [attr.aria-invalid]="campoInvalido('diasAposVencimento')" aria-describedby="erro-apos">
+          @if (campoInvalido('diasAposVencimento')) {
+            <div id="erro-apos" class="invalid-feedback">{{ mensagemCampo('diasAposVencimento') }}</div>
+          }</div>
+          <div class="col-md-3"><label for="inicio" class="form-label">Hora inicial (0–23) *</label>
+          <input id="inicio" name="inicio" class="form-control" type="number" required min="0" max="23" step="1" [(ngModel)]="c.horaInicio" [class.is-invalid]="campoInvalido('horaInicio')" [attr.aria-invalid]="campoInvalido('horaInicio')" aria-describedby="erro-inicio">
+          @if (campoInvalido('horaInicio')) {
+            <div id="erro-inicio" class="invalid-feedback">{{ mensagemCampo('horaInicio') }}</div>
+          }</div>
+          <div class="col-md-3"><label for="fim" class="form-label">Hora final (1–24, exclusiva) *</label>
+          <input id="fim" name="fim" class="form-control" type="number" required min="1" max="24" step="1" [(ngModel)]="c.horaFim" [class.is-invalid]="campoInvalido('horaFim')" [attr.aria-invalid]="campoInvalido('horaFim')" aria-describedby="erro-fim">
+          @if (campoInvalido('horaFim')) {
+            <div id="erro-fim" class="invalid-feedback">{{ mensagemCampo('horaFim') }}</div>
+          }</div>
+          <div class="col-md-6"><label for="fuso" class="form-label">Fuso horário *</label>
+          <select id="fuso" name="fuso" class="form-select" required [(ngModel)]="c.fusoHorario" [class.is-invalid]="campoInvalido('fusoHorario')" [attr.aria-invalid]="campoInvalido('fusoHorario')" aria-describedby="erro-fuso">
+            <option value="">Selecione o fuso horário</option>
             <option value="America/Sao_Paulo">Brasília — America/Sao_Paulo</option>
             <option value="America/Manaus">Manaus — America/Manaus</option>
             <option value="America/Rio_Branco">Rio Branco — America/Rio_Branco</option>
             <option value="America/Noronha">Fernando de Noronha — America/Noronha</option>
-          </select></div>
+          </select>@if (campoInvalido('fusoHorario')) {
+          <div id="erro-fuso" class="invalid-feedback">{{ mensagemCampo('fusoHorario') }}</div>
+        }</div>
       </div>
       <p class="small text-muted mt-3">* Campos obrigatórios. O envio também exige integração WhatsApp habilitada e modelo aprovado na Meta. Previsões agendadas, concluídas e canceladas não recebem avisos.
-        O intervalo vale a partir do último envio; reiniciar o sistema não reinicia a contagem.</p>
-      <button type="submit" class="btn btn-primary" [disabled]="form.invalid || salvando || c.horaFim <= c.horaInicio">
+      O intervalo vale a partir do último envio; reiniciar o sistema não reinicia a contagem.</p>
+      @if (!modoLeitura) {
+        <button type="submit" class="btn btn-primary" [disabled]="!configuracaoValida || form.invalid || salvando || carregando">
         {{ salvando ? 'Salvando…' : 'Salvar configuração' }}</button>
-      <button type="button" class="btn btn-outline-secondary ms-2" (click)="carregar()">Recarregar</button>
+      }
+      @if (!modoLeitura) {
+        <button type="button" class="btn btn-outline-secondary ms-2" (click)="carregar()">Recarregar</button>
+      }
     </fieldset>
   </form>
+}
+@if (config) {
   <div class="card p-3">
     <div class="d-flex justify-content-between align-items-center mb-2"><h5 class="mb-0">Histórico de envios</h5>
-      <button type="button" class="btn btn-outline-primary btn-sm" (click)="historico()">Atualizar</button></div>
-    <p class="small text-muted">Últimos 100 registros. ENVIADO indica aceitação pela API do WhatsApp, sem confirmação de entrega.
-      Em caso de erro ou interrupção, verifique o envio antes de confirmar ou liberar nova tentativa.</p>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="historico()">Atualizar</button></div>
+    <p class="small text-muted">Últimos 100 registros do usuário selecionado. ENVIADO indica aceitação pela API do WhatsApp, sem confirmação de entrega.
+    Em caso de erro ou interrupção, verifique o envio antes de confirmar ou liberar nova tentativa.</p>
     <div class="table-responsive"><table class="table table-hover align-middle">
       <thead><tr><th>Previsão</th><th>Data</th><th>Destinatário</th><th>Estado</th><th>Detalhe / conciliação</th></tr></thead>
-      <tbody><tr *ngFor="let e of envios"><td>{{ e.previsaoId }}</td><td>{{ e.criadoEm | date:'dd/MM/yyyy HH:mm' }}</td>
+      <tbody>@for (e of envios; track e) {
+        <tr><td>{{ e.previsaoId }}</td><td>{{ e.criadoEm | date:'dd/MM/yyyy HH:mm' }}</td>
         <td>{{ e.destinatario }}</td><td>{{ e.status }}</td><td>{{ e.detalhe }}
-          <div *ngIf="e.status === 'ERRO' || e.status === 'EM_PROCESSAMENTO'" class="mt-2">
+        @if (!modoLeitura && (e.status === 'ERRO' || e.status === 'EM_PROCESSAMENTO')) {
+          <div class="mt-2">
             <button type="button" class="btn btn-sm btn-outline-success me-2" (click)="conciliar(e, true)">Confirmar envio</button>
             <button type="button" class="btn btn-sm btn-outline-warning" (click)="conciliar(e, false)">Liberar tentativa</button>
-          </div></td></tr>
-        <tr *ngIf="!envios.length"><td colspan="5" class="text-center text-muted">Nenhum envio registrado.</td></tr>
-      </tbody></table></div>
+          </div>
+        }</td></tr>
+      }
+      @if (!envios.length) {
+        <tr><td colspan="5" class="text-center text-muted">Nenhum envio registrado.</td></tr>
+      }
+    </tbody></table></div>
   </div>
+}
 </section>

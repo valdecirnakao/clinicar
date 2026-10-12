@@ -90,6 +90,10 @@ public class ApiExceptionHandler {
             DataIntegrityViolationException exception,
             HttpServletRequest request
     ) {
+        String duplicidade = com.clinicar.backend.util.MensagemDuplicidade.obter(exception);
+        if (duplicidade != null) return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", duplicidade));
+        String vinculo = com.clinicar.backend.util.MensagemVinculo.obter(exception, request.getMethod(), request.getRequestURI());
+        if (vinculo != null) return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensagem", vinculo));
         log.error(
                 "[API] Erro de integridade no banco em {} {}",
                 request.getMethod(),
@@ -98,10 +102,12 @@ public class ApiExceptionHandler {
         );
 
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(HttpStatus.CONFLICT)
                 .body(Map.of(
                         "mensagem",
-                        "Erro de integridade no banco: " + mensagemRaiz(exception)
+                        "DELETE".equalsIgnoreCase(request.getMethod())
+                            ? com.clinicar.backend.util.MensagemVinculo.exclusaoSemDetalhe(request.getRequestURI())
+                            : "Não foi possível salvar o registro porque existe uma restrição no banco de dados."
                 ));
     }
 
