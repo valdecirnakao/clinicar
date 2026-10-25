@@ -1,6 +1,6 @@
 import { FieldHelpDirective } from '../../shared/field-help/field-help.directive';
 import { FieldHelpPanelComponent } from '../../shared/field-help/field-help-panel.component';
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router, RouterLink, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
@@ -19,12 +19,20 @@ import { LoginService, LoginResponse, UsuarioLogado } from '../login/login.servi
     styleUrls: ['./login.component.css']
 })
 
-export class LoginComponent {
+export class LoginComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   consultandoSetup = false;
   aguardandoAtivacao = false;
   mensagemSetup = '';
+  exibirPrimeiroAcesso = false;
+
+  ngOnInit(): void {
+    this.setupService.consultarStatus().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: status => this.exibirPrimeiroAcesso = status.estado === 'NAO_INICIADO' || status.estado === 'AGUARDANDO_ATIVACAO',
+      error: () => this.exibirPrimeiroAcesso = false
+    });
+  }
 
   primeiroAcesso(): void {
     if (this.consultandoSetup) return;
@@ -50,6 +58,7 @@ export class LoginComponent {
   mensagemErro: string = '';
   mensagemSucesso: string = '';
   carregandoLogin: boolean = false;
+  mostrarSenha = false;
 
   constructor(
     private readonly router: Router,

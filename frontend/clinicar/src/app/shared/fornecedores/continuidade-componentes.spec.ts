@@ -258,7 +258,7 @@ describe('Preenchimento da continuidade fornecedor → item → fornecimento', (
       component.fornecedorFluxo = fornecedor;
       component.modalCadastro = { hide: jasmine.createSpy() };
       if (tipo === 'peca') component.novaPeca = { ...peca, id: undefined };
-      else component.novoServico = { ...servico, id: undefined, idFornecedor: 7 };
+      else { component.novoServico = { ...servico, id: undefined, idFornecedor: 7 }; component.abaCadastroServico = 'revisao'; }
       component[tipo === 'peca' ? 'salvarNovaPeca' : 'salvarNovoServico']();
       expect(navegar).not.toHaveBeenCalled();
       expect(component.salvandoCadastro).toBeTrue();
@@ -276,7 +276,7 @@ describe('Preenchimento da continuidade fornecedor → item → fornecimento', (
         : TestBed.createComponent(ServicoComponent).componentInstance;
       component.fornecedorFluxo = fornecedor;
       if (tipo === 'peca') component.novaPeca = { ...peca, id: undefined };
-      else component.novoServico = { ...servico, id: undefined, idFornecedor: 7 };
+      else { component.novoServico = { ...servico, id: undefined, idFornecedor: 7 }; component.abaCadastroServico = 'revisao'; }
       component[tipo === 'peca' ? 'salvarNovaPeca' : 'salvarNovoServico']();
       http.expectOne(`/api/${tipo}`).flush({ mensagem: 'Falha ao salvar' }, { status: 500, statusText: 'Erro' });
       expect(navegar).not.toHaveBeenCalled();

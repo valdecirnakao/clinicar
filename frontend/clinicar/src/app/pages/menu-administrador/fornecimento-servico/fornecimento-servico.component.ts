@@ -15,6 +15,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Observable, forkJoin, of, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContextoFornecedor, FluxoFornecedorService } from '../../../shared/fornecedores/fluxo-fornecedor.service';
+import { fornecedorAtende } from '../../../shared/fornecedores/categorias-fornecedor';
 import { FluxoServicoService } from '../../../shared/fornecedores/fluxo-servico.service';
 import { aposFecharModal } from '../../../shared/fornecedores/transicao-modal';
 import { CommonModule, Location } from '@angular/common';
@@ -162,7 +163,7 @@ export class FornecimentoServicoComponent implements OnInit {
     })): forkJoin({ servico: this.fluxoServico.carregar(this.rota), fornecedores: this.fornecedorService.listarTodos(), servicos: this.servicoService.listarTodos() })) as Observable<{servico:Servico|null;fornecedores:Fornecedor[];servicos:Servico[]}>).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: ({ servico, fornecedores, servicos }) => {
           if (!servico) return;
-          this.fornecedores = (fornecedores ?? []).filter(f => f.ativo !== false);
+          this.fornecedores = (fornecedores ?? []).filter(f => f.ativo !== false && fornecedorAtende(f.itemFornecido, 'servico'));
           this.fornecedoresFiltrados = [...this.fornecedores];
           this.servicos = (servicos ?? []).filter(s => s.ativo !== false);
           this.servicosFiltrados = [...this.servicos];
@@ -236,7 +237,7 @@ export class FornecimentoServicoComponent implements OnInit {
     })) as Observable<{contexto:ContextoFornecedor|null;fornecedores:Fornecedor[];servicos:Servico[]}>).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ contexto, fornecedores, servicos }) => {
         if (!contexto) return;
-        this.fornecedores = (fornecedores ?? []).filter(f => f.ativo !== false);
+        this.fornecedores = (fornecedores ?? []).filter(f => f.ativo !== false && fornecedorAtende(f.itemFornecido, 'servico'));
         this.fornecedoresFiltrados = [...this.fornecedores];
         this.servicos = (servicos ?? []).filter(s => s.ativo !== false);
         this.servicosFiltrados = [...this.servicos];
@@ -1173,7 +1174,7 @@ export class FornecimentoServicoComponent implements OnInit {
   private carregarFornecedores(): void {if(this.modoPaginado)return;
     this.fornecedorService.listarTodos().subscribe({
       next: (lista) => {
-        this.fornecedores = (lista ?? []).filter(f => f.ativo !== false);
+        this.fornecedores = (lista ?? []).filter(f => f.ativo !== false && fornecedorAtende(f.itemFornecido, 'servico'));
         this.fornecedoresFiltrados = [...this.fornecedores];
       },
       error: (erro) => {

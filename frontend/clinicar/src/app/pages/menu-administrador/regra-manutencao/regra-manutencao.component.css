@@ -36,7 +36,7 @@
 }
 
 .clinicar-header-card small {
-  color: #6d879e;
+  color: #4c637b;
 }
 
 .header-icon {
@@ -561,7 +561,7 @@
 }
 
 .modal-header-clinicar small {
-  color: #5c7fa4;
+  color: #4c637b;
 }
 
 .modal-body {
@@ -952,7 +952,7 @@
 .regras-page .table-card>.card-header{flex-shrink:0;padding:.5rem .75rem;background:#f7fbff;border-color:#d0e2f2;font-size:.8rem}
 .regras-page .table-wrapper{flex:1 1 auto;min-height:0;max-height:none}
 .regras-page .regras-table{font-size:.9rem;--bs-table-color:#35689b;--bs-table-hover-color:#35689b;--bs-table-border-color:#d0e2f2}
-.regras-page .regras-table th{font-weight:700}.regras-page .rule-description,.regras-page .pagination-info,.regras-page .pagination-size{color:#35689b}.regras-page .text-muted{color:#6d879e!important}.regras-page .text-primary{color:#35689b!important}
+.regras-page .regras-table th{font-weight:700}.regras-page .rule-description,.regras-page .pagination-info,.regras-page .pagination-size{color:#35689b}.regras-page .text-muted{color:#4c637b!important}.regras-page .text-primary{color:#35689b!important}
 .regras-page .table-pagination-footer{flex-shrink:0;background:#f7fbff;border-color:#d0e2f2}
 .regras-page .btn-primary{background:#35689b;border-color:#35689b}.regras-page .loading-container{flex:1 1 auto;min-height:0;color:#35689b}
 @media(max-width:991.98px){.regras-page{height:auto;max-height:none;padding-bottom:16px}.regras-page .table-wrapper{max-height:55vh;min-height:180px}.regras-page .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -1,0 +1,35 @@
+:host { display: block; }
+.cadastro-page { min-height: 100dvh; padding: 1.5rem 1rem; background: #f3f8fd; color: #294a68; }
+.cadastro-shell { max-width: 1050px; margin: 0 auto; }
+.voltar-login { display: inline-flex; gap: .4rem; margin-bottom: 1rem; color: #35689b; font-weight: 600; }
+.cadastro-card { border: 1px solid #cbdff0; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px #294a681a; overflow: hidden; }
+.cadastro-header { display: flex; align-items: center; gap: 1.25rem; padding: 1rem 1.5rem; background: #eef6ff; border-bottom: 1px solid #cbdff0; }
+.cadastro-logo { width: 100px; height: auto; }
+.cadastro-header h1 { font-size: 1.35rem; font-weight: 700; color: #35689b; margin: 0 0 .25rem; }
+.cadastro-header p, .progress-card p, .help-card p { margin: 0; color: #4c637b; }
+.cadastro-body { padding: 1.25rem 1.5rem; }
+.progress-card, .help-card, .etapas, .form-section { border: 1px solid #d0e2f2; border-radius: 10px; }
+.progress-card { padding: .85rem 1rem; margin-bottom: .75rem; background: #f7fbff; }
+.progress-card strong { color: #35689b; }
+.progress-card p { font-size: .88rem; margin: .2rem 0 .55rem; }
+.progress { height: 17px; background: #e8f3fd; }
+.progress-bar { background: #35689b; font-size: .7rem; font-weight: 700; }
+.progress-label { border: 1px solid #d0e2f2; border-radius: 20px; padding: .15rem .55rem; background: #fff; font-size: .8rem; font-weight: 700; }
+.help-card { display: flex; gap: .85rem; padding: 1rem; margin-bottom: .75rem; background: #eef6ff; color: #35689b; }
+.help-card p { font-size: .9rem; }
+.etapas { display: flex; justify-content: center; flex-wrap: wrap; gap: .35rem; background: #f7fbff; padding: .4rem; margin-bottom: 1rem; }
+.etapas button { border: 0; border-radius: 7px; background: transparent; color: #35689b; padding: .55rem .75rem; font-weight: 600; }
+.etapas button.ativa { background: #35689b; color: #fff; }
+.etapas button:disabled { color: #8799ac; }
+.form-section { padding: 1rem; margin-bottom: .75rem; min-width: 0; }
+.form-section h2 { color: #35689b; border-bottom: 1px solid #d0e2f2; padding-bottom: .4rem; font-size: 1rem; font-weight: 700; margin: 0 0 .8rem; }
+.form-section p { color: #4c637b; }
+.form-label { color: #294a68; font-weight: 600; }
+.form-control { min-height: 40px; border-color: #cbdff0; color: #294a68; }
+.revisao-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.revisao-grid dl { margin: 0; }
+.revisao-grid dl div { display: flex; justify-content: space-between; gap: .75rem; padding: .35rem 0; border-bottom: 1px dashed #d0e2f2; }
+.revisao-grid dt { color: #4c637b; }
+.revisao-grid dd { margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+.cadastro-footer { display: flex; justify-content: flex-end; gap: .5rem; padding-top: .75rem; border-top: 1px solid #d0e2f2; }
+@media (max-width: 767.98px) { .cadastro-header { flex-direction: column; text-align: center; } .cadastro-body { padding: 1rem; } .revisao-grid { grid-template-columns: 1fr; } .etapas button { flex: 1 1 auto; } }

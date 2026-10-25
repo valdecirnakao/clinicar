@@ -28,6 +28,33 @@ describe('UsuarioComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('oferece outro veículo antes dos alertas e mantém o proprietário na continuação', () => {
+    component.usuarioContinuacao = { id: 7, nome: 'Dora', tipo_do_acesso: 'cliente' } as any;
+    component.cadastrandoVeiculo = true;
+    spyOn(component, 'recarregar');
+    spyOn(component, 'abrirEscolhaProximoVeiculo');
+    const primeiro = { id: 10, placa: 'ABC1D23', fabricante: 'VW', modelo: 'Gol' } as any;
+
+    component.veiculoDoUsuarioCriado(primeiro);
+
+    expect(component.cadastrandoVeiculo).toBeFalse();
+    expect(component.usuarioContinuacao?.id).toBe(7);
+    expect(component.veiculosCadastradosNaSequencia).toEqual([primeiro]);
+    expect(component.abrirEscolhaProximoVeiculo).toHaveBeenCalled();
+    expect(component.configurandoAlertas).toBeFalse();
+  });
+
+  it('retorna à escolha ao cancelar o cadastro de um veículo adicional', () => {
+    component.emFluxoVeiculos = true;
+    component.cadastrandoVeiculo = true;
+    spyOn(component, 'abrirEscolhaProximoVeiculo');
+
+    component.aoCancelarVeiculoDoUsuario();
+
+    expect(component.cadastrandoVeiculo).toBeFalse();
+    expect(component.abrirEscolhaProximoVeiculo).toHaveBeenCalled();
+  });
+
   it('libera etapas somente após consultas válidas e bloqueia novamente ao alterar o documento', () => {
     const http = TestBed.inject(HttpTestingController);
     component.novoUsuario = { cpf: '22222222222', nome: 'Teste', nascimento: '2000-01-01' };

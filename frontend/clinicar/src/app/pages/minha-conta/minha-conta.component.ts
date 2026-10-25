@@ -4,7 +4,7 @@ import { FeedbackDirective } from '../../shared/feedback/feedback.directive';
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LoginService, UsuarioLogado } from '../login/login.service';
 import { PaginaSolicitacoes, SolicitacoesAcessoService, mensagemSolicitacao } from '../../services/solicitacoes-acesso.service';
 
@@ -16,6 +16,7 @@ export class MinhaContaComponent implements OnInit {
   private readonly login = inject(LoginService);
   private readonly service = inject(SolicitacoesAcessoService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   usuario: UsuarioLogado | null = null;
   pagina: PaginaSolicitacoes | null = null;
   tipo = 'INATIVACAO'; justificativa = ''; confirmo = false; inicioPeriodo = ''; fimPeriodo = '';
@@ -32,6 +33,7 @@ export class MinhaContaComponent implements OnInit {
       && this.periodoValido && this.confirmo && tamanho >= 10 && tamanho <= 1000;
   }
   ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('tipo') === 'ENCERRAMENTO') this.tipo = 'ENCERRAMENTO';
     this.login.obterUsuarioLogado().subscribe({ next: usuario => { this.usuario = usuario; this.carregar(); },
       error: () => void this.router.navigate(['/login']) });
   }

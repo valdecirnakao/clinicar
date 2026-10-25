@@ -27,6 +27,44 @@ describe('ControleEstoquePecasComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('exibe quantidades do alerta histórico sem casas decimais desnecessárias', () => {
+    const mensagem = 'Estoque atual: 2.000. Quantidade reservada: 0.000. Quantidade disponível: 2.000. Estoque mínimo: 5.000. Estoque crítico: 2.000. Local: Almoxarifado.';
+    expect(component.formatarMensagemAlertaEstoque(mensagem)).toBe(
+      'Estoque atual: 2. Quantidade reservada: 0. Quantidade disponível: 2. Estoque mínimo: 5. Estoque crítico: 2. Local: Almoxarifado.'
+    );
+    expect(component.formatarMensagemAlertaEstoque('Estoque atual: 2000.000. Quantidade disponível: 2.500.')).toBe(
+      'Estoque atual: 2.000. Quantidade disponível: 2,5.'
+    );
+  });
+
+  it('associa o fornecedor escolhido sem apagar os dados da entrada', () => {
+    component.tipoMovimentacaoSelecionado = 'ENTRADA';
+    component.movimento = { origem: 'COMPRA', quantidade: '5', valorUnitario: '30' };
+    component.selecionarFornecedorMovimentacao({ id: 8, razaoSocial: 'Fornecedor escolhido', ativo: true });
+    expect(component.movimento.idFornecedor).toBe(8);
+    expect(component.movimento.quantidade).toBe('5');
+    expect(component.fornecedoresMovimentacao[0].razaoSocial).toBe('Fornecedor escolhido');
+  });
+
+  it('preserva o custo digitado ao escolher uma origem de entrada com custo manual', () => {
+    component.tipoMovimentacaoSelecionado = 'ENTRADA';
+    component.movimento = { quantidade: '5', valorUnitario: 'R$ 30,00', origem: 'COMPRA' };
+    component.alterarOrigemMovimentacao();
+    expect(component.movimento.valorUnitario).toBe('R$ 30,00');
+    expect(component.movimento.quantidade).toBe('5');
+    component.movimento.origem = 'OUTRA';
+    component.alterarOrigemMovimentacao();
+    expect(component.movimento.valorUnitario).toBe('R$ 30,00');
+  });
+
+  it('descarta custo digitado quando a origem determina o custo automaticamente', () => {
+    component.tipoMovimentacaoSelecionado = 'ENTRADA';
+    component.movimento = { quantidade: '5', valorUnitario: 'R$ 30,00', origem: 'BONIFICACAO' };
+    component.alterarOrigemMovimentacao();
+    expect(component.movimento.valorUnitario).toBe('');
+    expect(component.custoMovimentacaoNumerico).toBe(0);
+  });
+
   it('exige custo na compra e atualiza o progresso e os campos obrigatórios', () => {
     component.tipoMovimentacaoSelecionado = 'ENTRADA'; component.movimento = { origem: '', quantidade: '', valorUnitario: '' };
     expect(component.progressoMovimentacao).toBe(0);
@@ -112,6 +150,7 @@ describe('ControleEstoquePecasComponent', () => {
     component.movimento.origem = 'ATENDIMENTO';
     expect((component as any).validarMovimentacao()).toContain('origem válida');
     expect(component.rotuloOrigemMovimentacao('COMPRA')).toBe('Compra');
+    expect(component.rotuloOrigemMovimentacao('INVENTARIO_INICIAL')).toBe('Inventário inicial');
     expect(component.rotuloOrigemMovimentacao('Antiga origem personalizada')).toBe('Antiga origem personalizada');
   });
 
@@ -193,7 +232,7 @@ describe('ControleEstoquePecasComponent', () => {
     ];
     fixture.detectChanges();
     const campo = fixture.nativeElement.querySelector('#movimentoOriginalCorrecao') as HTMLSelectElement;
-    expect(campo.required).toBeTrue(); expect(campo.classList.contains('is-invalid')).toBeTrue();
+    expect(campo.required).toBeTrue(); expect(campo.closest('app-seletor-remoto')!.classList.contains('is-invalid')).toBeTrue();
     expect(component.movimentacaoProntaParaSalvar).toBeFalse(); expect(component.movimentacoesDisponiveisCorrecao.length).toBe(1);
     component.movimento.idMovimentacaoOrigem = 8; expect(component.quantidadeMovimentacaoValida).toBeFalse();
     component.movimento.quantidade = '2'; expect(component.movimentacaoProntaParaSalvar).toBeTrue();
@@ -234,7 +273,7 @@ describe('ControleEstoquePecasComponent', () => {
     component.movimento = { origem: 'DEVOLUCAO_FORNECEDOR', quantidade: '5', motivo: 'Produto incorreto' };
     fixture.detectChanges();
     const campo = fixture.nativeElement.querySelector('#movimentoRecebimentoFornecedor') as HTMLSelectElement;
-    expect(campo.required).toBeTrue(); expect(campo.classList.contains('is-invalid')).toBeTrue();
+    expect(campo.required).toBeTrue(); expect(campo.closest('app-seletor-remoto')!.classList.contains('is-invalid')).toBeTrue();
     expect(component.movimentacaoProntaParaSalvar).toBeFalse();
     component.movimento.idMovimentacaoOrigem = 8; fixture.detectChanges();
     expect(component.quantidadeOriginalCorrigida(component.recebimentoFornecedorSelecionado!)).toBe(5);

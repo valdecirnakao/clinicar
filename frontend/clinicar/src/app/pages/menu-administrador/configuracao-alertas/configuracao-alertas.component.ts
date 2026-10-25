@@ -1,4 +1,5 @@
 import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { SeletorRemotoComponent } from '../../../shared/tabelas/seletor-remoto.component';
 import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
@@ -23,7 +24,7 @@ interface Envio {
 interface UsuarioAlerta { id: number; nome: string; email: string; status: string; telefone: string; }
 @Component({
     selector: 'app-configuracao-alertas',
-    imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, CommonModule, FormsModule],
+    imports: [SeletorRemotoComponent, FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, CommonModule, FormsModule],
     templateUrl: './configuracao-alertas.component.html',
     styleUrl: './configuracao-alertas.component.css'
 })
@@ -69,10 +70,6 @@ export class ConfiguracaoAlertasComponent implements OnInit {
   }
   ngOnInit(): void {
     if (this.usuarioSelecionado != null) { this.usuarioId = this.usuarioSelecionado; this.carregar(); return; }
-    this.http.get<UsuarioAlerta[]>('/api/usuario', {withCredentials: true}).subscribe({
-      next: usuarios => this.usuarios = usuarios.sort((a, b) => a.nome.localeCompare(b.nome)),
-      error: () => this.erro = 'Não foi possível carregar os usuários.'
-    });
   }
   carregar(): void {
     const usuarioId = this.usuarioId;

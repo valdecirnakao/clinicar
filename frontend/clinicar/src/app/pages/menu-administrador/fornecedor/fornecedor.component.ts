@@ -7,13 +7,15 @@ import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
 import { inject as injectFeedback } from '@angular/core';
 import { NotificacaoService } from '../../../shared/feedback/notificacao.service';
 import { AfterViewInit, Input, Output, EventEmitter, Component, OnInit, OnDestroy } from '@angular/core';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FluxoPecaService } from '../../../shared/fornecedores/fluxo-peca.service';
 import { Peca } from '../peca/peca.service';
 import { DestroyRef } from '@angular/core';
 import { FluxoFornecedorService, TipoItemFornecedor } from '../../../shared/fornecedores/fluxo-fornecedor.service';
+import { fornecedorAtende } from '../../../shared/fornecedores/categorias-fornecedor';
+import { exibirTelefoneFormatado } from '../../../shared/contatos/telefone-whatsapp';
 import { aposFecharModal } from '../../../shared/fornecedores/transicao-modal';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -105,7 +107,7 @@ export class FornecedorComponent implements OnInit, OnDestroy, AfterViewInit {
   }
   iniciarFornecedorDaPeca(): void {
     if (this.rota.snapshot.queryParamMap.get('continuarPeca') !== '1') return;
-    forkJoin({ peca: this.fluxoPeca.carregar(this.rota), fornecedores: this.fornecedorService.listarTodos() })
+    forkJoin({ peca: this.fluxoPeca.carregar(this.rota), fornecedores: this.modoPaginado ? of([]) : this.fornecedorService.listarTodos() })
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: ({ peca, fornecedores }) => {
           if (!peca) return;
@@ -155,6 +157,7 @@ export class FornecedorComponent implements OnInit, OnDestroy, AfterViewInit {
   }
   fornecedorCadastrado: Fornecedor | null = null;
   tipoContinuidade: TipoItemFornecedor = 'peca';
+  readonly fornecedorAtende = fornecedorAtende;
   modalContinuidade: any;
   salvandoCadastro = false;
 
@@ -164,8 +167,13 @@ export class FornecedorComponent implements OnInit, OnDestroy, AfterViewInit {
       this.notificacoes.aviso('Fornecedor salvo. Não foi possível abrir a continuação do cadastro; acesse Fornecimentos para associar o item.');
       return;
     }
+    if (!fornecedorAtende(fornecedor.itemFornecido, 'peca')
+        && !fornecedorAtende(fornecedor.itemFornecido, 'servico')) {
+      this.modalCadastro?.hide();
+      return;
+    }
     this.fornecedorCadastrado = fornecedor;
-    this.tipoContinuidade = /servi/i.test(fornecedor.itemFornecido) ? 'servico' : 'peca';
+    this.tipoContinuidade = fornecedorAtende(fornecedor.itemFornecido, 'peca') ? 'peca' : 'servico';
     this.continuidade.registrar(this.tipoContinuidade==='peca'?'fornecimentoPecas':'fornecimentoServico',{continuarCadastro:'1',fornecedorId:String(fornecedor.id)});
     const el = document.getElementById('modalContinuidadeFornecedor');
     if (!el || !fornecedor.id) return;
@@ -177,7 +185,7 @@ export class FornecedorComponent implements OnInit, OnDestroy, AfterViewInit {
 
   continuarCadastroFornecedor(novoItem: boolean): void {
     const id = this.fornecedorCadastrado?.id;
-    if (!id) return;
+    if (!id || !fornecedorAtende(this.fornecedorCadastrado?.itemFornecido, this.tipoContinuidade)) return;
     const tipo = this.tipoContinuidade;
     aposFecharModal('modalContinuidadeFornecedor', this.modalContinuidade, () => {
       void this.fluxoFornecedor.iniciar(tipo, novoItem, id);
@@ -340,6 +348,7 @@ export class FornecedorComponent implements OnInit, OnDestroy, AfterViewInit {
     'Fluidos automotivos',
     'Peças e lubrificantes',
     'Serviços automotivos',
+    'Peças e serviços',
     'Equipamentos e ferramentas',
     'Materiais de consumo',
     'Outros'
@@ -1092,38 +1101,7 @@ export class FornecedorComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   exibirTelefoneFormatado(telefone: string | null | undefined): string {
-    if (!telefone) {
-      return '';
-    }
-
-    const n = this.onlyDigits(telefone);
-    const codigoPais = '55';
-
-    if (n.length >= 13 && n.startsWith('55')) {
-      const ddd = n.slice(-11, -9);
-      const parte1 = n.slice(-9, -4);
-      const parte2 = n.slice(-4);
-
-      return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
-    }
-
-    if (n.length === 12 && n.startsWith('55')) {
-      const ddd = n.slice(-10, -8);
-      const parte1 = n.slice(-8, -4);
-      const parte2 = n.slice(-4);
-
-      return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
-    }
-
-    if (n.length >= 10) {
-      const ddd = n.slice(0, 2);
-      const parte1 = n.slice(2, 6);
-      const parte2 = n.slice(6, 10);
-
-      return `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
-    }
-
-    return n;
+    return exibirTelefoneFormatado(telefone);
   }
 
   formatarDataBr(data: string | Date | null | undefined): string {

@@ -326,7 +326,7 @@
 
 .modal-header-clinicar small {
   display: block;
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .82rem;
   margin-top: .15rem;
 }
@@ -475,7 +475,7 @@
 
 .preview-title,
 .review-label {
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .82rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -571,7 +571,7 @@
 
 .details-grid span {
   display: block;
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .78rem;
   font-weight: 800;
   text-transform: uppercase;

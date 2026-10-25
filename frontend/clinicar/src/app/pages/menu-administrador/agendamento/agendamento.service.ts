@@ -27,6 +27,8 @@ export interface Agendamento {
 
   idFornecedor?: number | null;
   razaoSocialFornecedor?: string | null;
+  tipoExecucao?: 'INTERNA' | 'EXTERNA' | 'PENDENTE';
+  preferenciaExecucaoCliente?: string | null;
 
   idResponsavel?: number | null;
   nomeResponsavel?: string | null;
@@ -42,6 +44,7 @@ export interface Agendamento {
 
   quilometragemAtual?: number | null;
   queixaCliente?: string | null;
+  sugestaoMateriaisCliente?: string | null;
   diagnosticoPrevio?: string | null;
   observacoes?: string | null;
 
@@ -71,6 +74,7 @@ export interface AgendamentoRequest {
   idServico?: number | null;
   idFornecedor?: number | null;
   idResponsavel?: number | null;
+  tipoExecucao?: 'INTERNA' | 'EXTERNA' | 'PENDENTE';
 
   dataHoraInicio?: string;
   dataHoraFim?: string;
@@ -149,6 +153,7 @@ export interface VeiculoResumo {
 
 export interface ServicoResumo {
   id?: number;
+  ativo?: boolean;
   nome?: string;
   descricao?: string;
   categoria?: string;
@@ -178,6 +183,9 @@ export interface ServicoResumo {
 
 export interface FornecedorResumo {
   id?: number;
+  cnpj?: string;
+  ativo?: boolean;
+  itemFornecido?: string;
   razaoSocial?: string;
   razao_social?: string;
   nomeFantasia?: string;
@@ -274,6 +282,12 @@ export interface AgendamentoPecaSelecionada {
   observacoes?: string;
 }
 
+export interface AgendamentoPecaPersistida extends AgendamentoPecaSelecionada {
+  id: number;
+  idPeca: number;
+  idEstoquePeca?: number | null;
+}
+
 export interface AgendamentoInicioResponse {
   agendamento: any;
   atendimento: any;
@@ -308,6 +322,12 @@ export class AgendamentoService {
 
   buscarPorId(id: number): Observable<Agendamento> {
     return this.http.get<Agendamento>(`${this.agendamentoUrl}/${id}`, {
+      withCredentials: true
+    });
+  }
+
+  listarPecasPrevistas(id: number): Observable<AgendamentoPecaPersistida[]> {
+    return this.http.get<AgendamentoPecaPersistida[]>(`${this.agendamentoUrl}/${id}/pecas-previstas`, {
       withCredentials: true
     });
   }

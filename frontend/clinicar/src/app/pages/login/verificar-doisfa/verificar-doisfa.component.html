@@ -6,7 +6,7 @@
           src="assets/img/LogoClinicar.png"
           alt="CliniCar Logo"
           class="img-fluid mb-1"
-          style="max-width: 150px;"
+          style="max-width: 120px;"
           />
         <h4>Verificação em duas etapas</h4>
         @if (!mfaPendente?.mfaSetupNecessario) {
@@ -53,11 +53,8 @@
           </div>
           <div class="alert alert-info mt-0 mb-0">
             <i class="bi bi-info-circle me-1"></i>
-            Abra o Google Authenticator, Microsoft Authenticator, Authy ou outro app compatível,
-            escaneie o QR Code e informe abaixo o código de 6 dígitos.
-            <Strong>Atenção: este QR Code contém uma chave secreta de autenticação.
-            Não tire print, não compartilhe e não armazene esta imagem.
-          Após a confirmação, este QR Code não será exibido novamente.</Strong>
+            Escaneie o QR Code em um app autenticador e informe o código de 6 dígitos.
+            <strong>Atenção: ele contém uma chave secreta. Não o capture, compartilhe ou salve; após confirmar, não será exibido novamente.</strong>
         </div>
       </div>
     }

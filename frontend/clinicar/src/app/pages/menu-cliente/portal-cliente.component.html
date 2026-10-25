@@ -1,0 +1,254 @@
+<div class="portal-page">
+  <header class="navbar navbar-expand-xl bg-white sticky-top m-0 p-0 portal-header">
+    <div class="container-fluid">
+      <img src="assets/img/LogoClinicar.png" alt="CliniCar" class="logo-clinicar">
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#clienteNav"
+        aria-controls="clienteNav" aria-expanded="false" aria-label="Alternar navegação"><span class="navbar-toggler-icon"></span></button>
+      <nav class="collapse navbar-collapse justify-content-xl-center" id="clienteNav" aria-label="Navegação do cliente">
+        <ul class="navbar-nav nav nav-pills gap-2 align-items-xl-center flex-column flex-xl-row">
+          <li class="nav-item"><button type="button" class="nav-link btn px-3 pill-btn" [class.nav-active]="guia === 'dados'" (click)="abrirGuia('dados')">Meus dados</button></li>
+          <li class="nav-item"><button type="button" class="nav-link btn px-3 pill-btn" [class.nav-active]="guia === 'veiculos'" (click)="abrirGuia('veiculos')">Meus veículos</button></li>
+          <li class="nav-item"><button type="button" class="nav-link btn px-3 pill-btn" [class.nav-active]="guia === 'historico'" (click)="abrirGuia('historico')">Histórico veicular</button></li>
+          <li class="nav-item"><button type="button" class="nav-link btn px-3 pill-btn" [class.nav-active]="guia === 'agendamentos'" (click)="abrirGuia('agendamentos')">Meus agendamentos</button></li>
+          <li class="nav-item"><button type="button" class="nav-link btn px-3 pill-btn" [class.nav-active]="guia === 'atendimentos'" (click)="abrirGuia('atendimentos')">Meus atendimentos</button></li>
+          <li class="nav-item"><button type="button" class="nav-link btn px-3 pill-btn" [class.nav-active]="guia === 'alertas'" (click)="abrirGuia('alertas')">Alertas de manutenção</button></li>
+          <li class="nav-item"><button type="button" class="nav-link btn px-3 pill-btn" (click)="sair()">Encerrar</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main class="container-fluid px-3 px-md-4 py-3">
+    @if (guia !== 'historico') { <div class="titulo-pagina mb-3"><i class="bi me-2" [class.bi-calendar-check]="guia === 'agendamentos'" [class.bi-person-circle]="guia !== 'agendamentos'"></i>{{ guia === 'agendamentos' ? 'Meus Agendamentos' : 'Meu espaço CliniCar' }}</div> }
+    @if (erro) { <div class="alert alert-danger" role="alert">{{ erro }}</div> }
+    @if (mensagem) { <div class="alert alert-success" [appFeedback]="mensagem" tipoFeedback="sucesso" (feedbackFechado)="mensagem = ''">{{ mensagem }}</div> }
+    @if (carregando) { <div class="card p-4">Carregando seus dados…</div> }
+    @if (portal) {
+      @if (etapaCadastroCliente) {
+        <section class="card mb-3 cadastro-cliente-guia" aria-label="Continuação do cadastro">
+          <div class="card-body">
+            <h2 class="h6 fw-bold mb-1"><i class="bi bi-clipboard-check me-2"></i>Continue seu cadastro</h2>
+            <div class="cadastro-etapas-resumo" aria-label="Etapas do cadastro">
+              <span><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Conta criada</span>
+              <span [class.atual]="etapaCadastroCliente !== 'alertas'">2. Veículos</span>
+              <span [class.atual]="etapaCadastroCliente === 'alertas'">3. Alertas</span>
+            </div>
+            <p class="mb-2">{{ etapaCadastroCliente === 'alertas' ? 'Escolha os avisos de manutenção que deseja receber.' : 'Cadastre os veículos associados à sua conta. Você pode incluir mais de um antes de configurar os alertas.' }}</p>
+            @if (etapaCadastroCliente === 'decisao') {
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-primary" (click)="cadastrarOutroVeiculo()">Cadastrar outro veículo</button>
+                <button type="button" class="btn btn-primary" (click)="continuarCadastroParaAlertas()">Continuar para alertas <i class="bi bi-arrow-right ms-1"></i></button>
+              </div>
+            }
+            @if (etapaCadastroCliente === 'veiculos' && !veiculoEditando && portal.veiculos.length) {
+              <button type="button" class="btn btn-outline-primary" (click)="continuarCadastroParaAlertas()">Continuar para alertas</button>
+            }
+          </div>
+        </section>
+      }
+      @if (guia === 'historico') {
+        <app-historico-veicular [modoCliente]="true" [veiculosDoCliente]="portal.veiculos"
+          [veiculoInicial]="historicoVeiculoId" (voltarAosVeiculos)="abrirGuia('veiculos')" />
+      }
+      @if (guia === 'agendamentos') {
+        <div class="row g-2 mb-3 summary-grid">
+          <div class="col-6 col-md-4 col-xl-2"><div class="summary-card summary-total"><small>Total</small><strong>{{ totalTodosAgenda() }}</strong></div></div>
+          <div class="col-6 col-md-4 col-xl-2"><div class="summary-card summary-agendado"><small>Agendados</small><strong>{{ totalAgenda('AGENDADO') + totalAgenda('REAGENDADO') }}</strong></div></div>
+          <div class="col-6 col-md-4 col-xl-2"><div class="summary-card summary-confirmado"><small>Confirmados</small><strong>{{ totalAgenda('CONFIRMADO') }}</strong></div></div>
+          <div class="col-6 col-md-4 col-xl-2"><div class="summary-card summary-atendimento"><small>Em atendimento</small><strong>{{ totalAgenda('EM_ATENDIMENTO') }}</strong></div></div>
+          <div class="col-6 col-md-4 col-xl-2"><div class="summary-card summary-concluido"><small>Concluídos</small><strong>{{ totalAgenda('CONCLUIDO') }}</strong></div></div>
+          <div class="col-6 col-md-4 col-xl-2"><div class="summary-card summary-cancelado"><small>Cancelados / ausentes</small><strong>{{ totalAgenda('CANCELADO') + totalAgenda('NAO_COMPARECEU') }}</strong></div></div>
+        </div>
+        <section class="card agenda-card"><div class="card-body">
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-lg-5"><label class="form-label fw-semibold" for="buscarAgendaCliente">Buscar</label><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="buscarAgendaCliente" class="form-control" [(ngModel)]="buscaAgenda" (keyup.enter)="carregarAgenda()" placeholder="Código, placa ou serviço"></div></div>
+            <div class="col-lg-3"><label class="form-label fw-semibold" for="statusAgendaCliente">Status</label><select id="statusAgendaCliente" class="form-select" [(ngModel)]="statusAgenda" (ngModelChange)="carregarAgenda()"><option value="">Todos</option><option value="AGENDADO">Agendado</option><option value="REAGENDADO">Reagendado</option><option value="CONFIRMADO">Confirmado</option><option value="EM_ATENDIMENTO">Em atendimento</option><option value="CONCLUIDO">Concluído</option><option value="CANCELADO">Cancelado</option><option value="NAO_COMPARECEU">Não compareceu</option></select></div>
+            <div class="col-lg-4 d-flex gap-2 justify-content-lg-end flex-wrap"><button type="button" class="btn btn-outline-primary" (click)="carregarAgenda()"><i class="bi bi-search me-1"></i>Consultar</button><button type="button" class="btn btn-primary" (click)="abrirNovoAgendamento()"><i class="bi bi-plus-circle me-1"></i>Novo Agendamento</button></div>
+          </div>
+          <div class="table-responsive agenda-tabela"><table class="table table-hover align-middle mb-0"><thead><tr><th>Código</th><th>Veículo</th><th>Serviço</th><th>Responsável</th><th>Período</th><th>Peças previstas</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+            @for (item of paginaAgenda?.itens || []; track item.agendamento.id) { <tr><td>{{ item.agendamento.codigoAgendamento }}</td><td>{{ item.agendamento.placaVeiculo }}</td><td>{{ item.agendamento.nomeServico }}</td><td>{{ item.agendamento.tipoExecucao === 'EXTERNA' ? (item.agendamento.razaoSocialFornecedor || 'Fornecedor externo') : (item.agendamento.nomeResponsavel || 'A definir pela oficina') }}</td><td>{{ item.agendamento.dataHoraInicio | date:'dd/MM/yyyy HH:mm' }}<div class="texto-apoio small">até {{ item.agendamento.dataHoraFim | date:'dd/MM/yyyy HH:mm' }}</div></td><td>{{ item.pecas.length ? item.pecas.length : '—' }}</td><td><span class="badge" [class.text-bg-success]="item.agendamento.statusAgendamento === 'CONFIRMADO'" [class.text-bg-primary]="item.agendamento.statusAgendamento !== 'CONFIRMADO'">{{ item.agendamento.tipoExecucao === 'PENDENTE' ? 'Aguardando oficina' : statusAgendaLegivel(item.agendamento.statusAgendamento) }}</span></td><td><div class="d-flex gap-1 flex-wrap">
+              @if ((item.agendamento.statusAgendamento === 'AGENDADO' || item.agendamento.statusAgendamento === 'REAGENDADO') && podeCancelarAgendamento(item)) { <button type="button" class="btn btn-sm btn-outline-primary" (click)="editarAgendamento(item)" [attr.aria-label]="'Editar agendamento ' + item.agendamento.codigoAgendamento">Editar</button> }
+              @if (podeConfirmarAgendamento(item)) { <button type="button" class="btn btn-sm btn-outline-success" [disabled]="cancelandoAgendaId !== null" (click)="confirmarAgendamento(item)">Confirmar</button> }
+              @if (podeReagendarAgendamento(item)) { <button type="button" class="btn btn-sm btn-outline-primary" (click)="abrirReagendamento(item)">Reagendar</button> }
+              @if (podeCancelarAgendamento(item)) { <button type="button" class="btn btn-sm btn-outline-danger" [disabled]="cancelandoAgendaId !== null" (click)="cancelarAgendamento(item)">Cancelar</button> }
+              @if ((item.agendamento.statusAgendamento === 'AGENDADO' || item.agendamento.statusAgendamento === 'REAGENDADO' || item.agendamento.statusAgendamento === 'CONFIRMADO') && !podeCancelarAgendamento(item)) { <span class="texto-apoio small">Prazo encerrado; contate a oficina</span> }
+              </div></td></tr> }
+            @empty { <tr><td colspan="8" class="text-center py-4 texto-apoio">{{ carregandoAgenda ? 'Consultando agendamentos…' : 'Nenhum agendamento encontrado.' }}</td></tr> }
+          </tbody></table></div>
+          <div class="agenda-paginacao d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3"><small>Mostrando {{ paginaAgenda?.itens?.length || 0 }} de {{ paginaAgenda?.total || 0 }} registro(s)</small><div class="d-flex align-items-center gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!paginaAgenda?.pagina" (click)="carregarAgenda((paginaAgenda?.pagina || 0) - 1)">Anterior</button><span>Página {{ (paginaAgenda?.pagina || 0) + 1 }} de {{ ultimaPaginaAgenda() + 1 }}</span><button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="(paginaAgenda?.pagina || 0) >= ultimaPaginaAgenda()" (click)="carregarAgenda((paginaAgenda?.pagina || 0) + 1)">Próxima</button></div></div>
+        </div></section>
+        @if (agendaForm) { <div class="modal-backdrop fade show"></div><div class="modal d-block agenda-modal" [class.d-none]="selecionandoVeiculoAgenda" role="dialog" aria-modal="true" aria-labelledby="tituloAgendaCliente"><div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content">
+          <div class="modal-header"><div><h2 class="modal-title fs-5" id="tituloAgendaCliente"><i class="bi bi-calendar-plus me-2"></i>{{ agendaForm.id ? 'Editar Agendamento' : 'Novo Agendamento' }}</h2><small class="agenda-subtitulo">{{ portal?.usuario?.nome || 'Cliente' }} · {{ identificacaoVeiculoAgenda() || 'Veículo não selecionado' }} · {{ nomeServicoAgenda() === 'Não selecionado' ? 'Serviço não selecionado' : nomeServicoAgenda() }}</small></div><button type="button" class="btn-close" aria-label="Fechar" (click)="agendaForm = null"></button></div>
+          <div class="agenda-cabecalho-etapas">
+            <div class="agenda-progresso" aria-live="polite">
+              <div class="agenda-progresso-cabecalho"><strong>Progresso do agendamento</strong><span>{{ progressoAgenda() }}%</span></div>
+              <p>{{ mensagemProgressoAgenda() }}</p>
+              <div class="progress" role="progressbar" aria-label="Progresso do agendamento" [attr.aria-valuenow]="progressoAgenda()" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" [style.width.%]="progressoAgenda()">{{ progressoAgenda() }}%</div></div>
+            </div>
+            <div class="agenda-orientacao"><i class="bi bi-info-circle me-2" aria-hidden="true"></i><span><strong>Dados do agendamento</strong><br>Escolha o veículo, o serviço e o horário. A oficina definirá quem executará o serviço antes da confirmação. Você pode informar preferências de execução e de materiais.</span></div>
+            <nav class="agenda-etapas" aria-label="Etapas do agendamento">
+              <button type="button" [class.ativa]="etapaAgenda === 'dados'" (click)="selecionarEtapaAgenda('dados')"><i class="bi bi-calendar-check me-1"></i>Agendamento</button>
+              <button type="button" [class.ativa]="etapaAgenda === 'pecas'" [disabled]="!podeAcessarEtapaAgenda('pecas')" (click)="selecionarEtapaAgenda('pecas')"><i class="bi bi-nut me-1"></i>Materiais (opcional)</button>
+              <button type="button" [class.ativa]="etapaAgenda === 'informacoes'" [disabled]="!podeAcessarEtapaAgenda('informacoes')" (click)="selecionarEtapaAgenda('informacoes')"><i class="bi bi-card-text me-1"></i>Informações adicionais</button>
+              <button type="button" [class.ativa]="etapaAgenda === 'revisao'" [disabled]="!podeAcessarEtapaAgenda('revisao')" (click)="selecionarEtapaAgenda('revisao')"><i class="bi bi-clipboard-check me-1"></i>Revisão</button>
+            </nav>
+          </div>
+          <div class="modal-body">
+            <form id="formAgendaCliente" #formAgenda="ngForm" (ngSubmit)="formAgenda.valid && salvarAgendamento()">
+              <div [hidden]="etapaAgenda !== 'dados'"><section class="agenda-secao" aria-label="Cliente e veículo"><h3 class="agenda-secao-titulo"><i class="bi bi-person me-2"></i>Cliente e veículo</h3><div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="agendaCliente">Cliente</label><input id="agendaCliente" class="form-control" readonly [value]="portal?.usuario?.nome || ''"></div>
+              <div class="col-md-6"><label class="form-label" for="agendaVeiculo">Veículo *</label><div class="input-group"><input id="agendaVeiculo" class="form-control" readonly [value]="identificacaoVeiculoAgenda()" placeholder="Selecione um veículo" (click)="abrirSelecaoVeiculoAgenda()"><button type="button" class="btn btn-outline-primary" aria-label="Buscar veículo" (click)="abrirSelecaoVeiculoAgenda()"><i class="bi bi-search" aria-hidden="true"></i></button></div><input type="hidden" name="veiculo" required [(ngModel)]="agendaForm.idVeiculo"></div>
+              </div></section>
+              <section class="agenda-secao" aria-label="Serviço e período"><h3 class="agenda-secao-titulo"><i class="bi bi-tools me-2"></i>Serviço e período</h3><div class="row g-3">
+              <div class="col-12 col-lg-6"><label class="form-label" for="agendaServico">Serviço *</label><select id="agendaServico" name="servico" class="form-select" required [(ngModel)]="agendaForm.idServico" (ngModelChange)="alterarServicoAgenda()"><option [ngValue]="null">Selecione</option>@for (s of servicosAgenda; track s.id) { <option [ngValue]="s.id">{{ s.nome }}</option> }</select></div>
+              <div class="col-md-6 col-lg-3"><label class="form-label" for="agendaInicio">Início *</label><input id="agendaInicio" name="inicio" type="datetime-local" class="form-control" required [(ngModel)]="agendaForm.dataHoraInicio" (ngModelChange)="alterarInicioAgenda()"></div>
+              <div class="col-md-6 col-lg-3"><label class="form-label" for="agendaDuracao">Duração estimada (min.)</label><input id="agendaDuracao" type="number" class="form-control" readonly [value]="duracaoServicoAgenda()" placeholder="Selecione o serviço"></div>
+              <div class="col-md-6 col-lg-3"><label class="form-label" for="agendaFim">Fim *</label><input id="agendaFim" name="fim" type="datetime-local" class="form-control" required [(ngModel)]="agendaForm.dataHoraFim"></div>
+              <div class="col-12"><p class="texto-apoio mb-0">A oficina escolherá o responsável ou fornecedor externo e verificará a disponibilidade antes da confirmação.</p></div>
+              @if (materiaisReferenciaAgenda()) { <div class="col-12"><div class="alert alert-info mb-0"><strong>Materiais comuns deste serviço:</strong> {{ materiaisReferenciaAgenda() }}<br><small>Esta referência pode mudar após a avaliação do veículo pela oficina.</small></div></div> }
+              </div></section></div>
+              <div [hidden]="etapaAgenda !== 'pecas'"><section class="agenda-secao" aria-label="Preferências de materiais"><h3 class="agenda-secao-titulo"><i class="bi bi-tools me-2"></i>Preferências de materiais</h3><p class="texto-apoio mb-3">Se souber, informe marcas, produtos que já comprou ou outras preferências. Você também pode deixar este campo em branco. A oficina verificará a compatibilidade com o veículo e definirá os itens e quantidades.</p>
+                @if (materiaisReferenciaAgenda()) { <p class="agenda-referencia"><strong>Referência do serviço:</strong> {{ materiaisReferenciaAgenda() }}</p> }
+                <label class="form-label" for="agendaSugestaoMateriais">O que gostaria de informar à oficina? (opcional)</label><textarea id="agendaSugestaoMateriais" name="sugestaoMateriais" class="form-control agenda-observacoes" rows="5" maxlength="1000" [(ngModel)]="agendaForm.sugestaoMateriaisCliente" placeholder="Ex.: prefiro óleo da marca X; já tenho um filtro de óleo."></textarea>
+                @if (agendaItemSelecionado?.pecas?.length) { <div class="mt-3"><strong>Peças planejadas pela oficina</strong>@for (p of agendaItemSelecionado?.pecas; track p.idPeca) { <div class="agenda-revisao-linha"><span>{{ p.nome }}</span><strong>{{ p.quantidade }} {{ p.unidadeMedida || 'unidade(s)' }}</strong></div> }</div> }
+              </section></div>
+              <div [hidden]="etapaAgenda !== 'informacoes'"><section class="agenda-secao" aria-label="Informações adicionais"><h3 class="agenda-secao-titulo"><i class="bi bi-chat-left-text me-2"></i>Informações adicionais</h3><div class="row g-3">
+              <div class="col-12"><label class="form-label" for="agendaPreferenciaExecucao">Preferência sobre quem executará o serviço (opcional)</label><textarea id="agendaPreferenciaExecucao" name="preferenciaExecucao" class="form-control agenda-observacoes" rows="3" maxlength="1000" [(ngModel)]="agendaForm.preferenciaExecucaoCliente" placeholder="Ex.: prefiro atendimento na oficina; se necessário, aceito fornecedor parceiro."></textarea><small class="texto-apoio">A oficina avaliará sua preferência e definirá a execução antes da confirmação.</small></div>
+              <div class="col-md-6"><label class="form-label" for="agendaQueixa">Serviço solicitado / queixa</label><input id="agendaQueixa" name="queixa" class="form-control" [(ngModel)]="agendaForm.queixaCliente"></div>
+              <div class="col-12"><label class="form-label" for="agendaObservacoes">Observações</label><textarea id="agendaObservacoes" name="observacoes" class="form-control agenda-observacoes" rows="5" [(ngModel)]="agendaForm.observacoes" placeholder="Anote outras informações úteis para a oficina"></textarea></div>
+              </div></section></div>
+            </form>
+            @if (etapaAgenda === 'revisao') { <div class="agenda-revisao">
+              <section class="agenda-revisao-card"><h3><i class="bi bi-person-vcard me-1"></i>Cliente e veículo</h3><dl><div><dt>Cliente</dt><dd>{{ portal?.usuario?.nome || 'Não informado' }}</dd></div><div><dt>Veículo</dt><dd>{{ veiculoSelecionadoAgenda() ? formatarPlaca(veiculoSelecionadoAgenda()?.placa) + ' · ' + veiculoSelecionadoAgenda()?.modelo : 'Não selecionado' }}</dd></div></dl></section>
+              <section class="agenda-revisao-card"><h3><i class="bi bi-tools me-1"></i>Serviço e execução</h3><dl><div><dt>Serviço</dt><dd>{{ nomeServicoAgenda() }}</dd></div><div><dt>Execução</dt><dd>{{ nomeResponsavelAgenda() }}</dd></div></dl></section>
+              <section class="agenda-revisao-card"><h3><i class="bi bi-calendar-event me-1"></i>Período</h3><dl><div><dt>Início</dt><dd>{{ agendaForm.dataHoraInicio ? (agendaForm.dataHoraInicio | date:'dd/MM/yyyy HH:mm') : 'Não informado' }}</dd></div><div><dt>Fim</dt><dd>{{ agendaForm.dataHoraFim ? (agendaForm.dataHoraFim | date:'dd/MM/yyyy HH:mm') : 'Não informado' }}</dd></div></dl></section>
+              <section class="agenda-revisao-card"><h3><i class="bi bi-nut me-1"></i>Materiais</h3><dl>@if (materiaisReferenciaAgenda()) { <div><dt>Referência do serviço</dt><dd class="agenda-revisao-observacoes">{{ materiaisReferenciaAgenda() }}</dd></div> }<div><dt>Preferências informadas</dt><dd class="agenda-revisao-observacoes">{{ agendaForm.sugestaoMateriaisCliente || 'Nenhuma preferência informada.' }}</dd></div></dl>@if (agendaItemSelecionado?.pecas?.length) { <div class="mt-2"><strong>Planejamento da oficina</strong>@for (p of agendaItemSelecionado?.pecas; track p.idPeca) { <div class="agenda-revisao-linha"><span>{{ p.nome }}</span><strong>{{ p.quantidade }} {{ p.unidadeMedida || 'unidade(s)' }}</strong></div> }</div> }</section>
+              <section class="agenda-revisao-card"><h3><i class="bi bi-card-text me-1"></i>Informações adicionais</h3><dl><div><dt>Serviço solicitado / queixa</dt><dd>{{ agendaForm.queixaCliente || 'Não informado' }}</dd></div><div><dt>Preferência de execução</dt><dd class="agenda-revisao-observacoes">{{ agendaForm.preferenciaExecucaoCliente || 'Nenhuma preferência informada.' }}</dd></div><div><dt>Observações</dt><dd class="agenda-revisao-observacoes">{{ agendaForm.observacoes || 'Nenhuma observação.' }}</dd></div></dl></section>
+            </div> }
+            @if (agendaForm.dataHoraInicio && agendaForm.dataHoraFim && !periodoAgendaValido()) { <div class="alert alert-warning mt-3 mb-0">O fim precisa ser posterior ao início.</div> }
+          </div><div class="modal-footer"><div class="agenda-footer-acoes">@if (agendaItemSelecionado && podeConfirmarAgendamento(agendaItemSelecionado)) { <button type="button" class="btn btn-outline-success" [disabled]="cancelandoAgendaId !== null || salvando" (click)="confirmarAgendamento(agendaItemSelecionado)">Confirmar</button> } @if (agendaItemSelecionado && podeCancelarAgendamento(agendaItemSelecionado)) { <button type="button" class="btn btn-outline-danger" [disabled]="cancelandoAgendaId !== null || salvando" (click)="cancelarAgendamento(agendaItemSelecionado)">Cancelar agendamento</button> } @if (agendaItemSelecionado && podeReagendarAgendamento(agendaItemSelecionado) && modoAgenda === 'editar') { <button type="button" class="btn btn-outline-primary" (click)="modoAgenda = 'reagendar'; etapaAgenda = 'dados'">Reagendar</button> }</div><div class="agenda-footer-navegacao">@if (etapaAgenda !== 'dados') { <button type="button" class="btn btn-outline-primary" (click)="etapaAnteriorAgenda()">Anterior</button> }<button type="button" class="btn btn-outline-secondary" (click)="agendaForm = null">Fechar</button>@if (etapaAgenda !== 'revisao') { <button type="button" class="btn btn-outline-primary" [disabled]="!podeAvancarEtapaAgenda()" (click)="proximaEtapaAgenda()">Próximo <i class="bi bi-arrow-right ms-1"></i></button> }<button type="submit" form="formAgendaCliente" class="btn btn-primary" [disabled]="etapaAgenda !== 'revisao' || salvando || !dadosAgendaValidos() || formAgenda.invalid">{{ modoAgenda === 'reagendar' ? 'Salvar nova data' : 'Salvar agendamento' }}</button></div></div>
+        </div></div></div>
+        @if (selecionandoVeiculoAgenda) {
+          <div class="modal d-block agenda-modal" role="dialog" aria-modal="true" aria-labelledby="tituloSelecaoVeiculoCliente"><div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title fs-5" id="tituloSelecaoVeiculoCliente"><i class="bi bi-car-front me-2"></i>Selecionar veículo</h2><button type="button" class="btn-close" aria-label="Voltar ao agendamento" (click)="selecionandoVeiculoAgenda=false"></button></div>
+            <div class="modal-body"><p class="texto-apoio">Pesquise e selecione um dos veículos vinculados à sua conta.</p><label class="form-label" for="buscarVeiculoAgenda">Buscar veículo</label><input id="buscarVeiculoAgenda" type="search" class="form-control mb-3" placeholder="Placa, fabricante, modelo ou cor" [(ngModel)]="buscaVeiculoAgenda" (ngModelChange)="paginaVeiculoAgenda=0">
+              <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Placa</th><th>Fabricante</th><th>Modelo</th><th>Cor</th><th class="text-center">Ação</th></tr></thead><tbody>
+                @for (veiculo of paginaVeiculosAgenda(); track veiculo.id) { <tr><td>{{formatarPlaca(veiculo.placa)}}</td><td>{{veiculo.fabricante}}</td><td>{{veiculo.modelo}}</td><td>{{veiculo.cor}}</td><td class="text-center"><button type="button" class="btn btn-sm btn-outline-primary" (click)="selecionarVeiculoAgenda(veiculo)"><i class="bi bi-check2-circle me-1"></i>Selecionar</button></td></tr> }
+                @empty { <tr><td colspan="5" class="text-center py-3">Nenhum veículo encontrado.</td></tr> }
+              </tbody></table></div>
+              <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap"><small>Mostrando {{paginaVeiculosAgenda().length}} de {{veiculosFiltradosAgenda().length}} veículo(s)</small><div class="d-flex align-items-center gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="paginaVeiculoAgenda===0" (click)="paginaVeiculoAgenda=paginaVeiculoAgenda-1">Anterior</button><span>Página {{paginaVeiculoAgenda+1}} de {{totalPaginasVeiculoAgenda()}}</span><button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="(paginaVeiculoAgenda+1)*tamanhoPaginaVeiculoAgenda>=veiculosFiltradosAgenda().length" (click)="paginaVeiculoAgenda=paginaVeiculoAgenda+1">Próxima</button></div></div>
+            </div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="selecionandoVeiculoAgenda=false">Voltar ao agendamento</button></div>
+          </div></div></div>
+        }
+        }
+      }
+      @if (guia === 'atendimentos') {
+        <section class="card mb-3"><div class="card-header">Orçamentos para decisão</div><div class="card-body">
+          @for (orcamento of orcamentos; track orcamento.id) {
+            <article class="veiculo-item mb-3 align-items-start" [attr.aria-label]="'Orçamento ' + orcamento.codigo + ' versão ' + orcamento.versao">
+              <div><strong>{{ orcamento.codigo }} · versão {{ orcamento.versao }}</strong>
+                <div>{{ orcamento.servico }} · {{ orcamento.placa }}</div>
+                <div>Diagnóstico: {{ orcamento.diagnostico }}</div>
+                @if (orcamento.itens) { <pre class="mb-1 small" style="white-space: pre-wrap">{{ orcamento.itens }}</pre> }
+                <div>Mão de obra: {{ orcamento.valorMaoObra | currency:'BRL' }} · Peças: {{ orcamento.valorPecas | currency:'BRL' }} · Terceiros: {{ orcamento.valorTerceiros | currency:'BRL' }} · Desconto: {{ orcamento.desconto | currency:'BRL' }}</div>
+                <strong>Total: {{ orcamento.valorTotal | currency:'BRL' }}</strong>
+                @if (orcamento.prazoEstimadoEntrega) { <div>Previsão de entrega: {{ orcamento.prazoEstimadoEntrega | date:'dd/MM/yyyy HH:mm' }}</div> }
+                <small>Enviado em {{ orcamento.criadoEm | date:'dd/MM/yyyy HH:mm' }} · {{ orcamento.status }}</small>
+              </div>
+              @if (orcamento.status === 'PENDENTE') { <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-primary" [disabled]="decisaoPendente !== null" (click)="decidirOrcamento(orcamento, true)">Aceitar</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" [disabled]="decisaoPendente !== null" (click)="decidirOrcamento(orcamento, false)">Recusar</button>
+              </div> }
+            </article>
+          } @empty { <p class="texto-apoio mb-0">Nenhum orçamento enviado.</p> }
+        </div></section>
+        <section class="card"><div class="card-header">Meus atendimentos</div><div class="card-body">
+          @for (item of atendimentos; track item.id) { <div class="veiculo-item mb-2"><div><strong>{{ item.codigo }}</strong><div>{{ item.servico }} · {{ item.placa }}</div><small class="texto-apoio">{{ item.data | date:'dd/MM/yyyy HH:mm' }}</small></div><span class="badge text-bg-primary">{{ item.status.replaceAll('_', ' ') }}</span></div> }
+          @empty { <p class="texto-apoio mb-0">Nenhum atendimento encontrado.</p> }
+        </div></section>
+      }
+      @if (guia === 'dados') {
+        <section class="card mb-3"><div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2"><span><i class="bi bi-person me-2"></i>Meus dados</span><div class="d-flex flex-wrap gap-2">
+          @if (!dadosEditando) { <button type="button" class="btn btn-sm btn-primary" (click)="editarDados()"><i class="bi bi-pencil-square me-1"></i>Editar</button> }
+          @else { <button type="submit" form="formDadosCliente" class="btn btn-sm btn-primary" [disabled]="salvando || dadosForm.invalid"><i class="bi bi-check-circle me-1"></i>Salvar</button><button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelarEdicao()">Cancelar</button> }
+          <a class="btn btn-sm btn-outline-danger" routerLink="/menuCliente/solicitacoes" [queryParams]="{tipo: 'ENCERRAMENTO'}" title="Solicitar o encerramento da conta, sujeito à aprovação administrativa"><i class="bi bi-trash me-1"></i>Excluir conta</a>
+        </div></div><div class="card-body py-2 small texto-apoio">A exclusão da conta exige uma solicitação e análise administrativa; o histórico de serviços é preservado.</div></section>
+        <form id="formDadosCliente" #dadosForm="ngForm" (ngSubmit)="dadosForm.valid && salvarDados()">
+          <section class="card mb-3"><div class="card-header">Dados pessoais</div><div class="card-body row g-3">
+            <div class="col-md-6 col-xl-4"><label class="form-label" for="clienteNome">Nome *</label>@if (dadosEditando) { <input id="clienteNome" name="nome" class="form-control" required [(ngModel)]="dadosEditando.nome"> } @else { <div class="dado-visual">{{ portal.usuario.nome || '—' }}</div> }</div>
+            <div class="col-md-6 col-xl-3"><label class="form-label" for="clienteNomeSocial">Nome social</label>@if (dadosEditando) { <input id="clienteNomeSocial" name="nome_social" class="form-control" [(ngModel)]="dadosEditando.nome_social"> } @else { <div class="dado-visual">{{ portal.usuario.nome_social || '—' }}</div> }</div>
+            <div class="col-md-6 col-xl-3"><label class="form-label" for="clienteCpf">CPF *</label>@if (dadosEditando) { <input id="clienteCpf" name="cpf" class="form-control" required inputmode="numeric" pattern="[0-9]{11}" title="Informe os 11 dígitos do CPF" [(ngModel)]="dadosEditando.cpf"> } @else { <div class="dado-visual">{{ formatarCpf(portal.usuario.cpf) }}</div> }</div>
+            <div class="col-md-6 col-xl-2"><label class="form-label" for="clienteNascimento">Nascimento</label>@if (dadosEditando) { <input id="clienteNascimento" name="nascimento" type="date" class="form-control" [(ngModel)]="dadosEditando.nascimento"> } @else { <div class="dado-visual">{{ portal.usuario.nascimento ? (portal.usuario.nascimento | date:'dd/MM/yyyy') : '—' }}</div> }</div>
+          </div></section>
+          <section class="card mb-3"><div class="card-header">Contato e acesso</div><div class="card-body row g-3">
+            <div class="col-md-6"><label class="form-label" for="clienteEmail">E-mail *</label>@if (dadosEditando) { <input id="clienteEmail" name="email" type="email" class="form-control" required email [(ngModel)]="dadosEditando.email"> } @else { <div class="dado-visual">{{ portal.usuario.email || '—' }}</div> }</div>
+            <div class="col-md-6"><label class="form-label" for="clienteTelefone">Telefone *</label>@if (dadosEditando) { <input id="clienteTelefone" name="telefone" class="form-control" required inputmode="tel" [(ngModel)]="dadosEditando.telefone"> } @else { <div class="dado-visual">{{ formatarTelefone(portal.usuario.telefone) }}</div> }</div>
+          </div></section>
+          <section class="card"><div class="card-header">Endereço</div><div class="card-body row g-3">
+            <div class="col-md-3"><label class="form-label" for="clienteCep">CEP</label>@if (dadosEditando) { <input id="clienteCep" name="cep" class="form-control" inputmode="numeric" [(ngModel)]="dadosEditando.cep"> } @else { <div class="dado-visual">{{ formatarCep(portal.usuario.cep) }}</div> }</div>
+            <div class="col-md-6"><label class="form-label" for="clienteLogradouro">Logradouro</label>@if (dadosEditando) { <input id="clienteLogradouro" name="logradouro" class="form-control" [(ngModel)]="dadosEditando.logradouro"> } @else { <div class="dado-visual">{{ portal.usuario.logradouro || '—' }}</div> }</div>
+            <div class="col-md-3"><label class="form-label" for="clienteNumero">Número</label>@if (dadosEditando) { <input id="clienteNumero" name="numero_endereco" class="form-control" [(ngModel)]="dadosEditando.numero_endereco"> } @else { <div class="dado-visual">{{ portal.usuario.numero_endereco || '—' }}</div> }</div>
+            <div class="col-md-4"><label class="form-label" for="clienteComplemento">Complemento</label>@if (dadosEditando) { <input id="clienteComplemento" name="complemento_endereco" class="form-control" [(ngModel)]="dadosEditando.complemento_endereco"> } @else { <div class="dado-visual">{{ portal.usuario.complemento_endereco || '—' }}</div> }</div>
+            <div class="col-md-3"><label class="form-label" for="clienteBairro">Bairro</label>@if (dadosEditando) { <input id="clienteBairro" name="bairro" class="form-control" [(ngModel)]="dadosEditando.bairro"> } @else { <div class="dado-visual">{{ portal.usuario.bairro || '—' }}</div> }</div>
+            <div class="col-md-3"><label class="form-label" for="clienteCidade">Cidade</label>@if (dadosEditando) { <input id="clienteCidade" name="cidade" class="form-control" [(ngModel)]="dadosEditando.cidade"> } @else { <div class="dado-visual">{{ portal.usuario.cidade || '—' }}</div> }</div>
+            <div class="col-md-2"><label class="form-label" for="clienteEstado">UF</label>@if (dadosEditando) { <input id="clienteEstado" name="estado" class="form-control" maxlength="2" [(ngModel)]="dadosEditando.estado"> } @else { <div class="dado-visual">{{ portal.usuario.estado || '—' }}</div> }</div>
+          </div></section>
+        </form>
+      }
+      @if (guia === 'veiculos') {
+        <section class="card"><div class="card-header d-flex justify-content-between align-items-center gap-2"><span>Veículos associados à minha conta</span><button type="button" class="btn btn-sm btn-primary" (click)="cadastrarVeiculo()">Novo veículo</button></div><div class="card-body">
+          @if (!portal.veiculos.length) { <p class="texto-apoio mb-0">Nenhum veículo cadastrado.</p> }
+          <div class="veiculos-lista">@for (veiculo of portal.veiculos; track veiculo.id) {
+            <div class="veiculo-item"><div><strong>{{ veiculo.placa }}</strong><div>{{ veiculo.fabricante }} · {{ veiculo.modelo }}</div><small class="texto-apoio">{{ veiculo.cor }} · {{ veiculo.anoModeloCombustivel }}</small>
+                @if (edicoesVeiculo[veiculo.id]?.pendente) { <div><span class="badge text-bg-warning mt-1">Correção em análise</span></div> }
+                @else if (edicoesVeiculo[veiculo.id]?.ultimaSolicitacao?.status === 'APROVADA') { <div><span class="badge text-bg-success mt-1">Última correção aprovada</span></div> }
+                @else if (edicoesVeiculo[veiculo.id]?.ultimaSolicitacao?.status === 'RECUSADA') { <div class="small text-danger mt-1">Última correção recusada: {{ edicoesVeiculo[veiculo.id]?.ultimaSolicitacao?.motivoDecisao }}</div> }
+            </div>
+              <div class="d-flex gap-2 flex-wrap"><button type="button" class="btn btn-outline-primary" (click)="abrirHistorico(veiculo.id)"><i class="bi bi-clock-history me-1"></i>Histórico</button><button type="button" class="btn btn-outline-primary" (click)="editarVeiculo(veiculo)">{{ possuiHistoricoVeiculo(veiculo.id) ? 'Editar cor' : 'Editar' }}</button>
+              @if (edicoesVeiculo[veiculo.id]?.possuiHistorico && !edicoesVeiculo[veiculo.id]?.pendente) { <button type="button" class="btn btn-outline-primary" (click)="solicitarCorrecaoVeiculo(veiculo)">Solicitar correção</button> }</div></div>
+          }</div>
+          @if (veiculoEditando) { <form (ngSubmit)="salvarVeiculo()" class="row g-3 mt-2 painel-edicao">
+            <div class="col-12"><strong>{{ novoVeiculo ? 'Novo veículo' : (possuiHistoricoVeiculo(veiculoEditando.id) ? 'Editar cor do veículo' : 'Editar veículo') }}</strong></div>
+            @if (!novoVeiculo && possuiHistoricoVeiculo(veiculoEditando.id)) { <div class="col-12 texto-apoio">Este veículo já possui agendamentos ou atendimentos. Para corrigir placa, fabricante, modelo ou ano-modelo/combustível, use “Solicitar correção”.</div> }
+            <div class="col-md-4"><label class="form-label" for="veiculoPlaca">Placa *</label><input id="veiculoPlaca" name="placa" class="form-control" required [readonly]="!novoVeiculo && possuiHistoricoVeiculo(veiculoEditando.id)" [(ngModel)]="veiculoEditando.placa"></div>
+            <div class="col-md-4"><label class="form-label" for="veiculoFabricante">Fabricante *</label><input id="veiculoFabricante" name="fabricante" class="form-control" required [readonly]="!novoVeiculo && possuiHistoricoVeiculo(veiculoEditando.id)" [(ngModel)]="veiculoEditando.fabricante"></div>
+            <div class="col-md-4"><label class="form-label" for="veiculoModelo">Modelo *</label><input id="veiculoModelo" name="modelo" class="form-control" required [readonly]="!novoVeiculo && possuiHistoricoVeiculo(veiculoEditando.id)" [(ngModel)]="veiculoEditando.modelo"></div>
+            <div class="col-md-6"><label class="form-label" for="veiculoCor">Cor *</label><input id="veiculoCor" name="cor" class="form-control" required [(ngModel)]="veiculoEditando.cor"></div>
+            <div class="col-md-6"><label class="form-label" for="veiculoAno">Ano-modelo e combustível *</label><input id="veiculoAno" name="anoModeloCombustivel" class="form-control" required [readonly]="!novoVeiculo && possuiHistoricoVeiculo(veiculoEditando.id)" [(ngModel)]="veiculoEditando.anoModeloCombustivel"></div>
+            <div class="col-12 d-flex justify-content-end gap-2"><button type="button" class="btn btn-outline-secondary" (click)="veiculoEditando = null; novoVeiculo = false">Cancelar</button><button type="submit" class="btn btn-primary" [disabled]="salvando">Salvar veículo</button></div>
+          </form> }
+          @if (correcaoVeiculo) { <form (ngSubmit)="enviarCorrecaoVeiculo()" class="row g-3 mt-2 painel-edicao">
+            <div class="col-12"><strong>Solicitar correção dos dados de identificação</strong><p class="texto-apoio mb-0">A oficina analisará os dados propostos. O cadastro atual e os registros anteriores permanecem preservados até a decisão.</p></div>
+            <div class="col-md-3"><label class="form-label" for="correcaoPlaca">Placa *</label><input id="correcaoPlaca" name="placa" class="form-control" required [(ngModel)]="correcaoVeiculo.placa"></div>
+            <div class="col-md-3"><label class="form-label" for="correcaoFabricante">Fabricante *</label><input id="correcaoFabricante" name="fabricante" class="form-control" required [(ngModel)]="correcaoVeiculo.fabricante"></div>
+            <div class="col-md-3"><label class="form-label" for="correcaoModelo">Modelo *</label><input id="correcaoModelo" name="modelo" class="form-control" required [(ngModel)]="correcaoVeiculo.modelo"></div>
+            <div class="col-md-3"><label class="form-label" for="correcaoAno">Ano-modelo e combustível *</label><input id="correcaoAno" name="anoModeloCombustivel" class="form-control" required [(ngModel)]="correcaoVeiculo.anoModeloCombustivel"></div>
+            <div class="col-12"><label class="form-label" for="correcaoJustificativa">Justificativa *</label><textarea id="correcaoJustificativa" name="justificativa" class="form-control" required minlength="10" maxlength="1000" rows="2" [(ngModel)]="correcaoVeiculo.justificativa" placeholder="Explique qual dado precisa ser corrigido e por quê."></textarea></div>
+            <div class="col-12 d-flex justify-content-end gap-2"><button type="button" class="btn btn-outline-secondary" (click)="correcaoVeiculo = null">Cancelar</button><button type="submit" class="btn btn-primary" [disabled]="salvando || correcaoVeiculo.justificativa.trim().length < 10">Enviar para análise</button></div>
+          </form> }
+        </div></section>
+      }
+      @if (guia === 'alertas') {
+        <section class="card mb-3"><div class="card-body">
+          <h2 class="h6">Avisos sobre agendamentos e atendimentos</h2>
+          <p class="small text-muted">Receba no WhatsApp confirmações, lembretes, alterações de horário, orçamentos e aviso de retirada. Você pode desativar quando quiser.</p>
+          <div class="form-check form-switch"><input id="avisosServicoWhatsapp" type="checkbox" class="form-check-input"
+            [disabled]="salvando" [(ngModel)]="portal.avisosServicoWhatsapp" (change)="salvarAvisosServico()">
+            <label for="avisosServicoWhatsapp" class="form-check-label">Receber avisos de serviço no WhatsApp</label></div>
+        </div></section>
+        <section class="card"><div class="card-header">Preferências de manutenção preventiva</div><div class="card-body">
+          <p class="texto-apoio">Defina quando e em qual horário deseja receber os avisos sobre a manutenção dos seus veículos.</p>
+          <form (ngSubmit)="salvarAlertas()" class="row g-3">
+            <div class="col-12 form-check form-switch ms-2"><input id="alertaAtivo" name="ativo" type="checkbox" class="form-check-input" [(ngModel)]="portal.alertas.ativo"><label for="alertaAtivo" class="form-check-label">Receber alertas de manutenção</label></div>
+            <div class="col-sm-6 col-lg-3"><label class="form-label" for="antecedencia">Antecedência (dias)</label><input id="antecedencia" name="antecedenciaDias" type="number" min="0" max="365" class="form-control" required [(ngModel)]="portal.alertas.antecedenciaDias"></div>
+            <div class="col-sm-6 col-lg-3"><label class="form-label" for="intervalo">Intervalo entre avisos (dias)</label><input id="intervalo" name="intervaloDias" type="number" min="1" max="365" class="form-control" required [(ngModel)]="portal.alertas.intervaloDias"></div>
+            <div class="col-sm-6 col-lg-3"><label class="form-label" for="maximo">Máximo de envios</label><input id="maximo" name="maximoEnvios" type="number" min="1" max="100" class="form-control" required [(ngModel)]="portal.alertas.maximoEnvios"></div>
+            <div class="col-sm-6 col-lg-3"><label class="form-label" for="aposVencimento">Dias após vencimento</label><input id="aposVencimento" name="diasAposVencimento" type="number" min="0" max="365" class="form-control" required [(ngModel)]="portal.alertas.diasAposVencimento"></div>
+            <div class="col-sm-6"><label class="form-label" for="horaInicio">Receber a partir das</label><input id="horaInicio" name="horaInicio" type="number" min="0" max="23" class="form-control" required [(ngModel)]="portal.alertas.horaInicio"></div>
+            <div class="col-sm-6"><label class="form-label" for="horaFim">Receber até as</label><input id="horaFim" name="horaFim" type="number" min="1" max="24" class="form-control" required [(ngModel)]="portal.alertas.horaFim"></div>
+            <div class="col-12 d-flex justify-content-end"><button type="submit" class="btn btn-primary" [disabled]="salvando">Salvar alertas</button></div>
+          </form>
+        </div></section>
+      }
+    }
+  </main>
+</div>

@@ -90,8 +90,8 @@ app-field-help-panel { --clinicar-help-height: 4.75rem; margin-bottom: 0; }
 .vehicle-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 h2 { color: #35689b; font-size: 1.2rem; margin: .35rem 0; }
 h2 span { font-size: 1rem; font-weight: 400; }
-.vehicle-heading small { color: #6d879e; }
-.report-note { color: #6d879e; font-size: .82rem; margin: .5rem 0; }
+.vehicle-heading small { color: #4c637b; }
+.report-note { color: #4c637b; font-size: .82rem; margin: .5rem 0; }
 .timeline { border-left: 2px solid #d0e2f2; padding-left: 20px; margin-left: 8px; }
 .history-record { margin-bottom: 1rem; position: relative; }
 .history-record::before { content: ''; position: absolute; top: 26px; left: -29px; width: 14px; height: 14px; background: #35689b; border: 3px solid #eef6ff; border-radius: 50%; }
@@ -101,7 +101,7 @@ h3 { color: #35689b; font-size: 1rem; margin: 4px 0; overflow-wrap: anywhere; }
 .badge-success { background: #198754; color: #ffffff; }
 .badge-neutral { background: #6c757d; color: #ffffff; }
 .record-vehicle { overflow-wrap: anywhere; }
-.record-vehicle small { display: block; margin: 5px 0 0 24px; color: #6d879e; }
+.record-vehicle small { display: block; margin: 5px 0 0 24px; color: #4c637b; }
 .record-metrics { display: flex; flex-wrap: wrap; gap: .65rem 1.5rem; margin: .85rem 0; font-size: .9rem; }
 h4 { color: #35689b; font-size: .9rem; font-weight: 700; }
 .narrative { white-space: pre-line; overflow-wrap: anywhere; color: #35689b; font-size: .9rem; }
@@ -111,7 +111,7 @@ h4 { color: #35689b; font-size: .9rem; font-weight: 700; }
 .item-type { background: #eef6ff; color: #35689b; font-size: .75rem; font-weight: 700; border: 1px solid #d0e2f2; padding: 2px 5px; border-radius: 4px; margin-right: 6px; }
 .empty-state { text-align: center; padding: 1.25rem 1rem; background: #f7fbff; border: 1px dashed #d0e2f2; border-radius: 10px; }
 .empty-state > i { font-size: 2rem; }
-.empty-state p { color: #6d879e; font-size: .9rem; margin-bottom: 0; }
+.empty-state p { color: #4c637b; font-size: .9rem; margin-bottom: 0; }
 
 .table-pagination-footer {
   flex-shrink: 0;

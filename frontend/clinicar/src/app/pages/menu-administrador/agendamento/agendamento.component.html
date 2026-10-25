@@ -440,6 +440,11 @@
                   Informações adicionais
                 </button>
               </li>
+              <li class="nav-item">
+                <button data-help-guia="revisao" [disabled]="!podeAcessarAbaCadastro('revisao')" title="Conclua os dados obrigatórios antes de revisar." class="nav-link" type="button" [class.active]="abaNovoAgendamento === 'revisao'" (click)="trocarAbaNovoAgendamento('revisao')">
+                  <i class="bi bi-clipboard-check me-1"></i>Revisão
+                </button>
+              </li>
             </ul>
           </div>
           <div class="agendamento-modal-scroll-area">
@@ -453,11 +458,12 @@
                       Cliente e veículo
                     </h6>
                     <div class="row g-1">
-                      <div class="col-md-3">
+                      <div class="col-md-4">
                         <label class="form-label">
                           Cliente *
                         </label>
-                        <select class="form-select" [class.is-invalid]="clienteInvalido()"
+                        @if(modoPaginado){<app-seletor-remoto #seletorClienteAgendamento [class.is-invalid]="clienteInvalido()"
+                          [(ngModel)]="novoAgendamento.idCliente" (change)="selecionarCliente()"  inputId="agendamento-novoAgendamento-idCliente" recurso="usuario" rotulo="cliente" [filtros]="{perfis:'CLIENTE,ADMINISTRADOR',status:'ATIVO'}" (selecionado)="registrarCatalogo('usuarios', $event)" [somenteNome]="true" [selecaoEmModal]="true" (abrirSelecao)="abrirSelecaoCliente()" />}@else{<select class="form-select" [class.is-invalid]="clienteInvalido()"
                           [(ngModel)]="novoAgendamento.idCliente" (change)="selecionarCliente()" style="color:#35689b;">
                           <option [ngValue]="undefined">Selecione...</option>
                           @for (c of clientes; track c) {
@@ -465,16 +471,17 @@
                               {{ c.nome || c.nome_social || c.nomeSocial }}
                             </option>
                           }
-                        </select>
+                        </select>}
                         <div class="invalid-feedback">
                           Selecione o cliente.
                         </div>
                       </div>
-                      <div class="col-md-5">
+                      <div class="col-md-4">
                         <label class="form-label">
                           Veículo *
                         </label>
-                        <select class="form-select" [class.is-invalid]="veiculoInvalido()"
+                        @if(modoPaginado){<app-seletor-remoto #seletorVeiculoAgendamento [class.is-invalid]="veiculoInvalido()"
+                          [(ngModel)]="novoAgendamento.idVeiculo" (change)="selecionarVeiculo()"  inputId="agendamento-novoAgendamento-idVeiculo" recurso="veiculo" rotulo="veículo" [filtros]="{idProprietario: novoAgendamento.idCliente || 0}" (selecionado)="registrarCatalogo('veiculos', $event)" [disabled]="!novoAgendamento.idCliente" [selecaoEmModal]="true" (abrirSelecao)="abrirSelecaoVeiculo()" />}@else{<select class="form-select" [class.is-invalid]="veiculoInvalido()"
                           [(ngModel)]="novoAgendamento.idVeiculo" (change)="selecionarVeiculo()" style="color:#35689b;">
                           <option [ngValue]="undefined">
                             {{
@@ -488,7 +495,7 @@
                               {{ labelVeiculo(v) }}
                             </option>
                           }
-                        </select>
+                        </select>}
                         <div class="invalid-feedback">
                           Selecione o veículo do cliente.
                         </div>
@@ -523,12 +530,20 @@
                         <i class="bi bi-wrench me-1"></i>
                         Serviço, data e responsável
                       </h6>
+                      <div class="mb-3">
+                        <label class="form-label" for="agendamento-tipo-execucao">Execução do serviço *</label>
+                        <select id="agendamento-tipo-execucao" class="form-select" [(ngModel)]="novoAgendamento.tipoExecucao" (ngModelChange)="alterarTipoExecucao()" data-help-options="Escolha quem executará o serviço. Pela oficina, selecione o funcionário responsável. Por fornecedor externo, selecione a empresa prestadora; o acompanhamento interno é opcional.">
+                          <option value="INTERNA">Pela oficina</option>
+                          <option value="EXTERNA">Por fornecedor externo</option>
+                        </select>
+                      </div>
                       <div class="row g-2">
                         <div class="col-md-4">
                           <label class="form-label">
                             Serviço previsto *
                           </label>
-                          <select class="form-select" [class.is-invalid]="servicoPrevistoInvalido()"
+                          @if(modoPaginado){<app-seletor-remoto #seletorServicoAgendamento [class.is-invalid]="servicoPrevistoInvalido()"
+                            [(ngModel)]="novoAgendamento.idServico" (change)="selecionarServico()" inputId="agendamento-novoAgendamento-idServico" recurso="servico" rotulo="serviço" [filtros]="{ativo:true}" selecaoEmModal (abrirSelecao)="abrirSelecaoServico()" (selecionado)="registrarCatalogo('servicos', $event)" />}@else{<select class="form-select" [class.is-invalid]="servicoPrevistoInvalido()"
                             [(ngModel)]="novoAgendamento.idServico" (change)="selecionarServico()" style="color:#35689b;">
                             <option [ngValue]="undefined">Selecione...</option>
                             @for (s of servicos; track s) {
@@ -536,7 +551,7 @@
                                 {{ s.nome || s.descricao }} - {{ s.categoria || 'Sem categoria' }}
                               </option>
                             }
-                          </select>
+                          </select>}
                           <div class="invalid-feedback">
                             Selecione o serviço previsto para o agendamento.
                           </div>
@@ -568,9 +583,12 @@
                               </div>
                               <div class="col-md-4">
                                 <label class="form-label">
-                                  Responsável disponível *
+                                  {{ novoAgendamento.tipoExecucao === 'EXTERNA' ? 'Responsável interno pelo acompanhamento' : 'Responsável pela execução *' }}
                                 </label>
-                                <select class="form-select" [class.is-invalid]="responsavelDisponivelInvalido()"
+                                @if(modoPaginado){<app-seletor-remoto #seletorResponsavelAgendamento [class.is-invalid]="responsavelDisponivelInvalido()"
+                                  [(ngModel)]="novoAgendamento.idResponsavel" (change)="selecionarResponsavel()"
+                                  [disabled]="!periodoAgendamentoValido() || consultandoDisponibilidade"
+                                   inputId="agendamento-novoAgendamento-idResponsavel" recurso="usuario" rotulo="responsável" [filtros]="filtrosResponsavelRemoto()" [registroInicial]="responsavelInicialEdicao" somenteNome selecaoEmModal (abrirSelecao)="abrirSelecaoResponsavel()" (selecionado)="registrarCatalogo('usuarios', $event)" />}@else{<select class="form-select" [class.is-invalid]="responsavelDisponivelInvalido()"
                                   [(ngModel)]="novoAgendamento.idResponsavel" (change)="selecionarResponsavel()"
                                   [disabled]="!periodoAgendamentoValido() || responsaveisDisponiveis().length === 0"
                                   style="color:#35689b;">
@@ -590,7 +608,7 @@
                                       {{ r.nome || r.nome_social || r.nomeSocial }}
                                     </option>
                                   }
-                                </select>
+                                </select>}
                                 @if (responsavelDisponivelInvalido()) {
                                   <div class="invalid-feedback d-block">
                                     {{ mensagemResponsavelInvalido() }}
@@ -598,20 +616,21 @@
                                 }
                                 @if (!responsavelDisponivelInvalido()) {
                                   <small class="text-muted">
-                                    A lista mostra apenas responsáveis sem conflito no período informado.
+                                    {{ novoAgendamento.tipoExecucao === 'EXTERNA' ? 'Opcional. Se informado, deve estar disponível no período.' : 'A lista mostra apenas responsáveis sem conflito no período informado.' }}
                                   </small>
                                 }
                               </div>
                               <div class="col-md-4">
-                                <label class="form-label">Fornecedor</label>
-                                <select class="form-select" [(ngModel)]="novoAgendamento.idFornecedor" style="color:#35689b;">
+                                <label class="form-label">Fornecedor externo {{ novoAgendamento.tipoExecucao === 'EXTERNA' ? '*' : '' }}</label>
+                                @if(modoPaginado){<app-seletor-remoto #seletorFornecedorAgendamento [class.is-invalid]="fornecedorExternoInvalido()" [(ngModel)]="novoAgendamento.idFornecedor" [disabled]="novoAgendamento.tipoExecucao !== 'EXTERNA'" inputId="agendamento-novoAgendamento-idFornecedor" recurso="fornecedor" rotulo="fornecedor externo" [filtros]="{ativo:true,tipoFornecimento:'SERVICOS'}" somenteNome selecaoEmModal (abrirSelecao)="abrirSelecaoFornecedor()" (selecionado)="selecionarFornecedorExterno($event)" />}@else{<select class="form-select" [(ngModel)]="novoAgendamento.idFornecedor" [disabled]="novoAgendamento.tipoExecucao !== 'EXTERNA'" (change)="selecionarFornecedorExternoPorId()" style="color:#35689b;">
                                   <option [ngValue]="undefined">Selecione...</option>
                                   @for (f of fornecedores; track f) {
                                     <option [ngValue]="f.id">
                                       {{ f.razaoSocial || f.razao_social || f.nomeFantasia || f.nome_fantasia }}
                                     </option>
                                   }
-                                </select>
+                                </select>}
+                                @if (fornecedorExternoInvalido()) { <div class="invalid-feedback d-block">Selecione um fornecedor ativo de serviços.</div> }
                               </div>
                               <div class="col-md-2">
                                 <label class="form-label">Canal</label>
@@ -632,59 +651,6 @@
                                     </option>
                                   }
                                 </select>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row g-2">
-                          <div class="col-md-4">
-                            <div class="info-card">
-                              <div class="info-card-title">Cliente</div>
-                              <div class="info-line">
-                                <span>Nome</span>
-                                <strong>{{ novoAgendamento.nomeCliente || '—' }}</strong>
-                              </div>
-                              <div class="info-line">
-                                <span>CPF</span>
-                                <strong>{{ formatarCpf(novoAgendamento.cpfCliente) }}</strong>
-                              </div>
-                              <div class="info-line">
-                                <span>Telefone</span>
-                                <strong>{{ formatarTelefone(novoAgendamento.telefoneCliente) || '—' }}</strong>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col-md-4">
-                            <div class="info-card">
-                              <div class="info-card-title">Veículo</div>
-                              <div class="info-line">
-                                <span>Placa</span>
-                                <strong>{{ formatarPlaca(novoAgendamento.placaVeiculo) }}</strong>
-                              </div>
-                              <div class="info-line">
-                                <span>Modelo</span>
-                                <strong>{{ capitalizar(novoAgendamento.modeloVeiculo) || '—' }}</strong>
-                              </div>
-                              <div class="info-line">
-                                <span>Fabricante</span>
-                                <strong>{{ formatarFabricante(novoAgendamento.fabricanteVeiculo) || '—' }}</strong>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="col-md-4">
-                            <div class="info-card">
-                              <div class="info-card-title">Valores</div>
-                              <div class="info-line">
-                                <span>Mão de obra</span>
-                                <strong>{{ formatarMoedaBR(valorServicoSelecionado()) }}</strong>
-                              </div>
-                              <div class="info-line">
-                                <span>Peças previstas</span>
-                                <strong>{{ formatarMoedaBR(totalPecasAgendamento()) }}</strong>
-                              </div>
-                              <div class="info-line">
-                                <span>Total estimado</span>
-                                <strong>{{ novoAgendamento.valorEstimado || 'R$ 0,00' }}</strong>
                               </div>
                             </div>
                           </div>
@@ -818,6 +784,9 @@
                                 <textarea class="form-control" rows="3" [(ngModel)]="novoAgendamento.diagnosticoPrevio"
                                 style="color:#35689b;"></textarea>
                               </div>
+                              @if (novoAgendamento.preferenciaExecucaoCliente) {
+                                <div class="col-12"><div class="agenda-referencia"><strong>Preferência de execução informada pelo cliente:</strong> {{ novoAgendamento.preferenciaExecucaoCliente }}</div></div>
+                              }
                               <div class="col-md-12">
                                 <label class="form-label">Observações</label>
                                 <textarea class="form-control" rows="4" [(ngModel)]="novoAgendamento.observacoes"
@@ -842,16 +811,64 @@
                         </div>
                       </div>
                     }
+                    @if (abaNovoAgendamento === 'revisao') {
+                      <div class="row g-2">
+                        <div class="col-md-6"><div class="info-card h-100">
+                          <div class="info-card-title"><i class="bi bi-person me-1"></i>Cliente</div>
+                          <div class="info-line"><span>Nome</span><strong>{{ novoAgendamento.nomeCliente || '—' }}</strong></div>
+                          <div class="info-line"><span>CPF</span><strong>{{ formatarCpf(novoAgendamento.cpfCliente) }}</strong></div>
+                          <div class="info-line"><span>Telefone</span><strong>{{ formatarTelefone(novoAgendamento.telefoneCliente) || '—' }}</strong></div>
+                        </div></div>
+                        <div class="col-md-6"><div class="info-card h-100">
+                          <div class="info-card-title"><i class="bi bi-car-front me-1"></i>Veículo</div>
+                          <div class="info-line"><span>Placa</span><strong>{{ formatarPlaca(novoAgendamento.placaVeiculo) }}</strong></div>
+                          <div class="info-line"><span>Modelo</span><strong>{{ capitalizar(novoAgendamento.modeloVeiculo) || '—' }}</strong></div>
+                          <div class="info-line"><span>Fabricante</span><strong>{{ formatarFabricante(novoAgendamento.fabricanteVeiculo) || '—' }}</strong></div>
+                          <div class="info-line"><span>KM atual</span><strong>{{ novoAgendamento.quilometragemAtual ?? '—' }}</strong></div>
+                        </div></div>
+                        <div class="col-md-6"><div class="info-card h-100">
+                          <div class="info-card-title"><i class="bi bi-wrench me-1"></i>Serviço e execução</div>
+                          <div class="info-line"><span>Serviço</span><strong>{{ novoAgendamento.nomeServico || '—' }}</strong></div>
+                          <div class="info-line"><span>Modalidade</span><strong>{{ novoAgendamento.tipoExecucao === 'EXTERNA' ? 'Fornecedor externo' : 'Pela oficina' }}</strong></div>
+                          @if (novoAgendamento.tipoExecucao === 'EXTERNA') {
+                            <div class="info-line"><span>Fornecedor</span><strong>{{ novoAgendamento.razaoSocialFornecedor || 'Fornecedor selecionado' }}</strong></div>
+                          }
+                          <div class="info-line"><span>{{ novoAgendamento.tipoExecucao === 'EXTERNA' ? 'Acompanhamento interno' : 'Responsável pela execução' }}</span><strong>{{ novoAgendamento.nomeResponsavel || 'Não indicado' }}</strong></div>
+                        </div></div>
+                        <div class="col-md-6"><div class="info-card h-100">
+                          <div class="info-card-title"><i class="bi bi-calendar-check me-1"></i>Período e atendimento</div>
+                          <div class="info-line"><span>Início</span><strong>{{ novoAgendamento.dataHoraInicio | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+                          <div class="info-line"><span>Fim</span><strong>{{ novoAgendamento.dataHoraFim | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+                          <div class="info-line"><span>Status</span><strong>{{ formatarStatus(novoAgendamento.statusAgendamento) }}</strong></div>
+                          <div class="info-line"><span>Canal / atendimento</span><strong>{{ formatarStatus(novoAgendamento.canalOrigem) }} · {{ formatarStatus(novoAgendamento.tipoAtendimento) }}</strong></div>
+                        </div></div>
+                        <div class="col-md-6"><div class="info-card h-100">
+                          <div class="info-card-title"><i class="bi bi-nut me-1"></i>Peças e valores</div>
+                          <div class="info-line"><span>Peças previstas</span><strong>{{ pecasNovoAgendamento.length }}</strong></div>
+                          <div class="info-line"><span>Mão de obra</span><strong>{{ formatarMoedaBR(valorServicoSelecionado()) }}</strong></div>
+                          <div class="info-line"><span>Valor das peças</span><strong>{{ formatarMoedaBR(totalPecasAgendamento()) }}</strong></div>
+                          <div class="info-line"><span>Total estimado</span><strong>{{ novoAgendamento.valorEstimado || 'R$ 0,00' }}</strong></div>
+                        </div></div>
+                        <div class="col-md-6"><div class="info-card h-100">
+                          <div class="info-card-title"><i class="bi bi-card-text me-1"></i>Informações adicionais</div>
+                          <div class="info-line"><span>Queixa</span><strong>{{ novoAgendamento.queixaCliente || 'Não informada' }}</strong></div>
+                          <div class="info-line info-line-observacoes"><span>Preferência de execução do cliente</span><strong>{{ novoAgendamento.preferenciaExecucaoCliente || 'Não informada' }}</strong></div>
+                          <div class="info-line"><span>Diagnóstico prévio</span><strong>{{ novoAgendamento.diagnosticoPrevio || 'Não informado' }}</strong></div>
+                          <div class="info-line info-line-observacoes"><span>Observações</span><strong>{{ novoAgendamento.observacoes?.trim() || 'Não informadas' }}</strong></div>
+                          <div class="info-line"><span>Confirmação</span><strong>{{ novoAgendamento.requerConfirmacao ? 'Necessária' : 'Dispensada' }}</strong></div>
+                        </div></div>
+                      </div>
+                    }
                   </div>
                 </div>
 
                 <div class="modal-footer modal-footer-totais">
                   <div class="totais-footer me-auto">
 
-                    @if (mensagemBloqueioSalvar) {
+                    @if (mensagemBloqueioSalvar || abaNovoAgendamento !== 'revisao') {
                       <div class="pendencia-salvar">
                         <i class="bi bi-info-circle me-1"></i>
-                        {{ mensagemBloqueioSalvar }}
+                        {{ mensagemBloqueioSalvar || 'Confira os dados na guia Revisão para salvar o agendamento.' }}
                       </div>
                     }
                   </div>
@@ -860,8 +877,14 @@
                     Cancelar
                   </button>
 
+                  @if (abaNovoAgendamento !== 'revisao') {
+                    <button type="button" class="btn btn-outline-primary" [disabled]="!podeAvancarCadastro" (click)="avancarAbaNovoAgendamento()">
+                      Próximo <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                    </button>
+                  }
+
                   <button type="button" class="btn" style="background:#35689b;color:white;"
-                    [disabled]="!agendamentoProntoParaSalvar" [title]="mensagemBloqueioSalvar || 'Salvar agendamento'"
+                    [disabled]="abaNovoAgendamento !== 'revisao' || !agendamentoProntoParaSalvar" [title]="abaNovoAgendamento !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioSalvar || 'Salvar agendamento')"
                     (click)="salvarAgendamento()">
                     <i class="bi bi-check-circle me-1"></i>
                     Salvar Agendamento
@@ -892,7 +915,8 @@
 
                     <div class="col-md-6">
                       <label class="form-label">Peça *</label>
-                      <select class="form-select" [(ngModel)]="pecaForm.idPeca" (change)="selecionarPecaCatalogo()"
+                      @if(modoPaginado){<app-seletor-remoto #seletorPecaAgendamento [(ngModel)]="pecaForm.idPeca" (change)="selecionarPecaCatalogo()"
+                         inputId="agendamento-pecaForm-idPeca" recurso="peca" rotulo="peça" [filtros]="{}" (selecionado)="registrarCatalogo('pecas', $event)" [comFornecimento]="true" selecaoEmModal (abrirSelecao)="abrirSelecaoPeca()" />}@else{<select class="form-select" [(ngModel)]="pecaForm.idPeca" (change)="selecionarPecaCatalogo()"
                         style="color:#35689b;">
                         <option [ngValue]="undefined">Selecione...</option>
                         @for (p of pecas; track p) {
@@ -900,7 +924,7 @@
                             {{ p.nome || p.descricao }} - {{ p.fabricante || 'Fabricante não informado' }}
                           </option>
                         }
-                      </select>
+                      </select>}
                     </div>
 
                     <div class="col-md-6">
@@ -965,10 +989,26 @@
                     </div>
                   </div>
 
+                  <!-- Pesquisa paginada de peças para o agendamento -->
+                  <div class="modal fade" id="modalSelecaoPecaAgendamento" tabindex="-1" aria-labelledby="tituloSelecaoPecaAgendamento" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                      <div class="modal-content" style="color:#35689b;">
+                        <div class="modal-header modal-header-clinicar">
+                          <div><h5 class="modal-title mb-1" id="tituloSelecaoPecaAgendamento"><i class="bi bi-nut me-1"></i>Selecionar peça prevista</h5><small>Pesquise a peça que será associada ao agendamento.</small></div>
+                          <button type="button" class="btn-close" aria-label="Voltar à peça prevista" (click)="fecharSelecaoPeca()"></button>
+                        </div>
+                        <div class="modal-body">
+                          <app-selecao-cadastro recurso="peca" [colunas]="[{titulo:'Peça',campo:'nome'},{titulo:'Descrição',campo:'descricao'},{titulo:'Fabricante',campo:'fabricante'},{titulo:'Modelo',campo:'modelo'}]" (selecionado)="escolherPeca($event)" />
+                        </div>
+                        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharSelecaoPeca()">Voltar à peça prevista</button></div>
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- MODAL DETALHES -->
                   <div class="modal fade" id="modalDetalhesAgendamento" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                      <div class="modal-content" style="color:#35689b;">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                      <div class="modal-content detalhes-agendamento-modal">
 
                         <div class="modal-header" style="background:#eef6ff;">
                           <h5 class="modal-title">
@@ -981,52 +1021,68 @@
 
                         @if (agendamentoSelecionado) {
                           <div class="modal-body">
-                            <div class="row g-2">
-                              <div class="col-md-4">
-                                <div class="detail-box">
-                                  <small>Código</small>
-                                  <strong>{{ agendamentoSelecionado.codigoAgendamento || '—' }}</strong>
-                                </div>
-                              </div>
-                              <div class="col-md-4">
-                                <div class="detail-box">
-                                  <small>Cliente</small>
-                                  <strong>{{ agendamentoSelecionado.nomeCliente || agendamentoSelecionado.cliente?.nome || '—' }}</strong>
-                                </div>
-                              </div>
-                              <div class="col-md-4">
-                                <div class="detail-box">
-                                  <small>Veículo</small>
-                                  <strong>{{ formatarPlaca(agendamentoSelecionado.placaVeiculo || agendamentoSelecionado.veiculo?.placa)
-                                  }}</strong>
-                                </div>
-                              </div>
-                              <div class="col-md-4">
-                                <div class="detail-box">
-                                  <small>Status</small>
-                                  <span class="badge" [ngClass]="statusBadgeClass(agendamentoSelecionado.statusAgendamento)">
-                                    {{ formatarStatus(agendamentoSelecionado.statusAgendamento) }}
-                                  </span>
-                                </div>
-                              </div>
-                              <div class="col-md-4">
-                                <div class="detail-box">
-                                  <small>Início</small>
-                                  <strong>{{ formatarDataHora(agendamentoSelecionado.dataHoraInicio) }}</strong>
-                                </div>
-                              </div>
-                              <div class="col-md-4">
-                                <div class="detail-box">
-                                  <small>Valor estimado</small>
-                                  <strong>{{ formatarMoedaBR(agendamentoSelecionado.valorEstimado) }}</strong>
-                                </div>
-                              </div>
-                              <div class="col-md-12">
-                                <div class="detail-box">
-                                  <small>Observações</small>
-                                  <p class="mb-0">{{ agendamentoSelecionado.observacoes || '—' }}</p>
-                                </div>
-                              </div>
+                            <div class="detalhes-agendamento-grid">
+                              <section class="detalhes-agendamento-secao" aria-label="Identificação do agendamento">
+                                <h6><i class="bi bi-person-vcard me-1"></i> Identificação</h6>
+                                <dl class="detalhes-agendamento-lista">
+                                  <div><dt>Código</dt><dd>{{ agendamentoSelecionado.codigoAgendamento || '—' }}</dd></div>
+                                  <div><dt>Cliente</dt><dd>{{ agendamentoSelecionado.nomeCliente || agendamentoSelecionado.cliente?.nome || 'Não informado' }}</dd></div>
+                                  <div><dt>Veículo</dt><dd>{{ formatarPlaca(agendamentoSelecionado.placaVeiculo || agendamentoSelecionado.veiculo?.placa) }}</dd></div>
+                                  <div><dt>Quilometragem atual</dt><dd>{{ agendamentoSelecionado.quilometragemAtual == null ? 'Não informada' : (agendamentoSelecionado.quilometragemAtual | number:'1.0-0':'pt-BR') + ' km' }}</dd></div>
+                                </dl>
+                              </section>
+                              <section class="detalhes-agendamento-secao" aria-label="Serviço e execução">
+                                <h6><i class="bi bi-tools me-1"></i> Serviço e execução</h6>
+                                <dl class="detalhes-agendamento-lista">
+                                  <div><dt>Serviço previsto</dt><dd>{{ agendamentoSelecionado.nomeServico || agendamentoSelecionado.servico?.nome || 'Não informado' }}</dd></div>
+                                  <div><dt>Execução</dt><dd>{{ agendamentoSelecionado.tipoExecucao === 'EXTERNA' ? 'Fornecedor externo' : 'Pela oficina' }}</dd></div>
+                                  <div><dt>Responsável</dt><dd>{{ agendamentoSelecionado.nomeResponsavel || 'Não informado' }}</dd></div>
+                                  @if (agendamentoSelecionado.razaoSocialFornecedor) { <div><dt>Fornecedor externo</dt><dd>{{ agendamentoSelecionado.razaoSocialFornecedor }}</dd></div> }
+                                  <div><dt>Situação</dt><dd><span class="badge" [ngClass]="statusBadgeClass(agendamentoSelecionado.statusAgendamento)">{{ formatarStatus(agendamentoSelecionado.statusAgendamento) }}</span></dd></div>
+                                </dl>
+                              </section>
+                              <section class="detalhes-agendamento-secao" aria-label="Período e atendimento">
+                                <h6><i class="bi bi-calendar-check me-1"></i> Período e atendimento</h6>
+                                <dl class="detalhes-agendamento-lista">
+                                  <div><dt>Início</dt><dd>{{ formatarDataHora(agendamentoSelecionado.dataHoraInicio) }}</dd></div>
+                                  <div><dt>Fim</dt><dd>{{ formatarDataHora(agendamentoSelecionado.dataHoraFim) }}</dd></div>
+                                  <div><dt>Prioridade</dt><dd>{{ agendamentoSelecionado.prioridade || 'Não informada' }}</dd></div>
+                                  <div><dt>Canal / atendimento</dt><dd>{{ agendamentoSelecionado.canalOrigem || '—' }} · {{ agendamentoSelecionado.tipoAtendimento || '—' }}</dd></div>
+                                  @if (agendamentoSelecionado.confirmadoEm) { <div><dt>Confirmado em</dt><dd>{{ formatarDataHora(agendamentoSelecionado.confirmadoEm) }}</dd></div> }
+                                </dl>
+                              </section>
+                              <section class="detalhes-agendamento-secao" aria-label="Peças e valores previstos">
+                                <h6><i class="bi bi-hexagon me-1"></i> Peças e valores previstos</h6>
+                                @if (carregandoPecasDetalhes) { <p class="mb-0">Consultando peças…</p> }
+                                @else if (erroPecasDetalhes) { <p class="mb-0">Não foi possível consultar as peças previstas.</p> }
+                                @else if (pecasDetalhesAgendamento.length) {
+                                  <ul class="detalhes-agendamento-pecas">
+                                    @for (peca of pecasDetalhesAgendamento; track peca.id) {
+                                      <li><strong>{{ peca.nomePeca || peca.descricaoPeca || 'Peça' }}</strong><span>{{ peca.quantidade }} {{ peca.unidadeMedida || 'unidade(s)' }} · {{ formatarMoedaBR(peca.valorTotal) }}</span></li>
+                                    }
+                                  </ul>
+                                } @else { <p class="mb-2">Nenhuma peça prevista vinculada.</p> }
+                                <dl class="detalhes-agendamento-lista">
+                                  <div class="detalhes-agendamento-total"><dt>Valor estimado</dt><dd>{{ formatarMoedaBR(agendamentoSelecionado.valorEstimado) }}</dd></div>
+                                </dl>
+                              </section>
+                              <section class="detalhes-agendamento-secao" aria-label="Informações adicionais">
+                                <h6><i class="bi bi-card-text me-1"></i> Informações adicionais</h6>
+                                <dl class="detalhes-agendamento-lista">
+                                  <div><dt>Queixa</dt><dd class="detalhes-agendamento-texto">{{ agendamentoSelecionado.queixaCliente || 'Não informada' }}</dd></div>
+                                  <div><dt>Preferências de materiais do cliente</dt><dd class="detalhes-agendamento-texto">{{ agendamentoSelecionado.sugestaoMateriaisCliente || 'Não informadas' }}</dd></div>
+                                  <div><dt>Preferência de execução do cliente</dt><dd class="detalhes-agendamento-texto">{{ agendamentoSelecionado.preferenciaExecucaoCliente || 'Não informada' }}</dd></div>
+                                  <div><dt>Diagnóstico prévio</dt><dd class="detalhes-agendamento-texto">{{ agendamentoSelecionado.diagnosticoPrevio || 'Não informado' }}</dd></div>
+                                </dl>
+                                <h6 class="mt-3">Observações</h6>
+                                <p class="detalhes-agendamento-texto mb-0">{{ observacoesDetalhesAgendamento() || 'Nenhuma observação registrada.' }}</p>
+                              </section>
+                              @if (agendamentoSelecionado.motivoCancelamento) {
+                                <section class="detalhes-agendamento-secao" aria-label="Cancelamento">
+                                  <h6><i class="bi bi-x-circle me-1"></i> Cancelamento</h6>
+                                  <p class="detalhes-agendamento-texto mb-0">{{ agendamentoSelecionado.motivoCancelamento }}</p>
+                                </section>
+                              }
                             </div>
                           </div>
                         }
@@ -1075,6 +1131,88 @@
                     </div>
                   </div>
 
+
+                  <!-- Pesquisa paginada de clientes do agendamento -->
+                  <div class="modal fade" id="modalSelecaoClienteAgendamento" tabindex="-1" aria-labelledby="tituloSelecaoClienteAgendamento" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                      <div class="modal-content" style="color:#35689b;">
+                        <div class="modal-header modal-header-clinicar">
+                          <div><h5 class="modal-title mb-1" id="tituloSelecaoClienteAgendamento"><i class="bi bi-person-search me-1"></i>Selecionar cliente</h5><small>Pesquise pelo nome ou CPF e escolha o cliente do agendamento.</small></div>
+                          <button type="button" class="btn-close" aria-label="Voltar ao agendamento" (click)="fecharSelecaoCliente()"></button>
+                        </div>
+                        <div class="modal-body">
+                          <app-selecao-cadastro recurso="usuario" [filtros]="{perfis:'CLIENTE,ADMINISTRADOR',status:'ATIVO'}" [colunas]="[{titulo:'Nome',campo:'nome'},{titulo:'CPF',campo:'cpf',formato:'documento'},{titulo:'Telefone',campo:'telefone',formato:'telefone'}]" (selecionado)="escolherCliente($event)" />
+                        </div>
+                        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharSelecaoCliente()">Voltar ao agendamento</button></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Veículos vinculados ao cliente selecionado -->
+                  <div class="modal fade" id="modalSelecaoVeiculoAgendamento" tabindex="-1" aria-labelledby="tituloSelecaoVeiculoAgendamento" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                      <div class="modal-content" style="color:#35689b;">
+                        <div class="modal-header modal-header-clinicar">
+                          <div><h5 class="modal-title mb-1" id="tituloSelecaoVeiculoAgendamento"><i class="bi bi-car-front me-1"></i>Selecionar veículo</h5><small>Escolha um veículo pertencente ao cliente selecionado.</small></div>
+                          <button type="button" class="btn-close" aria-label="Voltar ao agendamento" (click)="fecharSelecaoVeiculo()"></button>
+                        </div>
+                        <div class="modal-body">
+                          @if (novoAgendamento.idCliente) {
+                            <app-selecao-cadastro recurso="veiculo" [filtros]="{idProprietario:novoAgendamento.idCliente}" [colunas]="[{titulo:'Placa',campo:'placa',formato:'placa'},{titulo:'Fabricante',campo:'fabricante'},{titulo:'Modelo',campo:'modelo'},{titulo:'Cor',campo:'cor'}]" (selecionado)="escolherVeiculo($event)" />
+                          }
+                        </div>
+                        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharSelecaoVeiculo()">Voltar ao agendamento</button></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Serviços ativos para o agendamento -->
+                  <div class="modal fade" id="modalSelecaoServicoAgendamento" tabindex="-1" aria-labelledby="tituloSelecaoServicoAgendamento" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                      <div class="modal-content" style="color:#35689b;">
+                        <div class="modal-header modal-header-clinicar">
+                          <div><h5 class="modal-title mb-1" id="tituloSelecaoServicoAgendamento"><i class="bi bi-wrench me-1"></i>Selecionar serviço previsto</h5><small>Pesquise o serviço que será realizado no agendamento.</small></div>
+                          <button type="button" class="btn-close" aria-label="Voltar ao agendamento" (click)="fecharSelecaoServico()"></button>
+                        </div>
+                        <div class="modal-body">
+                          <app-selecao-cadastro recurso="servico" [filtros]="{ativo:true}" [colunas]="[{titulo:'Serviço',campo:'nome'},{titulo:'Categoria',campo:'categoria'},{titulo:'Duração',campo:'duracaoEstimada'}]" (selecionado)="escolherServico($event)" />
+                        </div>
+                        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharSelecaoServico()">Voltar ao agendamento</button></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Responsáveis ativos e disponíveis para o período -->
+                  <div class="modal fade" id="modalSelecaoResponsavelAgendamento" tabindex="-1" aria-labelledby="tituloSelecaoResponsavelAgendamento" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                      <div class="modal-content" style="color:#35689b;">
+                        <div class="modal-header modal-header-clinicar">
+                          <div><h5 class="modal-title mb-1" id="tituloSelecaoResponsavelAgendamento"><i class="bi bi-person-check me-1"></i>Selecionar responsável disponível</h5><small>Pesquise um administrador ou colaborador disponível no período informado.</small></div>
+                          <button type="button" class="btn-close" aria-label="Voltar ao agendamento" (click)="fecharSelecaoResponsavel()"></button>
+                        </div>
+                        <div class="modal-body">
+                          <app-selecao-cadastro recurso="usuario" [filtros]="filtrosResponsavelRemoto()" [colunas]="[{titulo:'Nome',campo:'nome'},{titulo:'CPF',campo:'cpf',formato:'documento'},{titulo:'Telefone',campo:'telefone',formato:'telefone'}]" (selecionado)="escolherResponsavel($event)" />
+                        </div>
+                        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharSelecaoResponsavel()">Voltar ao agendamento</button></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Fornecedores ativos aptos a executar serviços externos -->
+                  <div class="modal fade" id="modalSelecaoFornecedorAgendamento" tabindex="-1" aria-labelledby="tituloSelecaoFornecedorAgendamento" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                      <div class="modal-content" style="color:#35689b;">
+                        <div class="modal-header modal-header-clinicar">
+                          <div><h5 class="modal-title mb-1" id="tituloSelecaoFornecedorAgendamento"><i class="bi bi-building me-1"></i>Selecionar fornecedor externo</h5><small>Pesquise um fornecedor ativo cadastrado para prestar serviços.</small></div>
+                          <button type="button" class="btn-close" aria-label="Voltar ao agendamento" (click)="fecharSelecaoFornecedor()"></button>
+                        </div>
+                        <div class="modal-body">
+                          <app-selecao-cadastro recurso="fornecedor" [filtros]="{ativo:true,tipoFornecimento:'SERVICOS'}" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'},{titulo:'Telefone',campo:'telefone',formato:'telefone'}]" (selecionado)="escolherFornecedor($event)" />
+                        </div>
+                        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharSelecaoFornecedor()">Voltar ao agendamento</button></div>
+                      </div>
+                    </div>
+                  </div>
 
                   <!-- MODAL CONFIRMAÇÃO DE AÇÃO -->
                   <div class="modal fade" id="modalConfirmacaoAgendamento" tabindex="-1" aria-hidden="true">

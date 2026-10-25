@@ -32,7 +32,7 @@ describe('Cadastro de peça a partir do controle de estoque', () => {
     const fixture = TestBed.createComponent(ControleEstoquePecasComponent);
     fixture.detectChanges();
     http.expectNone('/api/peca');
-    http.expectOne('/api/local-estoque/ativos').flush([{ id: 3, nome: 'Prateleira', ativo: true }]);
+    http.expectOne(r=>r.url==='/api/local-estoque/pagina').flush({content:[{ id: 3, nome: 'Prateleira', ativo: true }],totalElements:1,totalPages:1,number:0,resumo:{},opcoes:{}});
     http.match('/api/alertas-estoque/abertos').forEach(req => req.flush([]));
     http.expectOne(req=>req.url==='/api/estoque-pecas/pagina').flush({content:[],totalElements:0,totalPages:0,number:0,resumo:{},opcoes:{}});
     fixture.componentInstance.abrirModalCadastro();

@@ -34,7 +34,7 @@
   font-size: .78rem;
   text-transform: uppercase;
   font-weight: 800;
-  color: #5c7fa4;
+  color: #4c637b;
   letter-spacing: .02rem;
 }
 
@@ -181,7 +181,7 @@
 
 .table-compact small {
   display: block;
-  color: #6c7f93;
+  color: #4c637b;
   font-size: .78rem;
 }
 
@@ -329,7 +329,7 @@
 
 .modal-header-clinicar small {
   display: block;
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .82rem;
   margin-top: .15rem;
 }
@@ -476,7 +476,7 @@
 
 .preview-title,
 .review-label {
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .82rem;
   font-weight: 800;
   text-transform: uppercase;

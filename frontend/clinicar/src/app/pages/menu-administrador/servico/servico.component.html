@@ -648,10 +648,11 @@
               <div class="row g-3">
                 <div class="col-md-8">
                   <div class="owner-card" [class.owner-card-empty]="!novoServico.idFornecedor">
-                    <div class="preview-title">Fornecedor</div>
+                    <div class="preview-title">Fornecedor @if (fornecedorObrigatorio(novoServico)) { * }</div>
                     <div class="owner-name">{{ fornecedorTexto(novoServico) || 'Nenhum fornecedor vinculado' }}</div>
                     <div class="owner-meta">
-                      O vínculo é opcional e pode ser usado quando o serviço é terceirizado ou executado por parceiro.
+                      @if (fornecedorObrigatorio(novoServico)) { Selecione o fornecedor que executará o serviço antes de salvar. }
+                      @else { O vínculo é opcional para os demais tipos de prestador. }
                     </div>
                   </div>
                 </div>
@@ -676,6 +677,11 @@
                   <label class="form-label" for="observacoesCadastro">Observações</label>
                   <textarea id="observacoesCadastro" class="form-control" rows="3" [(ngModel)]="novoServico.observacoes"></textarea>
                 </div>
+                <div class="col-md-12">
+                  <label class="form-label" for="materiaisReferenciaCadastro">Materiais comuns deste serviço (opcional)</label>
+                  <textarea id="materiaisReferenciaCadastro" class="form-control" rows="3" maxlength="1000" [(ngModel)]="novoServico.materiaisReferencia" placeholder="Ex.: filtro de óleo e óleo do motor; modelos e quantidades dependem do veículo."></textarea>
+                  <small class="form-text">Referência para orientar cliente e oficina. Não seleciona marcas, não calcula preço e não reserva estoque.</small>
+                </div>
               </div>
             </div>
           }
@@ -687,6 +693,7 @@
                   <div class="review-label">Serviço</div>
                   <div class="review-main">{{ novoServico.nome || '—' }}</div>
                   <div class="details-line">Categoria: {{ novoServico.categoria || '—' }}</div>
+                  <div class="details-line">Materiais de referência: {{ novoServico.materiaisReferencia || 'Não informados' }}</div>
                   <div class="details-line">Prestador: {{ novoServico.tipoDoPrestador || '—' }}</div>
                   <div class="details-line">Status: {{ statusTexto(novoServico) }}</div>
                 </div>
@@ -870,6 +877,9 @@
                   <label class="form-label" for="tipoPrestadorEdicao">Tipo do Prestador *</label>
                   <select id="tipoPrestadorEdicao" class="form-select" [(ngModel)]="edit.tipoDoPrestador" (ngModelChange)="limparCampoInvalido('tipoDoPrestador')" [class.is-invalid]="campoMarcadoInvalido(edit, 'tipoDoPrestador')">
                     <option value="">Selecione...</option>
+                    @if (edit.tipoDoPrestador === 'Terceirizado') {
+                      <option value="Terceirizado">Terceirizado (valor antigo)</option>
+                    }
                     @for (tipo of tiposPrestadorSugeridos; track tipo) {
                       <option [ngValue]="tipo">{{ tipo }}</option>
                     }
@@ -967,9 +977,12 @@
               <div class="row g-3">
                 <div class="col-md-8">
                   <div class="owner-card" [class.owner-card-empty]="!edit.idFornecedor">
-                    <div class="preview-title">Fornecedor</div>
+                    <div class="preview-title">Fornecedor @if (fornecedorObrigatorio(edit)) { * }</div>
                     <div class="owner-name">{{ fornecedorTexto(edit) || 'Nenhum fornecedor vinculado' }}</div>
-                    <div class="owner-meta">O vínculo é opcional e pode ser ajustado sem alterar o cadastro do fornecedor.</div>
+                    <div class="owner-meta">
+                      @if (fornecedorObrigatorio(edit)) { Selecione o fornecedor que executará o serviço antes de salvar. }
+                      @else { O vínculo é opcional para os demais tipos de prestador. }
+                    </div>
                   </div>
                 </div>
                 <div class="col-md-4 d-flex flex-column gap-2 justify-content-center">
@@ -988,6 +1001,11 @@
                   <label class="form-label" for="observacoesEdicao">Observações</label>
                   <textarea id="observacoesEdicao" class="form-control" rows="3" [(ngModel)]="edit.observacoes"></textarea>
                 </div>
+                <div class="col-md-12">
+                  <label class="form-label" for="materiaisReferenciaEdicao">Materiais comuns deste serviço (opcional)</label>
+                  <textarea id="materiaisReferenciaEdicao" class="form-control" rows="3" maxlength="1000" [(ngModel)]="edit.materiaisReferencia" placeholder="Ex.: filtro de óleo e óleo do motor; modelos e quantidades dependem do veículo."></textarea>
+                  <small class="form-text">Referência para orientar cliente e oficina. Não seleciona marcas, não calcula preço e não reserva estoque.</small>
+                </div>
               </div>
             </div>
           }
@@ -999,6 +1017,7 @@
                   <div class="review-label">Serviço</div>
                   <div class="review-main">{{ edit.nome || '—' }}</div>
                   <div class="details-line">Categoria: {{ edit.categoria || '—' }}</div>
+                  <div class="details-line">Materiais de referência: {{ edit.materiaisReferencia || 'Não informados' }}</div>
                   <div class="details-line">Prestador: {{ edit.tipoDoPrestador || '—' }}</div>
                   <div class="details-line">Status: {{ statusTexto(edit) }}</div>
                 </div>
@@ -1103,6 +1122,9 @@
                 <div class="details-line">Fornecedor: {{ servicoDetalhe.razaoSocialFornecedor || 'Sem vínculo' }}</div>
               </div>
             </div>
+            @if (servicoDetalhe.materiaisReferencia) {
+              <div class="col-12"><div class="details-card"><div class="details-title">Materiais comuns</div><div class="details-line">{{ servicoDetalhe.materiaisReferencia }}</div></div></div>
+            }
             @if (servicoDetalhe.observacoes) {
               <div class="col-12">
                 <div class="details-card">
@@ -1146,7 +1168,7 @@
 
       <div class="modal-body fornecedor-modal-body">
 <app-field-help-panel></app-field-help-panel>
-@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true}" (selecionado)="selecionarFornecedor($event)" />}@else{
+@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true,tipoFornecimento:'SERVICOS'}" (selecionado)="selecionarFornecedor($event)" />}@else{
 
         <div class="input-group mb-3">
           <span class="input-group-text"><i class="bi bi-search"></i></span>

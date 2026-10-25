@@ -138,6 +138,8 @@ export interface MovimentacaoEstoquePeca {
   custoUnitarioEstoque?: number | string | null;
   custoMedioAtual?: number | string | null;
   quantidadeDevolvida?: number | string | null;
+  quantidadeDisponivelOriginal?: number | string | null;
+  quantidadeDisponivelRecebimento?: number | string | null;
   tratamentoCobranca?: string | null;
   valorRestituicao?: number | string | null;
   idMovimentacaoOrigem?: number | null;

@@ -70,7 +70,7 @@ describe('Cadastros e duplicidade no fornecimento de serviços', () => {
     http.expectNone('/api/fornecedor'); await f.whenStable(); f.detectChanges();
     const child = f.debugElement.query(By.directive(ServicoComponent)).componentInstance as ServicoComponent;
     expect(child.novoServico.tipoDoPrestador).toBe('Fornecedor Externo'); expect(child.novoServico.idFornecedor).toBe(7);
-    child.novoServico = { ...servico, id: undefined }; child.salvarNovoServico(); child.salvarNovoServico();
+    child.novoServico = { ...servico, id: undefined, idFornecedor: 7 }; child.abaCadastroServico = 'revisao'; child.salvarNovoServico(); child.salvarNovoServico();
     const req = http.expectOne('/api/servico'); expect(req.request.method).toBe('POST'); req.flush(servico);
     expect(c.novoFornecimento).toBe(original); expect(c.novoFornecimento.idServico).toBe(12);
     expect(c.novoFornecimento.observacoes).toBe('Rascunho'); expect(c.novoFornecimento.valorCusto).toBeFalsy(); expect(c.novoFornecimento.prazoExecucao).toBeFalsy();

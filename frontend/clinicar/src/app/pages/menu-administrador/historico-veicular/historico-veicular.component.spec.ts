@@ -19,7 +19,7 @@ describe('HistoricoVeicularComponent', () => {
     await TestBed.configureTestingModule({ imports: [HistoricoVeicularComponent], providers: [provideZoneChangeDetection(), provideRouter([]), provideHttpClient(), provideHttpClientTesting()] }).compileComponents();
     fixture = TestBed.createComponent(HistoricoVeicularComponent); component = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController); fixture.detectChanges();
-    http.expectOne('/api/veiculo').flush([{ id: 1, placa: 'XYZ9999', fabricante: 'Toyota', modelo: 'Yaris' }]);
+    http.expectNone('/api/veiculo');
   });
   afterEach(() => { fixture.destroy(); http.verify(); });
   it('exige veículo e rejeita datas invertidas sem consultar o servidor', () => {
@@ -42,7 +42,7 @@ describe('HistoricoVeicularComponent', () => {
     component.relatorio = resposta(); fixture.detectChanges();
     const pagina = fixture.nativeElement.querySelector('.historico-page') as HTMLElement;
     expect(pagina.children[1].classList.contains('summary-row')).toBeTrue();
-    expect(fixture.nativeElement.querySelector('#historicoVeiculo').textContent).toContain('XYZ-9999');
+    expect(fixture.nativeElement.querySelector('#historicoVeiculo').placeholder).toBe('Selecione');
     expect(getComputedStyle(fixture.nativeElement.querySelector('.page-title-card')).color).toBe('rgb(53, 104, 155)');
     expect(getComputedStyle(fixture.nativeElement.querySelector('#historicoVeiculo')).color).toBe('rgb(53, 104, 155)');
     expect(fixture.nativeElement.querySelector('.timeline')).toBeNull();

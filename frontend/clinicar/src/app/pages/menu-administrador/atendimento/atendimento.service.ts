@@ -5,6 +5,12 @@ import { MovimentacaoEstoquePeca } from '../controle-estoque-pecas/controle-esto
 
 const API_BASE = '';
 
+export interface OrcamentoAtendimento {
+  id: number; versao: number; status: string; diagnostico: string; itens: string;
+  valorMaoObra: number; valorPecas: number; valorTerceiros: number; desconto: number;
+  valorTotal: number; criadoEm: string; decididoEm?: string; decisorId?: number; decisorNome?: string;
+}
+
 export interface Atendimento {
   id?: number;
   codigoAtendimento?: string;
@@ -43,6 +49,7 @@ export interface Atendimento {
   fimReal?: string | null;
   prazoEstimadoEntrega?: string | null;
   dataEntrega?: string | null;
+  prontoRetiradaEm?: string | null;
 
   quilometragemEntrada?: number | null;
   quilometragemSaida?: number | null;
@@ -513,10 +520,26 @@ export class AtendimentoService {
     });
   }
 
+  diagnosticar(id: number): Observable<Atendimento> {
+    return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/diagnosticar`, {}, { withCredentials: true });
+  }
+
+  solicitarAprovacao(id: number): Observable<Atendimento> {
+    return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/solicitar-aprovacao`, {}, { withCredentials: true });
+  }
+
   aprovar(id: number): Observable<Atendimento> {
     return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/aprovar`, {}, {
       withCredentials: true
     });
+  }
+
+  revisarOrcamento(id: number): Observable<Atendimento> {
+    return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/revisar-orcamento`, {}, { withCredentials: true });
+  }
+
+  listarOrcamentos(id: number): Observable<OrcamentoAtendimento[]> {
+    return this.http.get<OrcamentoAtendimento[]>(`${this.atendimentoUrl}/${id}/orcamentos`, { withCredentials: true });
   }
 
   aguardarTerceiro(id: number): Observable<Atendimento> {
@@ -535,6 +558,10 @@ export class AtendimentoService {
     return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/entregar`, {}, {
       withCredentials: true
     });
+  }
+
+  marcarProntoRetirada(id: number): Observable<Atendimento> {
+    return this.http.patch<Atendimento>(`${this.atendimentoUrl}/${id}/pronto-retirada`, {}, { withCredentials: true });
   }
 
   cancelar(id: number, body: AtendimentoCancelamentoRequest): Observable<Atendimento> {

@@ -1,0 +1,50 @@
+<section class="rotina-page" aria-labelledby="titulo-rotina">
+  <div class="card page-title-card mb-3"><div id="titulo-rotina" class="card-body text-center"><i class="bi bi-clipboard2-check me-1" aria-hidden="true"></i> {{ somentePendentes ? 'Painel de pendências' : 'Minha rotina' }}</div></div>
+  <div class="painel-tabs mb-3" role="tablist" aria-label="Categorias de pendências">
+    <button type="button" role="tab" class="painel-tab" [class.active]="secaoAtiva === 'agendamentos'" [attr.aria-selected]="secaoAtiva === 'agendamentos'" (click)="selecionarSecao('agendamentos')"><i class="bi bi-calendar-check me-1" aria-hidden="true"></i>Agendamentos <span class="badge rounded-pill text-bg-light">{{ resumo.agendamentos }}</span></button>
+    <button type="button" role="tab" class="painel-tab" [class.active]="secaoAtiva === 'atendimentos'" [attr.aria-selected]="secaoAtiva === 'atendimentos'" (click)="selecionarSecao('atendimentos')"><i class="bi bi-tools me-1" aria-hidden="true"></i>Atendimentos <span class="badge rounded-pill text-bg-light">{{ resumo.atendimentos }}</span></button>
+    <button type="button" role="tab" class="painel-tab" [class.active]="secaoAtiva === 'estoque'" [attr.aria-selected]="secaoAtiva === 'estoque'" (click)="selecionarSecao('estoque')"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>Estoque <span class="badge rounded-pill text-bg-light">{{ resumo.alertasEstoque }}</span></button>
+  </div>
+
+  @if (secaoAtiva === 'estoque') {
+    <section class="card list-card mb-3" role="tabpanel" aria-label="Alertas de estoque em atenção"><div class="card-body p-3">
+      <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><h2 class="section-title">Alertas de estoque em atenção</h2><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-primary" (click)="carregarEstoque()" [disabled]="estoque.carregando"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Atualizar</button><a class="btn btn-sm btn-primary" routerLink="../controleEstoquePecas">Abrir estoque</a></div></div>
+      <form class="row g-2 align-items-end mb-2" (ngSubmit)="pesquisarEstoque()"><div class="col-md-9"><label class="form-label fw-semibold" for="busca-estoque">Buscar</label><input class="form-control" id="busca-estoque" name="busca-estoque" [(ngModel)]="estoque.busca" placeholder="Peça ou local"></div><div class="col-md-3 d-grid"><button type="submit" class="btn btn-primary" [disabled]="estoque.carregando"><i class="bi bi-search me-1" aria-hidden="true"></i>Consultar</button></div></form>
+      @if (estoque.erro) {<div class="alert alert-danger py-2" role="alert">{{ estoque.erro }}</div>}
+      <div class="table-shell" [attr.aria-busy]="estoque.carregando"><div class="table-scroll"><table class="table table-hover align-middle mb-0"><thead><tr><th>Peça</th><th>Local</th><th>Saldo atual</th><th>Mínimo</th><th>Aberto em</th><th>Situação</th></tr></thead><tbody>
+        @for (alerta of estoque.itens; track alerta.id) {<tr><td class="fw-semibold">{{ alerta.peca }}</td><td>{{ alerta.local }}</td><td>{{ alerta.quantidadeAtual }}</td><td>{{ alerta.estoqueMinimo }}</td><td>{{ alerta.criadoEm | date:'dd/MM/yyyy HH:mm' }}</td><td><span class="badge text-bg-warning">Atenção</span></td></tr>} @empty {<tr><td colspan="6" class="text-center empty-state">{{ estoque.carregando ? 'Carregando alertas...' : 'Nenhum alerta de estoque em atenção.' }}</td></tr>}
+      </tbody></table></div><div class="table-pagination-footer"><app-paginacao [pagina]="estoque.pagina" [tamanho]="estoque.tamanho" [total]="estoque.total" [carregando]="estoque.carregando" (paginaChange)="mudarPaginaEstoque($event)" (tamanhoChange)="mudarTamanhoEstoque($event)" /></div></div>
+    </div></section>
+  }
+
+  @for (secao of secoes; track secao) {
+    @if (secaoAtiva === secao) {
+    <section class="card list-card mb-3" role="tabpanel" [attr.aria-labelledby]="'titulo-' + secao">
+      <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+          <h2 class="section-title" [id]="'titulo-' + secao">{{ secao === 'agendamentos' ? 'Meus agendamentos' : 'Meus atendimentos' }}{{ somentePendentes ? ' pendentes' : '' }}</h2>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="carregar(secao)" [disabled]="estado[secao].carregando"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Atualizar</button>
+        </div>
+        <form class="row g-2 align-items-end mb-2" (ngSubmit)="pesquisar(secao)">
+          <div class="col-md-9"><label class="form-label fw-semibold" [for]="'busca-' + secao">Buscar</label><input class="form-control" [id]="'busca-' + secao" [name]="'busca-' + secao" [(ngModel)]="estado[secao].busca" placeholder="Código, cliente, placa ou serviço"></div>
+          <div class="col-md-3 d-grid"><button type="submit" class="btn btn-primary" [disabled]="estado[secao].carregando"><i class="bi bi-search me-1" aria-hidden="true"></i>Consultar</button></div>
+        </form>
+        @if (estado[secao].erro) { <div class="alert alert-danger py-2" role="alert">{{ estado[secao].erro }}</div> }
+        <div class="table-shell" [attr.aria-busy]="estado[secao].carregando">
+          <div class="table-scroll"><table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Código</th><th>Cliente</th><th>Veículo</th><th>Serviço</th><th>{{ secao === 'agendamentos' ? 'Data e hora' : 'Entrada' }}</th><th>Status</th>@if (secao === 'agendamentos') { <th>Prioridade</th> } @else { <th>Ação</th> }</tr></thead>
+            <tbody>
+              @for (item of estado[secao].itens; track item.id) {
+                <tr><td class="fw-semibold">{{ item.codigo }}</td><td>{{ item.cliente }}</td><td>{{ item.placa || '—' }}</td><td>{{ item.servico }}</td><td>{{ item.inicio | date:'dd/MM/yyyy HH:mm' }}</td><td><span class="badge" [class.text-bg-success]="['CONCLUIDO','ENTREGUE'].includes(item.status)" [class.text-bg-warning]="['AGENDADO','ABERTO','EM_EXECUCAO','EM_ATENDIMENTO'].includes(item.status)" [class.text-bg-secondary]="!['CONCLUIDO','ENTREGUE','AGENDADO','ABERTO','EM_EXECUCAO','EM_ATENDIMENTO'].includes(item.status)">{{ item.status.replace('_', ' ') }}</span></td>@if (secao === 'agendamentos') { <td>{{ item.prioridade || '—' }}</td> } @else { <td>@if (podeMecanica) { <a class="btn btn-sm btn-outline-primary" [routerLink]="['../meus-atendimentos', item.id]">Relato técnico</a> } @else { <span class="text-muted">—</span> }</td> }</tr>
+              } @empty {
+                <tr><td colspan="7" class="text-center empty-state">{{ estado[secao].carregando ? 'Carregando registros...' : 'Nenhum registro atribuído foi encontrado.' }}</td></tr>
+              }
+            </tbody>
+          </table></div>
+          <div class="table-pagination-footer"><app-paginacao [pagina]="estado[secao].pagina" [tamanho]="estado[secao].tamanho" [total]="estado[secao].total" [carregando]="estado[secao].carregando" (paginaChange)="mudarPagina(secao, $event)" (tamanhoChange)="mudarTamanho(secao, $event)" /></div>
+        </div>
+      </div>
+    </section>
+    }
+  }
+</section>

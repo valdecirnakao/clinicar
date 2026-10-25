@@ -6,7 +6,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AtendimentoComponent } from './atendimento.component';
 import { Atendimento, AtendimentoService } from './atendimento.service';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
+import { ConsultaPaginadaService } from '../../../shared/tabelas/consulta-paginada.service';
 
 describe('AtendimentoComponent', () => {
   let component: AtendimentoComponent;
@@ -26,6 +27,17 @@ describe('AtendimentoComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('recupera somente o serviço principal e preserva seu valor antes de incluir o item', () => {
+    const pendente=new Subject<any>();
+    const consultar=spyOn(TestBed.inject(ConsultaPaginadaService),'registro').and.returnValue(pendente);
+    component.atendimentoSelecionado={id:7,idServico:12,statusAtendimento:'EM_EXECUCAO',tipoExecucao:'INTERNO'} as Atendimento;
+    component.sincronizarServicoPrincipalDoAtendimento();
+    expect(consultar).toHaveBeenCalledOnceWith('servico',12);expect(component.servicosAtendimento.length).toBe(0);
+    component.salvarEdicaoAtendimento();expect(component.servicosAtendimento.length).toBe(0);
+    pendente.next({id:12,nome:'Serviço principal',valorBase:150,unidadeCobranca:'SERVICO'});pendente.complete();
+    expect(component.servicosAtendimento.length).toBe(1);expect(Number(component.servicosAtendimento[0].valorMaoObra)).toBe(150);
   });
 
   it('bloqueia conclusão sem KM, com valor fracionado ou abaixo da entrada', () => {
@@ -74,6 +86,7 @@ describe('AtendimentoComponent', () => {
     component.valorRestituicaoDevolucao = 161; expect(component.devolucaoAtendimentoValida).toBeFalse();
     component.valorRestituicaoDevolucao = 50; expect(component.devolucaoAtendimentoValida).toBeTrue();
     component.motivoDevolucao = ' '; expect(component.devolucaoAtendimentoValida).toBeFalse();
+    expect(component.saldoDevolucaoAtendimento({quantidade:6,quantidadeDevolvida:999,quantidadeDisponivelOriginal:4} as any)).toBe(4);
     expect(component.podeDevolverPeca({ estoqueBaixado: false, statusAtendimento: 'CONCLUIDO' } as Atendimento)).toBeFalse();
   });
 

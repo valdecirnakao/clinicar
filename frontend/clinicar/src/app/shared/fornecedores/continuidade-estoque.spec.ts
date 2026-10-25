@@ -40,7 +40,7 @@ describe('Continuidade fornecimento → controle de estoque', () => {
     const fixture = TestBed.createComponent(ControleEstoquePecasComponent);
     fixture.detectChanges();
     http.expectOne('/api/peca/12').flush(pecas[0]??null);
-    http.expectOne('/api/local-estoque/ativos').flush([local]);
+    http.expectOne(r=>r.url==='/api/local-estoque/pagina').flush({content:[local],totalElements:1,totalPages:1,number:0,resumo:{},opcoes:{}});
     http.expectOne(req=>req.url==='/api/estoque-pecas/por-peca' && req.params.get('pecaId')==='12').flush(estoques);
     http.expectOne('/api/alertas-estoque/abertos').flush([]);
     fixture.detectChanges();
@@ -84,7 +84,7 @@ describe('Continuidade fornecimento → controle de estoque', () => {
     const fixture = TestBed.createComponent(ControleEstoquePecasComponent);
     fixture.detectChanges();
     http.expectOne('/api/peca/12').flush(peca);
-    http.expectOne('/api/local-estoque/ativos').flush([local]);
+    http.expectOne(r=>r.url==='/api/local-estoque/pagina').flush({content:[local],totalElements:1,totalPages:1,number:0,resumo:{},opcoes:{}});
     http.expectOne(req=>req.url==='/api/estoque-pecas/por-peca' && req.params.get('pecaId')==='12').flush('Falha', { status: 500, statusText: 'Falha' });
     expect(fixture.componentInstance.loading).toBeFalse();
     expect(fixture.componentInstance.errorMsg).not.toBe('');

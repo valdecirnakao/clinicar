@@ -13,7 +13,7 @@ import { aposFecharModal } from '../../../shared/fornecedores/transicao-modal';
 import { Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContinuidadeService } from '../../../services/continuidade.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -85,15 +85,22 @@ interface AcaoConfirmacao {
     styleUrls: ['./usuario.component.css']
 })
 export class UsuarioComponent implements OnInit, OnDestroy {
+  permissoesEdicao: { podeMecanica: boolean; podeEstoque: boolean } | null = null;
+  salvandoPermissoes = false;
+  private readonly routerPerfil = injectFeedback(Router);
+  get acessoColaborador(): boolean { return this.routerPerfil.url.startsWith('/menuColaborador'); }
   private readonly continuidade=injectFeedback(ContinuidadeService);
   private readonly rotaContinuacao=injectFeedback(ActivatedRoute);
   private readonly destroyRef = injectFeedback(DestroyRef);
   private destruido = false;
   usuarioContinuacao: Proprietario | null = null;
   cadastrandoVeiculo = false;
+  emFluxoVeiculos = false;
+  veiculosCadastradosNaSequencia: Veiculo[] = [];
   configurandoAlertas = false;
   salvandoNovoUsuario = false;
   private modalContinuacao: any;
+  private modalMaisVeiculos: any;
   private modalAlertas: any;
   @ViewChild('alertasDoNovoUsuario') alertasDoNovoUsuario?: ConfiguracaoAlertasComponent;
 
@@ -105,14 +112,40 @@ export class UsuarioComponent implements OnInit, OnDestroy {
   cadastrarVeiculoDoUsuario(): void {
     aposFecharModal('modalContinuarUsuario', this.modalContinuacao, () => { this.cadastrandoVeiculo = true; }, this.destroyRef);
   }
-  veiculoDoUsuarioCriado(_veiculo: Veiculo): void {
+  veiculoDoUsuarioCriado(veiculo: Veiculo): void {
     this.cadastrandoVeiculo = false;
     this.recarregar();
+    this.veiculosCadastradosNaSequencia.push(veiculo);
     if (!['cliente', 'administrador', 'colaborador'].includes(this.normalizarTexto(this.usuarioContinuacao?.tipo_do_acesso))) {
       this.usuarioContinuacao = null;
       this.notificacoes.sucesso('Veículo cadastrado e associado ao usuário.');
       return;
     }
+    this.abrirEscolhaProximoVeiculo();
+  }
+  abrirEscolhaProximoVeiculo(): void {
+    this.emFluxoVeiculos = true;
+    if(this.usuarioContinuacao?.id)this.continuidade.registrar('usuario',{continuarVeiculos:'1',usuarioId:String(this.usuarioContinuacao.id)});
+    queueMicrotask(() => {
+      if (this.destruido) return;
+      const el = document.getElementById('modalMaisVeiculosUsuario');
+      if (el) { this.modalMaisVeiculos = bootstrap.Modal.getOrCreateInstance(el); this.modalMaisVeiculos.show(); }
+    });
+  }
+  cadastrarOutroVeiculoDoUsuario(): void {
+    aposFecharModal('modalMaisVeiculosUsuario', this.modalMaisVeiculos,
+      () => { this.cadastrandoVeiculo = true; }, this.destroyRef);
+  }
+  aoCancelarVeiculoDoUsuario(): void {
+    this.cadastrandoVeiculo = false;
+    if (this.emFluxoVeiculos) this.abrirEscolhaProximoVeiculo();
+    else this.abrirContinuacaoUsuario();
+  }
+  continuarParaAlertasDoUsuario(): void {
+    aposFecharModal('modalMaisVeiculosUsuario', this.modalMaisVeiculos,
+      () => this.abrirAlertasDoUsuario(), this.destroyRef);
+  }
+  private abrirAlertasDoUsuario(): void {
     this.configurandoAlertas = true;
     if(this.usuarioContinuacao?.id)this.continuidade.registrar('usuario',{continuarAlertas:'1',usuarioId:String(this.usuarioContinuacao.id)});
     queueMicrotask(() => {
@@ -124,10 +157,21 @@ export class UsuarioComponent implements OnInit, OnDestroy {
       el.addEventListener('hide.bs.modal', proteger);
       el.addEventListener('hidden.bs.modal', () => {
         el.removeEventListener('hide.bs.modal', proteger);
-        this.configurandoAlertas = false; this.usuarioContinuacao = null;
+        this.configurandoAlertas = false;
+        this.usuarioContinuacao = null;
+        this.emFluxoVeiculos = false;
+        this.veiculosCadastradosNaSequencia = [];
       }, { once: true });
       this.modalAlertas.show();
     });
+  }
+  concluirContinuacaoUsuario(): void {
+    this.continuidade.concluir();
+    this.modalContinuacao?.hide();
+    this.modalMaisVeiculos?.hide();
+    this.usuarioContinuacao = null;
+    this.emFluxoVeiculos = false;
+    this.veiculosCadastradosNaSequencia = [];
   }
   concluirAlertasNovoUsuario(): void {
     this.continuidade.concluir();
@@ -420,7 +464,7 @@ export class UsuarioComponent implements OnInit, OnDestroy {
     clearTimeout(this.filtroTimer);
     if(esperar){this.filtroTimer=setTimeout(()=>this.carregarPagina(),250);return;}
     this.consultaPagina?.unsubscribe();this.loading=true;this.errorMsg='';
-    this.consultaPagina=this.consultaPaginada.consultar<Usuario>('usuario',{pagina:this.paginaAtual-1,tamanho:this.itensPorPagina,busca:this.termoBusca,ordenar:this.colunaOrdenacao,decrescente:this.direcaoOrdenacao==='desc',status:this.filtroStatus,tipo_do_acesso:this.filtroTipoAcesso}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:pagina=>{
+    this.consultaPagina=this.consultaPaginada.consultar<Usuario>('usuario',{pagina:this.paginaAtual-1,tamanho:this.itensPorPagina,busca:this.termoBusca,ordenar:this.colunaOrdenacao,decrescente:this.direcaoOrdenacao==='desc',status:this.filtroStatus,tipo_do_acesso:this.acessoColaborador?'CLIENTE':this.filtroTipoAcesso}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:pagina=>{
       this.paginaServidor=pagina;this.todos=pagina.content.map(item=>this.normalizarUsuarioParaTela(item));this.usuarios=this.todos;this.loading=false;
       if(this.paginaAtual>Math.max(1,pagina.totalPages)){this.paginaAtual=Math.max(1,pagina.totalPages);this.carregarPagina();}
     },error:erro=>{this.loading=false;this.errorMsg=this.extrairMensagemErro(erro,'Não foi possível carregar a página.');}});
@@ -429,10 +473,12 @@ export class UsuarioComponent implements OnInit, OnDestroy {
     this.modoPaginado=true;this.destroyRef.onDestroy(()=>clearTimeout(this.filtroTimer));this.recarregar();
     const params=this.rotaContinuacao.snapshot.queryParamMap;
     const id=params.get('usuarioId');
-    if(id && /^[0-9]+$/.test(id) && (params.get('continuarUsuario')==='1'||params.get('continuarAlertas')==='1')) {
+    if(id && /^[0-9]+$/.test(id) && (params.get('continuarUsuario')==='1'||params.get('continuarVeiculos')==='1'||params.get('continuarAlertas')==='1')) {
       this.http.get<Proprietario>('/api/usuario/'+id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({next:usuario=>{
         this.usuarioContinuacao=this.normalizarUsuarioParaTela(usuario);
-        if(params.get('continuarAlertas')==='1')this.veiculoDoUsuarioCriado({} as Veiculo);else this.abrirContinuacaoUsuario();
+        if(params.get('continuarAlertas')==='1')this.abrirAlertasDoUsuario();
+        else if(params.get('continuarVeiculos')==='1')this.abrirEscolhaProximoVeiculo();
+        else this.abrirContinuacaoUsuario();
       },error:()=>this.notificacoes.erro('Não foi possível retomar o cadastro do usuário. Atualize a página e tente novamente.')});
     }
   }
@@ -833,10 +879,17 @@ export class UsuarioComponent implements OnInit, OnDestroy {
   }
 
   abrirModalEdicao(usuario: Usuario): void {
+    if (this.acessoColaborador && this.normalizarTexto(usuario.tipo_do_acesso) !== 'cliente') return;
     this.alterarEmailEdicao();
     this.alterarCpfEdicao();
     this.fecharMenuAcoes();
     this.editId = usuario.id ?? null;
+    this.permissoesEdicao = null;
+    if (!this.acessoColaborador && this.editId && this.normalizarTexto(usuario.tipo_do_acesso) === 'colaborador') {
+      this.http.get<{ podeMecanica: boolean; podeEstoque: boolean }>(`/api/colaborador/permissoes/${this.editId}`, { withCredentials: true })
+        .subscribe({ next: p => this.permissoesEdicao = { podeMecanica: p.podeMecanica, podeEstoque: p.podeEstoque },
+          error: () => this.notificacoes.erro('Não foi possível carregar as funções do colaborador.') });
+    }
     this.edit = {
       ...usuario,
       nascimento: this.asInputDateString(usuario.nascimento)
@@ -857,7 +910,18 @@ export class UsuarioComponent implements OnInit, OnDestroy {
     this.modalEdicao.show();
   }
 
+  salvarPermissoesEdicao(): void {
+    if (!this.editId || !this.permissoesEdicao || this.acessoColaborador || this.salvandoPermissoes) return;
+    this.salvandoPermissoes = true;
+    this.http.put(`/api/colaborador/permissoes/${this.editId}`, this.permissoesEdicao, { withCredentials: true })
+      .subscribe({ next: () => { this.salvandoPermissoes = false; this.notificacoes.sucesso('Funções do colaborador atualizadas.'); },
+        error: () => { this.salvandoPermissoes = false; this.notificacoes.erro('Não foi possível salvar as funções do colaborador.'); } });
+  }
+
   salvarEdicao(id: number): void {
+    if (this.acessoColaborador && (this.normalizarTexto(this.editOriginal?.tipo_do_acesso) !== 'cliente'
+        || this.normalizarTexto(this.edit.tipo_do_acesso) !== 'cliente'
+        || this.normalizarTexto(this.edit.status) !== this.normalizarTexto(this.editOriginal?.status))) return;
     if (!this.editId || this.editId !== id) {
       return;
     }
@@ -1174,6 +1238,7 @@ export class UsuarioComponent implements OnInit, OnDestroy {
 
   salvarNovoUsuario(): void {
     if (this.salvandoNovoUsuario) return;
+    if (this.acessoColaborador) { this.novoUsuario.tipo_do_acesso = 'cliente'; this.novoUsuario.status = 'ativo'; }
     const erroValidacao = this.validarCadastroUsuario(true);
 
     if (erroValidacao) {
@@ -1191,6 +1256,8 @@ export class UsuarioComponent implements OnInit, OnDestroy {
       next: (usuario) => {
         this.salvandoNovoUsuario = false;
         this.usuarioContinuacao = this.normalizarUsuarioParaTela(usuario);
+        this.emFluxoVeiculos = false;
+        this.veiculosCadastradosNaSequencia = [];
         if(this.usuarioContinuacao.id)this.continuidade.registrar('usuario',{continuarUsuario:'1',usuarioId:String(this.usuarioContinuacao.id)});
         aposFecharModal('modalCadastroUsuario', this.modalCadastro, () => {
           if (this.usuarioContinuacao?.id) this.abrirContinuacaoUsuario();
@@ -1239,10 +1306,6 @@ export class UsuarioComponent implements OnInit, OnDestroy {
     this.fecharMenuAcoes();
 
     const usuarioAtivo = this.normalizarTexto(usuario.status) === 'ativo';
-    if (usuarioAtivo && usuario.podeInativar === false) {
-      this.notificacoes.aviso(usuario.motivoBloqueioInativacao || 'Este usuário não pode ser inativado.');
-      return;
-    }
     if (usuario.podeExcluir === true && !somenteStatus) {
       this.abrirModalConfirmacao({
         tipo: 'excluir', usuario,
@@ -1251,6 +1314,10 @@ export class UsuarioComponent implements OnInit, OnDestroy {
         detalhe: `${usuario.nome || 'Usuário'} • ${usuario.email || 'sem e-mail'}`,
         icone: 'bi-trash', confirmarLabel: 'Confirmar exclusão', confirmarClasse: 'btn-danger'
       });
+      return;
+    }
+    if (usuarioAtivo && (this.acessoColaborador || usuario.podeInativar === false)) {
+      this.notificacoes.aviso(usuario.motivoBloqueioInativacao || 'Este usuário não pode ser inativado.');
       return;
     }
     const novoStatus = usuarioAtivo ? 'inativo' : 'ativo';

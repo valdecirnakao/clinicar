@@ -1,3 +1,5 @@
+import { RegraManutencaoApoio } from './regra-manutencao-apoio';
+import { SeletorRemotoComponent } from '../../../shared/tabelas/seletor-remoto.component';
 import { PaginacaoComponent } from '../../../shared/tabelas/paginacao.component';
 import { ConsultaPaginadaService, PaginaCadastro } from '../../../shared/tabelas/consulta-paginada.service';
 import { Observable, Subscription, map, tap } from 'rxjs';
@@ -169,7 +171,7 @@ export interface PecaResumo {
 
 @Component({
     selector: 'app-regra-manutencao',
-    imports: [PaginacaoComponent,ValidarDuplicidadeDirective, FieldHelpPanelComponent, FieldHelpDirective, FeedbackDirective,
+    imports: [SeletorRemotoComponent,PaginacaoComponent,ValidarDuplicidadeDirective, FieldHelpPanelComponent, FieldHelpDirective, FeedbackDirective,
         CommonModule,
         FormsModule
     ],
@@ -178,6 +180,7 @@ export interface PecaResumo {
 })
 export class RegraManutencaoComponent
   implements OnInit, AfterViewInit {
+  private readonly apoio = new RegraManutencaoApoio();
   duplicidades = new WeakMap<object, EstadoDuplicidade>();
   erroDuplicidade(model: object): string | null { return this.duplicidades.get(model)?.mensagem || null; }
 
@@ -334,7 +337,7 @@ export class RegraManutencaoComponent
      CICLO DE VIDA
      ======================================================= */
 
-  private modoPaginado=false;
+  modoPaginado=false;
   private readonly destroyRef=injectFeedback(DestroyRef);
   private readonly consultaPaginada=injectFeedback(ConsultaPaginadaService);
   private paginaServidor?:PaginaCadastro<RegraManutencaoPreventiva>;
@@ -422,10 +425,12 @@ export class RegraManutencaoComponent
      CARREGAMENTO
      ======================================================= */
 
+  registrarCatalogo(campo:string,item:any):void { this.apoio.registrarCatalogo(campo, item); }
   private catalogosCarregados=false;
   private carregandoCatalogos=false;
   carregarTudo(somenteCatalogos=false): void {
     if(this.modoPaginado&&!somenteCatalogos){this.carregarPagina();return;}
+    if(somenteCatalogos && this.modoPaginado)return;
     if(somenteCatalogos){if(this.catalogosCarregados||this.carregandoCatalogos)return;this.carregandoCatalogos=true;}
 
     this.loading = true;
@@ -544,111 +549,7 @@ export class RegraManutencaoComponent
 
   private normalizarRegra(
     item: any
-  ): RegraManutencaoPreventiva {
-
-    const idServico =
-      this.numeroOuNull(
-        item?.idServico
-        ?? item?.id_servico
-        ?? item?.servico?.id
-      );
-
-    const idPeca =
-      this.numeroOuNull(
-        item?.idPeca
-        ?? item?.id_peca
-        ?? item?.peca?.id
-      );
-
-
-    return {
-
-      id:
-        this.numeroOuUndefined(
-          item?.id
-        ),
-
-      grupoManutencao:
-        this.texto(
-          item?.grupoManutencao
-          ?? item?.grupo_manutencao
-        ),
-
-      descricao:
-        this.texto(
-          item?.descricao
-        ),
-
-      idServico,
-
-      idPeca,
-
-      origemOleo:
-        this.textoOuNull(
-          item?.origemOleo
-          ?? item?.origem_oleo
-        ),
-
-      intervaloKm:
-        this.numeroOuNull(
-          item?.intervaloKm
-          ?? item?.intervalo_km
-        ),
-
-      intervaloDias:
-        this.numeroOuNull(
-          item?.intervaloDias
-          ?? item?.intervalo_dias
-        ),
-
-      prioridade:
-        this.numeroOuPadrao(
-          item?.prioridade,
-          100
-        ),
-
-      ativo:
-        this.booleano(
-          item?.ativo,
-          true
-        ),
-
-      observacoes:
-        this.textoOuNull(
-          item?.observacoes
-        ),
-
-      nomeServico:
-        this.textoOuNull(
-          item?.nomeServico
-          ?? item?.nome_servico
-          ?? item?.servico?.nome
-          ?? item?.servico?.descricao
-        ),
-
-      nomePeca:
-        this.textoOuNull(
-          item?.nomePeca
-          ?? item?.nome_peca
-          ?? item?.peca?.nome
-          ?? item?.peca?.descricao
-        ),
-
-      servico:
-        item?.servico,
-
-      peca:
-        item?.peca,
-
-      criadoEm:
-        item?.criadoEm
-        ?? item?.criado_em,
-
-      atualizadoEm:
-        item?.atualizadoEm
-        ?? item?.atualizado_em
-    };
-  }
+  ): RegraManutencaoPreventiva { return this.apoio.normalizarRegra(item); }
 
 
   /* =======================================================
@@ -1276,15 +1177,7 @@ export class RegraManutencaoComponent
   }
 
 
-  private numeroPositivoValido(valor: any): boolean {
-    if (valor === null || valor === undefined || valor === '') {
-      return false;
-    }
-
-    const numero = Number(valor);
-
-    return Number.isFinite(numero) && Number.isInteger(numero) && numero > 0;
-  }
+  private numeroPositivoValido(valor: any): boolean { return this.apoio.numeroPositivoValido(valor); }
 
 
   private prioridadeValida(): boolean {
@@ -1313,17 +1206,7 @@ export class RegraManutencaoComponent
   }
 
 
-  private pecaEhOleoMotor(peca: PecaResumo): boolean {
-    const identificacao = this.normalizarEnumBackend([
-      peca?.nome,
-      peca?.descricao,
-      peca?.tipo,
-      peca?.modelo
-    ].filter(Boolean).join(' '));
-
-    return identificacao.includes('OLEO_MOTOR')
-      || (identificacao.includes('OLEO') && identificacao.includes('MOTOR'));
-  }
+  private pecaEhOleoMotor(peca: PecaResumo): boolean { return this.apoio.pecaEhOleoMotor(peca); }
 
 
   private preencherOrigemOleoDaPeca(peca: PecaResumo): void {
@@ -1338,56 +1221,13 @@ export class RegraManutencaoComponent
   }
 
 
-  private extrairOrigemOleoPeca(peca: PecaResumo): string | null {
-    // A API de peças devolve a origem em um campo próprio. O texto da peça
-    // pode omitir a origem ou mencionar outra especificação no nome.
-    const origemCadastrada = this.textoOuNull(
-      peca?.origemOleo ?? peca?.['origem_oleo']
-    );
-
-    if (origemCadastrada) {
-      return this.identificarOrigemOleoNoTexto(origemCadastrada);
-    }
-
-    // Compatibilidade com cadastros antigos que descreviam a origem no texto.
-    const descricaoCompleta = [
-      peca?.tipo,
-      peca?.nome,
-      peca?.descricao,
-      peca?.modelo
-    ].filter(Boolean).join(' ');
-
-    return this.identificarOrigemOleoNoTexto(descricaoCompleta);
-  }
+  private extrairOrigemOleoPeca(peca: PecaResumo): string | null { return this.apoio.extrairOrigemOleoPeca(peca); }
 
 
-  private identificarOrigemOleoNoTexto(valor: string): string | null {
-    const normalizado = this.normalizarEnumBackend(valor);
-
-    if (
-      normalizado.includes('SEMISSINTETICO')
-      || normalizado.includes('SEMI_SINTETICO')
-      || normalizado.includes('SEMISINTETICO')
-    ) {
-      return 'SEMISSINTETICO';
-    }
-
-    if (normalizado.includes('SINTETICO')) {
-      return 'SINTETICO';
-    }
-
-    if (normalizado.includes('MINERAL')) {
-      return 'MINERAL';
-    }
-
-    return null;
-  }
+  private identificarOrigemOleoNoTexto(valor: string): string | null { return this.apoio.identificarOrigemOleoNoTexto(valor); }
 
 
-  private normalizarOrigemOleo(valor: string): string {
-    return this.identificarOrigemOleoNoTexto(valor)
-      || this.normalizarEnumBackend(valor);
-  }
+  private normalizarOrigemOleo(valor: string): string { return this.apoio.normalizarOrigemOleo(valor); }
 
 
   /* =======================================================
@@ -2220,35 +2060,13 @@ export class RegraManutencaoComponent
   nomeServico(
     servico:
       ServicoResumo
-  ): string {
-
-    return (
-      servico?.nome
-      || servico?.descricao
-      || (
-        servico?.id
-          ? `Serviço #${servico.id}`
-          : 'Serviço'
-      )
-    );
-  }
+  ): string { return this.apoio.nomeServico(servico); }
 
 
   nomePeca(
     peca:
       PecaResumo
-  ): string {
-
-    return (
-      peca?.nome
-      || peca?.descricao
-      || (
-        peca?.id
-          ? `Peça #${peca.id}`
-          : 'Peça'
-      )
-    );
-  }
+  ): string { return this.apoio.nomePeca(peca); }
 
 
   /* =======================================================
@@ -2258,203 +2076,51 @@ export class RegraManutencaoComponent
   regraAtiva(
     regra:
       RegraManutencaoPreventiva
-  ): boolean {
-
-    return regra?.ativo !== false;
-  }
+  ): boolean { return this.apoio.regraAtiva(regra); }
 
 
   formatarGrupo(
     grupo?: string | null
-  ): string {
-
-    if (!grupo) {
-      return '—';
-    }
-
-    return this.formatarEnum(
-      grupo
-    );
-  }
+  ): string { return this.apoio.formatarGrupo(grupo); }
 
 
   formatarOrigemOleo(
     origem?: string | null
-  ): string {
-
-    if (!origem) {
-      return 'Não se aplica';
-    }
-
-
-    const origemNormalizada =
-      this.normalizarOrigemOleo(origem);
-
-    if (origemNormalizada === 'MINERAL') {
-      return 'Mineral';
-    }
-
-    if (origemNormalizada === 'SINTETICO') {
-      return 'Sintético';
-    }
-
-    if (origemNormalizada === 'SEMISSINTETICO') {
-      return 'Semissintético';
-    }
-
-    return this.formatarEnum(origemNormalizada);
-  }
+  ): string { return this.apoio.formatarOrigemOleo(origem); }
 
 
   formatarPrioridade(
     prioridade?: number | null
-  ): string {
-
-    if (
-      prioridade === undefined
-      || prioridade === null
-    ) {
-      return '100';
-    }
-
-    return String(prioridade);
-  }
+  ): string { return this.apoio.formatarPrioridade(prioridade); }
 
 
   formatarIntervalo(
     regra:
       RegraManutencaoPreventiva
-  ): string {
-
-    const partes: string[] = [];
-
-
-    if (
-      regra.intervaloKm
-      && regra.intervaloKm > 0
-    ) {
-
-      partes.push(
-        `${this.formatarNumero(
-          regra.intervaloKm
-        )} km`
-      );
-    }
-
-
-    if (
-      regra.intervaloDias
-      && regra.intervaloDias > 0
-    ) {
-
-      partes.push(
-        `${this.formatarNumero(
-          regra.intervaloDias
-        )} dia(s)`
-      );
-    }
-
-
-    return (
-      partes.length
-        ? partes.join(' ou ')
-        : '—'
-    );
-  }
+  ): string { return this.apoio.formatarIntervalo(regra); }
 
 
   formatarNumero(
     valor:
       number | string
-  ): string {
-
-    const numero =
-      Number(valor || 0);
-
-
-    return numero.toLocaleString(
-      'pt-BR',
-      {
-        maximumFractionDigits: 0
-      }
-    );
-  }
+  ): string { return this.apoio.formatarNumero(valor); }
 
 
   formatarDataHora(
     valor?:
       string | null
-  ): string {
-
-    if (!valor) {
-      return '—';
-    }
-
-
-    const data =
-      new Date(valor);
-
-
-    if (
-      Number.isNaN(
-        data.getTime()
-      )
-    ) {
-      return valor;
-    }
-
-
-    return data.toLocaleString(
-      'pt-BR'
-    );
-  }
+  ): string { return this.apoio.formatarDataHora(valor); }
 
 
   formatarEnum(
     valor:
       string
-  ): string {
-
-    if (!valor) {
-      return '—';
-    }
-
-
-    return valor
-      .toLowerCase()
-      .split('_')
-      .filter(Boolean)
-      .map(
-        palavra =>
-          palavra.charAt(0)
-            .toUpperCase()
-          + palavra.slice(1)
-      )
-      .join(' ');
-  }
+  ): string { return this.apoio.formatarEnum(valor); }
 
 
   classeGrupo(
     grupo?: string | null
-  ): string {
-
-    switch (
-      grupo
-    ) {
-
-      case 'TROCA_OLEO':
-        return 'badge-grupo-oleo';
-
-      case 'FILTRO_AR':
-        return 'badge-grupo-filtro';
-
-      case 'PASTILHA_FREIO':
-        return 'badge-grupo-freio';
-
-      default:
-        return 'badge-grupo-outro';
-    }
-  }
+  ): string { return this.apoio.classeGrupo(grupo); }
 
 
   /* =======================================================
@@ -2552,41 +2218,7 @@ export class RegraManutencaoComponent
      ======================================================= */
 
   private novoFormulario():
-    RegraManutencaoPreventivaRequest {
-
-    return {
-
-      grupoManutencao:
-        '',
-
-      descricao:
-        '',
-
-      idServico:
-        null,
-
-      idPeca:
-        null,
-
-      origemOleo:
-        null,
-
-      intervaloKm:
-        null,
-
-      intervaloDias:
-        null,
-
-      prioridade:
-        100,
-
-      ativo:
-        true,
-
-      observacoes:
-        null
-    };
-  }
+    RegraManutencaoPreventivaRequest { return this.apoio.novoFormulario(); }
 
 
   private garantirModalFormulario():
@@ -2618,120 +2250,37 @@ export class RegraManutencaoComponent
 
   private normalizarEnumBackend(
     valor?: string | null
-  ): string {
-
-    return (
-      valor || ''
-    )
-      .trim()
-      .toUpperCase()
-      .normalize('NFD')
-      .replace(
-        /[\u0300-\u036f]/g,
-        ''
-      )
-      .replace(
-        /[^A-Z0-9]+/g,
-        '_'
-      )
-      .replace(
-        /^_+|_+$/g,
-        ''
-      );
-  }
+  ): string { return this.apoio.normalizarEnumBackend(valor); }
 
 
   private normalizarTexto(
     valor:
       any
-  ): string {
-
-    return String(
-      valor ?? ''
-    )
-      .normalize('NFD')
-      .replace(
-        /[\u0300-\u036f]/g,
-        ''
-      )
-      .toLowerCase()
-      .trim();
-  }
+  ): string { return this.apoio.normalizarTexto(valor); }
 
 
   private texto(
     valor:
       any
-  ): string {
-
-    if (
-      valor === undefined
-      || valor === null
-    ) {
-      return '';
-    }
-
-    return String(valor).trim();
-  }
+  ): string { return this.apoio.texto(valor); }
 
 
   private textoOuNull(
     valor:
       any
-  ): string | null {
-
-    const texto =
-      this.texto(valor);
-
-    return (
-      texto
-        ? texto
-        : null
-    );
-  }
+  ): string | null { return this.apoio.textoOuNull(valor); }
 
 
   private numeroOuNull(
     valor:
       any
-  ): number | null {
-
-    if (
-      valor === undefined
-      || valor === null
-      || valor === ''
-    ) {
-      return null;
-    }
-
-
-    const numero =
-      Number(valor);
-
-
-    return (
-      Number.isFinite(numero)
-        ? numero
-        : null
-    );
-  }
+  ): number | null { return this.apoio.numeroOuNull(valor); }
 
 
   private numeroOuUndefined(
     valor:
       any
-  ): number | undefined {
-
-    const numero =
-      this.numeroOuNull(valor);
-
-
-    return (
-      numero === null
-        ? undefined
-        : numero
-    );
-  }
+  ): number | undefined { return this.apoio.numeroOuUndefined(valor); }
 
 
   private numeroOuPadrao(
@@ -2739,39 +2288,13 @@ export class RegraManutencaoComponent
       any,
     padrao:
       number
-  ): number {
-
-    const numero =
-      this.numeroOuNull(valor);
-
-
-    return (
-      numero === null
-        ? padrao
-        : numero
-    );
-  }
+  ): number { return this.apoio.numeroOuPadrao(valor, padrao); }
 
 
   private numeroPositivoOuNull(
     valor:
       any
-  ): number | null {
-
-    const numero =
-      this.numeroOuNull(valor);
-
-
-    if (
-      numero === null
-      || numero <= 0
-    ) {
-      return null;
-    }
-
-
-    return Math.round(numero);
-  }
+  ): number | null { return this.apoio.numeroPositivoOuNull(valor); }
 
 
   private booleano(
@@ -2779,108 +2302,13 @@ export class RegraManutencaoComponent
       any,
     padrao:
       boolean
-  ): boolean {
-
-    if (
-      valor === undefined
-      || valor === null
-      || valor === ''
-    ) {
-      return padrao;
-    }
-
-
-    if (
-      typeof valor === 'boolean'
-    ) {
-      return valor;
-    }
-
-
-    if (
-      typeof valor === 'number'
-    ) {
-      return valor !== 0;
-    }
-
-
-    const texto =
-      String(valor)
-        .trim()
-        .toLowerCase();
-
-
-    if (
-      [
-        'false',
-        '0',
-        'nao',
-        'não',
-        'inativo'
-      ].includes(texto)
-    ) {
-      return false;
-    }
-
-
-    if (
-      [
-        'true',
-        '1',
-        'sim',
-        'ativo'
-      ].includes(texto)
-    ) {
-      return true;
-    }
-
-
-    return padrao;
-  }
+  ): boolean { return this.apoio.booleano(valor, padrao); }
 
 
   private extrairMensagemErro(
     erro: any,
     padrao: string
-  ): string {
-
-    if (
-      typeof erro?.error === 'string'
-      && erro.error.trim()
-    ) {
-      return erro.error;
-    }
-
-
-    if (
-      typeof erro?.error?.message
-        === 'string'
-      && erro.error.message.trim()
-    ) {
-      return erro.error.message;
-    }
-
-
-    if (
-      typeof erro?.error?.mensagem
-        === 'string'
-      && erro.error.mensagem.trim()
-    ) {
-      return erro.error.mensagem;
-    }
-
-
-    if (
-      typeof erro?.message
-        === 'string'
-      && erro.message.trim()
-    ) {
-      return erro.message;
-    }
-
-
-    return padrao;
-  }
+  ): string { return this.apoio.extrairMensagemErro(erro, padrao); }
 
 
   trackByRegra = (

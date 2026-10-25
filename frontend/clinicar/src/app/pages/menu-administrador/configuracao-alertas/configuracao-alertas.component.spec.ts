@@ -16,7 +16,7 @@ describe('Alertas de manutenção por usuário', () => {
   });
   afterEach(() => http.verify());
   it('exige seleção antes de carregar ou salvar', () => {
-    component.ngOnInit(); http.expectOne('/api/usuario').flush([]);
+    component.ngOnInit(); http.expectNone('/api/usuario');
     component.carregar(); component.salvar();
     http.expectNone(r => r.url.includes('configuracao-alerta-manutencao'));
   });

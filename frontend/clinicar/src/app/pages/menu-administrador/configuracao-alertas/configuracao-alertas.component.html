@@ -30,12 +30,7 @@
   @if (!usuarioSelecionado) {
     <div class="card p-3 mb-3">
       <label for="usuarioManutencao" class="form-label fw-semibold">Usuário destinatário *</label>
-      <select id="usuarioManutencao" class="form-select" [(ngModel)]="usuarioId" (ngModelChange)="carregar()" [disabled]="salvando">
-        <option [ngValue]="null">Selecione um usuário</option>
-        @for (u of usuarios; track u) {
-          <option [ngValue]="u.id">{{ u.nome }} · {{ u.email }}{{ u.status === 'INATIVO' ? ' · Inativo' : '' }}</option>
-        }
-      </select>
+      <app-seletor-remoto inputId="usuarioManutencao" recurso="usuario" rotulo="Usuário destinatário" [(ngModel)]="usuarioId" (ngModelChange)="carregar()" [disabled]="salvando" />
       <small class="mt-2">As regras valem para todos os veículos pertencentes a este usuário. Usuários inativos ou sem telefone não recebem avisos. Novos usuários começam com os alertas desativados.</small>
     </div>
   }

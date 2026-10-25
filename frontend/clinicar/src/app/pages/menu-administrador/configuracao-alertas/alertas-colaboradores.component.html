@@ -8,12 +8,14 @@
   }
   <div class="card list-card"><div class="card-body">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><span>Alertas de estoque e reposição</span><div class="d-flex gap-2"><button class="btn btn-outline-primary" (click)="carregar()" [disabled]="carregando||reenviando"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button><a class="btn btn-outline-secondary" routerLink="../controleEstoquePecas"><i class="bi bi-arrow-left me-1"></i>Voltar</a></div></div>
-    <div class="table-orientacao small"><i class="bi bi-info-circle me-1"></i>Uma única configuração define o responsável pela reposição: administrador ou colaborador ativo. O template e o idioma são definidos pelo sistema.</div>
-    <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Tipo de alerta</th><th>Responsável</th><th>Telefone | WhatsApp</th><th>Envio</th><th>Intervalo entre lembretes</th><th>Integração WhatsApp</th><th class="text-center">Ações</th></tr></thead>
+    <div class="table-orientacao small"><i class="bi bi-info-circle me-1"></i>O colaborador recebe alertas de atenção; um administrador recebe os alertas críticos e de estoque zerado. O template e o idioma são definidos pelo sistema.</div>
+    <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Tipo de alerta</th><th>Destinatários por nível</th><th>Telefone | WhatsApp</th><th>Envio</th><th>Intervalo entre lembretes</th><th>Integração WhatsApp</th><th class="text-center">Ações</th></tr></thead>
     <tbody>@if (consulta; as c) {
-      <tr><td><strong>Estoque e reposição</strong></td><td>{{c.configuracao.nomeResponsavel||'Não definido'}}@if (c.configuracao.idResponsavel) {
+      <tr><td><strong>Estoque e reposição</strong></td><td><span class="badge text-bg-warning">Atenção</span> {{c.configuracao.nomeResponsavel||'Colaborador não definido'}}@if (c.configuracao.idResponsavel) {
       <small class="d-block">ID {{c.configuracao.idResponsavel}}</small>
-      }</td><td><app-telefone-whatsapp [telefone]="c.configuracao.telefoneAdministrador"></app-telefone-whatsapp></td><td><span class="badge" [class.text-bg-success]="c.configuracao.ativo" [class.text-bg-secondary]="!c.configuracao.ativo">{{c.configuracao.ativo?'Ativo':'Desativado'}}</span></td><td>{{c.configuracao.reenviarAlertaAposHoras}} hora(s)</td><td>{{c.whatsappHabilitado?'Habilitada':'Desativada'}}</td>
+      }<span class="badge text-bg-danger mt-1">Crítico / zerado</span> {{c.configuracao.nomeAdministradorCritico||'Administrador não definido'}}@if (c.configuracao.idAdministradorCritico) {
+      <small class="d-block">ID {{c.configuracao.idAdministradorCritico}}</small>
+      }</td><td><div><small>Atenção</small><app-telefone-whatsapp [telefone]="c.configuracao.telefoneAdministrador"></app-telefone-whatsapp></div><div class="mt-1"><small>Crítico</small><app-telefone-whatsapp [telefone]="c.configuracao.telefoneAdministradorCritico"></app-telefone-whatsapp></div></td><td><span class="badge" [class.text-bg-success]="c.configuracao.ativo" [class.text-bg-secondary]="!c.configuracao.ativo">{{c.configuracao.ativo?'Ativo':'Desativado'}}</span></td><td>{{c.configuracao.reenviarAlertaAposHoras}} hora(s)</td><td>{{c.whatsappHabilitado?'Habilitada':'Desativada'}}</td>
       <td><div class="d-flex justify-content-center gap-1"><button class="btn btn-sm btn-outline-info" (click)="abrir(true)" title="Visualizar configuração" aria-label="Visualizar configuração dos alertas de estoque"><i class="bi bi-eye"></i></button><button class="btn btn-sm btn-outline-primary" (click)="abrir(false)" title="Editar configuração" aria-label="Editar configuração dos alertas de estoque"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm btn-outline-success" (click)="reenviar()" [disabled]="reenviando||!c.configuracao.ativo||!c.whatsappHabilitado" title="Reenviar alertas pendentes" aria-label="Reenviar alertas pendentes"><i class="bi bi-send"></i></button></div></td>
     </tr>
     }@if (carregando) {
@@ -28,7 +30,17 @@
 <div class="modal fade" id="modalConfiguracaoColaborador" tabindex="-1" aria-labelledby="tituloConfiguracaoColaborador" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
   <div class="modal-header"><h5 id="tituloConfiguracaoColaborador" class="modal-title"><i class="bi bi-box-seam me-1"></i>{{modoLeitura?'Detalhes':'Editar configuração'}} dos alertas de estoque</h5><button type="button" class="btn-close" aria-label="Fechar" (click)="fechar()" [disabled]="editor?.salvando||editor?.reenviando"></button></div>
   <div class="modal-body">@if (aberto) {
-    <app-configuracao-alertas-estoque [modoLeitura]="modoLeitura" (configuracaoSalva)="salvo()"></app-configuracao-alertas-estoque>
+    <app-configuracao-alertas-estoque [modoLeitura]="modoLeitura" (configuracaoSalva)="salvo()" (buscarResponsavel)="abrirBusca($event)"></app-configuracao-alertas-estoque>
   }</div>
   <div class="modal-footer"><button class="btn btn-outline-secondary" (click)="fechar()" [disabled]="editor?.salvando||editor?.reenviando">Fechar</button></div>
 </div></div></div>
+<div class="modal fade" id="modalSelecionarDestinatarioEstoque" tabindex="-1" aria-labelledby="tituloSelecionarDestinatarioEstoque" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="tituloSelecionarDestinatarioEstoque"><i class="bi bi-person-search me-1" aria-hidden="true"></i>Selecionar {{perfilBusca==='COLABORADOR'?'colaborador para atenção':'administrador para crítico/zerado'}}</h5><button type="button" class="btn-close" aria-label="Voltar à configuração" (click)="fecharBusca()"></button></div>
+    <div class="modal-body">
+      <p class="mb-3">Pesquise pelo nome ou CPF. Somente usuários ativos do perfil indicado podem ser selecionados.</p>
+      @if(perfilBusca){<app-selecao-cadastro recurso="usuario" [filtros]="{perfis:perfilBusca,status:'ATIVO'}" [colunas]="[{titulo:'Nome',campo:'nome'},{titulo:'CPF',campo:'cpf',formato:'documento'},{titulo:'Telefone',campo:'telefone',formato:'telefone'}]" (selecionado)="selecionarDestinatario($event)" />}
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharBusca()">Voltar à configuração</button></div>
+  </div></div>
+</div>

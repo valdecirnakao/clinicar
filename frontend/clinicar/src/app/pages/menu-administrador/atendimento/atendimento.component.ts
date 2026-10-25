@@ -1,3 +1,5 @@
+import { AtendimentoApoio } from './atendimento-apoio';
+import { SeletorRemotoComponent } from '../../../shared/tabelas/seletor-remoto.component';
 import { PaginacaoComponent } from '../../../shared/tabelas/paginacao.component';
 import { ConsultaPaginadaService, PaginaCadastro } from '../../../shared/tabelas/consulta-paginada.service';
 import { Subscription, tap } from 'rxjs';
@@ -12,6 +14,7 @@ import { NotificacaoService } from '../../../shared/feedback/notificacao.service
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MovimentacaoEstoquePeca } from '../controle-estoque-pecas/controle-estoque-pecas.service';
 import { Observable, from, catchError, forkJoin, of } from 'rxjs';
 import { concatMap, map, toArray } from 'rxjs/operators';
@@ -27,6 +30,7 @@ import {
   AtendimentoServicoExecutado,
   AtendimentoServicoExecutadoRequest,
   AtendimentoService,
+  OrcamentoAtendimento,
   FornecedorResumo,
   PecaResumo,
   FornecimentoPecaResumo,
@@ -50,11 +54,12 @@ type ColunaOrdenacaoAtendimento =
 
 @Component({
     selector: 'app-atendimento',
-    imports: [PaginacaoComponent,UnidadePecaPipe, FieldHelpPanelComponent, FieldHelpDirective, CommonModule, FormsModule],
+    imports: [SeletorRemotoComponent,PaginacaoComponent,UnidadePecaPipe, FieldHelpPanelComponent, FieldHelpDirective, CommonModule, FormsModule, RouterLink],
     templateUrl: './atendimento.component.html',
     styleUrl: './atendimento.component.css'
 })
 export class AtendimentoComponent implements OnInit {
+  private readonly apoio = new AtendimentoApoio();
   atendimentoDevolucao: Atendimento | null = null;
   movimentosDevolucao: MovimentacaoEstoquePeca[] = [];
   saidaDevolucaoId: number | null = null;
@@ -67,9 +72,7 @@ export class AtendimentoComponent implements OnInit {
   erroDevolucao = '';
   private modalDevolucao: any;
 
-  podeDevolverPeca(item: Atendimento): boolean {
-    return !!item.estoqueBaixado && ['CONCLUIDO', 'ENTREGUE'].includes(item.statusAtendimento || '');
-  }
+  podeDevolverPeca(item: Atendimento): boolean { return this.apoio.podeDevolverPeca(item); }
 
   abrirDevolucao(item: Atendimento): void {
     if (!item.id || !this.podeDevolverPeca(item)) return;
@@ -79,6 +82,7 @@ export class AtendimentoComponent implements OnInit {
     this.carregandoDevolucao = true;
     const el = document.getElementById('modalDevolucaoAtendimento');
     if (el) { this.modalDevolucao = bootstrap.Modal.getOrCreateInstance(el); this.modalDevolucao.show(); }
+    if(this.modoPaginado){this.carregandoDevolucao=false;return;}
     this.service.listarDevolucoes(item.id).subscribe({
       next: lista => { if (this.atendimentoDevolucao?.id !== item.id) return; this.movimentosDevolucao = lista || []; this.carregandoDevolucao = false; },
       error: erro => { if (this.atendimentoDevolucao?.id !== item.id) return; this.carregandoDevolucao = false; this.erroDevolucao = this.extrairMensagemErro(erro, 'Não foi possível consultar as saídas deste atendimento.'); }
@@ -89,9 +93,10 @@ export class AtendimentoComponent implements OnInit {
     return this.movimentosDevolucao.filter(m => m.tipoMovimento === 'SAIDA' && this.saldoDevolucaoAtendimento(m) > 0);
   }
 
-  saldoDevolucaoAtendimento(saida: MovimentacaoEstoquePeca): number {
-    return Math.max(0, Number(saida.quantidade || 0) - Number(saida.quantidadeDevolvida || 0));
-  }
+  recursoDevolucoes():string{return 'atendimento/'+this.atendimentoDevolucao?.id+'/devolucoes';}
+  selecionarSaidaDevolucao(saida:MovimentacaoEstoquePeca|null):void{this.movimentosDevolucao=saida?[saida]:[];this.quantidadeDevolucao=null;this.valorRestituicaoDevolucao=null;}
+
+  saldoDevolucaoAtendimento(saida: MovimentacaoEstoquePeca): number { return this.apoio.saldoDevolucaoAtendimento(saida); }
 
   get saidaDevolucaoSelecionada(): MovimentacaoEstoquePeca | undefined {
     return this.saidasDevolucaoAtendimento.find(m => m.id === this.saidaDevolucaoId);
@@ -155,6 +160,9 @@ export class AtendimentoComponent implements OnInit {
 
   novoAtendimento: Partial<Atendimento> = {};
   atendimentoSelecionado: Atendimento | null = null;
+  orcamentosDoAtendimento: OrcamentoAtendimento[] = [];
+  pecasDetalhesAtendimento: AtendimentoPeca[] = [];
+  carregandoPecasDetalhes = false;
 
   pecaForm: Partial<AtendimentoPeca> = {};
   servicoForm: Partial<AtendimentoServicoExecutado> = {};
@@ -216,6 +224,7 @@ export class AtendimentoComponent implements OnInit {
     'AGUARDANDO_APROVACAO',
     'APROVADO',
     'EM_EXECUCAO',
+    'PAUSADO',
     'AGUARDANDO_TERCEIRO',
     'CONCLUIDO',
     'ENTREGUE',
@@ -228,7 +237,7 @@ export class AtendimentoComponent implements OnInit {
     private location: Location
   ) {}
 
-  private modoPaginado=false;
+  modoPaginado=false;
   private readonly destroyRef=injectFeedback(DestroyRef);
   private readonly consultaPaginada=injectFeedback(ConsultaPaginadaService);
   private paginaServidor?:PaginaCadastro<Atendimento>;
@@ -353,10 +362,20 @@ export class AtendimentoComponent implements OnInit {
     return this.atendimentos.filter(a => a.statusAtendimento === 'ENTREGUE').length;
   }
 
+  registrarCatalogo(campo:string,item:any):void {
+    if(!item)return;
+    const listas=this as unknown as Record<string,any[]>;
+    listas[campo]=[...(listas[campo]||[]).filter(r=>Number(r.id)!==Number(item.id)),item];
+    if(campo==='pecasCatalogo' && Object.prototype.hasOwnProperty.call(item,'fornecimentoPreferido')) {
+      this.fornecimentosPecas=this.fornecimentosPecas.filter(r=>Number((r as any).peca?.id??(r as any).idPeca)!==Number(item.id));
+      if(item.fornecimentoPreferido)this.fornecimentosPecas.push(item.fornecimentoPreferido);
+    }
+  }
   private catalogosCarregados=false;
   private carregandoCatalogos=false;
   carregarTudo(somenteCatalogos=false): void {
     if(this.modoPaginado&&!somenteCatalogos){this.carregarPagina();return;}
+    if(somenteCatalogos && this.modoPaginado)return;
     if(somenteCatalogos){if(this.catalogosCarregados||this.carregandoCatalogos)return;this.carregandoCatalogos=true;}
   this.carregando = true;
   this.mensagemErro = '';
@@ -493,9 +512,7 @@ export class AtendimentoComponent implements OnInit {
     return this.direcaoOrdenacao === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
   }
 
-  trackByAtendimento(index: number, item: Atendimento): number | string {
-    return item.id ?? item.codigoAtendimento ?? index;
-  }
+  trackByAtendimento(index: number, item: Atendimento): number | string { return this.apoio.trackByAtendimento(index, item); }
 
   private ajustarPaginaAtual(): void {
     if (this.paginaAtual > this.totalPaginas) {
@@ -525,30 +542,7 @@ export class AtendimentoComponent implements OnInit {
     });
   }
 
-  private valorOrdenacaoAtendimento(item: Atendimento, coluna: ColunaOrdenacaoAtendimento): string | number {
-    switch (coluna) {
-      case 'codigoAtendimento':
-        return item.codigoAtendimento || '';
-      case 'nomeCliente':
-        return item.nomeCliente || '';
-      case 'placaVeiculo':
-        return item.placaVeiculo || '';
-      case 'nomeServico':
-        return item.nomeServico || '';
-      case 'statusAtendimento':
-        return item.statusAtendimento || '';
-      case 'tipoExecucao':
-        return item.tipoExecucao || '';
-      case 'valorTotal':
-        return this.moedaParaNumero(item.valorTotal);
-      case 'dataEntrada':
-        return item.dataEntrada ? new Date(item.dataEntrada).getTime() || 0 : 0;
-      case 'os':
-        return this.formatarStatusOs(item);
-      default:
-        return '';
-    }
-  }
+  private valorOrdenacaoAtendimento(item: Atendimento, coluna: ColunaOrdenacaoAtendimento): string | number { return this.apoio.valorOrdenacaoAtendimento(item, coluna); }
 
   podeAcessarAbaCadastro(aba: 'atendimento' | 'itens' | 'adicionais'): boolean {
     const ordem: ('atendimento' | 'itens' | 'adicionais')[] = ['atendimento', 'itens', 'adicionais'];
@@ -932,6 +926,7 @@ export class AtendimentoComponent implements OnInit {
   }
 
   salvarEdicaoAtendimento(): void {
+    if(this.servicosPrincipaisEmConsulta.size){this.notificacoes.aviso('Aguarde a consulta do serviço principal antes de salvar.');return;}
     const atendimentoId = this.atendimentoSelecionado?.id;
 
     if (!atendimentoId) {
@@ -1312,6 +1307,16 @@ export class AtendimentoComponent implements OnInit {
       return;
     }
 
+    if(this.modoPaginado && atendimento.idServico && !this.servicosCatalogo.some(item=>Number(item.id)===Number(atendimento.idServico))){
+      if(this.servicosPrincipaisEmConsulta.has(Number(atendimento.idServico)))return;
+      const idServico=Number(atendimento.idServico),idAtendimento=atendimento.id;
+      this.servicosPrincipaisEmConsulta.add(idServico);
+      this.consultaPaginada.registro<ServicoResumo>('servico',idServico).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next:servico=>{this.servicosPrincipaisEmConsulta.delete(idServico);this.registrarCatalogo('servicosCatalogo',servico);if(this.atendimentoSelecionado?.id===idAtendimento)this.garantirServicoPrincipalDoAtendimento(exibirMensagemErro);},
+        error:()=>{this.servicosPrincipaisEmConsulta.delete(idServico);this.notificacoes.erro('Não foi possível consultar o valor do serviço principal. Atualize o atendimento para tentar novamente.');}
+      });return;
+    }
+
     const servicoVisual = this.montarServicoPrincipalVisualDoAtendimento(atendimento);
 
     if (!servicoVisual?.idServico) {
@@ -1329,6 +1334,8 @@ export class AtendimentoComponent implements OnInit {
       this.notificacoes.aviso('Serviço principal do agendamento incluído na edição. Clique em Salvar edição para gravar no atendimento.');
     }
   }
+
+  private readonly servicosPrincipaisEmConsulta=new Set<number>();
 
   private montarServicoPrincipalVisualDoAtendimento(
     atendimento: Atendimento
@@ -1457,25 +1464,7 @@ export class AtendimentoComponent implements OnInit {
     };
   }
 
-  private tipoExecucaoPadraoDoServico(servico?: ServicoResumo): string {
-    if (!servico) {
-      return 'INTERNO';
-    }
-
-    const tipoPrestador = this.normalizar(
-      this.textoCampo(servico, ['tipoPrestador', 'tipoDoPrestador', 'tipo_do_prestador', 'tipo_prestador'], '')
-    );
-
-    if (tipoPrestador.includes('terceir')) {
-      return 'TERCEIRO';
-    }
-
-    if (tipoPrestador.includes('misto')) {
-      return 'MISTO';
-    }
-
-    return 'INTERNO';
-  }
+  private tipoExecucaoPadraoDoServico(servico?: ServicoResumo): string { return this.apoio.tipoExecucaoPadraoDoServico(servico); }
 
   private atualizarAtendimentoSelecionado(atendimentoId: number): void {
     this.service.buscarPorId(atendimentoId).subscribe({
@@ -1690,147 +1679,19 @@ export class AtendimentoComponent implements OnInit {
   })[0];
 }
 
-private idPecaObjeto(objeto: any): number | undefined {
-  const valor = this.obterCampo(
-    objeto,
-    [
-      'idPeca',
-      'id_peca',
-      'peca.id'
-    ]
-  );
+private idPecaObjeto(objeto: any): number | undefined { return this.apoio.idPecaObjeto(objeto); }
 
-  if (valor === null || valor === undefined || valor === '') {
-    return undefined;
-  }
-
-  const numero = Number(valor);
-
-  return Number.isNaN(numero) ? undefined : numero;
-}
-
-private fornecimentoEstaAtivo(fornecimento: FornecimentoPecaResumo): boolean {
-  const valor = this.obterCampo(
-    fornecimento,
-    [
-      'ativo'
-    ]
-  );
-
-  if (valor === null || valor === undefined || valor === '') {
-    return true;
-  }
-
-  if (typeof valor === 'boolean') {
-    return valor;
-  }
-
-  const texto = String(valor)
-    .trim()
-    .toUpperCase();
-
-  return texto === 'TRUE'
-    || texto === '1'
-    || texto === 'SIM'
-    || texto === 'S'
-    || texto === 'ATIVO';
-}
+private fornecimentoEstaAtivo(fornecimento: FornecimentoPecaResumo): boolean { return this.apoio.fornecimentoEstaAtivo(fornecimento); }
 
 private unidadePadraoFornecimentoPeca(
   fornecimento: FornecimentoPecaResumo
-): string {
-  return this.textoCampo(
-    fornecimento,
-    [
-      'unidadeMedida',
-      'unidade_medida',
-      'unidadeCompra',
-      'unidade_compra',
-      'unidadeCobranca',
-      'unidade_cobranca',
-      'peca.unidadeMedida',
-      'peca.unidade_medida',
-      'peca.unidade'
-    ],
-    ''
-  );
-}
+): string { return this.apoio.unidadePadraoFornecimentoPeca(fornecimento); }
 
 private valorPadraoFornecimentoPeca(
   fornecimento: FornecimentoPecaResumo
-): any {
-  const valorDireto = this.valorCampo(
-    fornecimento,
-    [
-      'valorUnitario',
-      'valor_unitario',
+): any { return this.apoio.valorPadraoFornecimentoPeca(fornecimento); }
 
-      'valorCusto',
-      'valor_custo',
-
-      'custoUnitario',
-      'custo_unitario',
-
-      'precoUnitario',
-      'preco_unitario',
-
-      'precoCompra',
-      'preco_compra',
-
-      'valorCompra',
-      'valor_compra',
-
-      'valorFornecimento',
-      'valor_fornecimento',
-
-      'custo',
-      'preco',
-      'valor'
-    ],
-    null
-  );
-
-  if (valorDireto !== null && valorDireto !== undefined && valorDireto !== '') {
-    return valorDireto;
-  }
-
-  return this.campoPorPadraoNumero(
-    fornecimento,
-    [
-      ['valor', 'unit'],
-      ['preco', 'unit'],
-      ['custo', 'unit'],
-      ['valor', 'custo'],
-      ['preco', 'compra'],
-      ['valor', 'compra'],
-      ['valor', 'fornecimento'],
-      ['preco'],
-      ['valor'],
-      ['custo']
-    ],
-    ['total', 'estoque', 'minimo', 'maximo', 'quantidade', 'id']
-  ) ?? 0;
-}
-
-private extrairLista<T>(resposta: any): T[] {
-  if (Array.isArray(resposta)) {
-    return resposta;
-  }
-
-  if (Array.isArray(resposta?.content)) {
-    return resposta.content;
-  }
-
-  if (Array.isArray(resposta?.dados)) {
-    return resposta.dados;
-  }
-
-  if (Array.isArray(resposta?.data)) {
-    return resposta.data;
-  }
-
-  return [];
-}
+private extrairLista<T>(resposta: any): T[] { return this.apoio.extrairLista(resposta); }
 
   private inserirOuSomarPecaNovoAtendimento(novaPeca: AtendimentoPeca): void {
     const indiceAtual = this.editandoPecaId !== null
@@ -2203,6 +2064,17 @@ private extrairLista<T>(resposta: any): T[] {
 
   abrirDetalhes(item: Atendimento): void {
     this.atendimentoSelecionado = item;
+    this.orcamentosDoAtendimento = [];
+    this.pecasDetalhesAtendimento = [];
+    this.carregandoPecasDetalhes = !!item.id;
+    if (item.id) this.service.listarOrcamentos(item.id).subscribe({
+      next: versoes => this.orcamentosDoAtendimento = versoes,
+      error: () => this.notificacoes.erro('Não foi possível consultar as versões do orçamento.')
+    });
+    if (item.id) this.service.listarPecasAtendimento(item.id).subscribe({
+      next: pecas => { if (this.atendimentoSelecionado?.id === item.id) { this.pecasDetalhesAtendimento = pecas; this.carregandoPecasDetalhes = false; } },
+      error: () => { if (this.atendimentoSelecionado?.id === item.id) { this.carregandoPecasDetalhes = false; this.notificacoes.erro('Não foi possível consultar as peças do atendimento.'); } }
+    });
 
     const el = document.getElementById('modalDetalhesAtendimento');
 
@@ -2210,6 +2082,12 @@ private extrairLista<T>(resposta: any): T[] {
 
     this.modalDetalhes = bootstrap.Modal.getOrCreateInstance(el);
     this.modalDetalhes.show();
+  }
+
+  observacoesDetalhesAtendimento(): string {
+    const observacoes = this.atendimentoSelecionado?.observacoesInternas?.trim() || '';
+    if (!this.pecasDetalhesAtendimento.length) return observacoes;
+    return observacoes.split('[PEÇAS PREVISTAS NO AGENDAMENTO]')[0].trim();
   }
 
   iniciar(item: Atendimento): void {
@@ -2221,12 +2099,27 @@ private extrairLista<T>(resposta: any): T[] {
     });
   }
 
-  aprovar(item: Atendimento): void {
-    if (!item.id) return;
-
-    this.service.aprovar(item.id).subscribe({
+  diagnosticar(item: Atendimento): void {
+    if (!item.id || item.statusAtendimento !== 'ABERTO') return;
+    this.service.diagnosticar(item.id).subscribe({
       next: () => this.recarregar(),
-      error: (erro) => this.notificacoes.erro(this.extrairMensagemErro(erro, 'Erro ao aprovar atendimento.'))
+      error: erro => this.notificacoes.erro(this.extrairMensagemErro(erro, 'Erro ao iniciar o diagnóstico.'))
+    });
+  }
+
+  solicitarAprovacao(item: Atendimento): void {
+    if (!item.id || item.statusAtendimento !== 'EM_DIAGNOSTICO') return;
+    this.service.solicitarAprovacao(item.id).subscribe({
+      next: () => this.recarregar(),
+      error: erro => this.notificacoes.erro(this.extrairMensagemErro(erro, 'Registre o diagnóstico antes de solicitar aprovação.'))
+    });
+  }
+
+  revisarOrcamento(item: Atendimento): void {
+    if (!item.id || !confirm('Reabrir o diagnóstico? O aceite anterior deixará de valer e uma nova versão deverá ser enviada ao cliente.')) return;
+    this.service.revisarOrcamento(item.id).subscribe({
+      next: () => this.recarregar(),
+      error: erro => this.notificacoes.erro(this.extrairMensagemErro(erro, 'Não foi possível revisar o orçamento.'))
     });
   }
 
@@ -2288,6 +2181,15 @@ private extrairLista<T>(resposta: any): T[] {
     });
   }
 
+  marcarProntoRetirada(item: Atendimento): void {
+    if (!item.id || item.statusAtendimento !== 'CONCLUIDO' || item.prontoRetiradaEm) return;
+    if (!confirm('Confirma que o veículo está pronto para retirada?')) return;
+    this.service.marcarProntoRetirada(item.id).subscribe({
+      next: () => { this.notificacoes.sucesso('Veículo marcado como pronto para retirada.'); this.recarregar(); },
+      error: erro => this.notificacoes.erro(this.extrairMensagemErro(erro, 'Não foi possível marcar o veículo como pronto.'))
+    });
+  }
+
   reenviarOsEmail(item: Atendimento): void {
     if (!item.id) return;
 
@@ -2333,167 +2235,45 @@ private extrairLista<T>(resposta: any): T[] {
     });
   }
 
-  podeGerenciarItens(item: Atendimento): boolean {
-    return this.podeEditarItensAtendimento(item);
-  }
+  podeGerenciarItens(item: Atendimento): boolean { return this.apoio.podeGerenciarItens(item); }
 
-  podeEditarItensAtendimento(item?: Atendimento | null): boolean {
-    if (!item?.id) return false;
+  podeEditarItensAtendimento(item?: Atendimento | null): boolean { return this.apoio.podeEditarItensAtendimento(item); }
 
-    return item.statusAtendimento === 'EM_EXECUCAO'
-      && item.aprovado !== true
-      && item.estoqueBaixado !== true;
-  }
+  podeIniciar(item: Atendimento): boolean { return this.apoio.podeIniciar(item); }
 
-  podeIniciar(item: Atendimento): boolean {
-    return item.statusAtendimento === 'ABERTO'
-      || item.statusAtendimento === 'APROVADO'
-      || item.statusAtendimento === 'EM_DIAGNOSTICO';
-  }
+  podeAprovar(item: Atendimento): boolean { return this.apoio.podeAprovar(item); }
 
-  podeAprovar(item: Atendimento): boolean {
-    return !item.aprovado
-      && item.statusAtendimento !== 'CANCELADO'
-      && item.statusAtendimento !== 'ENTREGUE';
-  }
+  podeConcluir(item: Atendimento): boolean { return this.apoio.podeConcluir(item); }
 
-  podeConcluir(item: Atendimento): boolean {
-    return item.statusAtendimento !== 'CANCELADO'
-      && item.statusAtendimento !== 'CONCLUIDO'
-      && item.statusAtendimento !== 'ENTREGUE';
-  }
+  podeEntregar(item: Atendimento): boolean { return this.apoio.podeEntregar(item); }
 
-  podeEntregar(item: Atendimento): boolean {
-    return item.statusAtendimento === 'CONCLUIDO';
-  }
+  podeCancelar(item: Atendimento): boolean { return this.apoio.podeCancelar(item); }
 
-  podeCancelar(item: Atendimento): boolean {
-    return item.statusAtendimento !== 'CANCELADO'
-      && item.statusAtendimento !== 'CONCLUIDO'
-      && item.statusAtendimento !== 'ENTREGUE';
-  }
+  podeReenviarOsEmail(item: Atendimento): boolean { return this.apoio.podeReenviarOsEmail(item); }
 
-  podeReenviarOsEmail(item: Atendimento): boolean {
-    return !!item.id
-      && (
-        item.statusAtendimento === 'CONCLUIDO'
-        || item.statusAtendimento === 'ENTREGUE'
-      );
-  }
+  formatarStatus(status?: string | null): string { return this.apoio.formatarStatus(status); }
 
-  formatarStatus(status?: string | null): string {
-    if (!status) return '—';
+  statusBadgeClass(status?: string | null): string { return this.apoio.statusBadgeClass(status); }
 
-    return status
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/\b\w/g, letra => letra.toUpperCase());
-  }
+  formatarTipoExecucao(tipo?: string | null): string { return this.apoio.formatarTipoExecucao(tipo); }
 
-  statusBadgeClass(status?: string | null): string {
-    switch (status) {
-      case 'ABERTO':
-        return 'bg-primary';
-      case 'EM_DIAGNOSTICO':
-      case 'EM_EXECUCAO':
-        return 'bg-warning text-dark';
-      case 'APROVADO':
-      case 'CONCLUIDO':
-        return 'bg-success';
-      case 'ENTREGUE':
-        return 'bg-info text-dark';
-      case 'CANCELADO':
-        return 'bg-danger';
-      default:
-        return 'bg-secondary';
-    }
-  }
+  tipoExecucaoBadgeClass(tipo?: string | null): string { return this.apoio.tipoExecucaoBadgeClass(tipo); }
 
-  formatarTipoExecucao(tipo?: string | null): string {
-    return this.formatarStatus(tipo);
-  }
+  formatarStatusOs(item: Atendimento): string { return this.apoio.formatarStatusOs(item); }
 
-  tipoExecucaoBadgeClass(tipo?: string | null): string {
-    switch (tipo) {
-      case 'INTERNO':
-        return 'bg-primary';
-      case 'TERCEIRO':
-        return 'bg-warning text-dark';
-      case 'MISTO':
-        return 'bg-info text-dark';
-      default:
-        return 'bg-secondary';
-    }
-  }
+  osBadgeClass(item: Atendimento): string { return this.apoio.osBadgeClass(item); }
 
-  formatarStatusOs(item: Atendimento): string {
-    if (item.osEnviadaEmail) return 'OS enviada';
-    if (item.osUltimoErro) return 'Falha no envio';
-    return 'OS pendente';
-  }
+  formatarMoedaBR(valor: any): string { return this.apoio.formatarMoedaBR(valor); }
 
-  osBadgeClass(item: Atendimento): string {
-    if (item.osEnviadaEmail) return 'bg-success';
-    if (item.osUltimoErro) return 'bg-danger';
-    return 'bg-secondary';
-  }
+  formatarDataHora(valor?: string | null): string { return this.apoio.formatarDataHora(valor); }
 
-  formatarMoedaBR(valor: any): string {
-    const numero = this.moedaParaNumero(valor);
+  formatarCpf(cpf?: string | null): string { return this.apoio.formatarCpf(cpf); }
 
-    return numero.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    });
-  }
+  formatarPlaca(placa?: string | null): string { return this.apoio.formatarPlaca(placa); }
 
-  formatarDataHora(valor?: string | null): string {
-    if (!valor) return '—';
+  limparOpcional(valor: any): string { return this.apoio.limparOpcional(valor); }
 
-    const data = new Date(valor);
-
-    if (Number.isNaN(data.getTime())) {
-      return valor;
-    }
-
-    return data.toLocaleString('pt-BR', {
-      dateStyle: 'short',
-      timeStyle: 'short'
-    });
-  }
-
-  formatarCpf(cpf?: string | null): string {
-    if (!cpf) return '—';
-
-    const d = cpf.replace(/\D/g, '');
-
-    if (d.length !== 11) return cpf;
-
-    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  }
-
-  formatarPlaca(placa?: string | null): string {
-    if (!placa) return '—';
-
-    const p = placa.toUpperCase().replace(/[^A-Z0-9]/g, '');
-
-    if (p.length === 7 && /^[A-Z]{3}\d{4}$/.test(p)) {
-      return `${p.substring(0, 3)}-${p.substring(3)}`;
-    }
-
-    return p;
-  }
-
-  limparOpcional(valor: any): string {
-    if (valor === null || valor === undefined) return '';
-
-    return String(valor).trim();
-  }
-
-  converterMoedaOpcionalParaNumero(valor: any): string {
-    const numero = this.moedaParaNumero(valor);
-    return numero.toFixed(2);
-  }
+  converterMoedaOpcionalParaNumero(valor: any): string { return this.apoio.converterMoedaOpcionalParaNumero(valor); }
 
   formatarDescontoNovoAtendimento(): void {
     this.novoAtendimento.desconto = this.formatarMoedaBR(this.novoAtendimento.desconto);
@@ -2501,13 +2281,9 @@ private extrairLista<T>(resposta: any): T[] {
   }
 
 
-  private clonarPecasAtendimento(pecas: AtendimentoPeca[]): AtendimentoPeca[] {
-    return (pecas || []).map(item => ({ ...item }));
-  }
+  private clonarPecasAtendimento(pecas: AtendimentoPeca[]): AtendimentoPeca[] { return this.apoio.clonarPecasAtendimento(pecas); }
 
-  private clonarServicosAtendimento(servicos: AtendimentoServicoExecutado[]): AtendimentoServicoExecutado[] {
-    return (servicos || []).map(item => ({ ...item }));
-  }
+  private clonarServicosAtendimento(servicos: AtendimentoServicoExecutado[]): AtendimentoServicoExecutado[] { return this.apoio.clonarServicosAtendimento(servicos); }
 
   private registrarAlteracaoEdicaoItens(): void {
     this.edicaoItensAlterada = true;
@@ -2543,64 +2319,9 @@ private extrairLista<T>(resposta: any): T[] {
     this.atendimentoSelecionado.valorTotal = this.formatarMoedaBR(total);
   }
 
-  private moedaParaNumero(valor: any): number {
-    if (valor === null || valor === undefined || valor === '') {
-      return 0;
-    }
+  private moedaParaNumero(valor: any): number { return this.apoio.moedaParaNumero(valor); }
 
-    if (typeof valor === 'number') {
-      return Number.isNaN(valor) ? 0 : valor;
-    }
-
-    let texto = String(valor)
-      .replace('R$', '')
-      .replace(/\s/g, '')
-      .trim();
-
-    if (/^\d+\.\d{1,4}$/.test(texto)) {
-      return Number(texto);
-    }
-
-    if (texto.includes(',')) {
-      texto = texto.replace(/\./g, '').replace(',', '.');
-    }
-
-    const numero = Number(texto);
-
-    return Number.isNaN(numero) ? 0 : numero;
-  }
-
-  private numeroDetectavel(valor: any): number | null {
-    if (valor === null || valor === undefined || valor === '') {
-      return null;
-    }
-
-    if (typeof valor === 'number') {
-      return Number.isNaN(valor) ? null : valor;
-    }
-
-    let texto = String(valor)
-      .replace('R$', '')
-      .replace(/\s/g, '')
-      .trim();
-
-    if (!/\d/.test(texto)) {
-      return null;
-    }
-
-    if (/^\d+\.\d{1,4}$/.test(texto)) {
-      const numero = Number(texto);
-      return Number.isNaN(numero) ? null : numero;
-    }
-
-    if (texto.includes(',')) {
-      texto = texto.replace(/\./g, '').replace(',', '.');
-    }
-
-    const numero = Number(texto);
-
-    return Number.isNaN(numero) ? null : numero;
-  }
+  private numeroDetectavel(valor: any): number | null { return this.apoio.numeroDetectavel(valor); }
 
   private recalcularTotaisNovoAtendimento(): void {
     const valorPecas = this.pecasNovoAtendimento.reduce((total, item) => {
@@ -2628,54 +2349,9 @@ private extrairLista<T>(resposta: any): T[] {
     this.novoAtendimento.valorTotal = this.formatarMoedaBR(total);
   }
 
-  private montarPayload(dados: Partial<Atendimento>): AtendimentoRequest {
-    return {
-      idAgendamento: dados.idAgendamento ? Number(dados.idAgendamento) : null,
-      idFornecedor: dados.idFornecedor ? Number(dados.idFornecedor) : null,
-      idResponsavel: dados.idResponsavel ? Number(dados.idResponsavel) : null,
+  private montarPayload(dados: Partial<Atendimento>): AtendimentoRequest { return this.apoio.montarPayload(dados); }
 
-      tipoExecucao: dados.tipoExecucao || 'INTERNO',
-      statusAtendimento: dados.statusAtendimento || 'ABERTO',
-
-      dataEntrada: dados.dataEntrada || '',
-      inicioReal: dados.inicioReal || '',
-      fimReal: dados.fimReal || '',
-      prazoEstimadoEntrega: dados.prazoEstimadoEntrega || '',
-      dataEntrega: dados.dataEntrega || '',
-
-      quilometragemEntrada: dados.quilometragemEntrada ?? null,
-      quilometragemSaida: dados.quilometragemSaida ?? null,
-
-      relatoCliente: this.limparOpcional(dados.relatoCliente),
-      diagnosticoTecnico: this.limparOpcional(dados.diagnosticoTecnico),
-      servicoExecutado: this.limparOpcional(dados.servicoExecutado),
-      observacoesInternas: this.limparOpcional(dados.observacoesInternas),
-      recomendacoesCliente: this.limparOpcional(dados.recomendacoesCliente),
-
-      necessitaRetorno: !!dados.necessitaRetorno,
-      dataRetornoSugerida: dados.dataRetornoSugerida || '',
-      garantiaDias: dados.garantiaDias ?? 0,
-
-      valorMaoObra: this.converterMoedaOpcionalParaNumero(dados.valorMaoObra),
-      valorPecas: this.converterMoedaOpcionalParaNumero(dados.valorPecas),
-      valorTerceiros: this.converterMoedaOpcionalParaNumero(dados.valorTerceiros),
-      desconto: this.converterMoedaOpcionalParaNumero(dados.desconto),
-
-      aprovado: !!dados.aprovado
-    };
-  }
-
-  private montarPayloadPecaSalva(item: AtendimentoPeca): AtendimentoPecaRequest {
-    return {
-      idPeca: item.idPeca ? Number(item.idPeca) : null,
-      idEstoquePeca: item.idEstoquePeca ? Number(item.idEstoquePeca) : null,
-      idFornecedor: item.idFornecedor ? Number(item.idFornecedor) : null,
-      quantidade: String(item.quantidade || '1'),
-      valorUnitario: this.converterMoedaOpcionalParaNumero(item.valorUnitario),
-      unidadeMedida: this.limparOpcional(item.unidadeMedida),
-      observacoes: this.limparOpcional(item.observacoes)
-    };
-  }
+  private montarPayloadPecaSalva(item: AtendimentoPeca): AtendimentoPecaRequest { return this.apoio.montarPayloadPecaSalva(item); }
 
   private montarPayloadServicoSalvo(item: AtendimentoServicoExecutado): AtendimentoServicoExecutadoRequest {
     const servicoCatalogo = this.servicosCatalogo.find(servico =>
@@ -2783,268 +2459,39 @@ private extrairLista<T>(resposta: any): T[] {
       || '';
   }
 
-  private unidadePadraoPeca(peca: PecaResumo): string {
-    return this.textoCampo(
-      peca,
-      [
-        'unidadeMedida',
-        'unidade_medida',
-        'unidade',
-        'unidadeCompra',
-        'unidade_compra',
-        'unidadeVenda',
-        'unidade_venda'
-      ],
-      'UNIDADE'
-    );
-  }
+  private unidadePadraoPeca(peca: PecaResumo): string { return this.apoio.unidadePadraoPeca(peca); }
 
-  private valorPadraoPeca(peca: PecaResumo): any {
-    const valorDireto = this.valorCampo(
-      peca,
-      [
-        'valorUnitario',
-        'valor_unitario',
-        'valorCusto',
-        'valor_custo',
-        'custoUnitario',
-        'custo_unitario',
-        'precoUnitario',
-        'preco_unitario',
-        'precoCompra',
-        'preco_compra',
-        'valorCompra',
-        'valor_compra',
-        'valorVenda',
-        'valor_venda',
-        'valorBase',
-        'valor_base',
-        'custoMedio',
-        'custo_medio',
-        'preco',
-        'valor',
-        'custo'
-      ],
-      null
-    );
+  private valorPadraoPeca(peca: PecaResumo): any { return this.apoio.valorPadraoPeca(peca); }
 
-    if (valorDireto !== null && valorDireto !== undefined && valorDireto !== '') {
-      return valorDireto;
-    }
+  private valorPadraoServico(servico: ServicoResumo): any { return this.apoio.valorPadraoServico(servico); }
 
-    return this.campoPorPadraoNumero(
-      peca,
-      [
-        ['valor', 'unit'],
-        ['preco', 'unit'],
-        ['custo', 'unit'],
-        ['valor', 'custo'],
-        ['preco', 'compra'],
-        ['valor', 'compra'],
-        ['valor', 'venda'],
-        ['preco'],
-        ['valor'],
-        ['custo']
-      ],
-      ['total', 'estoque', 'minimo', 'maximo', 'quantidade', 'id']
-    ) ?? 0;
-  }
+  private obterCampo(objeto: any, caminhos: string[]): any { return this.apoio.obterCampo(objeto, caminhos); }
 
-  private valorPadraoServico(servico: ServicoResumo): any {
-    const valorDireto = this.valorCampo(
-      servico,
-      [
-        'valorBase',
-        'valor_base',
-        'valorServico',
-        'valor_servico',
-        'valor',
-        'preco'
-      ],
-      null
-    );
+  private textoCampo(objeto: any, caminhos: string[], padrao: string = ''): string { return this.apoio.textoCampo(objeto, caminhos, padrao); }
 
-    if (valorDireto !== null && valorDireto !== undefined && valorDireto !== '') {
-      return valorDireto;
-    }
+  private valorCampo(objeto: any, caminhos: string[], padrao: any = 0): any { return this.apoio.valorCampo(objeto, caminhos, padrao); }
 
-    return this.campoPorPadraoNumero(
-      servico,
-      [
-        ['valor', 'base'],
-        ['valor', 'servico'],
-        ['preco'],
-        ['valor']
-      ],
-      ['total', 'id']
-    ) ?? 0;
-  }
+  private idFornecedorObjeto(objeto: any): number | undefined { return this.apoio.idFornecedorObjeto(objeto); }
 
-  private obterCampo(objeto: any, caminhos: string[]): any {
-    if (!objeto) return null;
-
-    for (const caminho of caminhos) {
-      const partes = caminho.split('.');
-      let valor = objeto;
-
-      for (const parte of partes) {
-        if (valor === null || valor === undefined) {
-          valor = null;
-          break;
-        }
-
-        valor = valor[parte];
-      }
-
-      if (valor !== null && valor !== undefined && valor !== '') {
-        return valor;
-      }
-    }
-
-    return null;
-  }
-
-  private textoCampo(objeto: any, caminhos: string[], padrao: string = ''): string {
-    const valor = this.obterCampo(objeto, caminhos);
-
-    if (valor === null || valor === undefined || valor === '') {
-      return padrao;
-    }
-
-    return String(valor);
-  }
-
-  private valorCampo(objeto: any, caminhos: string[], padrao: any = 0): any {
-    const valor = this.obterCampo(objeto, caminhos);
-
-    if (valor === null || valor === undefined || valor === '') {
-      return padrao;
-    }
-
-    return valor;
-  }
-
-  private idFornecedorObjeto(objeto: any): number | undefined {
-    const valor = this.obterCampo(objeto, ['idFornecedor', 'id_fornecedor', 'fornecedor.id']);
-
-    if (valor === null || valor === undefined || valor === '') {
-      return undefined;
-    }
-
-    const numero = Number(valor);
-
-    return Number.isNaN(numero) ? undefined : numero;
-  }
-
-  private nomeFornecedorObjeto(objeto: any): string {
-    return this.textoCampo(
-      objeto,
-      [
-        'razaoSocialFornecedor',
-        'razao_social_fornecedor',
-        'fornecedor.razaoSocial',
-        'fornecedor.razao_social',
-        'fornecedor.nomeFantasia',
-        'fornecedor.nome_fantasia'
-      ],
-      ''
-    );
-  }
+  private nomeFornecedorObjeto(objeto: any): string { return this.apoio.nomeFornecedorObjeto(objeto); }
 
   private campoPorPadraoNumero(
     objeto: any,
     gruposObrigatorios: string[][],
     proibidos: string[] = []
-  ): number | null {
-    if (!objeto) return null;
+  ): number | null { return this.apoio.campoPorPadraoNumero(objeto, gruposObrigatorios, proibidos); }
 
-    for (const grupo of gruposObrigatorios) {
-      for (const chave of Object.keys(objeto)) {
-        const chaveNormalizada = this.normalizarChaveCampo(chave);
+  private normalizarChaveCampo(valor: string): string { return this.apoio.normalizarChaveCampo(valor); }
 
-        const atendeObrigatorios = grupo.every(parte =>
-          chaveNormalizada.includes(this.normalizarChaveCampo(parte))
-        );
+  private agoraInputDateTime(): string { return this.apoio.agoraInputDateTime(); }
 
-        const temProibido = proibidos.some(parte =>
-          chaveNormalizada.includes(this.normalizarChaveCampo(parte))
-        );
+  private paraDatetimeLocal(valor: string): string { return this.apoio.paraDatetimeLocal(valor); }
 
-        if (!atendeObrigatorios || temProibido) {
-          continue;
-        }
+  private normalizar(valor: any): string { return this.apoio.normalizar(valor); }
 
-        const numero = this.numeroDetectavel(objeto[chave]);
+  private normalizarTipoAcesso(valor: any): string { return this.apoio.normalizarTipoAcesso(valor); }
 
-        if (numero !== null) {
-          return numero;
-        }
-      }
-    }
+  private valorPrimeiro(...valores: any[]): any { return this.apoio.valorPrimeiro(...valores); }
 
-    return null;
-  }
-
-  private normalizarChaveCampo(valor: string): string {
-    return String(valor || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '');
-  }
-
-  private agoraInputDateTime(): string {
-    const agora = new Date();
-    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-    return agora.toISOString().slice(0, 16);
-  }
-
-  private paraDatetimeLocal(valor: string): string {
-    const data = new Date(valor);
-
-    if (Number.isNaN(data.getTime())) {
-      return valor;
-    }
-
-    data.setMinutes(data.getMinutes() - data.getTimezoneOffset());
-
-    return data.toISOString().slice(0, 16);
-  }
-
-  private normalizar(valor: any): string {
-    return String(valor ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-  }
-
-  private normalizarTipoAcesso(valor: any): string {
-    return String(valor ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase()
-      .replace(/-/g, '_')
-      .replace(/ /g, '_')
-      .trim();
-  }
-
-  private valorPrimeiro(...valores: any[]): any {
-    for (const valor of valores) {
-      if (valor !== null && valor !== undefined && valor !== '') {
-        return valor;
-      }
-    }
-
-    return '';
-  }
-
-  extrairMensagemErro(erro: any, mensagemPadrao: string): string {
-    if (typeof erro?.error === 'string' && erro.error.trim()) return erro.error;
-    if (typeof erro?.error?.mensagem === 'string' && erro.error.mensagem.trim()) return erro.error.mensagem;
-    if (typeof erro?.error?.message === 'string' && erro.error.message.trim()) return erro.error.message;
-    if (typeof erro?.error?.erro === 'string' && erro.error.erro.trim()) return erro.error.erro;
-    if (typeof erro?.message === 'string' && erro.message.trim()) return erro.message;
-    return mensagemPadrao;
-  }
+  extrairMensagemErro(erro: any, mensagemPadrao: string): string { return this.apoio.extrairMensagemErro(erro, mensagemPadrao); }
 }

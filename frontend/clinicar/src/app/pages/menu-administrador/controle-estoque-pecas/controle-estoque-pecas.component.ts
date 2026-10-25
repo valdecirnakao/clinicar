@@ -1,4 +1,6 @@
+import { ControleEstoquePecasApoio } from './controle-estoque-pecas-apoio';
 import { SelecaoCadastroComponent } from '../../../shared/tabelas/selecao-cadastro.component';
+import { SeletorRemotoComponent } from '../../../shared/tabelas/seletor-remoto.component';
 import { PaginacaoComponent } from '../../../shared/tabelas/paginacao.component';
 import { ConsultaPaginadaService, PaginaCadastro } from '../../../shared/tabelas/consulta-paginada.service';
 import { Subscription } from 'rxjs';
@@ -54,14 +56,17 @@ type OrigemModalPeca = 'cadastro' | 'edicao' | null;
 
 @Component({
     selector: 'app-controle-estoque-pecas',
-    imports: [SelecaoCadastroComponent,PaginacaoComponent,PecaComponent, ValidarDuplicidadeDirective, UnidadePecaPipe, FeedbackDirective, CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
+    imports: [SeletorRemotoComponent,SelecaoCadastroComponent,PaginacaoComponent,PecaComponent, ValidarDuplicidadeDirective, UnidadePecaPipe, FeedbackDirective, CommonModule, FormsModule, FieldHelpDirective, FieldHelpPanelComponent],
     templateUrl: './controle-estoque-pecas.component.html',
     styleUrls: ['./controle-estoque-pecas.component.css']
 })
 export class ControleEstoquePecasComponent implements OnInit {
+  get acessoColaborador(): boolean { return this.router.url.startsWith('/menuColaborador'); }
+  private readonly apoio = new ControleEstoquePecasApoio();
   cadastrandoPeca = false;
 
   cadastrarNovaPeca(): void {
+    if (this.acessoColaborador) return;
     if (this.cadastrandoPeca || this.modoSelecaoPeca !== 'cadastro' || this.pecaContinuidade) return;
     aposFecharModal('modalSelecionarPecaEstoque', this.modalPeca,
       () => this.cadastrandoPeca = true, this.destroyRef);
@@ -163,9 +168,7 @@ export class ControleEstoquePecasComponent implements OnInit {
     this.itensPorPaginaAlertas = Math.max(1, Math.min(this.itensPorPaginaAlertas, this.limiteItensAlertas));
     this.paginaAlertas = Math.min(this.paginaAlertas, this.totalPaginasAlertas);
   }
-  statusAcompanhamentoAlerta(alerta: AlertaEstoquePeca): string {
-    return alerta.statusAlerta === 'ENCERRADO' ? 'Encerrado excepcionalmente' : alerta.statusAlerta === 'SUPERADO' ? 'Substituído por outro nível' : alerta.statusAlerta === 'RESOLVIDO' ? 'Resolvido' : 'Aberto';
-  }
+  statusAcompanhamentoAlerta(alerta: AlertaEstoquePeca): string { return this.apoio.statusAcompanhamentoAlerta(alerta); }
   visualizarAlerta(alerta: AlertaEstoquePeca): void {
     this.alertaDetalhado = alerta;
     aposFecharModal('modalAlertasEstoque', this.modalAlertas, () => {
@@ -233,6 +236,7 @@ export class ControleEstoquePecasComponent implements OnInit {
   modalEdicao: any;
   modalPeca: any;
   modalMovimentacao: any;
+  modalFornecedorMovimentacao: any;
   modalMovimentacoes: any;
   modalAlertas: any;
   modalNovoLocal: any;
@@ -297,7 +301,7 @@ export class ControleEstoquePecasComponent implements OnInit {
     try { idPeca = this.fluxoEstoque.obterPecaId(this.rota); }
     catch (erro) { this.errorMsg = (erro as Error).message; return; }
     this.loading = true;
-    forkJoin({ pecas: this.modoPaginado?this.consultaPaginada.registro<PecaResumo>('peca',idPeca).pipe(map(peca=>peca?[peca]:[]),catchError(erro=>erro.status===404?of([]):throwError(()=>erro))):this.service.listarPecas(), locais: this.service.listarLocaisAtivos(), estoques: this.modoPaginado?this.service.listarEstoquesDaPeca(idPeca):this.service.listarEstoques() })
+    forkJoin({ pecas: this.modoPaginado?this.consultaPaginada.registro<PecaResumo>('peca',idPeca).pipe(map(peca=>peca?[peca]:[]),catchError(erro=>erro.status===404?of([]):throwError(()=>erro))):this.service.listarPecas(), locais: this.modoPaginado ? this.consultaPaginada.consultar<LocalEstoque>('local-estoque',{ativo:true,selecao:true,tamanho:2}).pipe(map(p=>p.content)) : this.service.listarLocaisAtivos(), estoques: this.modoPaginado?this.service.listarEstoquesDaPeca(idPeca):this.service.listarEstoques() })
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: ({ pecas, locais, estoques }) => {
           this.loading = false;
@@ -360,6 +364,9 @@ export class ControleEstoquePecasComponent implements OnInit {
   }
 
   private carregarLocais(): void {
+    if(this.modoPaginado){
+      this.consultaPaginada.consultar<LocalEstoque>('local-estoque',{ativo:true,selecao:true,tamanho:2}).subscribe({next:pagina=>this.locais=pagina.content,error:()=>this.notificacoes.erro('Não foi possível consultar os locais de estoque.')});return;
+    }
     this.service.listarLocaisAtivos().subscribe({
       next: (lista) => {
         this.locais = lista ?? [];
@@ -368,6 +375,35 @@ export class ControleEstoquePecasComponent implements OnInit {
         console.error('Erro ao carregar locais de estoque:', erro);
       }
     });
+  }
+
+  registrarLocal(local: LocalEstoque | null): void {
+    if(local)this.locais=[...this.locais.filter(item=>item.id!==local.id),local];
+  }
+  registrarFornecedorMovimentacao(fornecedor: any): void {
+    this.fornecedoresMovimentacao=fornecedor?[fornecedor]:[];
+  }
+
+  abrirSelecaoFornecedorMovimentacao(): void {
+    aposFecharModal('modalMovimentacaoEstoque', this.modalMovimentacao, () => {
+      const el = document.getElementById('modalSelecionarFornecedorMovimentacao');
+      if (el) {
+        this.modalFornecedorMovimentacao = bootstrap.Modal.getOrCreateInstance(el, {backdrop:'static',keyboard:false});
+        this.modalFornecedorMovimentacao.show();
+      }
+    }, this.destroyRef);
+  }
+
+  selecionarFornecedorMovimentacao(fornecedor: any): void {
+    if (!fornecedor?.id || (this.compraSelecionada && !fornecedor.ativo)) return;
+    this.movimento.idFornecedor = fornecedor.id;
+    this.registrarFornecedorMovimentacao(fornecedor);
+    this.fecharSelecaoFornecedorMovimentacao();
+  }
+
+  fecharSelecaoFornecedorMovimentacao(): void {
+    aposFecharModal('modalSelecionarFornecedorMovimentacao', this.modalFornecedorMovimentacao,
+      () => this.modalMovimentacao?.show(), this.destroyRef);
   }
 
   private carregarAlertas(): void {
@@ -686,26 +722,10 @@ export class ControleEstoquePecasComponent implements OnInit {
     this.modalDetalhes.show();
   }
 
-  saldoDisponivel(item: Partial<EstoquePeca>): number {
-    return this.quantidadeDisponivelEstoque(item);
-  }
+  saldoDisponivel(item: Partial<EstoquePeca>): number { return this.apoio.saldoDisponivel(item); }
 
 
-  percentualSaldoMinimo(item: Partial<EstoquePeca>): number {
-    const disponivel = this.quantidadeDisponivelEstoque(item);
-    const minimo = this.numeroEstoque(
-      (item as any)?.estoqueMinimo ??
-      (item as any)?.estoque_minimo ??
-      (item as any)?.minimo ??
-      0
-    );
-
-    if (!minimo || minimo <= 0 || Number.isNaN(disponivel) || Number.isNaN(minimo)) {
-      return 100;
-    }
-
-    return Math.max(0, Math.min(100, Math.round((disponivel / minimo) * 100)));
-  }
+  percentualSaldoMinimo(item: Partial<EstoquePeca>): number { return this.apoio.percentualSaldoMinimo(item); }
 
 
   estoqueCampoInvalido(model: Partial<EstoquePeca>, campo: string, validarPecaELocal = true): boolean {
@@ -753,15 +773,9 @@ export class ControleEstoquePecasComponent implements OnInit {
       this.validarRegrasNumericasEstoque(model) !== null;
   }
 
-  reposicaoEstoquePendente(model: Partial<EstoquePeca>): boolean {
-    return this.validarReposicaoEstoque(model) !== null;
-  }
+  reposicaoEstoquePendente(model: Partial<EstoquePeca>): boolean { return this.apoio.reposicaoEstoquePendente(model); }
 
-  custoMedioObrigatorio(model: Partial<EstoquePeca>): boolean {
-    const quantidadeAtual = this.numeroFormulario(model.quantidadeAtual);
-
-    return !Number.isNaN(quantidadeAtual) && quantidadeAtual > 0;
-  }
+  custoMedioObrigatorio(model: Partial<EstoquePeca>): boolean { return this.apoio.custoMedioObrigatorio(model); }
 
   private ajustarPaginaAtual(): void {
     if (this.paginaAtual > this.totalPaginas) {
@@ -787,25 +801,7 @@ export class ControleEstoquePecasComponent implements OnInit {
     });
   }
 
-  private valorOrdenacao(item: EstoquePeca, coluna: ColunaOrdenacaoEstoque): string | number {
-    if (coluna === 'quantidadeAtual') {
-      return this.quantidadeAtualEstoque(item);
-    }
-
-    if (coluna === 'quantidadeReservada') {
-      return this.quantidadeReservadaEstoque(item);
-    }
-
-    if (coluna === 'estoqueMinimo' || coluna === 'custoMedio') {
-      return this.numeroEstoque((item as any)[coluna]);
-    }
-
-    if (coluna === 'statusEstoque') {
-      return this.statusCalculadoEstoque(item);
-    }
-
-    return this.normalizarTexto((item as any)[coluna]);
-  }
+  private valorOrdenacao(item: EstoquePeca, coluna: ColunaOrdenacaoEstoque): string | number { return this.apoio.valorOrdenacao(item, coluna); }
 
 
   private calcularProgressoEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean): number {
@@ -1038,143 +1034,18 @@ export class ControleEstoquePecasComponent implements OnInit {
     return null;
   }
 
-  private validarRegrasNumericasEstoque(model: Partial<EstoquePeca>): string | null {
-    const atual = this.quantidadeAtualEstoque(model);
-    const reservada = this.quantidadeReservadaEstoque(model);
-    const minimo = this.numeroEstoque((model as any).estoqueMinimo);
-    const critico = this.numeroEstoque((model as any).estoqueCritico);
-
-    if (Number.isNaN(atual) || atual < 0) {
-      return 'A quantidade atual não pode ser negativa.';
-    }
-
-    if (Number.isNaN(reservada) || reservada < 0) {
-      return 'A quantidade reservada não pode ser negativa.';
-    }
-
-    if (reservada > atual) {
-      return 'A quantidade reservada não pode ser maior que a quantidade atual.';
-    }
-
-    if (Number.isNaN(minimo) || minimo < 0) {
-      return 'O estoque mínimo não pode ser negativo.';
-    }
-
-    if (Number.isNaN(critico) || critico < 0) {
-      return 'O estoque crítico não pode ser negativo.';
-    }
-
-    if (critico > minimo) {
-      return 'O estoque crítico não pode ser maior que o estoque mínimo.';
-    }
-
-    return null;
-  }
+  private validarRegrasNumericasEstoque(model: Partial<EstoquePeca>): string | null { return this.apoio.validarRegrasNumericasEstoque(model); }
 
 
-  private validarReposicaoEstoque(model: Partial<EstoquePeca>): string | null {
-    const minimo = this.numeroFormulario(model.estoqueMinimo);
-
-    if (model.estoqueMaximo !== null && model.estoqueMaximo !== undefined && String(model.estoqueMaximo).trim() !== '') {
-      const maximo = this.numeroFormulario(model.estoqueMaximo);
-
-      if (Number.isNaN(maximo) || maximo < 0) {
-        return 'Informe um estoque máximo válido, com valor igual ou maior que zero.';
-      }
-
-      if (!Number.isNaN(minimo) && maximo < minimo) {
-        return 'O estoque máximo não pode ser menor que o estoque mínimo.';
-      }
-    }
-
-    if (model.pontoReposicao !== null && model.pontoReposicao !== undefined && String(model.pontoReposicao).trim() !== '') {
-      const pontoReposicao = this.numeroFormulario(model.pontoReposicao);
-
-      if (Number.isNaN(pontoReposicao) || pontoReposicao < 0) {
-        return 'Informe um ponto de reposição válido, com valor igual ou maior que zero.';
-      }
-    }
-
-    if (model.quantidadeReposicaoSugerida !== null && model.quantidadeReposicaoSugerida !== undefined && String(model.quantidadeReposicaoSugerida).trim() !== '') {
-      const reposicao = this.numeroFormulario(model.quantidadeReposicaoSugerida);
-
-      if (Number.isNaN(reposicao) || reposicao < 0) {
-        return 'Informe uma quantidade de reposição válida, com valor igual ou maior que zero.';
-      }
-    }
-
-    const custoMedioVazio = model.custoMedio === null
-      || model.custoMedio === undefined
-      || String(model.custoMedio).trim() === '';
-
-    if (this.custoMedioObrigatorio(model) && custoMedioVazio) {
-      return 'Informe o custo médio quando a quantidade atual for maior que zero.';
-    }
-
-    if (!custoMedioVazio) {
-      const custoMedio = this.numeroFormulario(model.custoMedio, true);
-
-      if (Number.isNaN(custoMedio) || custoMedio < 0) {
-        return 'Informe um custo médio válido, com valor igual ou maior que zero.';
-      }
-    }
-
-    return null;
-  }
+  private validarReposicaoEstoque(model: Partial<EstoquePeca>): string | null { return this.apoio.validarReposicaoEstoque(model); }
 
 
-  private custoMedioInvalido(model: Partial<EstoquePeca>): boolean {
-    const custoMedioVazio = model.custoMedio === null
-      || model.custoMedio === undefined
-      || String(model.custoMedio).trim() === '';
+  private custoMedioInvalido(model: Partial<EstoquePeca>): boolean { return this.apoio.custoMedioInvalido(model); }
 
-    if (custoMedioVazio) {
-      return this.custoMedioObrigatorio(model);
-    }
-
-    const custoMedio = this.numeroFormulario(model.custoMedio, true);
-
-    return Number.isNaN(custoMedio) || custoMedio < 0;
-  }
-
-  private quantidadeObrigatoriaInvalida(valor: any, permitirZero: boolean): boolean {
-    if (valor === null || valor === undefined || String(valor).trim() === '') {
-      return true;
-    }
-
-    const numero = this.numeroFormulario(valor);
-
-    if (Number.isNaN(numero)) {
-      return true;
-    }
-
-    return permitirZero ? numero < 0 : numero <= 0;
-  }
+  private quantidadeObrigatoriaInvalida(valor: any, permitirZero: boolean): boolean { return this.apoio.quantidadeObrigatoriaInvalida(valor, permitirZero); }
 
 
-  private numeroFormulario(valor: any, removerMoeda = false): number {
-    if (valor === null || valor === undefined || String(valor).trim() === '') {
-      return Number.NaN;
-    }
-
-    if (typeof valor === 'number') {
-      return Number.isFinite(valor) ? valor : Number.NaN;
-    }
-
-    let texto = String(valor).replace(/\s/g, '').trim();
-
-    if (removerMoeda) {
-      texto = texto.replace('R$', '');
-    }
-
-    if (texto.includes(',')) {
-      texto = texto.replace(/\./g, '').replace(',', '.');
-    }
-
-    const numero = Number(texto);
-
-    return Number.isFinite(numero) ? numero : Number.NaN;
-  }
+  private numeroFormulario(valor: any, removerMoeda = false): number { return this.apoio.numeroFormulario(valor, removerMoeda); }
 
 
   private direcionarAbaErroEstoque(model: Partial<EstoquePeca>, validarPecaELocal: boolean, modo: 'cadastro' | 'edicao'): void {
@@ -1195,29 +1066,7 @@ export class ControleEstoquePecasComponent implements OnInit {
     }
   }
 
-  private montarPayloadEstoque(model: Partial<EstoquePeca>): EstoquePecaRequest {
-    return {
-      idPeca: model.idPeca ?? null,
-      idLocalEstoque: model.idLocalEstoque ?? null,
-
-      quantidadeAtual: this.converterQuantidadeParaBackend(model.quantidadeAtual),
-      quantidadeReservada: this.converterQuantidadeParaBackend(model.quantidadeReservada),
-
-      estoqueMinimo: this.converterQuantidadeParaBackend(model.estoqueMinimo),
-      estoqueCritico: this.converterQuantidadeParaBackend(model.estoqueCritico),
-      estoqueMaximo: this.converterQuantidadeOpcionalParaBackend(model.estoqueMaximo),
-
-      pontoReposicao: this.converterQuantidadeOpcionalParaBackend(model.pontoReposicao),
-      quantidadeReposicaoSugerida: this.converterQuantidadeOpcionalParaBackend(model.quantidadeReposicaoSugerida),
-
-      custoMedio: this.converterMoedaOpcionalParaNumero(model.custoMedio),
-      localizacaoFisica: this.limparOpcional(model.localizacaoFisica),
-
-      ativo: model.ativo === null || model.ativo === undefined
-        ? true
-        : Boolean(model.ativo)
-    };
-  }
+  private montarPayloadEstoque(model: Partial<EstoquePeca>): EstoquePecaRequest { return this.apoio.montarPayloadEstoque(model); }
 
   // ======================================================
   // SELEÇÃO DE PEÇA
@@ -1321,16 +1170,7 @@ export class ControleEstoquePecasComponent implements OnInit {
     }, 250);
   }
 
-  pecaTexto(model: Partial<EstoquePeca>): string {
-    if (!model.nomePeca) {
-      return '';
-    }
-
-    const fabricante = model.fabricantePeca ? ` - ${model.fabricantePeca}` : '';
-    const modelo = model.modeloPeca ? ` / ${model.modeloPeca}` : '';
-
-    return `${model.nomePeca}${fabricante}${modelo}`;
-  }
+  pecaTexto(model: Partial<EstoquePeca>): string { return this.apoio.pecaTexto(model); }
 
   // ======================================================
   // LOCAL DE ESTOQUE
@@ -1404,6 +1244,7 @@ export class ControleEstoquePecasComponent implements OnInit {
   // ======================================================
 
   abrirModalMovimentacao(item: EstoquePeca, tipo: TipoMovimentacaoTela): void {
+  if (this.acessoColaborador && (tipo === 'AJUSTE_ENTRADA' || tipo === 'AJUSTE_SAIDA')) return;
   this.estoqueSelecionado = item;
   this.tipoMovimentacaoSelecionado = tipo;
   this.movimentacoesParaDevolucao = [];
@@ -1605,10 +1446,12 @@ get correcaoSelecionada(): boolean {
 
 get movimentacoesDisponiveisCorrecao(): MovimentacaoEstoquePeca[] {
   return this.movimentacoesParaDevolucao.filter(m => ['ENTRADA', 'SAIDA'].includes(m.tipoMovimento || '')
-    && m.origem !== 'ATENDIMENTO' && !m.idAtendimento && (!m.idMovimentacaoOrigem || m.origem === 'DEVOLUCAO_FORNECEDOR'));
+    && m.origem !== 'ATENDIMENTO' && m.origem !== 'INVENTARIO_INICIAL'
+    && !m.idAtendimento && (!m.idMovimentacaoOrigem || m.origem === 'DEVOLUCAO_FORNECEDOR'));
 }
 
 quantidadeOriginalCorrigida(original: MovimentacaoEstoquePeca): number {
+  if(original.quantidadeDisponivelOriginal!=null)return Number(original.quantidadeDisponivelOriginal);
   const entradaOriginal = original.tipoMovimento === 'ENTRADA';
   const quantidade = this.movimentacoesParaDevolucao.filter(m => m.idMovimentacaoOrigem === original.id)
     .reduce((total, m) => {
@@ -1627,16 +1470,22 @@ get saidasDisponiveisDevolucao(): MovimentacaoEstoquePeca[] {
 }
 
 saldoDevolucao(saida: MovimentacaoEstoquePeca): number {
+  if(saida.quantidadeDisponivelOriginal!=null)return Math.max(0,Number(saida.quantidadeDisponivelOriginal));
   const devolvida = this.movimentacoesParaDevolucao.filter(m => m.idMovimentacaoOrigem === saida.id)
     .reduce((total, m) => total + (m.tipoMovimento === 'AJUSTE_SAIDA' ? -1 : 1) * Number(m.quantidade || 0), 0);
   return Math.max(0, Math.round((Number(saida.quantidade || 0) - devolvida) * 1000) / 1000);
 }
 
 alterarOrigemMovimentacao(): void {
-  this.movimento.valorUnitario = '';
+  // A origem é escolhida depois dos campos de quantidade e custo na tela.
+  // Preserve o custo informado para entradas manuais; origens com custo
+  // calculado pelo sistema não devem reaproveitar um valor digitado antes.
+  if (this.custoAutomaticoMovimentacao !== null || this.devolucaoSelecionada) {
+    this.movimento.valorUnitario = '';
+  }
   this.movimento.idMovimentacaoOrigem = null;
   this.movimento.idFornecedor = null;
-  if (this.exibirFornecedorMovimentacao) {
+  if (this.exibirFornecedorMovimentacao && !this.modoPaginado) {
     this.carregandoFornecedoresMovimentacao = true;
     this.service.listarFornecedoresMovimentacao().subscribe({
       next: lista => { this.fornecedoresMovimentacao = lista || []; this.carregandoFornecedoresMovimentacao = false; },
@@ -1645,6 +1494,7 @@ alterarOrigemMovimentacao(): void {
   }
   this.movimentacoesParaDevolucao = [];
   this.carregandoSaidasDevolucao = false;
+  if(this.modoPaginado)return;
   if (!(this.devolucaoSelecionada || this.correcaoSelecionada || this.devolucaoFornecedorSelecionada) || !this.estoqueSelecionado?.id) return;
   const id = this.estoqueSelecionado.id;
   this.carregandoSaidasDevolucao = true;
@@ -1703,6 +1553,7 @@ get quantidadeMovimentacaoValida(): boolean {
     if (!original) return false;
     const aumentaOriginal = this.tipoMovimentacaoSelecionado.endsWith('ENTRADA') === (original.tipoMovimento === 'ENTRADA');
     if (aumentaOriginal && original.origem === 'DEVOLUCAO_FORNECEDOR' && original.idMovimentacaoOrigem) {
+      if(original.quantidadeDisponivelRecebimento!=null)return quantidade<=Number(original.quantidadeDisponivelRecebimento);
       const recebimento = this.movimentacoesParaDevolucao.find(m => m.id === original.idMovimentacaoOrigem);
       return !!recebimento && quantidade <= this.quantidadeOriginalCorrigida(recebimento);
     }
@@ -1738,19 +1589,10 @@ get ajudaCustoMovimentacao(): string {
   return 'Informe o custo por unidade. Se for zero, justifique no campo Motivo.';
 }
 
-rotuloOrigemMovimentacao(origem?: string | null): string {
-  const rotulos: Record<string, string> = {
-    COMPRA: 'Compra', DEVOLUCAO_NAO_UTILIZADA: 'Devolução de peça não utilizada',
-    BONIFICACAO: 'Bonificação do fornecedor', OUTRA: 'Outra origem',
-    CONSUMO_INTERNO: 'Consumo interno', DEVOLUCAO_FORNECEDOR: 'Devolução ao fornecedor',
-    PERDA_AVARIA: 'Perda ou avaria', INVENTARIO: 'Inventário',
-    CORRECAO_LANCAMENTO: 'Correção de lançamento', ATENDIMENTO: 'Atendimento',
-    MANUAL: 'Manual', AJUSTE_MANUAL: 'Ajuste manual'
-  };
-  return origem ? rotulos[origem] || origem : '—';
-}
+rotuloOrigemMovimentacao(origem?: string | null): string { return this.apoio.rotuloOrigemMovimentacao(origem); }
 
   salvarMovimentacao(): void {
+  if (this.acessoColaborador && this.isMovimentacaoAjuste()) return;
   if (!this.estoqueSelecionado?.id) {
     return;
   }
@@ -1855,6 +1697,11 @@ rotuloOrigemMovimentacao(origem?: string | null): string {
 
     this.estoqueSelecionado = item;
     this.movimentacoes = [];
+    if(this.modoPaginado){
+      this.paginaMovimentacoes=0;this.buscaMovimentacoes='';this.totalMovimentacoes=0;
+      const el=document.getElementById('modalHistoricoMovimentacoes');if(!el)return;
+      this.modalMovimentacoes=bootstrap.Modal.getOrCreateInstance(el);this.modalMovimentacoes.show();this.carregarPaginaMovimentacoes();return;
+    }
 
     this.service.listarMovimentacoes(item.id).subscribe({
       next: (lista) => {
@@ -1880,6 +1727,20 @@ rotuloOrigemMovimentacao(origem?: string | null): string {
           )
         );
       }
+    });
+  }
+
+  paginaMovimentacoes=0;tamanhoMovimentacoes=10;totalMovimentacoes=0;buscaMovimentacoes='';carregandoMovimentacoes=false;erroMovimentacoes='';
+  private consultaMovimentacoes?:Subscription;
+  recursoMovimentacoes():string{return 'estoque-pecas/'+this.estoqueSelecionado?.id+'/movimentacoes';}
+  registrarMovimentacaoOriginal(movimento:MovimentacaoEstoquePeca|null):void{this.movimentacoesParaDevolucao=movimento?[movimento]:[];}
+  carregarPaginaMovimentacoes(reiniciar=false):void{
+    if(!this.estoqueSelecionado?.id)return;if(reiniciar)this.paginaMovimentacoes=0;
+    this.consultaMovimentacoes?.unsubscribe();this.carregandoMovimentacoes=true;this.erroMovimentacoes='';this.movimentacoes=[];
+    this.consultaMovimentacoes=this.consultaPaginada.consultar<MovimentacaoEstoquePeca>(this.recursoMovimentacoes(),{pagina:this.paginaMovimentacoes,tamanho:this.tamanhoMovimentacoes,busca:this.buscaMovimentacoes}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next:pagina=>{this.movimentacoes=pagina.content;this.totalMovimentacoes=pagina.totalElements;this.carregandoMovimentacoes=false;
+        if(this.paginaMovimentacoes>=pagina.totalPages&&this.paginaMovimentacoes>0){this.paginaMovimentacoes=Math.max(0,pagina.totalPages-1);this.carregarPaginaMovimentacoes();}},
+      error:()=>{this.carregandoMovimentacoes=false;this.erroMovimentacoes='Não foi possível consultar o histórico. Clique em Atualizar para tentar novamente.';}
     });
   }
 
@@ -1996,6 +1857,7 @@ rotuloOrigemMovimentacao(origem?: string | null): string {
 
   private readonly router = injectFeedback(Router);
   configurarAlertasEstoque(): void {
+    if (this.acessoColaborador) return;
     aposFecharModal('modalAlertasEstoque', this.modalAlertas, () => {
       void this.router.navigate(['/menuAdministrador/alertasColaboradores'])
         .then(() => setTimeout(() => document.getElementById('configuracao-estoque')?.scrollIntoView({ block: 'start' }), 0));
@@ -2037,65 +1899,14 @@ rotuloOrigemMovimentacao(origem?: string | null): string {
   // FORMATAÇÕES
   // ======================================================
 
-  formatarQuantidade(valor: any, unidade?: string | null): string {
-    const numero = this.numeroEstoque(valor);
-
-    const texto = numero.toLocaleString('pt-BR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 3
-    });
-
-    return `${texto} ${unidade || 'un.'}`;
-  }
+  formatarQuantidade(valor: any, unidade?: string | null): string { return this.apoio.formatarQuantidade(valor, unidade); }
 
 
-  formatarQuantidadeSemUnidade(valor: any): string {
-    const numero = this.numeroEstoque(valor);
-
-    return numero.toLocaleString('pt-BR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 3
-    });
-  }
+  formatarQuantidadeSemUnidade(valor: any): string { return this.apoio.formatarQuantidadeSemUnidade(valor); }
+  formatarMensagemAlertaEstoque(mensagem: string | null | undefined): string { return this.apoio.formatarMensagemAlertaEstoque(mensagem); }
 
 
-  formatarMoedaBR(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '';
-    }
-
-    let numero: number;
-
-    if (typeof valor === 'number') {
-      numero = valor;
-    } else {
-      let texto = valor
-        .toString()
-        .replace('R$', '')
-        .replace(/\s/g, '')
-        .trim();
-
-      if (/^\d+\.\d{1,2}$/.test(texto)) {
-        numero = Number(texto);
-      } else if (texto.includes(',')) {
-        texto = texto.replace(/\./g, '').replace(',', '.');
-        numero = Number(texto);
-      } else {
-        numero = Number(texto);
-      }
-    }
-
-    if (Number.isNaN(numero)) {
-      return '';
-    }
-
-    return numero.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
+  formatarMoedaBR(valor: any): string { return this.apoio.formatarMoedaBR(valor); }
 
   formatarValorUnitarioMovimento(): void {
     this.movimento.valorUnitario = this.formatarMoedaBR(this.movimento.valorUnitario);
@@ -2109,125 +1920,21 @@ rotuloOrigemMovimentacao(origem?: string | null): string {
     this.edit.custoMedio = this.formatarMoedaBR(this.edit.custoMedio);
   }
 
-  formatarStatus(status?: string): string {
-    if (!status) {
-      return '';
-    }
+  formatarStatus(status?: string): string { return this.apoio.formatarStatus(status); }
 
-    if (status === 'NORMAL') {
-      return 'Normal';
-    }
+  statusBadgeClass(status?: string): string { return this.apoio.statusBadgeClass(status); }
 
-    if (status === 'ATENCAO') {
-      return 'Atenção';
-    }
+  movimentoBadgeClass(tipo?: string): string { return this.apoio.movimentoBadgeClass(tipo); }
 
-    if (status === 'CRITICO') {
-      return 'Crítico';
-    }
+  formatarTipoMovimento(tipo?: string): string { return this.apoio.formatarTipoMovimento(tipo); }
 
-    if (status === 'ZERADO') {
-      return 'Zerado';
-    }
+  formatarDataHora(data?: string | null): string { return this.apoio.formatarDataHora(data); }
 
-    return status;
-  }
+  capitalizar(texto: string | null | undefined): string { return this.apoio.capitalizar(texto); }
 
-  statusBadgeClass(status?: string): string {
-    if (status === 'NORMAL') {
-      return 'bg-success';
-    }
+  normalizarTexto(valor: any): string { return this.apoio.normalizarTexto(valor); }
 
-    if (status === 'ATENCAO') {
-      return 'bg-warning text-dark';
-    }
-
-    if (status === 'CRITICO') {
-      return 'bg-danger';
-    }
-
-    if (status === 'ZERADO') {
-      return 'bg-dark';
-    }
-
-    return 'bg-secondary';
-  }
-
-  movimentoBadgeClass(tipo?: string): string {
-    if (tipo === 'ENTRADA' || tipo === 'AJUSTE_ENTRADA') {
-      return 'bg-success';
-    }
-
-    if (tipo === 'SAIDA' || tipo === 'AJUSTE_SAIDA') {
-      return 'bg-danger';
-    }
-
-    return 'bg-secondary';
-  }
-
-  formatarTipoMovimento(tipo?: string): string {
-    if (!tipo) {
-      return '';
-    }
-
-    if (tipo === 'ENTRADA') {
-      return 'Entrada';
-    }
-
-    if (tipo === 'SAIDA') {
-      return 'Saída';
-    }
-
-    if (tipo === 'AJUSTE_ENTRADA') {
-      return 'Ajuste Entrada';
-    }
-
-    if (tipo === 'AJUSTE_SAIDA') {
-      return 'Ajuste Saída';
-    }
-
-    return tipo;
-  }
-
-  formatarDataHora(data?: string | null): string {
-    if (!data) {
-      return '';
-    }
-
-    const d = new Date(data);
-
-    if (Number.isNaN(d.getTime())) {
-      return '';
-    }
-
-    return d.toLocaleString('pt-BR');
-  }
-
-  capitalizar(texto: string | null | undefined): string {
-    if (!texto) {
-      return '';
-    }
-
-    return texto
-      .trim()
-      .split(' ')
-      .filter(parte => parte.length > 0)
-      .map(parte => parte.charAt(0).toUpperCase() + parte.slice(1).toLowerCase())
-      .join(' ');
-  }
-
-  normalizarTexto(valor: any): string {
-    return (valor ?? '')
-      .toString()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-  }
-
-  private onlyDigits(valor: any): string {
-    return (valor ?? '').toString().replace(/\D/g, '');
-  }
+  private onlyDigits(valor: any): string { return this.apoio.onlyDigits(valor); }
 
 
   voltar(): void {
@@ -2238,218 +1945,32 @@ rotuloOrigemMovimentacao(origem?: string | null): string {
   // CONVERSÕES
   // ======================================================
 
-  private converterQuantidadeParaBackend(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '0';
-    }
+  private converterQuantidadeParaBackend(valor: any): string { return this.apoio.converterQuantidadeParaBackend(valor); }
 
-    if (typeof valor === 'number') {
-      return valor.toString();
-    }
+  private converterQuantidadeOpcionalParaBackend(valor: any): string { return this.apoio.converterQuantidadeOpcionalParaBackend(valor); }
 
-    let texto = valor
-      .toString()
-      .replace(/\s/g, '')
-      .trim();
+  private converterMoedaOpcionalParaNumero(valor: any): string { return this.apoio.converterMoedaOpcionalParaNumero(valor); }
 
-    if (texto.includes(',')) {
-      texto = texto.replace(/\./g, '').replace(',', '.');
-    }
+  private normalizarDecimalParaExibicao(valor: any): string { return this.apoio.normalizarDecimalParaExibicao(valor); }
 
-    const numero = Number(texto);
+  private limparOpcional(valor: string | null | undefined): string | undefined { return this.apoio.limparOpcional(valor); }
 
-    if (Number.isNaN(numero)) {
-      return '0';
-    }
+  private extrairMensagemErro(erro: any, mensagemPadrao: string): string { return this.apoio.extrairMensagemErro(erro, mensagemPadrao); }
 
-    return numero.toString();
-  }
-
-  private converterQuantidadeOpcionalParaBackend(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '';
-    }
-
-    return this.converterQuantidadeParaBackend(valor);
-  }
-
-  private converterMoedaOpcionalParaNumero(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '';
-    }
-
-    if (typeof valor === 'number') {
-      return valor.toFixed(2);
-    }
-
-    let texto = valor
-      .toString()
-      .replace('R$', '')
-      .replace(/\s/g, '')
-      .trim();
-
-    if (/^\d+\.\d{1,2}$/.test(texto)) {
-      return Number(texto).toFixed(2);
-    }
-
-    if (texto.includes(',')) {
-      texto = texto.replace(/\./g, '').replace(',', '.');
-      return Number(texto).toFixed(2);
-    }
-
-    const numero = Number(texto);
-
-    if (Number.isNaN(numero)) {
-      return '';
-    }
-
-    return numero.toFixed(2);
-  }
-
-  private normalizarDecimalParaExibicao(valor: any): string {
-    if (valor === null || valor === undefined || valor === '') {
-      return '';
-    }
-
-    const numero = Number(valor);
-
-    if (Number.isNaN(numero)) {
-      return valor.toString();
-    }
-
-    return numero.toLocaleString('pt-BR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 3
-    });
-  }
-
-  private limparOpcional(valor: string | null | undefined): string | undefined {
-    if (valor === null || valor === undefined || valor.trim() === '') {
-      return undefined;
-    }
-
-    return valor.trim();
-  }
-
-  private extrairMensagemErro(erro: any, mensagemPadrao: string): string {
-    if (typeof erro?.error === 'string') {
-      return erro.error;
-    }
-
-    if (typeof erro?.error?.mensagem === 'string') {
-      return erro.error.mensagem;
-    }
-
-    if (typeof erro?.message === 'string') {
-      return erro.message;
-    }
-
-    return mensagemPadrao;
-  }
-
-  quantidadeAtualEstoque(item: any): number {
-    return this.numeroEstoque(
-      item?.quantidadeAtual ??
-      item?.quantidade_atual ??
-      item?.atual ??
-      0
-    );
-  }
+  quantidadeAtualEstoque(item: any): number { return this.apoio.quantidadeAtualEstoque(item); }
 
 
-  quantidadeReservadaEstoque(item: any): number {
-    return this.numeroEstoque(
-      item?.quantidadeReservada ??
-      item?.quantidade_reservada ??
-      item?.reservada ??
-      0
-    );
-  }
+  quantidadeReservadaEstoque(item: any): number { return this.apoio.quantidadeReservadaEstoque(item); }
 
 
-  quantidadeDisponivelEstoque(item: any): number {
-    const disponivelBackend = item?.quantidadeDisponivel
-      ?? item?.quantidade_disponivel
-      ?? item?.disponivel;
-
-    if (disponivelBackend !== null && disponivelBackend !== undefined && disponivelBackend !== '') {
-      return Math.max(0, this.numeroEstoque(disponivelBackend));
-    }
-
-    const atual = this.quantidadeAtualEstoque(item);
-    const reservada = this.quantidadeReservadaEstoque(item);
-
-    return Math.max(0, atual - reservada);
-  }
+  quantidadeDisponivelEstoque(item: any): number { return this.apoio.quantidadeDisponivelEstoque(item); }
 
 
-  private numeroEstoque(valor: any): number {
-    if (valor === null || valor === undefined || valor === '') {
-      return 0;
-    }
-
-    if (typeof valor === 'number') {
-      return Number.isNaN(valor) ? 0 : valor;
-    }
-
-    let texto = String(valor)
-      .replace('R$', '')
-      .replace(/\s/g, '')
-      .trim();
-
-    if (/^-?\d+\.\d{1,4}$/.test(texto)) {
-      return Number(texto);
-    }
-
-    if (texto.includes(',')) {
-      texto = texto.replace(/\./g, '').replace(',', '.');
-    }
-
-    const numero = Number(texto);
-
-    return Number.isNaN(numero) ? 0 : numero;
-  }
+  private numeroEstoque(valor: any): number { return this.apoio.numeroEstoque(valor); }
 
 
-  unidadeEstoque(item: any): string {
-    return formatarUnidadePeca(item?.unidadePeca
-      || item?.unidadeMedida
-      || item?.unidade_medida
-      || item?.unidade
-      || item?.peca?.unidade
-      || 'un.');
-  }
+  unidadeEstoque(item: any): string { return this.apoio.unidadeEstoque(item); }
 
-  statusCalculadoEstoque(item: any): string {
-    const disponivel = this.quantidadeDisponivelEstoque(item);
-
-    const minimo = this.numeroEstoque(
-      item?.estoqueMinimo ??
-      item?.estoque_minimo ??
-      item?.minimo ??
-      0
-    );
-
-    const critico = this.numeroEstoque(
-      item?.estoqueCritico ??
-      item?.estoque_critico ??
-      item?.critico ??
-      0
-    );
-
-    if (disponivel <= 0) {
-      return 'ZERADO';
-    }
-
-    if (critico > 0 && disponivel <= critico) {
-      return 'CRITICO';
-    }
-
-    if (minimo > 0 && disponivel <= minimo) {
-      return 'ATENCAO';
-    }
-
-    return 'NORMAL';
-  }
+  statusCalculadoEstoque(item: any): string { return this.apoio.statusCalculadoEstoque(item); }
 
 }

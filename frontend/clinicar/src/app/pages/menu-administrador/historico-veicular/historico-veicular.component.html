@@ -14,12 +14,16 @@
       <app-field-help-panel></app-field-help-panel>
       <div class="historico-filter-fields">
         <div class="filter-vehicle"><label for="historicoVeiculo" class="form-label">Veículo</label>
-        <select id="historicoVeiculo" name="veiculo" class="form-select" [(ngModel)]="veiculoId" (ngModelChange)="limparResultado()">
-          <option [ngValue]="null">Selecione um veículo</option>
-          @for (v of veiculos; track v) {
-            <option [ngValue]="v.id">{{ formatarPlaca(v.placa) }} | {{ v.fabricante }} {{ v.modelo }}</option>
-          }
-        </select></div>
+        @if (modoCliente) {
+          <select id="historicoVeiculo" name="veiculo" class="form-select" [(ngModel)]="veiculoId" (ngModelChange)="limparResultado()">
+            <option [ngValue]="null">Selecione um dos seus veículos</option>
+            @for (veiculo of veiculosDoCliente; track veiculo.id) {
+              <option [ngValue]="veiculo.id">{{ formatarPlaca(veiculo.placa) }} · {{ veiculo.fabricante }} {{ veiculo.modelo }}</option>
+            }
+          </select>
+        } @else {
+          <app-seletor-remoto inputId="historicoVeiculo" name="veiculo" recurso="veiculo" rotulo="Veículo" [(ngModel)]="veiculoId" (ngModelChange)="limparResultado()" />
+        }</div>
         <div><label for="historicoInicio" class="form-label">Data inicial</label><input id="historicoInicio" name="inicio" type="date" class="form-control" [(ngModel)]="inicio" (ngModelChange)="limparResultado()"></div>
         <div><label for="historicoFim" class="form-label">Data final</label><input id="historicoFim" name="fim" type="date" class="form-control" [(ngModel)]="fim" (ngModelChange)="limparResultado()"></div>
         <div class="filter-status"><label for="historicoSituacao" class="form-label">Situação</label><select id="historicoSituacao" name="situacao" class="form-select" [(ngModel)]="situacao" (ngModelChange)="limparResultado()"><option value="TODOS">Todas</option><option value="FINALIZADOS">Finalizados</option><option value="EM_ABERTO">Em aberto</option><option value="CANCELADOS">Cancelados</option></select></div>
@@ -27,7 +31,11 @@
       <div class="toolbar-actions mt-2">
         <button class="btn btn-clinicar-primary" type="submit" [disabled]="!veiculoId || carregando"><i class="bi bi-search me-1"></i>{{ carregando ? 'Consultando...' : 'Consultar histórico' }}</button>
         <button class="btn btn-outline-primary" type="button" (click)="exportar()" [disabled]="!relatorio || carregando || exportando"><i class="bi bi-file-earmark-pdf me-1"></i>{{ exportando ? 'Gerando PDF...' : 'Exportar PDF' }}</button>
-        <a routerLink="../veiculo" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar aos veículos</a>
+        @if (modoCliente) {
+          <button type="button" class="btn btn-outline-secondary" (click)="voltarAosVeiculos.emit()"><i class="bi bi-arrow-left me-1"></i>Voltar aos veículos</button>
+        } @else {
+          <a routerLink="../veiculo" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar aos veículos</a>
+        }
       </div>
     </form>
     <div class="result-shell">
