@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - main
+      - desenvolvimento-pos-entrega
 
   workflow_dispatch:
 
   pull_request:
-    branches: [main]
+    branches: [main, desenvolvimento-pos-entrega]
 
 jobs:
   quality:
@@ -72,7 +73,7 @@ jobs:
 
   build-and-push:
     needs: quality
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
 
