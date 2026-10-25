@@ -53,7 +53,7 @@
         <div class="card clinicar-card veiculos-list-card">
           <div class="card-body veiculos-list-body">
             <div class="row g-2 align-items-end mb-2 toolbar-filters">
-              <div class="col-lg-3 col-md-12">
+              <div class="col-lg-2 col-md-12">
                 <label class="form-label fw-semibold">Buscar</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -88,8 +88,9 @@
                   Limpar Filtros
                 </button>
               </div>
-              <div class="col-lg-4 col-md-12">
+              <div class="col-lg-5 col-md-12">
                 <div class="toolbar-actions">
+                  @if (acessoAdministrador) { <a class="btn btn-outline-primary" routerLink="../correcoesVeiculos"><i class="bi bi-clipboard-check me-1"></i>Correções solicitadas</a> }
                   <button class="btn btn-primary" type="button" (click)="abrirModalCadastroVeiculo()">
                     <i class="bi bi-plus-circle me-1"></i>
                     Novo Veículo
@@ -223,7 +224,7 @@
                           }
                         </td>
                         <td class="text-center">
-                          <div class="table-actions"><a class="btn btn-sm btn-outline-primary" [routerLink]="[&apos;/menuAdministrador/historicoVeicular&apos;]" [queryParams]="{veiculoId: v.id}" title="Consultar histórico veicular" aria-label="Consultar histórico veicular"><i class="bi bi-clock-history"></i></a>
+                          <div class="table-actions"><a class="btn btn-sm btn-outline-primary" [routerLink]="['../historicoVeicular']" [queryParams]="{veiculoId: v.id}" title="Consultar histórico veicular" aria-label="Consultar histórico veicular"><i class="bi bi-clock-history"></i></a>
                           <button class="btn btn-sm btn-outline-info" type="button" title="Visualizar"
                             (click)="abrirDetalhes(v)">
                             <i class="bi bi-eye"></i>
@@ -275,7 +276,7 @@
                   <span><strong>Proprietário:</strong> {{ proprietarioNome(v) }}</span>
                   <span><strong>Contato:</strong> {{ proprietarioTelefone(v) }}</span>
                 </div>
-                <div class="table-actions mt-2"><a class="btn btn-sm btn-outline-primary" [routerLink]="[&apos;/menuAdministrador/historicoVeicular&apos;]" [queryParams]="{veiculoId: v.id}"><i class="bi bi-clock-history me-1"></i>Histórico</a>
+                <div class="table-actions mt-2"><a class="btn btn-sm btn-outline-primary" [routerLink]="['../historicoVeicular']" [queryParams]="{veiculoId: v.id}"><i class="bi bi-clock-history me-1"></i>Histórico</a>
                 <button class="btn btn-sm btn-outline-info" type="button" (click)="abrirDetalhes(v)">
                   <i class="bi bi-eye me-1"></i> Visualizar
                 </button>
@@ -612,8 +613,8 @@
 
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-        <button type="button" class="btn btn-primary" [disabled]="!cadastroVeiculoProntoParaSalvar || salvandoCadastro"
-          [title]="mensagemBloqueioCadastro || 'Salvar veículo'" (click)="salvarCadastroVeiculo()">
+        <button type="button" class="btn btn-primary" [disabled]="abaCadastroVeiculo !== 'revisao' || !cadastroVeiculoProntoParaSalvar || salvandoCadastro"
+          [title]="abaCadastroVeiculo !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioCadastro || 'Salvar veículo')" (click)="salvarCadastroVeiculo()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar veículo
         </button>
@@ -931,8 +932,8 @@
 
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-        <button type="button" class="btn btn-primary" [disabled]="!edicaoVeiculoProntaParaSalvar"
-          [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
+        <button type="button" class="btn btn-primary" [disabled]="abaEdicaoVeiculo !== 'revisao' || !edicaoVeiculoProntaParaSalvar"
+          [title]="abaEdicaoVeiculo !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioEdicao || 'Salvar alterações')" (click)="salvarEdicaoModal()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar alterações
         </button>

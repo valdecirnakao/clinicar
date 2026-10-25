@@ -30,14 +30,15 @@ describe('Tabelas de configurações de alertas',()=>{
     manutencao.config={id:2,versao:0,ativo:true,antecedenciaDias:15,intervaloDias:7,maximoEnvios:3,diasAposVencimento:30,horaInicio:9,horaFim:18,fusoHorario:'America/Sao_Paulo'};
     manutencao.modoLeitura=true;manutencao.salvar();
     const estoque=new ConfiguracaoAlertasEstoqueComponent(TestBed.inject(HttpClient));
-    estoque.config={versao:0,ativo:true,idResponsavel:3,telefoneAdministrador:'5511999999999',reenviarAlertaAposHoras:24};
+    estoque.config={versao:0,ativo:true,idResponsavel:3,telefoneAdministrador:'5511999999999',idAdministradorCritico:4,telefoneAdministradorCritico:'5511888888888',reenviarAlertaAposHoras:24};
     estoque.responsaveis=[{id:3,nome:'Responsável',telefone:'5511999999999',status:'ATIVO',tipo_do_acesso:'COLABORADOR'}];estoque.whatsappHabilitado=true;
+    estoque.administradores=[{id:4,nome:'Admin',telefone:'5511888888888',status:'ATIVO',tipo_do_acesso:'ADMINISTRADOR'}];
     expect(estoque.configuracaoValida).toBeTrue();estoque.modoLeitura=true;estoque.salvar();estoque.reenviarPendentes();
     http.expectNone(r=>r.method==='PUT'||r.method==='POST');
   });
   it('mantém uma única configuração de estoque e bloqueia reenvio desativado',()=>{
-    const colaboradores=new AlertasColaboradoresComponent(TestBed.inject(HttpClient));colaboradores.ngOnInit();
-    http.expectOne('/api/configuracao-alerta-estoque').flush({whatsappHabilitado:true,configuracao:{ativo:false,idResponsavel:3,nomeResponsavel:'Responsável',reenviarAlertaAposHoras:24}});
+    const colaboradores=TestBed.runInInjectionContext(()=>new AlertasColaboradoresComponent(TestBed.inject(HttpClient)));colaboradores.ngOnInit();
+    http.expectOne('/api/configuracao-alerta-estoque').flush({whatsappHabilitado:true,configuracao:{ativo:false,idResponsavel:3,nomeResponsavel:'Responsável',telefoneAdministrador:'5511999999999',idAdministradorCritico:4,nomeAdministradorCritico:'Admin',telefoneAdministradorCritico:'5511888888888',reenviarAlertaAposHoras:24}});
     expect(colaboradores.consulta!.configuracao.idResponsavel).toBe(3);colaboradores.reenviar();http.expectNone('/api/configuracao-alerta-estoque/reenviar-pendentes');colaboradores.ngOnDestroy();
   });
 });

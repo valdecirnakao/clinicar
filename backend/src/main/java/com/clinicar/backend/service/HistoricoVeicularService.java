@@ -49,7 +49,29 @@ public class HistoricoVeicularService {
         }
         List<Registro> registros = new ArrayList<>();
         for (var linha : selecionados) registros.add(registro("ATENDIMENTO", linha, itens.getOrDefault(linha.getId(), List.of())));
-        for (var linha : agendamentos) if (corresponde(linha.getStatus(), filtro)) registros.add(registro("AGENDAMENTO", linha, List.of()));
+        var agendamentosSelecionados = agendamentos.stream().filter(a -> corresponde(a.getStatus(), filtro)).toList();
+        Map<Long, BigDecimal> totaisPecas = new HashMap<>();
+        if (!agendamentosSelecionados.isEmpty()) {
+            historico.totaisPecasAgendamento(agendamentosSelecionados.stream()
+                    .map(HistoricoVeicularRepository.Linha::getId).toList())
+                    .forEach(item -> totaisPecas.put(item.getAgendamentoId(), item.getTotal()));
+        }
+        for (var linha : agendamentosSelecionados) {
+            var registro = registro("AGENDAMENTO", linha, List.of());
+            BigDecimal pecas = totaisPecas.get(linha.getId());
+            if (pecas != null && pecas.signum() > 0) {
+                BigDecimal base = linha.getValorServicoBase() == null ? BigDecimal.ZERO : linha.getValorServicoBase();
+                BigDecimal minimo = base.add(pecas);
+                if (registro.valor() == null || registro.valor().compareTo(minimo) < 0) {
+                    registro = new Registro(registro.tipo(), registro.id(), registro.codigo(), registro.data(),
+                            registro.status(), registro.placa(), registro.fabricante(), registro.modelo(),
+                            registro.cor(), registro.anoModeloCombustivel(), registro.veiculoPreservado(), registro.kmEntrada(),
+                            registro.kmSaida(), registro.queixa(), registro.diagnostico(), registro.execucao(),
+                            registro.recomendacoes(), minimo, registro.finalizado(), registro.itens());
+                }
+            }
+            registros.add(registro);
+        }
         registros.sort(Comparator.comparing(Registro::data, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(Registro::tipo).thenComparing(Registro::id, Comparator.reverseOrder()));
         var concluidos = registros.stream().filter(r -> r.tipo().equals("ATENDIMENTO") && r.finalizado()).toList();

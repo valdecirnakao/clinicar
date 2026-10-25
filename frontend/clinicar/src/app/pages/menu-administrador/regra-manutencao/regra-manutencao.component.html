@@ -726,7 +726,10 @@ MODAL CADASTRO / EDIÇÃO
                 Serviço
               </label>
 
-              <select
+              @if(modoPaginado){<app-seletor-remoto
+
+                [(ngModel)]="formulario.idServico"
+                 inputId="regra-manutencao-formulario-idServico" recurso="servico" rotulo="serviço" [filtros]="{ativo:true}" (selecionado)="registrarCatalogo('servicos', $event)" />}@else{<select
                 class="form-select"
                 [(ngModel)]="formulario.idServico"
                 >
@@ -746,7 +749,7 @@ MODAL CADASTRO / EDIÇÃO
                   </option>
                 }
 
-              </select>
+              </select>}
 
             </div>
 
@@ -757,7 +760,11 @@ MODAL CADASTRO / EDIÇÃO
                 Peça
               </label>
 
-              <select
+              @if(modoPaginado){<app-seletor-remoto
+
+                [(ngModel)]="formulario.idPeca"
+                (ngModelChange)="aoAlterarPecaFormulario()"
+                 inputId="regra-manutencao-formulario-idPeca" recurso="peca" rotulo="peça" [filtros]="{}" (selecionado)="registrarCatalogo('pecas', $event)" />}@else{<select
                 class="form-select"
                 [(ngModel)]="formulario.idPeca"
                 (ngModelChange)="aoAlterarPecaFormulario()"
@@ -778,7 +785,7 @@ MODAL CADASTRO / EDIÇÃO
                   </option>
                 }
 
-              </select>
+              </select>}
 
             </div>
 

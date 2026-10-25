@@ -1,359 +1,176 @@
-import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
-import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
-import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
-import { inject as injectFeedback } from '@angular/core';
-import { NotificacaoService } from '../../../shared/feedback/notificacao.service';
-import { Component, ElementRef, HostListener, ViewChild, OnInit } from '@angular/core';
-
-import { FormsModule, NgForm } from '@angular/forms';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { switchMap, catchError, of, finalize } from 'rxjs';
-import {  RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timeout } from 'rxjs';
 
-/** ================== CONFIG ================== */
-// Ajuste conforme o backend espera:
-type OwnerApiKey = 'idProprietario' | 'id_proprietario';
-const OWNER_KEY: OwnerApiKey = 'idProprietario';
-
-type AmcApiKey = 'anoModeloCombustivel' | 'ano_modelo_combustivel';
-const AMC_KEY: AmcApiKey = 'anoModeloCombustivel';
-
-// Base do backend (troque para environment se preferir)
-const API_BASE = '';
-
-/** ================ MODELOS =================== */
-
-interface ViaCepResponse {
-  cep?: string;
-  logradouro?: string;
-  complemento?: string;
-  bairro?: string;
-  localidade?: string;
-  uf?: string;
-  ibge?: string;
-  gia?: string;
-  ddd?: string;
-  siafi?: string;
-  erro?: boolean;
+interface ClienteCadastro {
+  cpf: string; nome: string; nome_social: string; nascimento: string;
+  telefone: string; email: string; cep: string; logradouro: string;
+  numero_endereco: string; complemento_endereco: string; bairro: string;
+  cidade: string; estado: string; senha: string; confirmarSenha: string;
 }
 
-export interface Usuario {
-  id?: number;
-  nome: string;
-  email: string;
-  cpf: string;
-  nome_social?: string;
-  nascimento: string;  // ideal: 'yyyy-MM-dd'
-  tipo_do_acesso: 'cliente';
-  telefone?: string;
-  whatsappapikey?: string;
-  cep?: string;
-  senha: string;
-  confirmarSenha?: string;
-  logradouro?: string;
-  numero_endereco?: string;
-  complemento_endereco?: string;
-  bairro?: string;
-  cidade?: string;
-  estado?: string;
-}
+interface EnderecoCep { erro?: boolean | string; logradouro?: string; bairro?: string;
+  localidade?: string; uf?: string; complemento?: string }
 
-type VeiculoPayload = {
-  placa: string;
-  fabricante: string;
-  cor: string;
-  modelo: string;
-  // vai para AMC_KEY no corpo da API:
-  anoModeloCombustivel: string;
-  // vai para OWNER_KEY no corpo da API:
-  idProprietario?: number | null;
-};
-
-/** ===== Tipos FIPE (somente front) ===== */
-type VehicleType = 'cars' | 'motorcycles' | 'trucks';
-interface FipeBrand { code: string; name: string; }
-interface FipeModel { code: string; name: string; }
-interface FipeYear  { code: string; name: string; }
-const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
+type Etapa = 'dados' | 'contato' | 'endereco' | 'seguranca' | 'revisao';
+const ETAPAS: Etapa[] = ['dados', 'contato', 'endereco', 'seguranca', 'revisao'];
 
 @Component({
-    selector: 'app-cadastra-cliente',
-    imports: [FieldHelpDirective, FieldHelpPanelComponent, FeedbackDirective, FormsModule, RouterModule],
-    templateUrl: './cadastra-cliente.component.html'
+  selector: 'app-cadastra-cliente',
+  imports: [FormsModule, RouterLink],
+  templateUrl: './cadastra-cliente.component.html',
+  styleUrl: './cadastra-cliente.component.css'
 })
-export class CadastraClienteComponent implements OnInit {
-  private readonly notificacoes = injectFeedback(NotificacaoService);
-  /** ================== FORM STATE ================== */
-  // Cliente
-  cliente: Usuario = {
-    nome: '', email: '', cpf: '', whatsappapikey: '', senha: '', confirmarSenha: '',
-    telefone: '', cep: '', logradouro: '', numero_endereco: '', tipo_do_acesso: 'cliente',
-    bairro: '', cidade: '', estado: '', nascimento: '', complemento_endereco: '', nome_social: ''
+export class CadastraClienteComponent {
+  private readonly http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
+  private consultaCepId = 0;
+  readonly etapas = ETAPAS;
+  etapa: Etapa = 'dados';
+  maiorEtapa = 0;
+  cliente: ClienteCadastro = {
+    cpf: '', nome: '', nome_social: '', nascimento: '', telefone: '', email: '',
+    cep: '', logradouro: '', numero_endereco: '', complemento_endereco: '',
+    bairro: '', cidade: '', estado: '', senha: '', confirmarSenha: ''
   };
+  carregando = false;
+  concluido = false;
+  mensagemErro = '';
+  mostrarSenha = false;
+  cepConsultando = false;
+  cepErro = '';
 
-  // Veículo
-  veiculo: VeiculoPayload = {
-    placa: '',
-    fabricante: '',
-    cor: '',
-    modelo: '',
-    anoModeloCombustivel: '',
-    idProprietario: null
-  };
+  get progresso(): number { return Math.round(((this.maiorEtapa + 1) / ETAPAS.length) * 100); }
+  get indiceEtapa(): number { return ETAPAS.indexOf(this.etapa); }
 
-  /** UX */
-  loading = false;
-  errorMsg = '';
-  successMsg = '';
-  cepStatus = { loading: false, errorMsg: '' };
-
-  /** =============== FIPE =============== */
-  tipo: VehicleType = 'cars';
-  fipeCarregando = { marcas: false, modelos: false, anos: false, detalhes: false };
-  fipeErro = '';
-  marcas: FipeBrand[] = [];
-  modelos: FipeModel[] = [];
-  anos: FipeYear[] = [];
-  marcaSelCode: string | null = null;
-  modeloSelCode: string | null = null;
-  anoSelCode: string | null = null;
-  routerLink: any;
-
-  @ViewChild('numeroInput') numeroInput?: ElementRef<HTMLInputElement>;
-
-  constructor(private readonly http: HttpClient, private readonly host: ElementRef) {}
-
-  /** ================== INIT ================== */
-  ngOnInit(): void {
-    this.fipeCarregarMarcas();
-  }
-
-  // ========= FORMATAÇÕES =========
-  formatarCPF(): void {
-    if (!this.cliente.cpf) return;
-    const d = this.onlyDigits(this.cliente.cpf).slice(0, 11);
-    if (d.length === 11) {
-      this.cliente.cpf = d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else {
-      this.cliente.cpf = d.replace(
-        /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
-        '$1.$2.$3/$4-$5'
-      );
+  abrirEtapa(etapa: Etapa): void {
+    if (ETAPAS.indexOf(etapa) <= this.maiorEtapa) {
+      this.etapa = etapa;
+      this.mensagemErro = '';
     }
   }
 
-  formatarTelefone(): void {
-    if (!this.cliente.telefone) return;
-    const n = this.onlyDigits(this.cliente.telefone);
-    const codigoPais = '55';
-    if (n.length >= 11) {
-      const ddd = n.slice(-11, -9);
-      const parte1 = n.slice(-9, -4);
-      const parte2 = n.slice(-4);
-      this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
-    } else if (n.length >= 10) {
-      const ddd = n.slice(0, 2);
-      const parte1 = n.slice(2, 6);
-      const parte2 = n.slice(6, 10);
-      this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
-    } else if (n.length >= 8) {
-      const ddd = '11';
-      const parte1 = n.slice(0, -4);
-      const parte2 = n.slice(-4);
-      this.cliente.telefone = `+${codigoPais} (${ddd}) ${parte1}-${parte2}`;
-    } else {
-      this.cliente.telefone = n;
+  proximo(): void {
+    const erro = this.validar(this.etapa);
+    if (erro) { this.mensagemErro = erro; return; }
+    this.mensagemErro = '';
+    const proximo = Math.min(this.indiceEtapa + 1, ETAPAS.length - 1);
+    this.maiorEtapa = Math.max(this.maiorEtapa, proximo);
+    this.etapa = ETAPAS[proximo];
+  }
+
+  anterior(): void {
+    this.etapa = ETAPAS[Math.max(0, this.indiceEtapa - 1)];
+    this.mensagemErro = '';
+  }
+
+  cadastrar(): void {
+    if (this.carregando || this.concluido || this.etapa !== 'revisao') return;
+    for (const etapa of ETAPAS.slice(0, -1)) {
+      const erro = this.validar(etapa);
+      if (erro) { this.etapa = etapa; this.mensagemErro = erro; return; }
     }
-  }
-
-  formatarCEP(): void {
-    if (!this.cliente.cep) return;
-    const d = this.onlyDigits(this.cliente.cep).slice(0, 8);
-    this.cliente.cep = d.length === 8 ? d.replace(/(\d{5})(\d{3})/, '$1-$2') : d;
-  }
-
-
-  /** ================== VIA CEP ================== */
-  onCepBlur(): void {
-    this.formatarCEP();
-    const cepNums = this.onlyDigits(this.cliente.cep);
-    if (cepNums.length !== 8) {
-      this.cepStatus.errorMsg = 'CEP deve ter 8 dígitos.';
-      return;
-    }
-    this.consultarCep(cepNums);
-  }
-
-  private consultarCep(cepNums: string): void {
-    this.cepStatus = { loading: true, errorMsg: '' };
-
-    this.http.get<ViaCepResponse>(`https://viacep.com.br/ws/${cepNums}/json/`)
-      .subscribe({
-        next: (resp) => {
-          if (resp?.erro) {
-            this.cepStatus = { loading: false, errorMsg: 'CEP não encontrado.' };
-            return;
-          }
-          this.cliente.logradouro = resp.logradouro || '';
-          this.cliente.bairro     = resp.bairro     || '';
-          this.cliente.cidade     = resp.localidade || '';
-          this.cliente.tipo_do_acesso = 'cliente';
-          this.cliente.estado     = (resp.uf || '').toUpperCase();
-          if (!this.cliente.complemento_endereco && resp.complemento) {
-            this.cliente.complemento_endereco = resp.complemento;
-          }
-          this.cepStatus = { loading: false, errorMsg: '' };
-          setTimeout(() => this.numeroInput?.nativeElement.focus(), 0);
-        },
-        error: () => {
-          this.cepStatus = { loading: false, errorMsg: 'Falha ao consultar o CEP. Tente novamente.' };
-        }
-      });
-  }
-
-
-  /** ================== FIPE ================== */
-  private fipeCarregarMarcas(): void {
-    this.fipeErro = ''; this.fipeCarregando.marcas = true;
-    this.http.get<FipeBrand[]>(`${FIPE_BASE}/${this.tipo}/brands`)
-      .pipe(finalize(() => this.fipeCarregando.marcas = false))
-      .subscribe({
-        next: (lista) => { this.marcas = lista ?? []; },
-        error: () => { this.fipeErro = 'Falha ao carregar montadoras (FIPE).'; }
-      });
-  }
-
-  onChangeMarca(code: string): void {
-    this.marcaSelCode = code || null;
-    this.modeloSelCode = null; this.anoSelCode = null;
-    this.modelos = []; this.anos = [];
-    this.veiculo.fabricante = ''; this.veiculo.modelo = ''; this.veiculo.anoModeloCombustivel = '';
-
-    if (!this.marcaSelCode) return;
-
-    // set fabricante pelo label selecionado
-    this.veiculo.fabricante = this.marcas.find(m => m.code === this.marcaSelCode)?.name ?? '';
-
-    this.fipeErro = ''; this.fipeCarregando.modelos = true;
-    this.http.get<any>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models`)
-      .pipe(finalize(() => this.fipeCarregando.modelos = false))
-      .subscribe({
-        next: (resp) => {
-          const arr = Array.isArray(resp) ? resp : (resp?.models ?? []);
-          this.modelos = (arr ?? []) as FipeModel[];
-        },
-        error: () => { this.fipeErro = 'Falha ao carregar modelos (FIPE).'; }
-      });
-  }
-
-  onChangeModelo(code: string): void {
-    this.modeloSelCode = code || null;
-    this.anoSelCode = null; this.anos = [];
-    this.veiculo.modelo = ''; this.veiculo.anoModeloCombustivel = '';
-
-    if (!this.marcaSelCode || !this.modeloSelCode) return;
-
-    this.veiculo.modelo = this.modelos.find(m => m.code === this.modeloSelCode)?.name ?? '';
-
-    this.fipeErro = ''; this.fipeCarregando.anos = true;
-    this.http.get<FipeYear[]>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models/${this.modeloSelCode}/years`)
-      .pipe(finalize(() => this.fipeCarregando.anos = false))
-      .subscribe({
-        next: (lista) => { this.anos = lista ?? []; },
-        error: () => { this.fipeErro = 'Falha ao carregar anos (FIPE).'; }
-      });
-  }
-
-  onChangeAno(code: string): void {
-    this.anoSelCode = code || null;
-    this.veiculo.anoModeloCombustivel = '';
-
-    if (!this.marcaSelCode || !this.modeloSelCode || !this.anoSelCode) return;
-
-    this.fipeErro = ''; this.fipeCarregando.detalhes = true;
-    this.http.get<any>(`${FIPE_BASE}/${this.tipo}/brands/${this.marcaSelCode}/models/${this.modeloSelCode}/years/${this.anoSelCode}`)
-      .pipe(finalize(() => this.fipeCarregando.detalhes = false))
-      .subscribe({
-        next: (det) => {
-          // Gera "ANO / COMBUSTÍVEL"
-          const amc = det ? `${det.modelYear ?? ''} / ${det.fuel ?? ''}`.trim()
-                          : (this.anos.find(a => a.code === this.anoSelCode)?.name ?? '');
-          this.veiculo.anoModeloCombustivel = amc;
-          // Garanta fabricante e modelo caso a FIPE retorne labels
-          this.veiculo.fabricante = det?.brand ?? this.veiculo.fabricante;
-          this.veiculo.modelo = det?.model ?? this.veiculo.modelo;
-        },
-        error: () => { this.fipeErro = 'Falha ao buscar detalhes (FIPE).'; }
-      });
-  }
-
-  /** ================== SUBMIT ================== */
-  cadastrar(form: NgForm): void {
-        // validações básicas
-
-    if (this.cliente.senha !== this.cliente.confirmarSenha) {
-      this.notificacoes.erro('As senhas não coincidem.');
-      return;
-    }
-    this.errorMsg = ''; this.successMsg = '';
-    if (!form.valid) { this.errorMsg = 'Preencha os campos obrigatórios.'; return; }
-    if (!this.veiculo.anoModeloCombustivel || !this.veiculo.fabricante || !this.veiculo.modelo) {
-      this.errorMsg = 'Selecione Montadora, Modelo e Ano/Combustível (FIPE).';
-      return;
-    }
-
-    this.loading = true;
-
-    // 1) Cria cliente
-    this.http.post<Usuario>(`${API_BASE}/api/usuario`, this.cliente).pipe(
-      // 2) Cria veículo com o id do cliente recém-criado
-      switchMap((user) => {
-        const body: any = {
-          placa: (this.veiculo.placa || '').toUpperCase().replaceAll(/\s+/g, ''),
-          fabricante: this.veiculo.fabricante,
-          cor: (this.veiculo.cor || '').trim(),
-          modelo: this.veiculo.modelo
-        };
-        body[AMC_KEY] = this.veiculo.anoModeloCombustivel;
-        body[OWNER_KEY] = Number(user.id); // vínculo aqui
-
-        return this.http.post(`${API_BASE}/api/veiculo`, body);
-      }),
-      catchError(err => {
-        this.errorMsg = 'Falha ao salvar. Verifique os dados.';
-        console.error('Erro no cadastro cliente+veículo', err);
-        return of(null);
-      }),
-      finalize(() => this.loading = false)
-    ).subscribe((ok) => {
-      if (!ok) return;
-      this.successMsg = 'Cliente e veículo cadastrados com sucesso!';
-      form.resetForm();
-      this.resetFiPe();
+    this.carregando = true;
+    this.mensagemErro = '';
+    const { confirmarSenha, ...dados } = this.cliente;
+    this.http.post<{ id: number }>('/api/usuario', {
+      ...dados,
+      cpf: this.digitos(dados.cpf),
+      telefone: this.digitos(dados.telefone),
+      cep: this.digitos(dados.cep),
+      email: dados.email.trim().toLowerCase(),
+      estado: dados.estado.trim().toUpperCase(),
+      tipo_do_acesso: 'cliente', status: 'ativo'
+    }).subscribe({
+      next: usuario => {
+        this.carregando = false;
+        this.concluido = true;
+        this.cliente.senha = '';
+        this.cliente.confirmarSenha = '';
+        if (usuario.id) sessionStorage.setItem('clinicar.cadastroCliente', `${usuario.id}:veiculos`);
+      },
+      error: erro => {
+        this.carregando = false;
+        this.mensagemErro = typeof erro?.error?.mensagem === 'string'
+          ? erro.error.mensagem : 'Não foi possível concluir o cadastro. Confira os dados e tente novamente.';
+      }
     });
   }
 
-  /** =============== HELPERS =============== */
-  private resetFiPe() {
-    this.marcas = []; this.modelos = []; this.anos = [];
-    this.marcaSelCode = this.modeloSelCode = this.anoSelCode = null;
-    this.fipeErro = '';
-    this.fipeCarregarMarcas();
-    this.veiculo = { placa: '', fabricante: '', cor: '', modelo: '', anoModeloCombustivel: '', idProprietario: null };
+  formatarDocumento(): void {
+    const d = this.digitos(this.cliente.cpf);
+    this.cliente.cpf = d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+      : d.length === 14 ? d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : d;
   }
-
-  formatarPlaca(): void {
-    this.veiculo.placa = (this.veiculo.placa || '').toUpperCase().replaceAll(/\s+/g, '');
+  formatarTelefone(): void {
+    const d = this.digitos(this.cliente.telefone).replace(/^55(?=\d{10,11}$)/, '');
+    this.cliente.telefone = d.length === 11 ? `+55 (${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+      : d.length === 10 ? `+55 (${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d;
   }
-
-  private onlyDigits(v: any): string {
-    return (v ?? '').toString().replaceAll(/\D/g, '');
+  formatarCep(): void {
+    const d = this.digitos(this.cliente.cep);
+    this.cliente.cep = d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
   }
+  aoAlterarCep(): void {
+    this.consultaCepId++;
+    this.cepConsultando = false;
+    this.cepErro = '';
+  }
+  consultarCep(): void {
+    this.formatarCep();
+    const cep = this.digitos(this.cliente.cep);
+    const consultaId = ++this.consultaCepId;
+    this.cepErro = '';
+    if (!cep) return;
+    if (cep.length !== 8) { this.cepErro = 'CEP deve conter 8 dígitos.'; return; }
+    this.cepConsultando = true;
+    this.http.get<EnderecoCep>(`https://viacep.com.br/ws/${cep}/json/`)
+      .pipe(timeout(8000), takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: endereco => {
+          if (consultaId !== this.consultaCepId || this.digitos(this.cliente.cep) !== cep) return;
+          this.cepConsultando = false;
+          if (endereco.erro) { this.cepErro = 'CEP não encontrado. Confira o número ou preencha o endereço manualmente.'; return; }
+          this.cliente.logradouro = endereco.logradouro || '';
+          this.cliente.bairro = endereco.bairro || '';
+          this.cliente.cidade = endereco.localidade || '';
+          this.cliente.estado = (endereco.uf || '').toUpperCase();
+          if (!this.cliente.complemento_endereco) this.cliente.complemento_endereco = endereco.complemento || '';
+        },
+        error: () => {
+          if (consultaId !== this.consultaCepId || this.digitos(this.cliente.cep) !== cep) return;
+          this.cepConsultando = false;
+          this.cepErro = 'Não foi possível consultar o CEP. Tente novamente ou preencha o endereço manualmente.';
+        }
+      });
+  }
+  private digitos(valor: string): string { return (valor || '').replace(/\D/g, ''); }
 
-  @HostListener('document:click', ['$event'])
-  onDocClick(e: MouseEvent) {
-    if (!this.host.nativeElement.contains(e.target)) {
-      // manter caso depois inclua dropdowns locais
+  private validar(etapa: Etapa): string | null {
+    const c = this.cliente;
+    if (etapa === 'dados') {
+      if (!c.nome.trim() || !c.nascimento || ![11, 14].includes(this.digitos(c.cpf).length))
+        return 'Informe nome, CPF ou CNPJ e data de nascimento.';
     }
+    if (etapa === 'contato') {
+      const telefone = this.digitos(c.telefone).replace(/^55(?=\d{10,11}$)/, '');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email.trim()) || ![10, 11].includes(telefone.length))
+        return 'Informe um e-mail válido e telefone com DDD.';
+    }
+    if (etapa === 'endereco') {
+      if (this.cepConsultando) return 'Aguarde a consulta do CEP terminar.';
+      if (this.digitos(c.cep).length !== 8 || !c.logradouro.trim() || !c.numero_endereco.trim()
+        || !c.bairro.trim() || !c.cidade.trim() || !/^[a-zA-Z]{2}$/.test(c.estado.trim()))
+        return 'Preencha CEP, logradouro, número, bairro, cidade e UF.';
+    }
+    if (etapa === 'seguranca') {
+      if (c.senha.length < 8 || c.senha.length > 128 || !/\p{Lu}/u.test(c.senha)
+        || !/\p{Ll}/u.test(c.senha) || !/\p{N}/u.test(c.senha) || !/[^\p{L}\p{N}\s]/u.test(c.senha))
+        return 'A senha deve ter de 8 a 128 caracteres, letra maiúscula, minúscula, número e caractere especial.';
+      if (c.senha !== c.confirmarSenha) return 'As senhas informadas não coincidem.';
+    }
+    return null;
   }
 }

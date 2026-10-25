@@ -1,0 +1,31 @@
+<div class="container-fluid correcoes-page py-2">
+  <div class="card page-title-card mb-2"><div class="card-body text-center"><i class="bi bi-clipboard-check me-1"></i>Correções dos dados dos veículos</div></div>
+  <section class="card clinicar-card">
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div><strong>Solicitações pendentes</strong><div class="small texto-apoio">Confira os dados atuais e propostos antes de aprovar. A alteração não modifica os registros históricos preservados.</div></div>
+        <div class="d-flex gap-2"><button type="button" class="btn btn-outline-primary" (click)="carregar(pagina?.number || 0)"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button><a routerLink="../veiculo" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a></div>
+      </div>
+      @if (mensagem) { <div class="alert alert-success" role="status">{{ mensagem }}</div> }
+      @if (erro) { <div class="alert alert-danger" role="alert">{{ erro }}</div> }
+      <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Solicitação</th><th>Veículo / cliente</th><th>Dados atuais</th><th>Dados propostos</th><th>Justificativa</th><th>Ação</th></tr></thead><tbody>
+        @for (item of pagina?.content || []; track item.id) { <tr>
+          <td>#{{ item.id }}<div class="small texto-apoio">{{ item.solicitadoEm | date:'dd/MM/yyyy HH:mm' }}</div></td>
+          <td>Veículo #{{ item.veiculoId }}<div class="small texto-apoio">Cliente #{{ item.clienteId }}</div></td>
+          <td>{{ item.placaAnterior }}<div class="small">{{ item.fabricanteAnterior }} · {{ item.modeloAnterior }}</div><div class="small texto-apoio">{{ item.anoModeloCombustivelAnterior }}</div></td>
+          <td>{{ item.placaSolicitada }}<div class="small">{{ item.fabricanteSolicitado }} · {{ item.modeloSolicitado }}</div><div class="small texto-apoio">{{ item.anoModeloCombustivelSolicitado }}</div></td>
+          <td class="justificativa">{{ item.justificativa }}</td>
+          <td><button type="button" class="btn btn-sm btn-outline-primary" (click)="avaliar(item)">Analisar</button></td>
+        </tr> } @empty { <tr><td colspan="6" class="text-center py-4 texto-apoio">{{ carregando ? 'Carregando…' : 'Nenhuma correção pendente.' }}</td></tr> }
+      </tbody></table></div>
+      <div class="d-flex align-items-center justify-content-between gap-2"><small>Mostrando {{ pagina?.content?.length || 0 }} de {{ pagina?.totalElements || 0 }} solicitação(ões)</small><div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!pagina?.number" (click)="carregar((pagina?.number || 0) - 1)">Anterior</button><span>Página {{ (pagina?.number || 0) + 1 }} de {{ pagina?.totalPages || 1 }}</span><button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!pagina || pagina.number + 1 >= pagina.totalPages" (click)="carregar((pagina?.number || 0) + 1)">Próxima</button></div></div>
+    </div>
+  </section>
+  @if (selecionada) { <div class="modal-backdrop fade show"></div><div class="modal d-block" role="dialog" aria-modal="true" aria-labelledby="tituloDecisaoVeiculo"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="modal-title fs-5" id="tituloDecisaoVeiculo">Analisar correção #{{ selecionada.id }}</h2><button type="button" class="btn-close" aria-label="Fechar" (click)="selecionada = null"></button></div>
+    <div class="modal-body"><p>Veículo #{{ selecionada.veiculoId }} · {{ selecionada.placaAnterior }} → {{ selecionada.placaSolicitada }}</p><p class="texto-apoio">{{ selecionada.justificativa }}</p>
+      <label class="form-label" for="decisaoCorrecao">Decisão *</label><select id="decisaoCorrecao" class="form-select mb-3" [(ngModel)]="decisao"><option value="APROVAR">Aprovar correção</option><option value="RECUSAR">Recusar solicitação</option></select>
+      <label class="form-label" for="motivoDecisaoCorrecao">Justificativa da decisão *</label><textarea id="motivoDecisaoCorrecao" class="form-control" maxlength="1000" rows="3" [(ngModel)]="justificativa"></textarea>
+    </div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="selecionada = null">Cancelar</button><button type="button" class="btn btn-primary" [disabled]="salvando || !justificativa.trim()" (click)="confirmar()">Registrar decisão</button></div>
+  </div></div></div> }
+</div>

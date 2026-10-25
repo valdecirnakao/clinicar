@@ -1,8 +1,9 @@
 import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
+import { SeletorRemotoComponent } from '../../../shared/tabelas/seletor-remoto.component';
 import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
 import { UnidadePecaPipe } from '../../../shared/forms/unidade-peca.pipe';
 import { FeedbackDirective } from '../../../shared/feedback/feedback.directive';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -12,10 +13,14 @@ import { FiltrosHistorico, HistoricoVeicular, HistoricoVeicularService } from '.
 
 @Component({
     selector: 'app-historico-veicular',
-    imports: [FieldHelpDirective, FieldHelpPanelComponent, UnidadePecaPipe, FeedbackDirective, CommonModule, FormsModule, RouterLink],
+    imports: [SeletorRemotoComponent, FieldHelpDirective, FieldHelpPanelComponent, UnidadePecaPipe, FeedbackDirective, CommonModule, FormsModule, RouterLink],
     templateUrl: './historico-veicular.component.html', styleUrls: ['./historico-veicular.component.css']
 })
-export class HistoricoVeicularComponent implements OnInit, OnDestroy {
+export class HistoricoVeicularComponent implements OnInit, OnChanges, OnDestroy {
+  @Input() modoCliente = false;
+  @Input() veiculosDoCliente: { id: number; placa: string; fabricante: string; modelo: string }[] = [];
+  @Input() veiculoInicial: number | null = null;
+  @Output() voltarAosVeiculos = new EventEmitter<void>();
   veiculos: { id: number; placa: string; fabricante: string; modelo: string }[] = [];
   veiculoId: number | null = null;
   inicio = ''; fim = ''; situacao = 'TODOS';
@@ -30,16 +35,19 @@ export class HistoricoVeicularComponent implements OnInit, OnDestroy {
   private versao = 0;
   constructor(private http: HttpClient, private route: ActivatedRoute, private service: HistoricoVeicularService) {}
   ngOnInit(): void {
-    this.lista = this.http.get<typeof this.veiculos>('/api/veiculo', { withCredentials: true }).subscribe({
-      next: lista => this.veiculos = (lista || []).sort((a, b) => (a.placa || '').localeCompare(b.placa || '')),
-      error: () => this.erro = 'Não foi possível carregar os veículos. Tente novamente.'
-    });
+    if (this.modoCliente) return;
     this.rota = this.route.queryParamMap.subscribe(params => {
       this.limparResultado();
       const id = Number(params.get('veiculoId'));
       this.veiculoId = Number.isSafeInteger(id) && id > 0 ? id : null;
       if (this.veiculoId) this.consultar();
     });
+  }
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.modoCliente || !changes['veiculoInicial']) return;
+    this.veiculoId = this.veiculoInicial;
+    if (this.veiculoId) this.consultar();
+    else this.limparResultado();
   }
   ngOnDestroy(): void { this.consulta?.unsubscribe(); this.exportacao?.unsubscribe(); this.lista?.unsubscribe(); this.rota?.unsubscribe(); }
   limparResultado(): void {

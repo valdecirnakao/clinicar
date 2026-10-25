@@ -62,6 +62,16 @@ class VeiculoPlacaIntegrationTest {
         admin.setTipo_do_acesso("CLIENTE"); usuarios.saveAndFlush(admin);
         mvc.perform(get("/api/veiculo/verificar-placa").cookie(cookie()).param("placa","ABC1234")).andExpect(status().isForbidden());
     }
+    @Test void consultaPorIdHidrataSelecaoParaAdministradorEColaborador() throws Exception {
+        mvc.perform(get("/api/veiculo/"+primeiro.getId()).cookie(cookie()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.placa").value("ABC1234"));
+        mvc.perform(get("/api/veiculo/999999999").cookie(cookie())).andExpect(status().isNotFound());
+        admin.setTipo_do_acesso("COLABORADOR");usuarios.saveAndFlush(admin);
+        mvc.perform(get("/api/veiculo/"+primeiro.getId()).cookie(cookie()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.modelo").value("Corolla"));
+        admin.setTipo_do_acesso("CLIENTE");usuarios.saveAndFlush(admin);
+        mvc.perform(get("/api/veiculo/"+primeiro.getId()).cookie(cookie())).andExpect(status().isForbidden());
+    }
     @Test void cadastroDuplicadoEEdicaoParaPlacaDeOutroVeiculoRetornamMensagemClara() throws Exception {
         var c=cookie();
         mvc.perform(post("/api/veiculo").cookie(c).contentType(MediaType.APPLICATION_JSON).content(corpo("abc-1234")))

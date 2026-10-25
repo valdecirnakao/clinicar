@@ -16,7 +16,7 @@ Baseline frontend: 311 testes aprovados. Baseline backend: 273 testes aprovados.
 - [x] Política de senha centralizada e aplicada em todos os caminhos de gravação.
 - [x] Proteção CSRF e limitação de tentativas de autenticação/recuperação.
 - [x] Migrações automáticas com baseline seguro da base existente.
-- [ ] Paginação, filtros e ordenação no servidor nas listagens e seletores, com resumos independentes da página.
+- [x] Paginação, filtros e ordenação no servidor nas listagens e seletores revisados, com resumos independentes da página; históricos de estoque calculados sobre o conjunto completo.
 - [x] Notificações persistidas e processamento em segundo plano com tentativas controladas.
 - [x] Estado das notificações e confirmação de entrega por retorno autenticado do provedor.
 - [x] Componentes compartilhados de tabela, paginação, seleção e continuidade de cadastro.
@@ -28,7 +28,8 @@ Baseline frontend: 311 testes aprovados. Baseline backend: 273 testes aprovados.
 - [x] Proteção de operações contra repetição da mesma solicitação.
 - [x] Aviso de edição simultânea e proteção contra sobrescrita.
 - [x] Visão operacional com acessos a agendamentos, atendimentos, estoque crítico e falhas de notificação.
-- [ ] Medições comparáveis, verificações finais e atualização local Docker.
+- [x] Medições sintéticas documentadas e atualização local Docker das etapas implementadas.
+- [ ] Aceitação manual completa e medições HTTP/concorrência em ambiente isolado.
 
 ## Compatibilidade
 
@@ -48,7 +49,7 @@ Executar testes apropriados por etapa e registrar resultados reais. Segurança e
 - Navegador: quatro fluxos aprovados (`tmp/playwright-fluxos-05.log`), com APIs simuladas e sem envio real de notificações.
 - Build de produção aprovado (`tmp/build-angular21-16.log`).
 
-Listagens principais de onze cadastros usam paginação no servidor e o componente compartilhado de paginação. O seletor compartilhado consulta cinco registros ao abrir e mantém a busca no servidor. Agendamentos, atendimentos e manutenção carregam catálogos auxiliares ao abrir formulários. Ainda é necessário concluir a revisão dos demais seletores e dos contextos de continuidade que carregam catálogos completos.
+Listagens principais de onze cadastros usam paginação no servidor e o componente compartilhado de paginação. O seletor compartilhado consulta cinco registros ao abrir e mantém a busca no servidor. Agendamentos, atendimentos e manutenção carregam catálogos auxiliares ao abrir formulários. A revisão dos demais seletores foi concluída na etapa de 12/10/2026, descrita abaixo.
 
 As imagens locais foram substituídas e a aplicação iniciou com sucesso. Itens restantes continuam pendentes conforme indicado no checklist.
 
@@ -74,4 +75,18 @@ As imagens locais foram substituídas e a aplicação iniciou com sucesso. Itens
 - Confirmações reais de entrega dependem de URL pública e configuração do webhook/segredos da Meta; o código e sua autenticação foram verificados com dados sintéticos. Nenhuma mensagem real foi enviada nos testes.
 - Não houve commit ou envio ao Git nesta etapa.
 
-A revisão dos seletores auxiliares que ainda usam listas completas e a divisão adicional dos componentes grandes permanecem pendentes. A migração LTS e a atualização local estão concluídas; a modernização ampla não deve ser considerada encerrada enquanto essas revisões não terminarem.
+A revisão dos seletores auxiliares, ainda pendente neste registro de 11/10, foi concluída na etapa de 12/10/2026. A migração LTS e a atualização local estão concluídas. Aceitação manual e medições HTTP/concorrência continuam pendentes.
+
+## Seletores e componentes — 12/10/2026
+
+A revisão dos catálogos auxiliares foi aplicada aos formulários de agendamento, atendimento, manutenção, estoque, histórico veicular e configurações de alertas. Os seletores consultam cinco registros por página e recuperam registros existentes pelo ID. As consultas de seleção dispensam resumos e listas de filtros; a disponibilidade dos responsáveis é filtrada no servidor. Valores de fornecimento e do serviço principal continuam recuperados antes de sua utilização no formulário.
+
+Foram extraídos 174 métodos de regras e formatação para quatro classes de apoio. A comparação controlada com 1.000 peças sintéticas reduziu o corpo da resposta de 396.894 para 2.061 bytes. Foram aprovados 328 testes do frontend, 294 do backend, sete novos cenários de navegador e a compatibilidade dos doze recursos paginados no MySQL isolado.
+
+Resultados, metodologia e limites estão em [Validação dos seletores](validacao-seletores-20261012.md). Históricos específicos e cálculos de correções/devoluções mantêm o comportamento anterior; sua paginação exige calcular os saldos no servidor. Isso permanece separado da revisão dos catálogos auxiliares concluída nesta etapa.
+
+## Paginação dos históricos de movimentações — 12/10/2026
+
+A pendência dos históricos de movimentações foi implementada. O histórico do estoque, os seletores de originais para correção/devolução e a seleção de saída no atendimento consultam páginas no servidor. A quantidade disponível é calculada sobre todos os vínculos, inclusive correções de devoluções ao fornecedor; os saldos preservados dos lançamentos e o saldo atual do controle não dependem da página exibida. Migração V24 acrescenta índices de consulta sem alterar os lançamentos.
+
+Foram aprovados 332 testes do frontend, a suíte completa de 298 testes do backend e cinco testes específicos de cálculo/paginação, incluindo um cenário adicional de atendimento/OS antiga. Também passaram os cenários de navegador e o MySQL isolado. Escopo e evidências em [Histórico de movimentações paginado](historico-movimentacoes-paginado.md).

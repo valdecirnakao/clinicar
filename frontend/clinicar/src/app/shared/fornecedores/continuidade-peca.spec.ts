@@ -65,7 +65,8 @@ describe('Continuidade peça → fornecedor → fornecimento', () => {
   });
   it('mostra somente fornecedores ativos e mantém a peça ao selecionar', () => {
     const c = prepararFornecedor().componentInstance;
-    expect(c.fornecedoresAtivosDaPeca.map(f => f.id)).toEqual([7]);
+    expect(c.fornecedoresAtivosDaPeca).toEqual([]);
+    http.expectNone('/api/fornecedor');
     c.buscaFornecedorPeca = 'não existe'; expect(c.fornecedoresAtivosDaPeca).toEqual([]);
     c.selecionarFornecedorDaPeca(fornecedor);
     expect(navegar).toHaveBeenCalledWith(['/menuAdministrador', 'fornecimentoPecas'], { queryParams: { continuarCadastro: '1', fornecedorId: 7, pecaId: 12 } });

@@ -31,7 +31,7 @@
 .table th, .table td { padding: .55rem; vertical-align: middle; }
 .table thead th { position: sticky; top: 0; z-index: 1; background: #eef6ff; color: #35689b; white-space: nowrap; box-shadow: 0 2px 0 #d0e2f2; }
 .mensagem-cell { min-width: 220px; overflow-wrap: anywhere; }
-.mensagem-detalhe { color: #5c7fa4; margin-top: .2rem; }
+.mensagem-detalhe { color: #4c637b; margin-top: .2rem; }
 .empty-state { padding: 2rem .75rem !important; }
 .empty-state > .bi { font-size: 1.8rem; }
 .table-pagination-footer { flex-shrink: 0; padding: .15rem .7rem; border-top: 1px solid #d0e2f2; background: #f8fbff; }

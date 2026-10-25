@@ -21,6 +21,7 @@ export interface Servico {
 
   garantiaDias: number;
   necessitaPecas: boolean;
+  materiaisReferencia?: string;
 
   ativo: boolean;
 
@@ -48,6 +49,7 @@ export interface ServicoRequest {
 
   garantiaDias?: number;
   necessitaPecas?: boolean;
+  materiaisReferencia?: string;
 
   ativo?: boolean;
 

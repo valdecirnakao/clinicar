@@ -13,6 +13,7 @@ import { DestroyRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FluxoFornecedorService } from '../../../shared/fornecedores/fluxo-fornecedor.service';
+import { fornecedorAtende } from '../../../shared/fornecedores/categorias-fornecedor';
 import { FluxoServicoService } from '../../../shared/fornecedores/fluxo-servico.service';
 import { aposFecharModal } from '../../../shared/fornecedores/transicao-modal';
 import { CommonModule, Location } from '@angular/common';
@@ -57,7 +58,8 @@ type CampoObrigatorioServico =
   | 'unidadeDuracao'
   | 'valorBase'
   | 'unidadeCobranca'
-  | 'garantiaDias';
+  | 'garantiaDias'
+  | 'idFornecedor';
 
 @Component({
     selector: 'app-servico',
@@ -309,7 +311,6 @@ export class ServicoComponent implements OnInit, AfterViewInit {
     'Centro Automotivo',
     'Fornecedor Externo',
     'Técnico Especializado',
-    'Terceirizado',
     'Outro'
   ];
 
@@ -321,7 +322,8 @@ export class ServicoComponent implements OnInit, AfterViewInit {
     'unidadeDuracao',
     'valorBase',
     'unidadeCobranca',
-    'garantiaDias'
+    'garantiaDias',
+    'idFornecedor'
   ];
 
   constructor(
@@ -654,6 +656,7 @@ export class ServicoComponent implements OnInit, AfterViewInit {
       unidadeCobranca: 'SERVICO',
       garantiaDias: 0,
       necessitaPecas: false,
+      materiaisReferencia: '',
       ativo: true,
       observacoes: '',
       idFornecedor: null,
@@ -673,6 +676,7 @@ export class ServicoComponent implements OnInit, AfterViewInit {
 
   salvarNovoServico(): void {
     if (this.salvandoCadastro) return;
+    if (!this.cadastroEhUltimaAba()) return;
     const erroValidacao = this.validarServico(this.novoServico, true);
 
     if (erroValidacao) {
@@ -742,6 +746,7 @@ export class ServicoComponent implements OnInit, AfterViewInit {
     if (!this.editId) {
       return;
     }
+    if (!this.edicaoEhUltimaAba()) return;
 
     const erroValidacao = this.validarServico(this.edit, true);
 
@@ -913,7 +918,7 @@ export class ServicoComponent implements OnInit, AfterViewInit {
       switch (etapa) {
         case 'dados': return !this.dadosServicoPendentes(this.novoServico);
         case 'cobranca': return !this.cobrancaServicoPendente(this.novoServico);
-        case 'fornecedor': return true;
+        case 'fornecedor': return !this.campoInvalido(this.novoServico, 'idFornecedor');
         case 'revisao': return true;
       }
     });
@@ -988,18 +993,20 @@ export class ServicoComponent implements OnInit, AfterViewInit {
   }
 
   get cadastroServicoProntoParaSalvar(): boolean {
-    return this.validarServico(this.novoServico, false) === null;
+    return this.cadastroEhUltimaAba() && this.validarServico(this.novoServico, false) === null;
   }
 
   get edicaoServicoProntoParaSalvar(): boolean {
-    return this.validarServico(this.edit, false) === null;
+    return this.edicaoEhUltimaAba() && this.validarServico(this.edit, false) === null;
   }
 
   get mensagemBloqueioCadastro(): string {
+    if (!this.cadastroEhUltimaAba()) return 'Confira os dados na guia Revisão antes de salvar.';
     return this.validarServico(this.novoServico, false) || '';
   }
 
   get mensagemBloqueioEdicao(): string {
+    if (!this.edicaoEhUltimaAba()) return 'Confira os dados na guia Revisão antes de salvar.';
     return this.validarServico(this.edit, false) || '';
   }
 
@@ -1074,7 +1081,7 @@ export class ServicoComponent implements OnInit, AfterViewInit {
     const camposPorAba: Record<AbaServico, CampoObrigatorioServico[]> = {
       dados: ['nome', 'categoria', 'tipoDoPrestador'],
       cobranca: ['duracaoEstimada', 'unidadeDuracao', 'valorBase', 'unidadeCobranca', 'garantiaDias'],
-      fornecedor: [],
+      fornecedor: ['idFornecedor'],
       revisao: []
     };
 
@@ -1082,6 +1089,9 @@ export class ServicoComponent implements OnInit, AfterViewInit {
   }
 
   private campoInvalido(model: Partial<Servico>, campo: CampoObrigatorioServico): boolean {
+    if (campo === 'idFornecedor') {
+      return this.fornecedorObrigatorio(model) && !model.idFornecedor;
+    }
     if (campo === 'duracaoEstimada') {
       const valor = Number(this.converterDecimalParaBackend(model.duracaoEstimada));
       return !String(model.duracaoEstimada ?? '').trim() || Number.isNaN(valor) || valor <= 0;
@@ -1098,6 +1108,10 @@ export class ServicoComponent implements OnInit, AfterViewInit {
     }
 
     return !String((model as any)[campo] ?? '').trim();
+  }
+
+  fornecedorObrigatorio(model: Partial<Servico>): boolean {
+    return String(model.tipoDoPrestador ?? '').trim().toLocaleLowerCase('pt-BR') === 'fornecedor externo';
   }
 
   private validarServico(model: Partial<Servico>, marcarInvalidos: boolean): string | null {
@@ -1141,6 +1155,10 @@ export class ServicoComponent implements OnInit, AfterViewInit {
         return 'A garantia em dias não pode ser negativa.';
       }
 
+      if (primeiroCampo === 'idFornecedor') {
+        return 'Selecione o fornecedor externo responsável pelo serviço.';
+      }
+
       return 'Preencha todos os campos obrigatórios antes de salvar o serviço.';
     }
 
@@ -1157,6 +1175,8 @@ export class ServicoComponent implements OnInit, AfterViewInit {
     if (['duracaoEstimada', 'unidadeDuracao', 'valorBase', 'unidadeCobranca', 'garantiaDias'].includes(campo)) {
       aba = 'cobranca';
     }
+
+    if (campo === 'idFornecedor') aba = 'fornecedor';
 
     if (contexto === 'cadastro') {
       this.abaCadastroServico = aba;
@@ -1177,6 +1197,7 @@ export class ServicoComponent implements OnInit, AfterViewInit {
       unidadeCobranca: (model.unidadeCobranca || '').toString().toUpperCase(),
       garantiaDias: Math.floor(Number(model.garantiaDias ?? 0)),
       necessitaPecas: Boolean(model.necessitaPecas),
+      materiaisReferencia: this.limparOpcional(model.materiaisReferencia),
       ativo: model.ativo === null || model.ativo === undefined ? true : Boolean(model.ativo),
       observacoes: this.limparOpcional(model.observacoes),
       idFornecedor: model.idFornecedor ?? null
@@ -1186,7 +1207,7 @@ export class ServicoComponent implements OnInit, AfterViewInit {
   private carregarFornecedores(): void {if(this.modoPaginado)return;
     this.fornecedorService.listarTodos().subscribe({
       next: (lista) => {
-        this.fornecedores = (lista ?? []).filter(f => f.ativo !== false);
+        this.fornecedores = (lista ?? []).filter(f => f.ativo !== false && fornecedorAtende(f.itemFornecido, 'servico'));
         this.fornecedoresFiltrados = [...this.fornecedores];
       },
       error: (erro) => {

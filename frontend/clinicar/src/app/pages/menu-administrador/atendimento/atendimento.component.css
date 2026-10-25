@@ -458,6 +458,23 @@
   color: #35689b;
 }
 
+.detalhes-atendimento-modal { color: #284b70; }
+.detalhes-atendimento-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.detalhes-atendimento-secao { min-width: 0; padding: 1rem; border: 1px solid #d0e2f2; border-radius: 8px; background: #f7fbff; }
+.detalhes-atendimento-secao h6 { color: #2e6395; font-weight: 700; padding-bottom: .5rem; border-bottom: 1px solid #d0e2f2; }
+.detalhes-atendimento-lista { margin: 0; }
+.detalhes-atendimento-lista > div { display: flex; justify-content: space-between; gap: 1rem; padding: .4rem 0; border-bottom: 1px dashed #d0e2f2; }
+.detalhes-atendimento-lista > div:last-child { border-bottom: 0; }
+.detalhes-atendimento-lista dt { color: #4c637b; font-weight: 500; }
+.detalhes-atendimento-lista dd { margin: 0; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.detalhes-atendimento-total { color: #245f94; font-size: 1.05rem; }
+.detalhes-atendimento-pecas { list-style: none; margin: 0; padding: 0; }
+.detalhes-atendimento-pecas li { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-bottom: 1px dashed #d0e2f2; }
+.detalhes-atendimento-pecas li:last-child { border-bottom: 0; }
+.detalhes-atendimento-pecas li span { text-align: right; }
+.detalhes-atendimento-texto { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; }
+@media (max-width: 767.98px) { .detalhes-atendimento-grid { grid-template-columns: 1fr; } }
+
 #modalEdicaoAtendimento {
   z-index: 1055;
 }

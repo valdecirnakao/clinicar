@@ -17,18 +17,22 @@ public class ConfiguracaoAlertaEstoqueController {
         this.configuracoes = configuracoes; this.processamento = processamento; this.whatsappHabilitado = whatsappHabilitado;
     }
     public record ConfiguracaoResponse(Long versao, Boolean ativo, Long idResponsavel, String nomeResponsavel,
-            String telefoneAdministrador, Integer reenviarAlertaAposHoras) {
+            String telefoneAdministrador, Long idAdministradorCritico, String nomeAdministradorCritico,
+            String telefoneAdministradorCritico, Integer reenviarAlertaAposHoras) {
         public static ConfiguracaoResponse de(ConfiguracaoAlertaEstoque c) {
             return new ConfiguracaoResponse(c.getVersao(), c.getAtivo(), c.getIdResponsavel(), c.getNomeResponsavel(),
-                    c.getTelefoneAdministrador(), c.getReenviarAlertaAposHoras());
+                    c.getTelefoneAdministrador(), c.getIdAdministradorCritico(), c.getNomeAdministradorCritico(),
+                    c.getTelefoneAdministradorCritico(), c.getReenviarAlertaAposHoras());
         }
     }
-    public record ConfiguracaoRequest(Long versao, Boolean ativo, Long idResponsavel, Integer reenviarAlertaAposHoras) {}
+    public record ConfiguracaoRequest(Long versao, Boolean ativo, Long idResponsavel, Long idAdministradorCritico,
+            Integer reenviarAlertaAposHoras) {}
     public record Consulta(ConfiguracaoResponse configuracao, boolean whatsappHabilitado) {}
     @GetMapping public Consulta consultar() { return new Consulta(ConfiguracaoResponse.de(configuracoes.consultar()), whatsappHabilitado); }
     @PutMapping public ConfiguracaoResponse salvar(@RequestBody ConfiguracaoRequest request) {
         var entrada = new ConfiguracaoAlertaEstoque();
         entrada.setVersao(request.versao()); entrada.setAtivo(request.ativo()); entrada.setIdResponsavel(request.idResponsavel());
+        entrada.setIdAdministradorCritico(request.idAdministradorCritico());
         entrada.setReenviarAlertaAposHoras(request.reenviarAlertaAposHoras());
         return ConfiguracaoResponse.de(configuracoes.salvar(entrada));
     }

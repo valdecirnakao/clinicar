@@ -145,6 +145,9 @@ public class Atendimento {
     @Column(name = "data_entrega")
     private LocalDateTime dataEntrega;
 
+    @Column(name = "pronto_retirada_em")
+    private LocalDateTime prontoRetiradaEm;
+
     @Column(name = "quilometragem_entrada")
     private Integer quilometragemEntrada;
 

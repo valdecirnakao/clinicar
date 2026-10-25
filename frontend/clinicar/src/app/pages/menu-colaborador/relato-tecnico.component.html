@@ -1,0 +1,56 @@
+<section class="relato-page">
+  <div class="titulo-pagina mb-3"><i class="bi bi-tools me-2"></i>Relato técnico do atendimento</div>
+  <div class="d-flex justify-content-end mb-3"><a class="btn btn-outline-secondary" [routerLink]="voltar">Voltar</a></div>
+  @if (erro) { <div class="alert alert-danger" role="alert">{{ erro }}</div> }
+  @if (mensagem) { <div class="alert alert-success" role="status">{{ mensagem }}</div> }
+  @if (carregando) { <div class="card p-3">Carregando atendimento…</div> }
+  @if (atendimento) {
+    <div class="card mb-3"><div class="card-header">Etapas da ordem de serviço</div><div class="card-body">
+      <div class="etapas d-flex flex-wrap gap-2 mb-3" aria-label="Progresso do atendimento">
+        @for (etapa of ['Recepção', 'Diagnóstico', 'Orçamento', 'Aprovação', 'Execução', 'Conferência', 'Entrega']; track etapa; let i = $index) {
+          <span class="badge rounded-pill" [class.text-bg-primary]="progresso >= i" [class.text-bg-light]="progresso < i">{{ etapa }}</span>
+        }
+      </div>
+      @if (atendimento.statusAtendimento === 'ABERTO') { <button type="button" class="btn btn-primary" [disabled]="avancando" (click)="avancar('diagnosticar')">Iniciar diagnóstico</button> }
+      @if (atendimento.statusAtendimento === 'EM_DIAGNOSTICO') { <button type="button" class="btn btn-primary" [disabled]="avancando" (click)="avancar('solicitar-aprovacao')">Solicitar aprovação do orçamento</button> }
+      @if (atendimento.statusAtendimento === 'AGUARDANDO_APROVACAO') { <p class="texto-apoio mb-0">Aguardando aprovação do orçamento. A execução será liberada após essa etapa.</p> }
+      @if (atendimento.statusAtendimento === 'APROVADO') { <button type="button" class="btn btn-primary" [disabled]="avancando" (click)="avancar('iniciar')">Iniciar execução</button> }
+      @if (atendimento.statusAtendimento === 'EM_EXECUCAO' || atendimento.statusAtendimento === 'AGUARDANDO_TERCEIRO') {
+        <div class="d-flex flex-wrap align-items-end gap-2"><div><label class="form-label" for="kmSaidaTecnica">Quilometragem de saída *</label><input id="kmSaidaTecnica" type="number" min="0" max="999999999" class="form-control" [(ngModel)]="atendimento.quilometragemSaida"></div>
+          <button type="button" class="btn btn-primary" [disabled]="avancando" (click)="avancar('concluir')">Concluir serviço</button></div>
+      }
+      @if (atendimento.statusAtendimento === 'EM_EXECUCAO') {
+        <div class="mt-3 d-flex flex-wrap align-items-end gap-2"><div class="flex-grow-1"><label class="form-label" for="motivoPausa">Motivo da pausa *</label><input id="motivoPausa" type="text" maxlength="500" class="form-control" [(ngModel)]="motivoPausa" placeholder="Ex.: aguardando peça para continuar"></div>
+          <button type="button" class="btn btn-outline-secondary" [disabled]="avancando || !motivoPausa.trim()" (click)="alterarPausa('pausar')">Pausar execução</button></div>
+      }
+      @if (atendimento.statusAtendimento === 'PAUSADO') { <button type="button" class="btn btn-primary" [disabled]="avancando" (click)="alterarPausa('retomar')">Retomar execução</button> }
+      @if (atendimento.statusAtendimento === 'CONCLUIDO') { <p class="texto-apoio mb-0">Serviço concluído. A entrega é registrada na gestão de atendimentos.</p> }
+      @if (pausas.length) { <div class="mt-3"><strong>Histórico de pausas</strong>@for (pausa of pausas; track pausa.id) { <div class="texto-apoio mt-1">{{ pausa.pausadoEm | date:'dd/MM/yyyy HH:mm' }} · {{ pausa.motivo }} · usuário {{ pausa.autorId }}@if (pausa.retomadoEm) { · retomado em {{ pausa.retomadoEm | date:'dd/MM/yyyy HH:mm' }} por usuário {{ pausa.retomadoPorId }} }</div> }</div> }
+    </div></div>
+    <div class="card mb-3"><div class="card-header">{{ atendimento.codigoAtendimento }} · {{ atendimento.statusAtendimento.replace('_', ' ') }}</div>
+      <div class="card-body row g-2"><div class="col-md-4"><small>Cliente</small><div>{{ atendimento.nomeCliente }}</div></div><div class="col-md-4"><small>Veículo</small><div>{{ atendimento.placaVeiculo }}</div></div><div class="col-md-4"><small>Serviço</small><div>{{ atendimento.nomeServico }}</div></div>
+      @if (atendimento.relatoCliente) { <div class="col-12"><small>Relato do cliente</small><div>{{ atendimento.relatoCliente }}</div></div> }</div></div>
+    <form class="card" (ngSubmit)="salvar()"><div class="card-header">Registro do serviço</div><div class="card-body row g-3">
+      <div class="col-sm-6"><label for="kmTecnica" class="form-label">Quilometragem de entrada</label><input id="kmTecnica" name="quilometragemEntrada" type="number" min="0" max="999999999" class="form-control" [(ngModel)]="atendimento.quilometragemEntrada" [disabled]="encerrado"></div>
+      <div class="col-12"><label for="diagnostico" class="form-label">Diagnóstico técnico</label><textarea id="diagnostico" name="diagnosticoTecnico" class="form-control" rows="3" maxlength="2000" [(ngModel)]="atendimento.diagnosticoTecnico" [disabled]="encerrado"></textarea></div>
+      <div class="col-12"><label for="executado" class="form-label">Serviço executado</label><textarea id="executado" name="servicoExecutado" class="form-control" rows="3" maxlength="2000" [(ngModel)]="atendimento.servicoExecutado" [disabled]="encerrado"></textarea></div>
+      <div class="col-md-6"><label for="observacoes" class="form-label">Observações internas</label><textarea id="observacoes" name="observacoesInternas" class="form-control" rows="3" maxlength="1000" [(ngModel)]="atendimento.observacoesInternas" [disabled]="encerrado"></textarea></div>
+      <div class="col-md-6"><label for="recomendacoes" class="form-label">Recomendações ao cliente</label><textarea id="recomendacoes" name="recomendacoesCliente" class="form-control" rows="3" maxlength="1000" [(ngModel)]="atendimento.recomendacoesCliente" [disabled]="encerrado"></textarea></div>
+      <div class="col-12 d-flex justify-content-end"><button type="submit" class="btn btn-primary" [disabled]="salvando || encerrado">Salvar relato</button></div>
+    </div></form>
+    <section class="card mt-3"><div class="card-header">Checklist técnico</div><div class="card-body">
+      <p class="texto-apoio">Registre os itens verificados durante o serviço. Uma observação ajuda a explicar itens que precisam de atenção.</p>
+      @for (linha of checklist; track linha.item; let i = $index) {
+        <div class="row g-2 align-items-end mb-3 checklist-item"><div class="col-md-4"><label class="form-label" [for]="'situacao'+i">{{ itensPadrao[i].nome }}</label>
+          <select class="form-select" [id]="'situacao'+i" [name]="'situacao'+i" [(ngModel)]="linha.situacao" [disabled]="encerrado"><option value="">Não verificado</option><option value="OK">Conforme</option><option value="ATENCAO">Precisa de atenção</option><option value="NAO_APLICAVEL">Não se aplica</option></select></div>
+          <div class="col-md-8"><label class="form-label" [for]="'observacao'+i">Observação</label><input class="form-control" [id]="'observacao'+i" [name]="'observacao'+i" maxlength="500" [(ngModel)]="linha.observacao" [disabled]="encerrado"></div></div>
+      }
+      <div class="d-flex justify-content-end"><button type="button" class="btn btn-primary" [disabled]="salvandoChecklist || encerrado" (click)="salvarChecklist()">Salvar checklist</button></div>
+    </div></section>
+    <section class="card mt-3"><div class="card-header">Fotos do atendimento</div><div class="card-body">
+      <p class="texto-apoio">Anexe até dez fotos para documentar o estado do veículo e o serviço realizado. JPEG, PNG ou WebP, até 3 MB por foto.</p>
+      <label class="form-label" for="fotoAtendimento">Adicionar foto</label><input id="fotoAtendimento" class="form-control" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="enviandoFoto || encerrado || fotos.length >= 10" (change)="enviarFoto($event)">
+      <div class="fotos-grid mt-3">@for (foto of fotos; track foto.id) { <a [href]="urlFoto(foto.id)" target="_blank" rel="noopener" class="foto-item"><img [src]="urlFoto(foto.id)" [alt]="foto.nomeArquivo"><span>{{ foto.nomeArquivo }}</span></a> }</div>
+    </div></section>
+  }
+</section>

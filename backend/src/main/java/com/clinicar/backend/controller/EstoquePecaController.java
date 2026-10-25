@@ -71,7 +71,7 @@ public class EstoquePecaController {
             @PathVariable Long id,
             @RequestBody EstoquePecaRequest request
     ) {
-        return ResponseEntity.ok(estoqueMapper.toResponse(service.atualizar(id, request)));
+        return ResponseEntity.ok(estoqueMapper.toResponse(service.atualizar(id, request, false)));
     }
 
     @PostMapping("/{id}/entrada")

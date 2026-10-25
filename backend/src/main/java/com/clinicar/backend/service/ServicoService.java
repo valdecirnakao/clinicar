@@ -129,21 +129,31 @@ public class ServicoService {
             throw new IllegalArgumentException("A garantia em dias não pode ser negativa.");
         }
 
+        String tipoDoPrestador = limparTextoObrigatorio(request.getTipoDoPrestador(), "Tipo do prestador");
+        if ("Terceirizado".equalsIgnoreCase(tipoDoPrestador)
+                && !"Terceirizado".equalsIgnoreCase(servico.getTipoDoPrestador())) {
+            throw new IllegalArgumentException("O tipo Terceirizado não está disponível para novos cadastros. Selecione Fornecedor Externo e vincule um fornecedor.");
+        }
+        if ("Fornecedor Externo".equalsIgnoreCase(tipoDoPrestador) && request.getIdFornecedor() == null) {
+            throw new IllegalArgumentException("Selecione o fornecedor externo responsável pelo serviço.");
+        }
+
         Fornecedor fornecedor = null;
 
         if (request.getIdFornecedor() != null) {
             fornecedor = fornecedorRepository
                     .findById(request.getIdFornecedor())
                     .orElseThrow(() -> new IllegalArgumentException("Fornecedor não encontrado."));
+            if (!CategoriasFornecedor.aceita(fornecedor.getItemFornecido(), "SERVICOS")
+                    && (servico.getFornecedor() == null || !fornecedor.getId().equals(servico.getFornecedor().getId())))
+                throw new IllegalArgumentException("Selecione um fornecedor cadastrado para serviços.");
         }
 
         servico.setNome(limparTextoObrigatorio(request.getNome(), "Nome"));
         servico.setDescricao(limparTextoOpcional(request.getDescricao()));
         servico.setCategoria(limparTextoObrigatorio(request.getCategoria(), "Categoria"));
 
-        servico.setTipoDoPrestador(
-                limparTextoObrigatorio(request.getTipoDoPrestador(), "Tipo do prestador")
-        );
+        servico.setTipoDoPrestador(tipoDoPrestador);
 
         servico.setDuracaoEstimada(duracaoEstimada);
 
@@ -166,6 +176,10 @@ public class ServicoService {
                         ? false
                         : request.getNecessitaPecas()
         );
+        String materiaisReferencia = limparTextoOpcional(request.getMateriaisReferencia());
+        if (materiaisReferencia != null && materiaisReferencia.length() > 1000)
+            throw new IllegalArgumentException("A referência de materiais deve ter no máximo 1000 caracteres.");
+        servico.setMateriaisReferencia(materiaisReferencia);
 
         servico.setAtivo(
                 request.getAtivo() == null

@@ -48,8 +48,9 @@ public class UsuarioController {
             @org.springframework.web.bind.annotation.RequestParam String cpf,
             @org.springframework.web.bind.annotation.RequestParam(required = false) Long idIgnorado,
             @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
-        HttpStatus bloqueio = verificarAcesso(solicitante, true);
+        HttpStatus bloqueio = verificarAcesso(solicitante, false);
         if (bloqueio != null) return ResponseEntity.status(bloqueio).build();
+        if (!administrador(solicitante) && !colaborador(solicitante)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
                 .body(Map.of("cadastrado", usuarioService.cpfCadastrado(cpf, idIgnorado)));
     }
@@ -59,8 +60,9 @@ public class UsuarioController {
             @org.springframework.web.bind.annotation.RequestParam String email,
             @org.springframework.web.bind.annotation.RequestParam(required = false) Long idIgnorado,
             @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
-        HttpStatus bloqueio = verificarAcesso(solicitante, true);
+        HttpStatus bloqueio = verificarAcesso(solicitante, false);
         if (bloqueio != null) return ResponseEntity.status(bloqueio).build();
+        if (!administrador(solicitante) && !colaborador(solicitante)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
                 .body(Map.of("cadastrado", usuarioService.emailCadastrado(email, idIgnorado)));
     }
@@ -149,24 +151,47 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioMapper.toResponse(usuario.get()));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioResponse> buscarPorId(
+            @PathVariable Long id,
+            @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante
+    ) {
+        HttpStatus bloqueio = verificarAcesso(solicitante, false);
+        if (bloqueio != null) return ResponseEntity.status(bloqueio).build();
+
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+        if (usuario.isEmpty()) return ResponseEntity.notFound().build();
+
+        boolean proprioCadastro = solicitante.getId().equals(id);
+        boolean consultaRecepcao = "COLABORADOR".equalsIgnoreCase(solicitante.getTipo_do_acesso())
+                && "CLIENTE".equalsIgnoreCase(usuario.get().getTipo_do_acesso());
+        if (!administrador(solicitante) && !proprioCadastro && !consultaRecepcao) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(usuarioMapper.toResponse(usuario.get()));
+    }
+
     @GetMapping
     public ResponseEntity<List<UsuarioResponse>> listarTodos(
             @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante
     ) {
-        HttpStatus bloqueio = verificarAcesso(solicitante, true);
+        HttpStatus bloqueio = verificarAcesso(solicitante, false);
         if (bloqueio != null) {
             return ResponseEntity.status(bloqueio).build();
         }
+        if (!administrador(solicitante) && !colaborador(solicitante)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         var vinculados = usuarioExclusaoService.usuariosComVinculos();
         var cadastros = usuarioRepository.findAll();
         List<UsuarioResponse> usuarios = cadastros
                 .stream()
                 .map(usuario -> {
                     var resposta = usuarioMapper.toResponse(usuario);
-                    resposta.setPodeExcluir(usuarioExclusaoService.podeExcluir(usuario, solicitante.getId(), vinculados));
-                    String motivo = com.clinicar.backend.service.ProtecaoAdministrativaService
-                            .motivoBloqueio(usuario, solicitante.getId(), cadastros);
-                    resposta.setPodeInativar(motivo == null);
+                    resposta.setPodeExcluir((administrador(solicitante) || "CLIENTE".equalsIgnoreCase(usuario.getTipo_do_acesso())) && usuarioExclusaoService.podeExcluir(usuario, solicitante.getId(), vinculados));
+                    String motivo = administrador(solicitante) ? com.clinicar.backend.service.ProtecaoAdministrativaService
+                            .motivoBloqueio(usuario, solicitante.getId(), cadastros) : "Ação exclusiva do administrador.";
+                    resposta.setPodeInativar(administrador(solicitante) && motivo == null);
                     resposta.setMotivoBloqueioInativacao(motivo);
                     return resposta;
                 })
@@ -185,7 +210,7 @@ public class UsuarioController {
         if (bloqueio != null) {
             return ResponseEntity.status(bloqueio).build();
         }
-        if (!administrador(solicitante) && !solicitante.getId().equals(id)) {
+        if (!administrador(solicitante) && !colaborador(solicitante) && !solicitante.getId().equals(id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         log.info("Recebida solicitação para atualizar usuário ID {}.", id);
@@ -200,7 +225,9 @@ public class UsuarioController {
          */
         UsuarioResponse atualizado = administrador(solicitante)
                 ? usuarioService.atualizarPorAdministrador(id, request, solicitante.getId())
-                : usuarioService.atualizarProprio(solicitante.getId(), request);
+                : colaborador(solicitante) && !solicitante.getId().equals(id)
+                    ? usuarioService.atualizarClientePorColaborador(id, request)
+                    : usuarioService.atualizarProprio(solicitante.getId(), request);
 
         return ResponseEntity.ok(atualizado);
     }
@@ -252,5 +279,9 @@ public class UsuarioController {
 
     private boolean administrador(UsuarioResponse solicitante) {
         return "ADMINISTRADOR".equalsIgnoreCase(solicitante.getTipo_do_acesso());
+    }
+
+    private boolean colaborador(UsuarioResponse solicitante) {
+        return "COLABORADOR".equalsIgnoreCase(solicitante.getTipo_do_acesso());
     }
 }

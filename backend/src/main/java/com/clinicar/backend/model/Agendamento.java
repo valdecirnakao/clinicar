@@ -122,6 +122,9 @@ public class Agendamento {
     )
     private Fornecedor fornecedor;
 
+    @Column(name = "tipo_execucao", nullable = false, length = 20)
+    private String tipoExecucao = "INTERNA";
+
     /*
      * Responsável interno pelo atendimento.
      * Pode ser administrador ou colaborador.
@@ -159,6 +162,12 @@ public class Agendamento {
 
     @Column(name = "queixa_cliente", length = 1000)
     private String queixaCliente;
+
+    @Column(name = "sugestao_materiais_cliente", length = 1000)
+    private String sugestaoMateriaisCliente;
+
+    @Column(name = "preferencia_execucao_cliente", length = 1000)
+    private String preferenciaExecucaoCliente;
 
     @Column(name = "diagnostico_previo", length = 1000)
     private String diagnosticoPrevio;

@@ -299,12 +299,20 @@ public class AlertaEstoquePecaService {
 
         alerta.setUltimaTentativaEm(LocalDateTime.now());
         try {
-            String messageId = whatsappEstoqueService.enviarAlertaEstoque(alerta, configuracao);
+            ConfiguracaoAlertaEstoque destinatario = configuracao;
+            if ("CRITICO".equalsIgnoreCase(alerta.getNivelAlerta()) || "ZERADO".equalsIgnoreCase(alerta.getNivelAlerta())) {
+                destinatario = new ConfiguracaoAlertaEstoque();
+                destinatario.setAtivo(configuracao.getAtivo());
+                destinatario.setIdResponsavel(configuracao.getIdAdministradorCritico());
+                destinatario.setNomeResponsavel(configuracao.getNomeAdministradorCritico());
+                destinatario.setTelefoneAdministrador(configuracao.getTelefoneAdministradorCritico());
+            }
+            String messageId = whatsappEstoqueService.enviarAlertaEstoque(alerta, destinatario);
 
             if (messageId == null || messageId.isBlank()) throw new IllegalStateException("A Meta não confirmou a aceitação do envio. Verifique o histórico antes de reenviar.");
             alerta.setWhatsappEnviado(!messageId.startsWith("fila:"));
             alerta.setWhatsappEnviadoEm(messageId.startsWith("fila:") ? null : LocalDateTime.now());
-            alerta.setWhatsappDestinatario(configuracao.getTelefoneAdministrador());
+            alerta.setWhatsappDestinatario(destinatario.getTelefoneAdministrador());
             alerta.setWhatsappMessageId(messageId);
             alerta.setUltimoErro(null);
             alerta.setTentativasEnvio(incrementarTentativas(alerta));

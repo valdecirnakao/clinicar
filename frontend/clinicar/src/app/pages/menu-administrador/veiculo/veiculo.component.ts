@@ -9,7 +9,7 @@ import { NotificacaoService } from '../../../shared/feedback/notificacao.service
 import { Component, ElementRef, HostListener, OnInit, OnDestroy, AfterViewInit, Input, Output, EventEmitter, DestroyRef, TrackByFunction } from '@angular/core';
 import { aposFecharModal } from '../../../shared/fornecedores/transicao-modal';
 import { CommonModule, Location } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FieldHelpDirective } from '../../../shared/field-help/field-help.directive';
 import { FieldHelpPanelComponent } from '../../../shared/field-help/field-help-panel.component';
@@ -61,6 +61,8 @@ const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2';
     styleUrls: ['./veiculo.component.css']
 })
 export class VeiculoComponent implements OnInit, OnDestroy, AfterViewInit {
+  private readonly routerPerfil = injectFeedback(Router);
+  get acessoAdministrador(): boolean { return this.routerPerfil.url.startsWith('/menuAdministrador'); }
   @Input() cadastroIntegrado = false;
   @Input() proprietarioIntegrado: Usuario | null = null;
   @Output() registroCriado = new EventEmitter<Veiculo>();

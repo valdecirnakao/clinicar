@@ -128,6 +128,12 @@
   font-weight: 700;
 }
 
+.info-line-observacoes strong {
+  min-width: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 .item-table-wrapper {
   border: 1px solid #d0e2f2;
   border-radius: 8px;
@@ -229,6 +235,22 @@
 .detail-box strong {
   color: #35689b;
 }
+
+.detalhes-agendamento-modal { color: #284b70; }
+.detalhes-agendamento-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.detalhes-agendamento-secao { min-width: 0; padding: 1rem; border: 1px solid #d0e2f2; border-radius: 8px; background: #f7fbff; }
+.detalhes-agendamento-secao h6 { color: #2e6395; font-weight: 700; padding-bottom: .5rem; border-bottom: 1px solid #d0e2f2; }
+.detalhes-agendamento-lista { margin: 0; }
+.detalhes-agendamento-lista > div { display: flex; justify-content: space-between; gap: 1rem; padding: .4rem 0; border-bottom: 1px dashed #d0e2f2; }
+.detalhes-agendamento-lista > div:last-child { border-bottom: 0; }
+.detalhes-agendamento-lista dt { color: #4c637b; font-weight: 500; }
+.detalhes-agendamento-lista dd { margin: 0; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.detalhes-agendamento-total { color: #245f94; font-size: 1.05rem; }
+.detalhes-agendamento-pecas { list-style: none; margin: 0 0 .5rem; padding: 0; }
+.detalhes-agendamento-pecas li { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-bottom: 1px dashed #d0e2f2; }
+.detalhes-agendamento-pecas li span { text-align: right; }
+.detalhes-agendamento-texto { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 767.98px) { .detalhes-agendamento-grid { grid-template-columns: 1fr; } }
 
 #modalPecaAgendamento {
   z-index: 1065;
@@ -904,7 +926,7 @@
 
 .modal-header-clinicar small {
   display: block;
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .82rem;
   margin-top: .1rem;
 }
@@ -1110,7 +1132,7 @@
 }
 
 .cadastro-progress-top small {
-  color: #6c7f93;
+  color: #4c637b;
   display: block;
 }
 

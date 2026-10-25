@@ -31,6 +31,7 @@ public class AgendamentoResponse {
 
     private Long idFornecedor;
     private String razaoSocialFornecedor;
+    private String tipoExecucao;
 
     private Long idResponsavel;
     private String nomeResponsavel;
@@ -48,6 +49,8 @@ public class AgendamentoResponse {
     private Integer quilometragemAtual;
 
     private String queixaCliente;
+    private String sugestaoMateriaisCliente;
+    private String preferenciaExecucaoCliente;
     private String diagnosticoPrevio;
     private String observacoes;
 

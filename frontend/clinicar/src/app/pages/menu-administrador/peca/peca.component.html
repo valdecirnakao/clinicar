@@ -625,8 +625,8 @@
           </button>
         }
 
-        <button type="button" class="btn btn-primary" [disabled]="salvandoCadastro || !cadastroPecaProntoParaSalvar"
-          [title]="mensagemBloqueioCadastro || 'Salvar peça'" (click)="salvarNovaPeca()">
+        <button type="button" class="btn btn-primary" [disabled]="abaCadastroPeca !== 'revisao' || salvandoCadastro || !cadastroPecaProntoParaSalvar"
+          [title]="abaCadastroPeca !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioCadastro || 'Salvar peça')" (click)="salvarNovaPeca()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar peça
         </button>
@@ -974,8 +974,8 @@
           </button>
         }
 
-        <button type="button" class="btn btn-primary" [disabled]="!edicaoPecaProntaParaSalvar"
-          [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
+        <button type="button" class="btn btn-primary" [disabled]="abaEdicaoPeca !== 'revisao' || !edicaoPecaProntaParaSalvar"
+          [title]="abaEdicaoPeca !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioEdicao || 'Salvar alterações')" (click)="salvarEdicaoModal()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar alterações
         </button>

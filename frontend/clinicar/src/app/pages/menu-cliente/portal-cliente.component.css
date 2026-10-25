@@ -1,0 +1,82 @@
+:host { display: block; color: #35689b; }
+.cadastro-cliente-guia { background: #eef6ff; border-color: #b9d6ee; color: #294a68; }
+.cadastro-etapas-resumo { display: flex; flex-wrap: wrap; gap: .5rem; margin: .55rem 0 .8rem; }
+.cadastro-etapas-resumo span { border: 1px solid #b9d6ee; border-radius: 20px; padding: .25rem .65rem; background: #fff; font-size: .85rem; }
+.cadastro-etapas-resumo span.atual { background: #35689b; border-color: #35689b; color: #fff; font-weight: 700; }
+.portal-page { min-height: 100dvh; background: #fff; }
+.portal-header { min-height: 100px; height: auto; border-bottom: 1px solid #dbe7f5; }
+.logo-clinicar { height: 100px; object-fit: contain; }
+.pill-btn { white-space: nowrap; text-decoration: none; color: #35689b; border: 1px solid #d0e2f2; background: #eef6ff; position: relative; }
+.pill-btn:hover, .pill-btn:focus-visible { color: #28547f; border-color: #9fc1df; background: #e3f0fb; }
+.nav-active { color: #fff !important; background: #35689b !important; border-color: #35689b !important; box-shadow: 0 3px 9px #35689b3d; font-weight: 600; }
+.nav-active::after { content: ''; position: absolute; left: 18%; right: 18%; bottom: -5px; height: 3px; border-radius: 999px; background: #35689b; }
+.titulo-pagina { background: #eef6ff; border: 1px solid #d0e2f2; border-radius: 9px; padding: 16px; text-align: center; }
+.card { border: 1px solid #d0e2f2; border-radius: 10px; box-shadow: 0 2px 6px #35689b0f; }
+.card-header { background: #eef6ff; color: #35689b; font-weight: 600; border-color: #d0e2f2; }
+.btn-primary { background: #35689b; border-color: #35689b; }
+.form-control, .form-select, .dado-visual { border-color: #d0e2f2; color: #35689b; }
+.dado-visual { display: flex; align-items: center; min-height: 38px; padding: 6px 12px; border: 1px solid #d0e2f2; border-radius: 6px; background: #f8fbff; overflow-wrap: anywhere; }
+.form-label { color: #35689b; margin-bottom: 6px; }
+.texto-apoio { color: #4c637b; }
+.veiculos-lista { display: grid; gap: 10px; }
+.veiculo-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; border: 1px solid #d0e2f2; border-radius: 8px; background: #f8fbff; }
+.painel-edicao { border-top: 1px solid #d0e2f2; padding-top: 16px; }
+.summary-card { min-height: 72px; padding: 12px 16px; border: 1px solid #d0e2f2; border-left: 5px solid #35689b; border-radius: 9px; background: #fff; box-shadow: 0 2px 6px #35689b0f; display: grid; align-content: center; }
+.summary-card small { color: #567da5; text-transform: uppercase; font-weight: 700; }
+.summary-card strong { font-size: 1.2rem; }
+.summary-agendado { border-left-color: #f0ad00; }
+.summary-confirmado, .summary-concluido { border-left-color: #198754; }
+.summary-atendimento { border-left-color: #0dcaf0; }
+.summary-cancelado { border-left-color: #dc3545; }
+.agenda-tabela { min-height: 260px; }
+.agenda-tabela th { background: #eef6ff; color: #35689b; white-space: nowrap; border-bottom: 2px solid #d0e2f2; }
+.agenda-tabela td { color: #35689b; border-color: #d0e2f2; }
+.agenda-paginacao { border-top: 1px solid #d0e2f2; color: #35689b; }
+.agenda-modal { color: #243b53; overflow-y: auto; }
+.agenda-modal .form-label { color: #274b70; }
+.agenda-modal .form-control, .agenda-modal .form-select { color: #243b53; }
+.agenda-modal .form-control::placeholder { color: #52677c; opacity: 1; }
+.agenda-modal .modal-dialog { max-width: 1200px; }
+.agenda-modal .modal-content { border: 1px solid #d0e2f2; border-radius: 10px; max-height: min(92dvh, 960px); overflow: hidden; }
+.agenda-modal .modal-header { background: #eef6ff; border-color: #d0e2f2; }
+.agenda-modal .modal-header { align-items: flex-start; }
+.agenda-subtitulo { display: block; margin-top: .2rem; color: #526b84; }
+.agenda-cabecalho-etapas { flex-shrink: 0; padding: .9rem 1rem 0; border-bottom: 1px solid #d0e2f2; }
+.agenda-modal .modal-footer { background: #f7fbff; border-color: #d0e2f2; }
+.agenda-modal .modal-body { min-height: 0; overflow-y: auto; padding: 1rem; }
+.agenda-modal .modal-header, .agenda-modal .modal-footer { flex-shrink: 0; }
+.agenda-progresso { margin-bottom: .7rem; padding: .8rem 1rem; border: 1px solid #d0e2f2; border-radius: 10px; background: #f7fbff; color: #284b70; }
+.agenda-progresso-cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.agenda-progresso-cabecalho span { border: 1px solid #d0e2f2; border-radius: 1rem; padding: .1rem .65rem; background: #fff; font-weight: 700; }
+.agenda-progresso p { margin: .15rem 0 .55rem; font-size: .875rem; }
+.agenda-progresso .progress { height: 1rem; background: #e6f0fa; }
+.agenda-progresso .progress-bar { background: #35689b; font-size: .7rem; font-weight: 700; }
+.agenda-orientacao { display: flex; align-items: center; min-height: 72px; margin-bottom: .7rem; padding: 1rem; border: 1px solid #d0e2f2; border-radius: 10px; background: #eef6ff; color: #284b70; line-height: 1.4; }
+.agenda-orientacao strong { font-weight: 700; }
+.agenda-etapas { display: flex; justify-content: center; flex-wrap: wrap; gap: .35rem; margin-bottom: .9rem; padding: .35rem; border: 1px solid #d0e2f2; border-radius: 10px; background: #f7fbff; }
+.agenda-etapas button { border: 1px solid transparent; border-radius: 8px; background: transparent; color: #35689b; padding: .45rem .75rem; font-weight: 600; }
+.agenda-etapas button:hover, .agenda-etapas button:focus-visible { border-color: #d0e2f2; background: #fff; }
+.agenda-etapas button.ativa { background: #35689b; color: #fff; }
+.agenda-etapas button:disabled { color: #718397; cursor: not-allowed; opacity: .7; }
+.agenda-contador { margin-left: .25rem; font-size: .8rem; }
+.agenda-footer-acoes, .agenda-footer-navegacao { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.agenda-modal .modal-footer { justify-content: space-between; }
+.agenda-secao { border: 1px solid #d0e2f2; background: #fff; border-radius: 10px; padding: 1rem; margin: 0 0 .9rem; min-width: 0; box-shadow: 0 2px 6px #0000000d; }
+.agenda-secao-titulo { width: 100%; margin: 0 0 .7rem; padding: 0 0 .35rem; border-bottom: 1px solid #d0e2f2; color: #35689b; font-size: 1rem; font-weight: 700; }
+.agenda-observacoes { min-height: 7.5rem; resize: vertical; line-height: 1.5; }
+.agenda-referencia { padding: .75rem; border: 1px solid #d0e2f2; border-radius: 8px; background: #f7fbff; color: #304c68; white-space: pre-wrap; }
+.agenda-revisao { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.agenda-revisao-card { min-width: 0; padding: .9rem; border: 1px solid #d0e2f2; border-radius: 10px; background: #fff; box-shadow: 0 2px 6px #0000000d; }
+.agenda-revisao-card h3 { margin: 0 0 .5rem; padding-bottom: .4rem; border-bottom: 1px solid #d0e2f2; color: #28547f; font-size: 1rem; font-weight: 700; }
+.agenda-revisao-card dl { margin: 0; }
+.agenda-revisao-card dl > div, .agenda-revisao-linha { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; border-bottom: 1px dashed #d0e2f2; }
+.agenda-revisao-card dl > div:last-child, .agenda-revisao-linha:last-child { border-bottom: 0; }
+.agenda-revisao-card dt { color: #3f5870; font-weight: 600; }
+.agenda-revisao-card dd { margin: 0; color: #21496f; text-align: right; font-weight: 700; overflow-wrap: anywhere; }
+.agenda-revisao-card p, .agenda-revisao-linha span { color: #304c68; }
+.agenda-revisao-linha strong { color: #21496f; }
+.agenda-revisao-observacoes { white-space: pre-wrap; }
+@media (max-width: 1199.98px) { .portal-header { min-height: 88px; padding-block: .5rem !important; } .logo-clinicar { height: 72px; } #clienteNav { max-height: calc(100dvh - 100px); overflow-y: auto; padding-block: .5rem; } #clienteNav .navbar-nav, #clienteNav .nav-item { width: 100%; } .pill-btn { width: 100%; text-align: left; min-height: 42px; } .nav-active::after { display: none; } }
+@media (min-width: 1200px) and (max-width: 1399.98px) { .logo-clinicar { height: 80px; } .navbar-nav.gap-2 { gap: .35rem !important; } .pill-btn { padding: .35rem .75rem !important; font-size: .92rem; } }
+@media (max-width: 767.98px) { .agenda-revisao { grid-template-columns: 1fr; } .agenda-modal .modal-dialog { margin: .5rem; } .agenda-modal .modal-content { max-height: calc(100dvh - 1rem); } .agenda-cabecalho-etapas { max-height: 45dvh; overflow-y: auto; } .agenda-footer-acoes, .agenda-footer-navegacao { width: 100%; } }
+@media (max-width: 600px) { .veiculo-item { align-items: flex-start; flex-direction: column; } }

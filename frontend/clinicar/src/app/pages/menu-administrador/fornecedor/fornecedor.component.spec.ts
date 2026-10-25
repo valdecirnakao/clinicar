@@ -26,6 +26,19 @@ describe('FornecedorComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('preserva os 11 dígitos do celular na formatação e no payload de cadastro e edição', () => {
+    component.novoFornecedor.telefone = '11999999999';
+    component.formatarTelefoneCadastro();
+    expect(component.novoFornecedor.telefone).toBe('+55 (11) 99999-9999');
+    expect((component as any).montarPayloadFornecedor(component.novoFornecedor).telefone).toBe('5511999999999');
+
+    component.edit.telefone = '11999999999';
+    component.normalizarTelefoneEdicao();
+    expect(component.edit.telefone).toBe('+55 (11) 99999-9999');
+    expect((component as any).montarPayloadFornecedor(component.edit).telefone).toBe('5511999999999');
+    expect(component.exibirTelefoneFormatado('1133334444')).toBe('+55 (11) 3333-4444');
+  });
+
   for (const tipo of ['cadastro', 'edicao'] as const) {
     it(`valida e-mail automaticamente no ${tipo}, aguardando o domínio completo e a pausa na digitação`, fakeAsync(() => {
       const http = TestBed.inject(HttpTestingController);

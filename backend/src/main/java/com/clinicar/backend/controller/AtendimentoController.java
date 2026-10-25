@@ -171,6 +171,16 @@ public class AtendimentoController {
         );
     }
 
+    @PatchMapping("/{id}/diagnosticar")
+    public ResponseEntity<AtendimentoResponse> diagnosticar(@PathVariable Long id) {
+        return ResponseEntity.ok(atendimentoMapper.toResponse(atendimentoService.abrirDiagnostico(id)));
+    }
+
+    @PatchMapping("/{id}/solicitar-aprovacao")
+    public ResponseEntity<AtendimentoResponse> solicitarAprovacao(@PathVariable Long id) {
+        return ResponseEntity.ok(atendimentoMapper.toResponse(atendimentoService.solicitarAprovacao(id)));
+    }
+
     @PatchMapping("/{id}/aprovar")
     public ResponseEntity<AtendimentoResponse> aprovar(
             @PathVariable Long id
@@ -180,6 +190,11 @@ public class AtendimentoController {
                         atendimentoService.aprovar(id)
                 )
         );
+    }
+
+    @PatchMapping("/{id}/revisar-orcamento")
+    public ResponseEntity<AtendimentoResponse> revisarOrcamento(@PathVariable Long id) {
+        return ResponseEntity.ok(atendimentoMapper.toResponse(atendimentoService.revisarOrcamento(id)));
     }
 
     @PatchMapping("/{id}/aguardar-terceiro")
@@ -214,6 +229,11 @@ public class AtendimentoController {
                         atendimentoService.entregar(id)
                 )
         );
+    }
+
+    @PatchMapping("/{id}/pronto-retirada")
+    public ResponseEntity<AtendimentoResponse> marcarProntoRetirada(@PathVariable Long id) {
+        return ResponseEntity.ok(atendimentoMapper.toResponse(atendimentoService.marcarProntoRetirada(id)));
     }
 
     @PatchMapping("/{id}/cancelar")

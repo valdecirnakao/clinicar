@@ -606,7 +606,7 @@
           </button>
 
           <button type="button" class="btn" style="background:#35689b;color:white;"
-            [disabled]="salvandoCadastro || !cadastroProntoParaSalvar" [title]="mensagemBloqueioCadastro || 'Salvar fornecimento'"
+            [disabled]="abaCadastroFornecimento !== 'revisao' || salvandoCadastro || !cadastroProntoParaSalvar" [title]="abaCadastroFornecimento !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioCadastro || 'Salvar fornecimento')"
             (click)="salvarNovoFornecimento()">
             <i class="bi bi-check-circle me-1"></i>
             Salvar Fornecimento
@@ -899,8 +899,8 @@
             Cancelar
           </button>
 
-          <button type="button" class="btn" style="background:#35689b;color:white;" [disabled]="salvandoEdicao || !edicaoProntaParaSalvar"
-            [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
+          <button type="button" class="btn" style="background:#35689b;color:white;" [disabled]="abaEdicaoFornecimento !== 'revisao' || salvandoEdicao || !edicaoProntaParaSalvar"
+            [title]="abaEdicaoFornecimento !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioEdicao || 'Salvar alterações')" (click)="salvarEdicaoModal()">
             <i class="bi bi-check-circle me-1"></i>
             Salvar Alterações
           </button>
@@ -990,7 +990,7 @@
 
       <div class="modal-body selection-modal-body">
 <app-field-help-panel></app-field-help-panel>
-@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true}" (selecionado)="selecionarFornecedor($event)" />}@else{
+@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true,tipoFornecimento:'SERVICOS'}" (selecionado)="selecionarFornecedor($event)" />}@else{
 
         <input type="search" class="form-control mb-3"
           placeholder="Buscar fornecedor por razão social, nome fantasia, item fornecido ou CNPJ..."

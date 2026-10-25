@@ -48,6 +48,7 @@ class ServicoServiceTest {
 
         req.setGarantiaDias(30);
         req.setNecessitaPecas(true);
+        req.setMateriaisReferencia("Filtro de óleo e óleo compatível com o motor.");
         req.setAtivo(true);
         req.setObservacoes("Não inclui óleo e filtro.");
         req.setIdFornecedor(null);
@@ -80,6 +81,7 @@ class ServicoServiceTest {
 
         assertEquals(30, servico.getGarantiaDias());
         assertTrue(servico.getNecessitaPecas());
+        assertEquals("Filtro de óleo e óleo compatível com o motor.", servico.getMateriaisReferencia());
         assertTrue(servico.getAtivo());
         assertEquals("Não inclui óleo e filtro.", servico.getObservacoes());
 
@@ -109,9 +111,16 @@ class ServicoServiceTest {
         req.setObservacoes("Serviço executado por parceiro externo.");
         req.setIdFornecedor(1L);
 
+        req.setIdFornecedor(null);
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> servicoService.criar(req))
+                .getMessage().contains("Selecione o fornecedor externo"));
+        verify(servicoRepository, never()).save(any(Servico.class));
+        req.setIdFornecedor(1L);
+
         Fornecedor fornecedor = new Fornecedor();
         fornecedor.setId(1L);
         fornecedor.setRazaoSocial("Fornecedor Teste");
+        fornecedor.setItemFornecido("Serviços automotivos");
 
         when(servicoRepository.existsByNomeIgnoreCaseAndCategoriaIgnoreCase(
                 "Guincho",
@@ -120,6 +129,12 @@ class ServicoServiceTest {
 
         when(fornecedorRepository.findById(1L))
                 .thenReturn(Optional.of(fornecedor));
+
+        fornecedor.setItemFornecido("Peças automotivas");
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> servicoService.criar(req))
+                .getMessage().contains("fornecedor cadastrado para serviços"));
+        verify(servicoRepository, never()).save(any(Servico.class));
+        fornecedor.setItemFornecido("Serviços automotivos");
 
         when(servicoRepository.save(any(Servico.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -140,8 +155,54 @@ class ServicoServiceTest {
         assertEquals(1L, salvo.getFornecedor().getId());
         assertEquals("Fornecedor Teste", salvo.getFornecedor().getRazaoSocial());
 
-        verify(fornecedorRepository).findById(1L);
+        verify(fornecedorRepository, times(2)).findById(1L);
         verify(servicoRepository).save(any(Servico.class));
+    }
+
+    @Test
+    void editarComoFornecedorExternoSemFornecedorDeveSerRecusado() {
+        ServicoRequest req = new ServicoRequest();
+        req.setNome("Guincho");
+        req.setCategoria("Assistência");
+        req.setTipoDoPrestador("Fornecedor Externo");
+        req.setDuracaoEstimada("1");
+        req.setUnidadeDuracao("HORA");
+        req.setValorBase("250");
+        req.setUnidadeCobranca("SERVICO");
+        req.setGarantiaDias(0);
+
+        Servico existente = new Servico();
+        existente.setId(1L);
+        when(servicoRepository.findById(1L)).thenReturn(Optional.of(existente));
+
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> servicoService.atualizar(1L, req))
+                .getMessage().contains("Selecione o fornecedor externo"));
+        verify(servicoRepository, never()).save(any(Servico.class));
+    }
+
+    @Test
+    void naoPermiteNovoTerceirizadoMasPreservaEdicaoDeRegistroAntigo() {
+        ServicoRequest req = new ServicoRequest();
+        req.setNome("Balanceamento");
+        req.setCategoria("Rodas");
+        req.setTipoDoPrestador("Terceirizado");
+        req.setDuracaoEstimada("1");
+        req.setUnidadeDuracao("HORA");
+        req.setValorBase("80");
+        req.setUnidadeCobranca("SERVICO");
+        req.setGarantiaDias(0);
+
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> servicoService.criar(req))
+                .getMessage().contains("não está disponível"));
+
+        Servico existente = new Servico();
+        existente.setId(1L);
+        existente.setTipoDoPrestador("Terceirizado");
+        when(servicoRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(servicoRepository.save(any(Servico.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertEquals("Terceirizado", servicoService.atualizar(1L, req).getTipoDoPrestador());
+        verify(servicoRepository).save(existente);
     }
 
     @Test

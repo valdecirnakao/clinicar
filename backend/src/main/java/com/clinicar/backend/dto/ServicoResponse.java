@@ -24,6 +24,7 @@ public class ServicoResponse {
 
     private Integer garantiaDias;
     private Boolean necessitaPecas;
+    private String materiaisReferencia;
 
     private Boolean ativo;
 

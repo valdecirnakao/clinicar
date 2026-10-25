@@ -30,10 +30,34 @@ class AuthSessionInterceptorTest {
         var sessions = mock(SessionService.class); var user = new UsuarioResponse(); user.setTipo_do_acesso("CLIENTE");
         when(sessions.validarSessao("teste")).thenReturn(Optional.of(user));
         var interceptor = new AuthSessionInterceptor(sessions); ReflectionTestUtils.setField(interceptor,"cookieName","SESSION");
-        for (String path : new String[]{"/api/configuracao-alerta-manutencao","/api/regra-manutencao-preventiva","/api/peca","/api/atendimento","/api/previsao-manutencao","/api/veiculo/1/historico","/api/veiculo/1/historico/pdf"}) {
+        for (String path : new String[]{"/api/configuracao-alerta-manutencao","/api/regra-manutencao-preventiva","/api/peca","/api/atendimento","/api/previsao-manutencao","/api/veiculo/1", "/api/veiculo/1/historico/alterar"}) {
             var req = new MockHttpServletRequest("GET",path); req.setCookies(new Cookie("SESSION","teste"));
             var res = new MockHttpServletResponse(); assertFalse(interceptor.preHandle(req,res,new Object())); assertEquals(403,res.getStatus());
         }
+    }
+    @Test void clientePodeSomenteConsultarEExportarHistorico() throws Exception {
+        var sessions = mock(SessionService.class); var user = new UsuarioResponse(); user.setTipo_do_acesso("CLIENTE");
+        when(sessions.validarSessao("teste")).thenReturn(Optional.of(user));
+        var interceptor = new AuthSessionInterceptor(sessions); ReflectionTestUtils.setField(interceptor,"cookieName","SESSION");
+        for (String path : new String[]{"/api/veiculo/1/historico", "/api/veiculo/1/historico/pdf"}) {
+            var req = new MockHttpServletRequest("GET", path); req.setCookies(new Cookie("SESSION","teste"));
+            assertTrue(interceptor.preHandle(req, new MockHttpServletResponse(), new Object()));
+            var escrita = new MockHttpServletRequest("POST", path); escrita.setCookies(new Cookie("SESSION","teste"));
+            var res = new MockHttpServletResponse(); assertFalse(interceptor.preHandle(escrita, res, new Object())); assertEquals(403, res.getStatus());
+        }
+    }
+    @Test void clienteUsaSomenteRotaPropriaDeAgendamentos() throws Exception {
+        var sessions = mock(SessionService.class); var user = new UsuarioResponse(); user.setTipo_do_acesso("CLIENTE");
+        when(sessions.validarSessao("teste")).thenReturn(Optional.of(user));
+        var interceptor = new AuthSessionInterceptor(sessions); ReflectionTestUtils.setField(interceptor, "cookieName", "SESSION");
+        for (String[] caso : new String[][] {{"GET", "/api/cliente/agendamentos"},
+                {"GET", "/api/cliente/agendamentos/catalogos"}, {"POST", "/api/cliente/agendamentos"},
+                {"PUT", "/api/cliente/agendamentos/7"}}) {
+            var req = new MockHttpServletRequest(caso[0], caso[1]); req.setCookies(new Cookie("SESSION", "teste"));
+            assertTrue(interceptor.preHandle(req, new MockHttpServletResponse(), new Object()), caso[1]);
+        }
+        var req = new MockHttpServletRequest("POST", "/api/agendamento"); req.setCookies(new Cookie("SESSION", "teste"));
+        var res = new MockHttpServletResponse(); assertFalse(interceptor.preHandle(req, res, new Object())); assertEquals(403, res.getStatus());
     }
     @Test void administradorPodeAcessarConfiguracao() throws Exception {
         var sessions = mock(SessionService.class); var user = new UsuarioResponse(); user.setTipo_do_acesso("ADMINISTRADOR");
@@ -45,5 +69,35 @@ class AuthSessionInterceptorTest {
     @Test void semSessaoRetorna401() throws Exception {
         var sessions = mock(SessionService.class); var interceptor = new AuthSessionInterceptor(sessions);
         var res = new MockHttpServletResponse(); assertFalse(interceptor.preHandle(new MockHttpServletRequest("GET","/api/peca"),res,new Object())); assertEquals(401,res.getStatus());
+    }
+
+    @Test void colaboradorAcessaOperacaoPermitidaSemGanharAcessoAdministrativo() throws Exception {
+        var sessions = mock(SessionService.class); var user = new UsuarioResponse(); user.setTipo_do_acesso("COLABORADOR");
+        when(sessions.validarSessao("teste")).thenReturn(Optional.of(user));
+        var interceptor = new AuthSessionInterceptor(sessions); ReflectionTestUtils.setField(interceptor,"cookieName","SESSION");
+        for (String[] caso : new String[][] {
+                {"GET", "/api/colaborador/meu-trabalho/pendencias"},
+                {"GET", "/api/estoque-pecas/12/movimentacoes/pagina"},
+                {"POST", "/api/estoque-pecas/12/entrada"},
+                {"PUT", "/api/atendimento/3"},
+                {"GET", "/api/veiculo/3/historico"},
+                {"PUT", "/api/configuracao-alerta-manutencao"},
+                {"POST", "/api/configuracao-alerta-manutencao/historico/3/conciliar"}
+        }) {
+            var req = new MockHttpServletRequest(caso[0], caso[1]); req.setCookies(new Cookie("SESSION", "teste"));
+            assertTrue(interceptor.preHandle(req, new MockHttpServletResponse(), new Object()), caso[1]);
+        }
+        for (String[] caso : new String[][] {
+                {"POST", "/api/estoque-pecas/12/ajuste"},
+                {"PUT", "/api/configuracao-alerta-estoque"},
+                {"GET", "/api/auditoria"},
+                {"POST", "/api/peca"},
+                {"GET", "/api/regra-manutencao-preventiva"}
+        }) {
+            var req = new MockHttpServletRequest(caso[0], caso[1]); req.setCookies(new Cookie("SESSION", "teste"));
+            var res = new MockHttpServletResponse();
+            assertFalse(interceptor.preHandle(req, res, new Object()), caso[1]);
+            assertEquals(403, res.getStatus(), caso[1]);
+        }
     }
 }

@@ -1,172 +1,86 @@
-<div class="text-center py-0 m-0" id="logotop">
-  <img src="assets/img/LogoClinicar.png" alt="CliniCar Logo" class="img-fluid logo-img m-0" />
-</div>
-<div class="container mt-1 mb-0" style="color:#35689b;">
-  <div class="row justify-content-center">
-    <div class="col-md-12 sm-mt-0">
-      <!-- Título -->
-      <div class="row mt-0">
-        <div class="col text-center mb-2">
-          <div class="card" style="border:1px solid #d0e2f2;border-radius:3px;background:#eef6ff;">
-            <div class="card-body" style="color:#35689b;">Cadastro de Cliente</div>
-          </div>
+<main class="cadastro-page">
+  <div class="cadastro-shell">
+    <a routerLink="/login" class="voltar-login"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao login</a>
+    <div class="cadastro-card">
+      <header class="cadastro-header">
+        <img src="assets/img/LogoClinicar.png" alt="CliniCar" class="cadastro-logo">
+        <div><h1>Cadastro de cliente</h1><p>Seus dados, veículos e preferências de alertas em etapas.</p></div>
+      </header>
+      @if (concluido) {
+        <div class="cadastro-body text-center py-5" role="status">
+          <i class="bi bi-check-circle-fill text-success fs-1" aria-hidden="true"></i>
+          <h2 class="mt-3">Conta criada com sucesso</h2>
+          <p>Entre com seu e-mail e senha. Depois da verificação de acesso, continue pelo cadastro dos seus veículos e escolha os alertas que deseja receber.</p>
+          <a routerLink="/login" class="btn btn-primary mt-2">Entrar e continuar cadastro <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></a>
         </div>
-      </div>
-      <div class="row mt-0">
-        <form data-help-scope="cadastra-cliente" #form="ngForm" (ngSubmit)="cadastrar(form)" class="container py-2">
-          <app-field-help-panel></app-field-help-panel>
-          <!-- Mensagens -->
-          @if (errorMsg) {
-            <div class="alert alert-danger py-2" [appFeedback]="errorMsg" tipoFeedback="erro" (feedbackFechado)="errorMsg = ''">{{ errorMsg }}</div>
-          }
-          @if (successMsg) {
-            <div class="alert alert-success py-2" [appFeedback]="successMsg" tipoFeedback="sucesso" (feedbackFechado)="successMsg = ''">{{ successMsg }}</div>
-          }
-
-          <!-- DADOS DO CLIENTE -->
-          <fieldset class="border rounded p-3 mb-3">
-            <legend class="float-none w-auto px-2 small mb-0">Dados do Cliente</legend>
-
-            <div class="row g-2">
-              <div class="col-md-5">
-                <label for="nome" class="form-label">Nome</label>
-                <input id="nome" class="form-control" name="nome" required [(ngModel)]="cliente.nome" style="color:#35689b;">
-              </div>
-              <div class="col-md-3">
-                <label for="nome_social" class="form-label">Nome Social</label>
-                <input id="nome_social" class="form-control" name="nome_social" required [(ngModel)]="cliente.nome_social" style="color:#35689b;">
-              </div>
-              <div class="col-md-4">
-                <label for="email" class="form-label">E-mail</label>
-                <input id="email" class="form-control" type="email" name="email" required [(ngModel)]="cliente.email" style="color:#35689b;">
-              </div>
-              <div class="col-md-2">
-                <label for="telefone" class="form-label">Telefone</label>
-                <input id="telefone" class="form-control" name="telefone" [(ngModel)]="cliente.telefone" (blur)="formatarTelefone()" style="color:#35689b;">
-              </div>
-              <div class="col-md-2">
-                <label for="cpf" class="form-label">CPF</label>
-                <input id="cpf" class="form-control" name="cpf" required [(ngModel)]="cliente.cpf" (blur)="formatarCPF()" style="color:#35689b;">
-              </div>
-              <div class="col-md-2">
-                <label for="nascimento" class="form-label">Nascimento</label>
-                <input id="nascimento" type="date" class="form-control" name="nascimento" required [(ngModel)]="cliente.nascimento" style="color:#35689b;">
-              </div>
-              <div class="col-md-2">
-                <label for="senha" class="form-label">Senha</label>
-                <input id="senha" class="form-control" name="senha" [(ngModel)]="cliente.senha" style="color:#35689b;">
-              </div>
-              <div class="col-md-2">
-                <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
-                <input id="confirmarSenha" class="form-control" name="confirmarSenha" [(ngModel)]="cliente.confirmarSenha" style="color:#35689b;">
-              </div>
-              <div class="col-md-2">
-                <label for="cep" class="form-label">CEP</label>
-                <input type="text" id="cep" name="cep" class="form-control"
-                  required [(ngModel)]="cliente.cep" (blur)="onCepBlur()"
-                  placeholder=""
-                  style="color:#35689b;">
-                @if (cepStatus.loading) {
-                  <div class="form-text">Consultando CEP…</div>
-                }
-                @if (cepStatus.errorMsg) {
-                  <div class="text-danger small">{{ cepStatus.errorMsg }}</div>
-                }
-              </div>
-              <div class="col-md-6">
-                <label for="logradouro" class="form-label">Logradouro</label>
-                <input id="logradouro" class="form-control" name="logradouro" [(ngModel)]="cliente.logradouro" style="color:#35689b;">
-              </div>
-              <div class="col-md-3">
-                <label for="numero" class="form-label">Número</label>
-                <input id="numero" class="form-control" name="numero" [(ngModel)]="cliente.numero_endereco" style="color:#35689b;">
-              </div>
-              <div class="col-md-3">
-                <label for="complemento_endereco" class="form-label">Complemento</label>
-                <input id="complemento_endereco" class="form-control" name="complemento_endereco" [(ngModel)]="cliente.complemento_endereco" style="color:#35689b;">
-              </div>
-              <div class="col-md-5">
-                <label for="bairro" class="form-label">Bairro</label>
-                <input id="bairro" class="form-control" name="bairro" [(ngModel)]="cliente.bairro" style="color:#35689b;">
-              </div>
-              <div class="col-md-6">
-                <label for="cidade" class="form-label">Cidade</label>
-                <input id="cidade" class="form-control" name="cidade" [(ngModel)]="cliente.cidade" style="color:#35689b;">
-              </div>
-              <div class="col-md-1">
-                <label for="uf" class="form-label">UF</label>
-                <input id="uf" class="form-control" name="uf" [(ngModel)]="cliente.estado" style="color:#35689b;">
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- DADOS DO VEÍCULO -->
-          <fieldset class="border rounded p-3 mb-3">
-            <legend class="float-none w-auto px-2 small mb-0">Dados do Veículo</legend>
-
-            <div class="row g-2">
-              <div class="col-md-3">
-                <label for="placa" class="form-label">Placa</label>
-                <input id="placa" class="form-control" name="placa" required [(ngModel)]="veiculo.placa" (blur)="formatarPlaca()" style="color:#35689b;">
-              </div>
-
-              <div class="col-md-3">
-                <label for="cor" class="form-label">Cor</label>
-                <input id="cor" class="form-control" name="cor" required [(ngModel)]="veiculo.cor" style="color:#35689b;">
-              </div>
-
-              <!-- MONTADORA -->
-              <div class="col-md-6">
-                <label for="montadora" class="form-label">Montadora</label>
-                <select id="montadora" class="form-select" name="montadora" [(ngModel)]="marcaSelCode" style="color:#35689b;"
-                  [disabled]="fipeCarregando.marcas" (ngModelChange)="onChangeMarca($event)">
-                  <option value="" style="color:#35689b;">Selecione...</option>
-                  @for (m of marcas; track m) {
-                    <option [value]="m.code">{{ m.name }}</option>
-                  }
-                </select>
-                @if (fipeErro && marcas.length===0) {
-                  <small class="text-danger">{{ fipeErro }}</small>
-                }
-              </div>
-
-              <!-- MODELO -->
-              <div class="col-md-6">
-                <label for="modeloFipe" class="form-label">Modelo</label>
-                <select id="modeloFipe" class="form-select" name="modeloFipe" [(ngModel)]="modeloSelCode" style="color:#35689b;"
-                  [disabled]="!marcaSelCode || fipeCarregando.modelos" (ngModelChange)="onChangeModelo($event)">
-                  <option value="">Selecione...</option>
-                  @for (mo of modelos; track mo) {
-                    <option [value]="mo.code">{{ mo.name }}</option>
-                  }
-                </select>
-              </div>
-
-              <!-- ANO / COMBUSTÍVEL -->
-              <div class="col-md-6">
-                <label for="anoFipe" class="form-label">Ano / Modelo / Combustível (FIPE)*</label>
-                <select id="anoFipe" class="form-select" name="anoFipe" [(ngModel)]="anoSelCode" style="color:#35689b;"
-                  [disabled]="!modeloSelCode || fipeCarregando.anos" (ngModelChange)="onChangeAno($event)">
-                  <option value="" style="color:#35689b;">Selecione...</option>
-                  @for (a of anos; track a) {
-                    <option [value]="a.code">{{ a.name }}</option>
-                  }
-                </select>
-                @if (veiculo.anoModeloCombustivel) {
-                  <div class="form-text">
-                    Selecionado: {{ veiculo.fabricante }} / {{ veiculo.modelo }} — {{ veiculo.anoModeloCombustivel }}
-                  </div>
-                }
-              </div>
-            </div>
-          </fieldset>
-          <div class="d-flex gap-2 justify-content-center">
-            <button class="btn btn-success" type="submit" [disabled]="loading">Cadastrar</button>
-            <button class="btn btn-secondary" type="button" (click)="form.resetForm()">Limpar</button>
-            <button class="btn btn-danger" type="button" [routerLink]="['/']">Cancelar</button>
+      } @else {
+        <div class="cadastro-body">
+          <div class="progress-card">
+            <div class="d-flex justify-content-between align-items-center"><strong>Progresso dos dados da conta</strong><span class="progress-label">{{ progresso }}%</span></div>
+            <p>Etapa {{ indiceEtapa + 1 }} de {{ etapas.length }}. Após criar sua conta, você poderá cadastrar vários veículos e configurar seus alertas.</p>
+            <div class="progress" role="progressbar" [attr.aria-valuenow]="progresso" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" [style.width.%]="progresso">{{ progresso }}%</div></div>
           </div>
-        </form>
-      </div>
+          <div class="help-card"><i class="bi bi-info-circle" aria-hidden="true"></i><div><strong>Dados do cliente</strong><p>Preencha os campos obrigatórios e confira o resumo antes de salvar. A conta será sempre de cliente.</p></div></div>
+          <nav class="etapas" aria-label="Etapas do cadastro">
+            <button type="button" [class.ativa]="etapa === 'dados'" (click)="abrirEtapa('dados')"><i class="bi bi-person-vcard"></i> Dados pessoais</button>
+            <button type="button" [class.ativa]="etapa === 'contato'" [disabled]="maiorEtapa < 1" (click)="abrirEtapa('contato')"><i class="bi bi-telephone"></i> Contato</button>
+            <button type="button" [class.ativa]="etapa === 'endereco'" [disabled]="maiorEtapa < 2" (click)="abrirEtapa('endereco')"><i class="bi bi-geo-alt"></i> Endereço</button>
+            <button type="button" [class.ativa]="etapa === 'seguranca'" [disabled]="maiorEtapa < 3" (click)="abrirEtapa('seguranca')"><i class="bi bi-shield-lock"></i> Segurança</button>
+            <button type="button" [class.ativa]="etapa === 'revisao'" [disabled]="maiorEtapa < 4" (click)="abrirEtapa('revisao')"><i class="bi bi-clipboard-check"></i> Revisão</button>
+          </nav>
+          @if (mensagemErro) { <div class="alert alert-danger" role="alert">{{ mensagemErro }}</div> }
+          <form (ngSubmit)="etapa === 'revisao' ? cadastrar() : proximo()" novalidate>
+            @if (etapa === 'dados') {
+              <section class="form-section"><h2><i class="bi bi-person me-2"></i>Identificação</h2><div class="row g-3">
+                <div class="col-md-6"><label for="nome" class="form-label">Nome completo *</label><input id="nome" name="nome" class="form-control" [(ngModel)]="cliente.nome" autocomplete="name" required></div>
+                <div class="col-md-6"><label for="nomeSocial" class="form-label">Nome social</label><input id="nomeSocial" name="nomeSocial" class="form-control" [(ngModel)]="cliente.nome_social"></div>
+                <div class="col-md-6"><label for="cpf" class="form-label">CPF ou CNPJ *</label><input id="cpf" name="cpf" class="form-control" [(ngModel)]="cliente.cpf" (blur)="formatarDocumento()" inputmode="numeric" required></div>
+                <div class="col-md-6"><label for="nascimento" class="form-label">Data de nascimento *</label><input id="nascimento" name="nascimento" type="date" class="form-control" [(ngModel)]="cliente.nascimento" required></div>
+              </div></section>
+            }
+            @if (etapa === 'contato') {
+              <section class="form-section"><h2><i class="bi bi-telephone me-2"></i>Contato</h2><div class="row g-3">
+                <div class="col-md-6"><label for="email" class="form-label">E-mail *</label><input id="email" name="email" type="email" class="form-control" [(ngModel)]="cliente.email" autocomplete="email" required></div>
+                <div class="col-md-6"><label for="telefone" class="form-label">Telefone | WhatsApp *</label><input id="telefone" name="telefone" type="tel" class="form-control" [(ngModel)]="cliente.telefone" (blur)="formatarTelefone()" autocomplete="tel" required><div class="form-text">Usado para contato e avisos, conforme suas preferências.</div></div>
+              </div></section>
+            }
+            @if (etapa === 'endereco') {
+              <section class="form-section"><h2><i class="bi bi-geo-alt me-2"></i>Endereço</h2><div class="row g-3">
+                <div class="col-md-3"><label for="cep" class="form-label">CEP *</label><input id="cep" name="cep" class="form-control" [(ngModel)]="cliente.cep" (ngModelChange)="aoAlterarCep()" (blur)="consultarCep()" [attr.aria-invalid]="cepErro ? true : null" [attr.aria-describedby]="cepErro ? 'cepErro' : cepConsultando ? 'cepConsultando' : null" inputmode="numeric" maxlength="9" autocomplete="postal-code" required>
+                  @if (cepConsultando) { <div id="cepConsultando" class="form-text" role="status">Consultando CEP...</div> }
+                  @if (cepErro) { <div id="cepErro" class="form-text text-danger" role="status">{{ cepErro }}</div> }
+                </div>
+                <div class="col-md-7"><label for="logradouro" class="form-label">Logradouro *</label><input id="logradouro" name="logradouro" class="form-control" [(ngModel)]="cliente.logradouro" required></div>
+                <div class="col-md-2"><label for="numero" class="form-label">Número *</label><input id="numero" name="numero" class="form-control" [(ngModel)]="cliente.numero_endereco" required></div>
+                <div class="col-md-4"><label for="complemento" class="form-label">Complemento</label><input id="complemento" name="complemento" class="form-control" [(ngModel)]="cliente.complemento_endereco"></div>
+                <div class="col-md-4"><label for="bairro" class="form-label">Bairro *</label><input id="bairro" name="bairro" class="form-control" [(ngModel)]="cliente.bairro" required></div>
+                <div class="col-md-3"><label for="cidade" class="form-label">Cidade *</label><input id="cidade" name="cidade" class="form-control" [(ngModel)]="cliente.cidade" required></div>
+                <div class="col-md-1"><label for="estado" class="form-label">UF *</label><input id="estado" name="estado" class="form-control text-uppercase" [(ngModel)]="cliente.estado" maxlength="2" required></div>
+              </div></section>
+            }
+            @if (etapa === 'seguranca') {
+              <section class="form-section"><h2><i class="bi bi-shield-lock me-2"></i>Segurança da conta</h2><p>Use de 8 a 128 caracteres, com letra maiúscula, minúscula, número e caractere especial.</p><div class="row g-3">
+                <div class="col-md-6"><label for="senha" class="form-label">Senha *</label><input id="senha" name="senha" [type]="mostrarSenha ? 'text' : 'password'" class="form-control" [(ngModel)]="cliente.senha" autocomplete="new-password" required></div>
+                <div class="col-md-6"><label for="confirmarSenha" class="form-label">Confirmar senha *</label><input id="confirmarSenha" name="confirmarSenha" [type]="mostrarSenha ? 'text' : 'password'" class="form-control" [(ngModel)]="cliente.confirmarSenha" autocomplete="new-password" required></div>
+                <div class="col-12"><button type="button" class="btn btn-link p-0" (click)="mostrarSenha = !mostrarSenha">{{ mostrarSenha ? 'Ocultar senhas' : 'Mostrar senhas' }}</button></div>
+              </div></section>
+            }
+            @if (etapa === 'revisao') {
+              <div class="revisao-grid">
+                <section class="form-section"><h2><i class="bi bi-person me-2"></i>Dados pessoais</h2><dl><div><dt>Nome</dt><dd>{{ cliente.nome }}</dd></div><div><dt>Nome social</dt><dd>{{ cliente.nome_social || 'Não informado' }}</dd></div><div><dt>CPF/CNPJ</dt><dd>{{ cliente.cpf }}</dd></div><div><dt>Nascimento</dt><dd>{{ cliente.nascimento }}</dd></div></dl></section>
+                <section class="form-section"><h2><i class="bi bi-telephone me-2"></i>Contato</h2><dl><div><dt>E-mail</dt><dd>{{ cliente.email }}</dd></div><div><dt>Telefone</dt><dd>{{ cliente.telefone }}</dd></div></dl></section>
+                <section class="form-section"><h2><i class="bi bi-geo-alt me-2"></i>Endereço</h2><dl><div><dt>CEP</dt><dd>{{ cliente.cep }}</dd></div><div><dt>Endereço</dt><dd>{{ cliente.logradouro }}, {{ cliente.numero_endereco }}</dd></div><div><dt>Bairro / Cidade / UF</dt><dd>{{ cliente.bairro }} · {{ cliente.cidade }} / {{ cliente.estado }}</dd></div></dl></section>
+                <section class="form-section"><h2><i class="bi bi-car-front me-2"></i>Próximas etapas</h2><p>Após entrar na conta, cadastre um ou mais veículos e configure os alertas de manutenção que deseja receber.</p></section>
+              </div>
+            }
+            <footer class="cadastro-footer">
+              <button type="button" class="btn btn-outline-secondary" (click)="anterior()" [disabled]="indiceEtapa === 0 || carregando">Anterior</button>
+              @if (etapa !== 'revisao') { <button type="submit" class="btn btn-outline-primary" [disabled]="etapa === 'endereco' && cepConsultando">Próximo <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></button> }
+              @else { <button type="submit" class="btn btn-primary" [disabled]="carregando">{{ carregando ? 'Salvando...' : 'Criar conta de cliente' }}</button> }
+            </footer>
+          </form>
+        </div>
+      }
     </div>
   </div>
-</div>
+</main>

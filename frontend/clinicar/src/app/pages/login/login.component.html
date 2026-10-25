@@ -1,64 +1,81 @@
-<div class="text-center py-0 mt-5 mb-0" id="logotop">
-  <img
-    src="assets/img/LogoClinicar.png"
-    alt="CliniCar Logo"
-    class="img-fluid logo-img object-fit-md-scale"
-    />
-</div>
-<div class="container mt-2 py-0 mt-0 mb-0 w-100" style="color: #35689b;">
-  <div class="row justify-content-center">
-    <div class="col-md-10">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-      </div>
-      <div class="row text" id="card">
-        <!-- Login -->
-        <div class="col-md-6 border-end pe-md-4 border-md-end-0" id="comcadastro">
-          <h4>Já tenho cadastro</h4>
-          <form data-help-scope="login" (ngSubmit)="login()">
-            <app-field-help-panel></app-field-help-panel>
-            <div class="mb-3">
-              <label for="loginEmail" class="form-label">Email</label>
-              <input type="email" class="form-control" id="loginEmail" placeholder="Digite seu email"[(ngModel)]="email" name="email" (click)="erroLogin = false">
-            </div>
-            <div class="mb-3">
-              <label for="loginSenha" class="form-label">Senha</label>
-              <input type="password" class="form-control" id="loginSenha" placeholder="Digite sua senha"[(ngModel)]="senha" name="senha">
-            </div>
-            <div class="col-md-6 mb-3 justify-content-between">
-              <button type="submit" class="btn btn-primary">Entrar</button>
-            </div>
-          </form>
-          <div class="col-md-6 mb-2 justify-content-between">
-            <button class="btn btn-secondary" routerLink="/esqueci-senha">Esqueci minha senha</button>
+<main class="login-page">
+  <div class="login-shell">
+    <header class="login-brand text-center">
+      <img src="assets/img/LogoClinicar.png" alt="CliniCar Mecânica Geral" class="login-logo">
+      <h1>Acesse sua conta</h1>
+      <p>Entre para acompanhar seus agendamentos, veículos e serviços.</p>
+    </header>
+
+    <div class="login-card">
+      <section class="login-section" aria-labelledby="titulo-login">
+        <div class="section-heading">
+          <span class="section-icon" aria-hidden="true"><i class="bi bi-person-check"></i></span>
+          <div>
+            <h2 id="titulo-login">Já tenho cadastro</h2>
+            <p>Informe os dados da sua conta para continuar.</p>
           </div>
+        </div>
 
+        <form data-help-scope="login" (ngSubmit)="login()">
+          <app-field-help-panel></app-field-help-panel>
+          <div class="mb-3">
+            <label for="loginEmail" class="form-label">E-mail</label>
+            <input type="email" class="form-control" id="loginEmail" placeholder="seu@email.com"
+              [(ngModel)]="email" name="email" autocomplete="username" [disabled]="carregandoLogin"
+              [attr.aria-invalid]="erroLogin ? true : null" (input)="erroLogin = false">
+          </div>
+          <div class="mb-3">
+            <label for="loginSenha" class="form-label">Senha</label>
+            <div class="input-group">
+              <input [type]="mostrarSenha ? 'text' : 'password'" class="form-control" id="loginSenha"
+                placeholder="Digite sua senha" [(ngModel)]="senha" name="senha" autocomplete="current-password"
+                [disabled]="carregandoLogin" [attr.aria-invalid]="erroLogin ? true : null" (input)="erroLogin = false">
+              <button type="button" class="btn btn-outline-secondary password-toggle"
+                (click)="mostrarSenha = !mostrarSenha" [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+                [attr.aria-pressed]="mostrarSenha" [disabled]="carregandoLogin">
+                <i [class]="mostrarSenha ? 'bi bi-eye-slash' : 'bi bi-eye'" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
           @if (erroLogin) {
-            <div  class="alert alert-danger mt-3">
-              {{ mensagemErro }}
-            </div>
+            <div class="alert alert-danger" role="alert">{{ mensagemErro }}</div>
           }
-        </div>
-
-        <!-- Cadastro -->
-        <div class="col-md-6 pe-md-10" id="semcadastro">
-          <h4>Ainda não tenho cadastro</h4>
-          <p>Clique abaixo para se cadastrar:</p>
-          <a routerLink="/cadastraCliente" class="btn btn-success ">Clique aqui</a>
-        </div>
-        <div class="col-12 mt-4 border-top pt-3">
-          <button type="button" class="btn btn-link setup-link p-0" (click)="primeiroAcesso()" [disabled]="consultandoSetup">
-            {{ consultandoSetup ? 'Consultando...' : 'Primeiro acesso?' }}
+          <button type="submit" class="btn btn-primary login-submit" [disabled]="carregandoLogin">
+            @if (carregandoLogin) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Entrando...
+            } @else {
+              Entrar <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+            }
           </button>
-          @if (mensagemSetup) {
-            <div class="alert alert-info mt-3" role="status">
-              {{ mensagemSetup }}
-              @if (aguardandoAtivacao) {
-                <a routerLink="/primeiro-acesso" class="d-block mt-2">Consultar orientações e reenviar ativação</a>
-              }
-            </div>
+        </form>
+        <a routerLink="/esqueci-senha" class="forgot-link">Esqueci minha senha</a>
+      </section>
+
+      <section class="register-section" aria-labelledby="titulo-cadastro">
+        <span class="section-icon register-icon" aria-hidden="true"><i class="bi bi-person-plus"></i></span>
+        <h2 id="titulo-cadastro">Ainda não tenho cadastro</h2>
+        <p>Cadastre seus dados. Após entrar na conta, adicione seus veículos e escolha os alertas que deseja receber.</p>
+        <a routerLink="/cadastraCliente" class="btn btn-outline-primary register-button">
+          Iniciar cadastro de cliente <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+        </a>
+        <p class="register-note">O cadastro de colaboradores e administradores é feito pela oficina.</p>
+      </section>
+    </div>
+
+    @if (exibirPrimeiroAcesso) {
+    <div class="setup-area">
+      <button type="button" class="btn btn-link setup-link" (click)="primeiroAcesso()" [disabled]="consultandoSetup">
+        {{ consultandoSetup ? 'Consultando...' : 'Primeiro acesso da oficina?' }}
+      </button>
+      @if (mensagemSetup) {
+        <div class="alert alert-info mt-2 mb-0" role="status">
+          {{ mensagemSetup }}
+          @if (aguardandoAtivacao) {
+            <a routerLink="/primeiro-acesso" class="d-block mt-2">Consultar orientações e reenviar ativação</a>
           }
         </div>
-      </div>
+      }
     </div>
+    }
   </div>
-</div>
+</main>

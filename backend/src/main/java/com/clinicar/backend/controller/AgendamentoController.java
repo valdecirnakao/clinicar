@@ -4,6 +4,7 @@ import com.clinicar.backend.dto.AgendamentoCancelamentoRequest;
 import com.clinicar.backend.dto.AgendamentoInicioResponse;
 import com.clinicar.backend.dto.AgendamentoRequest;
 import com.clinicar.backend.dto.AgendamentoResponse;
+import com.clinicar.backend.dto.UsuarioResponse;
 import com.clinicar.backend.mapper.AgendamentoMapper;
 import com.clinicar.backend.mapper.AtendimentoMapper;
 import com.clinicar.backend.model.Agendamento;
@@ -37,8 +38,13 @@ public class AgendamentoController {
 
     @PostMapping
     public ResponseEntity<AgendamentoResponse> criar(
-            @RequestBody AgendamentoRequest request
+            @RequestBody AgendamentoRequest request,
+            @RequestAttribute(name="usuarioLogado", required=false) UsuarioResponse solicitante
     ) {
+        if (solicitante == null || !"ATIVO".equalsIgnoreCase(solicitante.getStatus())
+                || solicitante.getTipo_do_acesso() == null
+                || !java.util.Set.of("ADMINISTRADOR","COLABORADOR").contains(solicitante.getTipo_do_acesso().toUpperCase(java.util.Locale.ROOT)))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         log.info(
                 "[AGENDAMENTO-CONTROLLER] Criando agendamento. Peças previstas recebidas no POST: {}",
                 request.getPecasPrevistas() != null ? request.getPecasPrevistas().size() : 0
@@ -69,6 +75,18 @@ public class AgendamentoController {
                         agendamentoService.buscarPorId(id)
                 )
         );
+    }
+
+    @GetMapping("/{id}/pecas-previstas")
+    public ResponseEntity<List<com.clinicar.backend.dto.AgendamentoPecaPrevistaResponse>> listarPecasPrevistas(
+            @PathVariable Long id,
+            @RequestAttribute(name="usuarioLogado", required=false) UsuarioResponse solicitante) {
+        if (solicitante == null || !"ATIVO".equalsIgnoreCase(solicitante.getStatus())
+                || solicitante.getTipo_do_acesso() == null
+                || !java.util.Set.of("ADMINISTRADOR", "COLABORADOR")
+                        .contains(solicitante.getTipo_do_acesso().toUpperCase(java.util.Locale.ROOT)))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(agendamentoService.listarPecasPrevistas(id));
     }
 
     @GetMapping("/status/{status}")

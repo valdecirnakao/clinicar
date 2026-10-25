@@ -1,0 +1,21 @@
+<nav class="navbar navbar-expand-xl bg-white sticky-top m-0 p-0 top-nav-clinicar">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" routerLink="/menuColaborador/painel"><img src="assets/img/LogoClinicar.png" alt="CliniCar" class="m-0 p-0 logo-clinicar"></a>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navColaborador" aria-controls="navColaborador" aria-expanded="false" aria-label="Alternar navegação"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse justify-content-xl-center" id="navColaborador">
+      <ul class="navbar-nav nav nav-pills gap-2 align-items-xl-center flex-column flex-xl-row w-auto w-xl-auto">
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="painel" routerLinkActive="nav-active">Painel</a></li>
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="minha-conta" routerLinkActive="nav-active">Minha Conta</a></li>
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="usuario" routerLinkActive="nav-active">Usuário</a></li>
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="veiculo" routerLinkActive="nav-active">Veículos</a></li>
+        <li class="nav-item dropdown" data-bs-display="static" routerLinkActive="nav-group-active"><button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">Peças</button><ul class="dropdown-menu shadow-sm"><li><a class="dropdown-item" routerLink="controleEstoquePecas" routerLinkActive="dropdown-active">Estoque</a></li></ul></li>
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="agendamento" routerLinkActive="nav-active">Agendamentos</a></li>
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="atendimento" routerLinkActive="nav-active">Atendimentos</a></li>
+        <li class="nav-item"><a class="nav-link btn px-3 pill-btn" routerLink="historicoVeicular" routerLinkActive="nav-active">Histórico veicular</a></li>
+        <li class="nav-item dropdown" data-bs-display="static" routerLinkActive="nav-group-active"><button class="nav-link dropdown-toggle btn btn-link px-3 pill-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">Alertas</button><ul class="dropdown-menu shadow-sm"><li><a class="dropdown-item" routerLink="alertasClientes" routerLinkActive="dropdown-active">Clientes</a></li></ul></li>
+        <li class="nav-item"><button class="nav-link btn px-3 pill-btn" type="button" (click)="logout()" [disabled]="encerrando">{{ encerrando ? 'Encerrando...' : 'Encerrar' }}</button></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<main class="container-fluid py-3 conteudo-clinicar"><router-outlet /></main>

@@ -1,7 +1,7 @@
 <section data-help-scope="configuracao-alertas-estoque" id="configuracao-estoque" class="alertas-page mt-4">
   <div class="card clinicar-header-card mb-3"><div class="card-body">
     <h4 class="mb-1"><i class="bi bi-box-seam me-2" aria-hidden="true"></i>Alertas de estoque</h4>
-    <small>Avise o responsável pela reposição quando o saldo disponível atingir o mínimo, o crítico ou ficar zerado.</small>
+    <small>O nível de atenção avisa o colaborador responsável. Níveis crítico e zerado avisam o administrador configurado.</small>
   </div></div>
   @if (erro) {
     <div class="alert alert-danger" role="alert" [appFeedback]="erro" tipoFeedback="erro" (feedbackFechado)="erro = ''">{{ erro }}</div>
@@ -25,15 +25,10 @@
           <label for="estoqueAtivo" class="form-check-label">Ativar alertas de estoque pelo WhatsApp</label>
         </div>
         <div class="row g-3">
-          <div class="col-md-6"><label for="estoqueResponsavel" class="form-label">Responsável pelo estoque{{ c.ativo ? ' *' : '' }}</label>
-          <select id="estoqueResponsavel" name="responsavelEstoque" class="form-select" [(ngModel)]="c.idResponsavel" (ngModelChange)="selecionarResponsavel()" [required]="c.ativo" [class.is-invalid]="c.ativo && !responsavelValido">
-            <option [ngValue]="null">Selecione um administrador ou colaborador ativo</option>
-            @for (u of responsaveis; track u) {
-              <option [ngValue]="u.id">{{ u.nome }} · ID {{ u.id }}</option>
-            }
-          </select>
-          <small>Quem recebe os avisos e acompanha a reposição das peças.</small>
-          <div class="invalid-feedback">Selecione um administrador ou colaborador ativo.</div>
+          <div class="col-md-6"><label for="estoqueResponsavel" class="form-label">Colaborador responsável (atenção){{ c.ativo ? ' *' : '' }}</label>
+          <app-seletor-remoto inputId="estoqueResponsavel" name="responsavelEstoque" recurso="usuario" rotulo="Colaborador responsável" [filtros]="{perfis:'COLABORADOR',status:'ATIVO'}" [(ngModel)]="c.idResponsavel" (selecionado)="registrarResponsavel($event)" (ngModelChange)="selecionarResponsavel()" [selecaoEmModal]="true" (abrirSelecao)="buscarResponsavel.emit('COLABORADOR')" [disabled]="modoLeitura || carregando || salvando || reenviando" [required]="c.ativo" [class.is-invalid]="c.ativo && !responsavelValido" />
+          <small>Recebe o aviso quando o saldo fica abaixo do mínimo, mas ainda está acima do nível crítico.</small>
+          <div class="invalid-feedback">Selecione um colaborador ativo.</div>
           @if (c.nomeResponsavel) {
             <small class="d-block">Configurado: {{ c.nomeResponsavel }} · ID {{ c.idResponsavel }}</small>
           }
@@ -41,14 +36,24 @@
         <div class="col-md-6"><label for="estoqueTelefone" class="form-label">Telefone do responsável</label>
         <input id="estoqueTelefone" class="form-control" [value]="formatarTelefone(c.telefoneAdministrador)" readonly [class.is-invalid]="c.ativo && !telefoneValido">
         <small>Usa o telefone cadastrado no usuário. Para alterá-lo, edite o usuário e selecione-o novamente aqui. O sistema não verifica se o número tem WhatsApp.</small>
-        <div class="invalid-feedback">Cadastre o telefone com código do país e DDD no usuário responsável.</div>
+        <div class="invalid-feedback">Cadastre o telefone com código do país e DDD no colaborador responsável.</div>
+      </div>
+      <div class="col-md-6"><label for="estoqueAdminCritico" class="form-label">Administrador responsável (crítico/zerado){{ c.ativo ? ' *' : '' }}</label>
+        <app-seletor-remoto inputId="estoqueAdminCritico" name="administradorCritico" recurso="usuario" rotulo="Administrador responsável" [filtros]="{perfis:'ADMINISTRADOR',status:'ATIVO'}" [(ngModel)]="c.idAdministradorCritico" (selecionado)="registrarAdministrador($event)" (ngModelChange)="selecionarAdministrador()" [selecaoEmModal]="true" (abrirSelecao)="buscarResponsavel.emit('ADMINISTRADOR')" [disabled]="modoLeitura || carregando || salvando || reenviando" [required]="c.ativo" [class.is-invalid]="c.ativo && !administradorValido" />
+        <small>Recebe alertas críticos e de estoque zerado.</small>
+        <div class="invalid-feedback">Selecione um administrador ativo.</div>
+      </div>
+      <div class="col-md-6"><label for="estoqueTelefoneAdminCritico" class="form-label">Telefone do administrador</label>
+        <input id="estoqueTelefoneAdminCritico" class="form-control" [value]="formatarTelefone(c.telefoneAdministradorCritico)" readonly [class.is-invalid]="c.ativo && !telefoneAdministradorValido">
+        <small>Usa o telefone cadastrado no administrador selecionado.</small>
+        <div class="invalid-feedback">Cadastre o telefone com código do país e DDD.</div>
       </div>
       <div class="col-md-6"><label for="estoqueIntervalo" class="form-label">Intervalo entre lembretes (horas) *</label>
       <input id="estoqueIntervalo" name="intervaloEstoque" class="form-control" type="number" [(ngModel)]="c.reenviarAlertaAposHoras" required min="1" max="720" step="1">
       <small>Tempo mínimo para repetir o aviso ou tentar novamente após falha. Sugestão: 24 horas.</small>
     </div>
   </div>
-  <p class="small mt-3">O primeiro aviso é automático. Mudanças de nível geram um novo aviso; a reposição que normaliza o saldo encerra o alerta. Reservas são descontadas ao avaliar o saldo disponível. Aceito pela Meta não significa entregue ao destinatário.</p>
+  <p class="small mt-3">Mudanças de nível geram um novo aviso: atenção para o colaborador e crítico/zerado para o administrador. A reposição que normaliza o saldo encerra o alerta. Reservas são descontadas ao avaliar o saldo disponível. Aceito pela Meta não significa entregue ao destinatário.</p>
   @if (!modoLeitura) {
     <div class="d-flex gap-2 flex-wrap">
       <button class="btn btn-primary" type="submit" [disabled]="!form.valid || !configuracaoValida || salvando">{{ salvando ? 'Salvando…' : 'Salvar configuração de estoque' }}</button>

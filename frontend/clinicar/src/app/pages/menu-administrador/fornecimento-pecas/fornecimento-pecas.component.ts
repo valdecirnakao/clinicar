@@ -15,6 +15,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Observable, forkJoin, of, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContextoFornecedor, FluxoFornecedorService } from '../../../shared/fornecedores/fluxo-fornecedor.service';
+import { fornecedorAtende } from '../../../shared/fornecedores/categorias-fornecedor';
 import { aposFecharModal } from '../../../shared/fornecedores/transicao-modal';
 import { FornecedorComponent } from '../fornecedor/fornecedor.component';
 import { PecaComponent } from '../peca/peca.component';
@@ -294,7 +295,7 @@ export class FornecimentoPecasComponent implements OnInit {
     })) as Observable<{contexto:ContextoFornecedor|null;fornecedores:Fornecedor[];pecas:Peca[];fornecimentos:FornecimentoPeca[]}>).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ contexto, fornecedores, pecas, fornecimentos }) => {
         if (!contexto) return;
-        this.fornecedores = (fornecedores ?? []).filter(f => f.ativo !== false);
+        this.fornecedores = (fornecedores ?? []).filter(f => f.ativo !== false && fornecedorAtende(f.itemFornecido, 'peca'));
         this.fornecedoresFiltrados = [...this.fornecedores];
         this.pecas = pecas ?? [];
         this.pecasFiltradas = [...this.pecas];
@@ -1142,7 +1143,7 @@ export class FornecimentoPecasComponent implements OnInit {
   private carregarFornecedores(): void {if(this.modoPaginado)return;
     this.fornecedorService.listarTodos().subscribe({
       next: (lista) => {
-        this.fornecedores = (lista ?? []).filter(f => f.ativo !== false);
+        this.fornecedores = (lista ?? []).filter(f => f.ativo !== false && fornecedorAtende(f.itemFornecido, 'peca'));
         this.fornecedoresFiltrados = [...this.fornecedores];
       },
       error: (erro) => {

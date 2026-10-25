@@ -33,6 +33,22 @@ public class NotificacaoOutboxService {
     }
 
     @Transactional
+    public void cancelarPendentes(String origem, Long registro) {
+        jdbc.update("UPDATE notificacao_outbox SET estado='CANCELADA',atualizado_em=? "
+                + "WHERE origem=? AND registro_origem_id=? AND estado IN ('PENDENTE','TENTAR_NOVAMENTE')",
+                Timestamp.from(Instant.now()), origem, registro);
+    }
+
+    @Transactional
+    public void cancelarAvisosServicoDestinatario(String telefone) {
+        if (telefone == null) return;
+        jdbc.update("UPDATE notificacao_outbox SET estado='CANCELADA',atualizado_em=? "
+                + "WHERE destinatario=? AND origem IN ('AGENDAMENTO','ORCAMENTO','ATENDIMENTO') "
+                + "AND estado IN ('PENDENTE','TENTAR_NOVAMENTE')",
+                Timestamp.from(Instant.now()), telefone.replaceAll("\\D", ""));
+    }
+
+    @Transactional
     public String enfileirar(String destinatario, String template, String idioma, Map<String, Object> body) {
         return enfileirar(UUID.randomUUID().toString(), destinatario, template, idioma, body, null, null);
     }

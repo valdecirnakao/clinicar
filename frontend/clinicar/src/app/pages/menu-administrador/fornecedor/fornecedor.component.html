@@ -277,7 +277,7 @@
   </div>
 }
 <!-- Modal de cadastro do fornecedor -->
-<div class="modal fade" id="modalCadastroFornecedor" tabindex="-1" aria-labelledby="modalCadastroFornecedorLabel" aria-hidden="true">
+<div class="modal fade" id="modalCadastroFornecedor" tabindex="-1" aria-labelledby="modalCadastroFornecedorLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-xl modal-dialog-centered fornecedor-modal-dialog">
     <div class="modal-content fornecedor-modal-content fornecedor-modal-content-auto">
       <div class="modal-header modal-header-clinicar">
@@ -641,7 +641,7 @@
           Cancelar
         </button>
 
-        <button type="button" class="btn btn-primary" [disabled]="salvandoCadastro || !cadastroFornecedorProntoParaSalvar" [title]="mensagemBloqueioCadastro || 'Salvar fornecedor'" (click)="salvarNovoFornecedor()">
+        <button type="button" class="btn btn-primary" [disabled]="abaCadastroFornecedor !== 'revisao' || salvandoCadastro || !cadastroFornecedorProntoParaSalvar" [title]="abaCadastroFornecedor !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioCadastro || 'Salvar fornecedor')" (click)="salvarNovoFornecedor()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar fornecedor
         </button>
@@ -962,7 +962,7 @@
           Cancelar
         </button>
 
-        <button type="button" class="btn btn-primary" [disabled]="!edicaoFornecedorProntaParaSalvar" [title]="mensagemBloqueioEdicao || 'Salvar alterações'" (click)="salvarEdicaoModal()">
+        <button type="button" class="btn btn-primary" [disabled]="abaEdicaoFornecedor !== 'revisao' || !edicaoFornecedorProntaParaSalvar" [title]="abaEdicaoFornecedor !== 'revisao' ? 'Confira os dados na guia Revisão antes de salvar.' : (mensagemBloqueioEdicao || 'Salvar alterações')" (click)="salvarEdicaoModal()">
           <i class="bi bi-check-circle me-1"></i>
           Salvar alterações
         </button>
@@ -1078,8 +1078,8 @@
           </div>
           <label class="form-label" for="tipoContinuidadeFornecedor">O que este fornecedor vai fornecer?</label>
           <select id="tipoContinuidadeFornecedor" class="form-select mb-3" [(ngModel)]="tipoContinuidade">
-            <option value="peca">Peça ou insumo</option>
-            <option value="servico">Serviço</option>
+            <option value="peca" [disabled]="!fornecedorAtende(fornecedorCadastrado.itemFornecido, 'peca')">Peça ou insumo</option>
+            <option value="servico" [disabled]="!fornecedorAtende(fornecedorCadastrado.itemFornecido, 'servico')">Serviço</option>
           </select>
           <p>Selecione um item existente ou cadastre um novo. Em seguida, informe as condições do fornecimento para concluir o vínculo com este fornecedor.</p>
           <div class="d-grid gap-2">
@@ -1104,7 +1104,7 @@
     <div class="modal-header modal-header-clinicar"><h5 class="modal-title" id="tituloFornecedorPeca">Selecionar fornecedor para a peça</h5><button type="button" class="btn-close" (click)="concluirFornecedorPeca()" aria-label="Fechar"></button></div>
     <div class="modal-body" style="color:#35689b">
 <app-field-help-panel></app-field-help-panel>
-@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true}" (selecionado)="selecionarFornecedorDaPeca($event)" />}@else{
+@if(modoPaginado){<app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Fornecedor',campo:'razaoSocial'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Item fornecido',campo:'itemFornecido'}]" [filtros]="{ativo:true,tipoFornecimento:'PECAS'}" (selecionado)="selecionarFornecedorDaPeca($event)" />}@else{
     <div class="section-card mb-3"><strong>{{ pecaFluxo?.nome }}</strong><p class="mb-0">{{ pecaFluxo?.fabricante }} · {{ pecaFluxo?.modelo }}</p></div>
     <p>Selecione um fornecedor ativo. Se ele não estiver cadastrado, cadastre-o para continuar com esta peça.</p>
     @if (erroFornecedorPeca) {

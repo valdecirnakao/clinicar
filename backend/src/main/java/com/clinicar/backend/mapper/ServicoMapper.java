@@ -31,6 +31,7 @@ public class ServicoMapper {
 
         response.setGarantiaDias(servico.getGarantiaDias());
         response.setNecessitaPecas(servico.getNecessitaPecas());
+        response.setMateriaisReferencia(servico.getMateriaisReferencia());
         response.setAtivo(servico.getAtivo());
 
         response.setObservacoes(servico.getObservacoes());

@@ -11,7 +11,7 @@ describe('Continuação serviço → fornecedor → fornecimento', () => {
   let http: HttpTestingController, navegar: jasmine.Spy, anterior: any;
   const modais = new Map<string, any>();
   const params: Record<string, string> = {};
-  const fornecedor: any = { id: 7, razaoSocial: 'Fornecedor', cnpj: '12345678000190', ativo: true };
+  const fornecedor: any = { id: 7, razaoSocial: 'Fornecedor', cnpj: '12345678000190', itemFornecido: 'Serviços automotivos', ativo: true };
   const servico: any = { id: 12, nome: 'Balanceamento', categoria: 'Pneus', tipoDoPrestador: 'Mecânico', duracaoEstimada: 1, unidadeDuracao: 'HORA', valorBase: 80, unidadeCobranca: 'SERVICO', garantiaDias: 0, necessitaPecas: false, ativo: true };
   beforeEach(() => {
     Object.keys(params).forEach(k => delete params[k]); modais.clear(); anterior = (globalThis as any).bootstrap;
@@ -24,7 +24,7 @@ describe('Continuação serviço → fornecedor → fornecimento', () => {
   afterEach(() => { http.verify({ ignoreCancelled: true }); (globalThis as any).bootstrap = anterior; });
   function origem() {
     const f = TestBed.createComponent(ServicoComponent); f.detectChanges(); http.expectOne(req => req.url === '/api/servico/pagina').flush({content:[],totalElements:0,totalPages:1,number:0,resumo:{total:0},opcoes:{}}); http.expectNone('/api/fornecedor');
-    const c = f.componentInstance; c.abrirModalCadastro(); c.novoServico = { ...servico, id: undefined }; return f;
+    const c = f.componentInstance; c.abrirModalCadastro(); c.novoServico = { ...servico, id: undefined }; c.abaCadastroServico = 'revisao'; return f;
   }
   function destino(s = servico, fornecedores = [fornecedor]) {
     Object.assign(params, { continuarServico: '1', servicoId: '12' });

@@ -28,6 +28,15 @@ public class ConfiguracaoAlertaEstoque {
     @Column(name = "telefone_administrador", nullable = false, length = 30)
     private String telefoneAdministrador;
 
+    @Column(name = "id_administrador_critico", columnDefinition = "BIGINT UNSIGNED")
+    private Long idAdministradorCritico;
+
+    @Column(name = "nome_administrador_critico", length = 255)
+    private String nomeAdministradorCritico;
+
+    @Column(name = "telefone_administrador_critico", length = 30)
+    private String telefoneAdministradorCritico;
+
     @Column(name = "template_whatsapp", nullable = false, length = 120)
     private String templateWhatsapp = "alerta_estoque_peca";
 

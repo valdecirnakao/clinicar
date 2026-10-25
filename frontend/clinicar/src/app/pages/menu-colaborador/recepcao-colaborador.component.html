@@ -1,0 +1,85 @@
+<section class="recepcao-page" aria-labelledby="titulo-recepcao">
+  <div class="card page-title-card mb-3"><div id="titulo-recepcao" class="card-body text-center"><i class="bi bi-person-lines-fill me-1" aria-hidden="true"></i> Recepção</div></div>
+  <p class="intro">Cadastre clientes e veículos, configure os lembretes de manutenção e marque serviços. As ações ficam registradas no sistema.</p>
+  @if (erro) { <div class="alert alert-danger py-2" role="alert">{{ erro }}</div> }
+  @if (sucesso) { <div class="alert alert-success py-2" role="status">{{ sucesso }}</div> }
+  <nav class="nav nav-pills gap-2 mb-3" aria-label="Ações da recepção">
+    <button type="button" class="btn" [class.btn-primary]="aba==='cliente'" [class.btn-outline-primary]="aba!=='cliente'" (click)="aba='cliente'">Cliente e veículo</button>
+    <button type="button" class="btn" [class.btn-primary]="aba==='alertas'" [class.btn-outline-primary]="aba!=='alertas'" (click)="aba='alertas';carregarConfiguracao()">Alertas do cliente</button>
+    <button type="button" class="btn" [class.btn-primary]="aba==='agendamento'" [class.btn-outline-primary]="aba!=='agendamento'" (click)="aba='agendamento'">Agendamentos</button>
+  </nav>
+
+  @if (aba==='cliente') {
+    <section class="card section-card"><div class="card-body">
+      <h2>Cliente</h2><p class="text-muted">Selecione um cliente ativo ou cadastre os dados com ele. A senha inicial deve ser definida pelo próprio cliente.</p>
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-lg-8"><label class="form-label" for="clienteExistente">Cliente existente</label><app-seletor-remoto name="clienteVeiculoSelecionado" inputId="clienteExistente" recurso="usuario" rotulo="cliente" placeholder="Buscar cliente ativo" [filtros]="{perfis:'CLIENTE',status:'ATIVO'}" [(ngModel)]="clienteVeiculoId" (selecionado)="selecionarCliente($event)" /></div>
+        <div class="col-lg-4 d-grid"><button type="button" class="btn btn-outline-primary" (click)="novoCliente=!novoCliente">{{ novoCliente ? 'Cancelar cadastro' : 'Cadastrar novo cliente' }}</button></div>
+      </div>
+      @if (novoCliente) {
+        <form class="row g-3 form-section" #formCliente="ngForm" (ngSubmit)="cadastrarCliente()">
+          <div class="col-md-4"><label class="form-label" for="cpfCliente">CPF *</label><input id="cpfCliente" name="cpfCliente" class="form-control" [(ngModel)]="clienteForm.cpf" required maxlength="14" placeholder="000.000.000-00"></div>
+          <div class="col-md-8"><label class="form-label" for="nomeCliente">Nome completo *</label><input id="nomeCliente" name="nomeCliente" class="form-control" [(ngModel)]="clienteForm.nome" required></div>
+          <div class="col-md-6"><label class="form-label" for="emailCliente">E-mail *</label><input id="emailCliente" name="emailCliente" type="email" class="form-control" [(ngModel)]="clienteForm.email" required></div>
+          <div class="col-md-6"><label class="form-label" for="telefoneCliente">Telefone</label><input id="telefoneCliente" name="telefoneCliente" class="form-control" [(ngModel)]="clienteForm.telefone" inputmode="tel" placeholder="(00) 00000-0000"></div>
+          <div class="col-md-4"><label class="form-label" for="nascimentoCliente">Data de nascimento</label><input id="nascimentoCliente" name="nascimentoCliente" type="date" class="form-control" [(ngModel)]="clienteForm.nascimento"></div>
+          <div class="col-md-4"><label class="form-label" for="senhaCliente">Senha inicial definida pelo cliente *</label><input id="senhaCliente" name="senhaCliente" type="password" class="form-control" [(ngModel)]="clienteForm.senha" required autocomplete="new-password"></div>
+          <div class="col-md-4"><label class="form-label" for="confirmarSenhaCliente">Confirmar senha *</label><input id="confirmarSenhaCliente" name="confirmarSenhaCliente" type="password" class="form-control" [(ngModel)]="clienteForm.confirmarSenha" required autocomplete="new-password"></div>
+          <div class="col-12"><button type="submit" class="btn btn-primary" [disabled]="formCliente.invalid || salvando">{{ salvando ? 'Salvando…' : 'Cadastrar cliente' }}</button></div>
+        </form>
+      }
+      @if (cliente) { <div class="selected-summary mt-3"><strong>{{ cliente.nome }}</strong><span>{{ cliente.email }} · {{ cliente.cpf }}</span></div> }
+    </div></section>
+
+    <section class="card section-card mt-3"><div class="card-body">
+      <h2>Veículo do cliente</h2><p class="text-muted">O veículo ficará vinculado ao cliente selecionado.</p>
+      <form class="row g-3" #formVeiculo="ngForm" (ngSubmit)="cadastrarVeiculo()">
+        <div class="col-md-3"><label class="form-label" for="placaVeiculo">Placa *</label><input id="placaVeiculo" name="placaVeiculo" class="form-control text-uppercase" [(ngModel)]="veiculoForm.placa" required maxlength="8"></div>
+        <div class="col-md-3"><label class="form-label" for="fabricanteVeiculo">Fabricante *</label><input id="fabricanteVeiculo" name="fabricanteVeiculo" class="form-control" [(ngModel)]="veiculoForm.fabricante" required></div>
+        <div class="col-md-3"><label class="form-label" for="modeloVeiculo">Modelo *</label><input id="modeloVeiculo" name="modeloVeiculo" class="form-control" [(ngModel)]="veiculoForm.modelo" required></div>
+        <div class="col-md-3"><label class="form-label" for="corVeiculo">Cor</label><input id="corVeiculo" name="corVeiculo" class="form-control" [(ngModel)]="veiculoForm.cor"></div>
+        <div class="col-md-6"><label class="form-label" for="anoVeiculo">Ano / modelo / combustível *</label><input id="anoVeiculo" name="anoVeiculo" class="form-control" [(ngModel)]="veiculoForm.anoModeloCombustivel" required placeholder="2024 / 2025 · Flex"></div>
+        <div class="col-md-6 d-flex align-items-end"><button type="submit" class="btn btn-primary" [disabled]="formVeiculo.invalid || !clienteId || salvando">{{ salvando ? 'Salvando…' : 'Cadastrar veículo' }}</button></div>
+      </form>
+      @if (!clienteId) { <small class="text-muted d-block mt-2">Selecione ou cadastre o cliente antes de salvar o veículo.</small> }
+    </div></section>
+  }
+
+  @if (aba==='alertas') {
+    <section class="card section-card"><div class="card-body">
+      <h2>Configuração de alertas de manutenção</h2><p class="text-muted">Os avisos de manutenção preventiva serão enviados ao WhatsApp do cliente, de acordo com estas preferências.</p>
+      <div class="mb-3"><label class="form-label" for="clienteAlertas">Cliente *</label><app-seletor-remoto name="clienteAlertasSelecionado" inputId="clienteAlertas" recurso="usuario" rotulo="cliente" placeholder="Buscar cliente ativo" [filtros]="{perfis:'CLIENTE',status:'ATIVO'}" [(ngModel)]="clienteId" (selecionado)="selecionarCliente($event);carregarConfiguracao()" /></div>
+      @if (carregandoConfiguracao) { <p role="status">Carregando configuração…</p> }
+      @if (config; as c) {
+        <form class="row g-3" #formConfig="ngForm" (ngSubmit)="salvarConfiguracao()">
+          <div class="col-12"><div class="form-check form-switch"><input id="alertasAtivos" name="alertasAtivos" type="checkbox" class="form-check-input" [(ngModel)]="c.ativo"><label class="form-check-label" for="alertasAtivos">Ativar avisos de manutenção pelo WhatsApp</label></div></div>
+          <div class="col-md-3"><label class="form-label" for="antecedencia">Antecedência (dias) *</label><input id="antecedencia" name="antecedencia" type="number" min="0" max="365" required class="form-control" [(ngModel)]="c.antecedenciaDias"></div>
+          <div class="col-md-3"><label class="form-label" for="intervalo">Intervalo entre avisos (dias) *</label><input id="intervalo" name="intervalo" type="number" min="1" max="365" required class="form-control" [(ngModel)]="c.intervaloDias"></div>
+          <div class="col-md-3"><label class="form-label" for="maximo">Máximo por previsão *</label><input id="maximo" name="maximo" type="number" min="1" max="100" required class="form-control" [(ngModel)]="c.maximoEnvios"></div>
+          <div class="col-md-3"><label class="form-label" for="diasApos">Dias após vencimento *</label><input id="diasApos" name="diasApos" type="number" min="0" max="365" required class="form-control" [(ngModel)]="c.diasAposVencimento"></div>
+          <div class="col-md-3"><label class="form-label" for="horaInicio">Hora inicial *</label><input id="horaInicio" name="horaInicio" type="number" min="0" max="23" required class="form-control" [(ngModel)]="c.horaInicio"></div>
+          <div class="col-md-3"><label class="form-label" for="horaFim">Hora final *</label><input id="horaFim" name="horaFim" type="number" min="1" max="24" required class="form-control" [(ngModel)]="c.horaFim"></div>
+          <div class="col-md-6"><label class="form-label" for="fuso">Fuso horário *</label><select id="fuso" name="fuso" required class="form-select" [(ngModel)]="c.fusoHorario"><option value="America/Sao_Paulo">Brasília — America/Sao_Paulo</option><option value="America/Manaus">Manaus — America/Manaus</option><option value="America/Rio_Branco">Rio Branco — America/Rio_Branco</option><option value="America/Noronha">Fernando de Noronha — America/Noronha</option></select></div>
+          <div class="col-12"><button type="submit" class="btn btn-primary" [disabled]="formConfig.invalid || salvando">{{ salvando ? 'Salvando…' : 'Salvar configuração' }}</button></div>
+        </form>
+      }
+    </div></section>
+  }
+
+  @if (aba==='agendamento') {
+    <section class="card section-card"><div class="card-body">
+      <h2>Novo agendamento</h2><p class="text-muted">Escolha um cliente, o veículo e o serviço. O sistema verificará conflitos de horário antes de salvar.</p>
+      <form class="row g-3" #formAgendamento="ngForm" (ngSubmit)="cadastrarAgendamento()">
+        <div class="col-md-6"><label class="form-label" for="clienteAgenda">Cliente *</label><app-seletor-remoto name="clienteAgendamentoSelecionado" inputId="clienteAgenda" recurso="usuario" rotulo="cliente" placeholder="Buscar cliente ativo" [filtros]="{perfis:'CLIENTE',status:'ATIVO'}" [(ngModel)]="clienteAgendamentoId" (selecionado)="alterarClienteAgendamento($event)" /></div>
+        <div class="col-md-6"><label class="form-label" for="veiculoAgenda">Veículo *</label>@if(clienteAgendamentoId){<app-seletor-remoto name="veiculoAgendaSelecionado" inputId="veiculoAgenda" recurso="veiculo" rotulo="veículo" placeholder="Selecione o veículo" [filtros]="{idProprietario:clienteAgendamentoId}" [(ngModel)]="veiculoAgendamentoId" />}@else{<input id="veiculoAgenda" class="form-control" value="Selecione o cliente primeiro" disabled />}</div>
+        <div class="col-md-6"><label class="form-label" for="servicoAgenda">Serviço *</label><app-seletor-remoto name="servicoAgendaSelecionado" inputId="servicoAgenda" recurso="servico" rotulo="serviço" [filtros]="{ativo:true}" [(ngModel)]="servicoAgendamentoId" required /></div>
+        <div class="col-md-6"><label class="form-label" for="responsavelAgenda">Responsável pelo atendimento</label><app-seletor-remoto name="responsavelAgendaSelecionado" inputId="responsavelAgenda" recurso="usuario" rotulo="responsável" placeholder="Sem responsável definido" [filtros]="{perfis:'COLABORADOR,ADMINISTRADOR',status:'ATIVO'}" [(ngModel)]="responsavelId" /></div>
+        <div class="col-md-4"><label class="form-label" for="dataAgenda">Data e hora *</label><input id="dataAgenda" name="dataAgenda" type="datetime-local" class="form-control" [(ngModel)]="agendamentoForm.dataHoraInicio" required></div>
+        <div class="col-md-4"><label class="form-label" for="tipoAtendimento">Tipo de atendimento *</label><select id="tipoAtendimento" name="tipoAtendimento" class="form-select" [(ngModel)]="agendamentoForm.tipoAtendimento"><option value="PRESENCIAL">Presencial</option><option value="RETIRADA_ENTREGA">Retirada e entrega</option><option value="GUINCHO">Guincho</option></select></div>
+        <div class="col-md-4"><label class="form-label" for="queixa">Relato do cliente</label><input id="queixa" name="queixa" class="form-control" [(ngModel)]="agendamentoForm.queixaCliente" maxlength="500"></div>
+        <div class="col-12"><label class="form-label" for="observacoes">Observações</label><textarea id="observacoes" name="observacoes" class="form-control" rows="2" [(ngModel)]="agendamentoForm.observacoes" maxlength="1000"></textarea></div>
+        <div class="col-12"><button type="submit" class="btn btn-primary" [disabled]="formAgendamento.invalid || salvando">{{ salvando ? 'Salvando…' : 'Cadastrar agendamento' }}</button></div>
+      </form>
+    </div></section>
+  }
+</section>

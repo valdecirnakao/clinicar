@@ -44,6 +44,7 @@ public class AtendimentoResponse {
     private LocalDateTime fimReal;
     private LocalDateTime prazoEstimadoEntrega;
     private LocalDateTime dataEntrega;
+    private LocalDateTime prontoRetiradaEm;
 
     private Integer quilometragemEntrada;
     private Integer quilometragemSaida;

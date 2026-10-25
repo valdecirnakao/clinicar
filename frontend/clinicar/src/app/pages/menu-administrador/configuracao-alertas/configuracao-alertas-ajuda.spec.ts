@@ -15,7 +15,7 @@ describe('Ajuda nos campos de alertas', () => {
       .overrideComponent(ConfiguracaoAlertasComponent, {remove:{imports:[ConfiguracaoAlertasEstoqueComponent]}, add:{imports:[EstoqueTeste]}}).compileComponents();
     const fixture=TestBed.createComponent(ConfiguracaoAlertasComponent); fixture.detectChanges();
     const http=TestBed.inject(HttpTestingController);
-    http.expectOne('/api/usuario').flush([{id:2,nome:'Cliente',email:'cliente@example.test',status:'ATIVO'}]);
+    http.expectNone('/api/usuario');
     const foco=(id:string)=>{fixture.nativeElement.querySelector('#'+id).dispatchEvent(new Event('focus')); fixture.detectChanges();};
     foco('usuarioManutencao');
     expect(fixture.nativeElement.querySelector('.field-help-text').textContent).toContain('histórico são individuais');
@@ -26,6 +26,6 @@ describe('Ajuda nos campos de alertas', () => {
       foco(id); expect(fixture.nativeElement.querySelector('.field-help-text').textContent).toContain(trecho);
     }
     fixture.nativeElement.querySelector('#fuso').dispatchEvent(new Event('blur')); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.field-help-panel')).toBeNull(); http.verify();
+    expect(fixture.nativeElement.querySelector('.field-help-panel')).toBeNull(); fixture.destroy(); http.verify({ignoreCancelled:true});
   });
 });

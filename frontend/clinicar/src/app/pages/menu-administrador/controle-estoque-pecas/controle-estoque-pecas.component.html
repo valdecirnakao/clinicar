@@ -288,10 +288,12 @@
                               (click)="abrirModalMovimentacao(item, 'SAIDA')">
                               <i class="bi bi-box-arrow-up"></i>
                             </button>
-                            <button class="btn btn-outline-warning" type="button" title="Ajuste"
-                              (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')">
-                              <i class="bi bi-sliders"></i>
-                            </button>
+                            @if (!acessoColaborador) {
+                              <button class="btn btn-outline-warning" type="button" title="Ajuste"
+                                (click)="abrirModalMovimentacao(item, 'AJUSTE_ENTRADA')">
+                                <i class="bi bi-sliders"></i>
+                              </button>
+                            }
                             <button class="btn btn-outline-secondary" type="button" title="Histórico"
                               (click)="abrirModalMovimentacoes(item)">
                               <i class="bi bi-clock-history"></i>
@@ -459,7 +461,9 @@
                 </div>
                 <div class="col-md-3">
                   <label class="form-label" for="local-estoque">Local de Estoque *</label>
-                  <select id="local-estoque" class="form-select" [(ngModel)]="novoEstoque.idLocalEstoque"
+                  @if(modoPaginado){
+                    <app-seletor-remoto inputId="local-estoque" recurso="local-estoque" rotulo="Local de estoque" [filtros]="{ativo:true}" [(ngModel)]="novoEstoque.idLocalEstoque" (selecionado)="registrarLocal($event)" (ngModelChange)="atualizarNomeLocalCadastro()" [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)" />
+                  }@else{<select id="local-estoque" class="form-select" [(ngModel)]="novoEstoque.idLocalEstoque"
                     (ngModelChange)="atualizarNomeLocalCadastro()"
                     [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)">
                     <option [ngValue]="undefined">Selecione...</option>
@@ -468,7 +472,7 @@
                         {{ local.nome }}
                       </option>
                     }
-                  </select>
+                  </select>}
                   @if (estoqueCampoInvalido(novoEstoque, 'idLocalEstoque', true)) {
                     <div class="invalid-feedback d-block"
                     >Selecione um local sem controle cadastrado para esta peça.</div>
@@ -515,7 +519,7 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label" for="quantidade-atual">Quantidade Atual *</label>
-                  <input id="quantidade-atual" data-help="Saldo físico atualmente disponível no estoque. Para movimentações normais, prefira registrar entradas e saídas para manter o histórico auditável." class="form-control" [(ngModel)]="novoEstoque.quantidadeAtual"
+                  <input id="quantidade-atual" data-help="Quantidade conferida ao criar o controle. Se for maior que zero, o sistema registra uma entrada inicial com seu usuário no histórico. Depois, use entradas, saídas ou ajustes para alterar o saldo." class="form-control" [(ngModel)]="novoEstoque.quantidadeAtual"
                     [class.is-invalid]="estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)" placeholder="0" />
                   @if (estoqueCampoInvalido(novoEstoque, 'quantidadeAtual', false)) {
                     <div class="invalid-feedback d-block"
@@ -557,7 +561,7 @@
                   <div class="alert alert-light border mb-0">
                     <i class="bi bi-info-circle me-1"></i>
                     O status será calculado automaticamente com base na quantidade atual, estoque mínimo e estoque
-                    crítico.
+                    crítico. Uma quantidade inicial positiva será registrada no histórico com o usuário responsável.
                   </div>
                 </div>
               </div>
@@ -800,17 +804,16 @@
           <div class="section-card-title"><i class="bi bi-123 me-1"></i>Quantidades e limites</div>
           <div class="row g-3">
             <div class="col-md-3"><label class="form-label" for="quantidade-atual-edit">Quantidade Atual
-            *</label><input id="quantidade-atual-edit" data-help="Saldo físico atual. Alterações de saldo devem preferencialmente ser feitas por movimentações de entrada, saída ou ajuste para preservar o histórico." class="form-control" [(ngModel)]="edit.quantidadeAtual"
+            *</label><input id="quantidade-atual-edit" data-help="Saldo físico atual, exibido somente para consulta. Para corrigir uma contagem, registre um ajuste de inventário com justificativa." class="form-control" [(ngModel)]="edit.quantidadeAtual" readonly
             [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeAtual', false)" />
           @if (estoqueCampoInvalido(edit, 'quantidadeAtual', false)) {
             <div class="invalid-feedback d-block">
             Informe um valor válido.</div>
-            }<small class="text-muted">Use movimentação para entrada/saída
-          normal.</small>
+            }<small class="text-muted">Para alterar o saldo, registre uma entrada, saída ou ajuste justificado.</small>
         </div>
         <div class="col-md-3"><label class="form-label" for="quantidade-reservada-edit">Quantidade Reservada
         *</label><input id="quantidade-reservada-edit" data-help="Quantidade comprometida com reservas. Em uma evolução do controle, este saldo deve ser administrado automaticamente pelas reservas do sistema." class="form-control"
-        [(ngModel)]="edit.quantidadeReservada"
+        [(ngModel)]="edit.quantidadeReservada" readonly
         [class.is-invalid]="estoqueCampoInvalido(edit, 'quantidadeReservada', false)" />
       @if (estoqueCampoInvalido(edit, 'quantidadeReservada', false)) {
         <div class="invalid-feedback d-block"
@@ -1079,7 +1082,7 @@ data-bs-dismiss="modal">Fechar</button></div>
 </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="fecharModalPeca(true)">Voltar ao estoque</button>
-        @if (modoSelecaoPeca === 'cadastro' && !pecaContinuidade) {
+        @if (modoSelecaoPeca === 'cadastro' && !pecaContinuidade && !acessoColaborador) {
           <button type="button" class="btn btn-primary"
             (click)="cadastrarNovaPeca()"><i class="bi bi-plus-circle me-1"></i>Cadastrar nova peça</button>
           }
@@ -1163,15 +1166,15 @@ data-bs-dismiss="modal">Fechar</button></div>
 @if (devolucaoFornecedorSelecionada) {
   <div class="col-12">
     <label class="form-label" for="movimentoRecebimentoFornecedor">Recebimento original *</label>
-    <select id="movimentoRecebimentoFornecedor" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem" [disabled]="carregandoSaidasDevolucao" required [class.is-invalid]="!recebimentoFornecedorSelecionado"
+    @if(modoPaginado){<app-seletor-remoto inputId="movimentoRecebimentoFornecedor" [recurso]="recursoMovimentacoes()" rotulo="Movimentação original" [filtros]="{finalidade:'FORNECEDOR'}" [(ngModel)]="movimento.idMovimentacaoOrigem" (selecionado)="registrarMovimentacaoOriginal($event)" required [class.is-invalid]="!recebimentoFornecedorSelecionado" />}@else{<select id="movimentoRecebimentoFornecedor" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem" [disabled]="carregandoSaidasDevolucao" required [class.is-invalid]="!recebimentoFornecedorSelecionado"
       data-help-options="Selecione a compra ou recebimento que trouxe a peça ao estoque. A devolução reduz o saldo disponível desse recebimento, considerando devoluções e correções anteriores.">
       <option [ngValue]="null" disabled>{{ carregandoSaidasDevolucao ? 'Consultando recebimentos...' : 'Selecione o recebimento original' }}</option>
       @for (recebimento of recebimentosDisponiveisFornecedor; track recebimento) {
         <option [ngValue]="recebimento.id">Entrada #{{ recebimento.id }} · {{ recebimento.criadoEm | date:'dd/MM/yyyy HH:mm' }} · {{ recebimento.nomeFornecedor || 'Fornecedor não registrado' }} · Disponível: {{ quantidadeOriginalCorrigida(recebimento) }}</option>
       }
-    </select>
+    </select>}
     <div class="invalid-feedback">Selecione o recebimento original.</div>
-    @if (!carregandoSaidasDevolucao && !recebimentosDisponiveisFornecedor.length) {
+    @if (!modoPaginado && !carregandoSaidasDevolucao && !recebimentosDisponiveisFornecedor.length) {
       <small>Nenhum recebimento com quantidade disponível para devolução.</small>
     }
   </div>
@@ -1183,13 +1186,22 @@ data-bs-dismiss="modal">Fechar</button></div>
       <div class="form-control">{{ recebimentoFornecedorSelecionado?.nomeFornecedor || 'Fornecedor registrado' }} · ID {{ recebimentoFornecedorSelecionado?.idFornecedor }}</div>
     }
     @if (!devolucaoFornecedorSelecionada || !recebimentoFornecedorSelecionado?.idFornecedor) {
-      <select id="movimentoFornecedor" class="form-select" [(ngModel)]="movimento.idFornecedor" [disabled]="carregandoFornecedoresMovimentacao" [required]="fornecedorMovimentacaoObrigatorio" [class.is-invalid]="!fornecedorMovimentacaoValido"
+      @if(modoPaginado){
+        <div class="input-group">
+          <div id="movimentoFornecedor" class="form-control" [class.is-invalid]="!fornecedorMovimentacaoValido">
+            {{ fornecedoresMovimentacao[0]?.razaoSocial || 'Nenhum fornecedor selecionado' }}
+          </div>
+          @if(movimento.idFornecedor){<button type="button" class="btn btn-outline-secondary" aria-label="Limpar fornecedor" (click)="movimento.idFornecedor=null;registrarFornecedorMovimentacao(null)"><i class="bi bi-x"></i></button>}
+          <button type="button" class="btn btn-outline-primary" aria-label="Buscar fornecedor" (click)="abrirSelecaoFornecedorMovimentacao()"><i class="bi bi-search"></i> Selecionar fornecedor</button>
+        </div>
+      }
+      @else{<select id="movimentoFornecedor" class="form-select" [(ngModel)]="movimento.idFornecedor" [disabled]="carregandoFornecedoresMovimentacao" [required]="fornecedorMovimentacaoObrigatorio" [class.is-invalid]="!fornecedorMovimentacaoValido"
         data-help-options="Identifique quem forneceu a peça. Na compra, selecione um fornecedor ativo. Na devolução, será usado o fornecedor do recebimento; se o registro antigo não o informar, identifique-o aqui.">
         <option [ngValue]="null">{{ carregandoFornecedoresMovimentacao ? 'Consultando fornecedores...' : 'Selecione o fornecedor' }}</option>
         @for (fornecedor of opcoesFornecedoresMovimentacao; track fornecedor) {
           <option [ngValue]="fornecedor.id">{{ fornecedor.razaoSocial }} · ID {{ fornecedor.id }}{{ fornecedor.ativo ? '' : ' · Inativo' }}</option>
         }
-      </select>
+      </select>}
     }
     <div class="invalid-feedback">Identifique o fornecedor da movimentação.</div>
     @if (devolucaoFornecedorSelecionada && recebimentoFornecedorSelecionado && !recebimentoFornecedorSelecionado.idFornecedor) {
@@ -1200,17 +1212,17 @@ data-bs-dismiss="modal">Fechar</button></div>
 @if (correcaoSelecionada) {
   <div class="col-12">
     <label class="form-label" for="movimentoOriginalCorrecao">Movimentação original *</label>
-    <select id="movimentoOriginalCorrecao" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem"
+    @if(modoPaginado){<app-seletor-remoto inputId="movimentoOriginalCorrecao" [recurso]="recursoMovimentacoes()" rotulo="Movimentação original" [filtros]="{finalidade:'CORRECAO'}" [(ngModel)]="movimento.idMovimentacaoOrigem" (selecionado)="registrarMovimentacaoOriginal($event)" required [class.is-invalid]="!vinculoCorrecaoValido" />}@else{<select id="movimentoOriginalCorrecao" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem"
       [disabled]="carregandoSaidasDevolucao" required [class.is-invalid]="!vinculoCorrecaoValido" [attr.aria-invalid]="!vinculoCorrecaoValido"
       data-help-options="Selecione a entrada ou saída manual cujo lançamento está incorreto. Informe apenas a diferença: ajuste de entrada aumenta o estoque; ajuste de saída diminui. O lançamento original permanece no histórico.">
       <option [ngValue]="null" disabled>{{ carregandoSaidasDevolucao ? 'Consultando movimentações...' : 'Selecione a movimentação original' }}</option>
       @for (original of movimentacoesDisponiveisCorrecao; track original) {
         <option [ngValue]="original.id">{{ original.tipoMovimento === 'ENTRADA' ? 'Entrada' : 'Saída' }} #{{ original.id }} · {{ original.criadoEm | date:'dd/MM/yyyy HH:mm' }} · Qtd. registrada: {{ original.quantidade }} · Qtd. após correções/devoluções: {{ quantidadeOriginalCorrigida(original) }}</option>
       }
-    </select>
+    </select>}
     <div class="invalid-feedback">Selecione a movimentação que será corrigida.</div>
     <small>Informe somente a diferença, com justificativa. Baixas de atendimento são tratadas pelo fluxo do atendimento.</small>
-    @if (!carregandoSaidasDevolucao && !movimentacoesDisponiveisCorrecao.length) {
+    @if (!modoPaginado && !carregandoSaidasDevolucao && !movimentacoesDisponiveisCorrecao.length) {
       <small class="d-block">Nenhuma entrada ou saída manual original disponível neste estoque.</small>
     }
   </div>
@@ -1218,16 +1230,16 @@ data-bs-dismiss="modal">Fechar</button></div>
 @if (devolucaoSelecionada) {
   <div class="col-12">
     <label class="form-label" for="movimentoSaidaOriginal">Saída original *</label>
-    <select id="movimentoSaidaOriginal" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem"
+    @if(modoPaginado){<app-seletor-remoto inputId="movimentoSaidaOriginal" [recurso]="recursoMovimentacoes()" rotulo="Movimentação original" [filtros]="{finalidade:'DEVOLUCAO'}" [(ngModel)]="movimento.idMovimentacaoOrigem" (selecionado)="registrarMovimentacaoOriginal($event)" required [class.is-invalid]="!movimento.idMovimentacaoOrigem" />}@else{<select id="movimentoSaidaOriginal" class="form-select" [(ngModel)]="movimento.idMovimentacaoOrigem"
       [disabled]="carregandoSaidasDevolucao" required [class.is-invalid]="!movimento.idMovimentacaoOrigem"
       data-help-options="Selecione a saída manual que originou a devolução. O custo é recuperado desse registro. Para peças baixadas em atendimento, registre a devolução na tela de Atendimentos.">
       <option [ngValue]="null" disabled>{{ carregandoSaidasDevolucao ? 'Consultando saídas...' : 'Selecione a saída original' }}</option>
       @for (saida of saidasDisponiveisDevolucao; track saida) {
         <option [ngValue]="saida.id">Saída #{{ saida.id }} · {{ saida.criadoEm | date:'dd/MM/yyyy HH:mm' }} · Saldo: {{ saldoDevolucao(saida) }} · Custo: {{ saida.valorUnitario | currency:'BRL' }}</option>
       }
-    </select>
+    </select>}
     <div class="invalid-feedback">Selecione a saída original da peça.</div>
-    @if (!carregandoSaidasDevolucao && !saidasDisponiveisDevolucao.length) {
+    @if (!modoPaginado && !carregandoSaidasDevolucao && !saidasDisponiveisDevolucao.length) {
       <small>Nenhuma saída manual disponível. Para diferenças de contagem, utilize ajuste de inventário com justificativa.</small>
     }
   </div>
@@ -1271,6 +1283,24 @@ data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-pr
 </div>
 </div>
 
+<!-- Seleção paginada do fornecedor da movimentação -->
+<div class="modal fade" id="modalSelecionarFornecedorMovimentacao" tabindex="-1" aria-labelledby="tituloSelecionarFornecedorMovimentacao" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content modal-table-content">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title" id="tituloSelecionarFornecedorMovimentacao"><i class="bi bi-building me-1"></i>Selecionar fornecedor</h5>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="fecharSelecaoFornecedorMovimentacao()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Pesquise por razão social, nome fantasia, CNPJ, e-mail ou cidade. A lista é carregada por páginas.</p>
+        @if(compraSelecionada){<p class="mb-2">Para compras, são exibidos somente fornecedores ativos.</p>}
+        <app-selecao-cadastro recurso="fornecedor" [colunas]="[{titulo:'Razão social',campo:'razaoSocial'},{titulo:'Nome fantasia',campo:'nomeFantasia'},{titulo:'CNPJ',campo:'cnpj',formato:'documento'},{titulo:'Cidade',campo:'cidade'},{titulo:'Ativo',campo:'ativo',formato:'booleano'}]" [filtros]="compraSelecionada ? {ativo:true,tipoFornecimento:'PECAS'} : {}" (selecionado)="selecionarFornecedorMovimentacao($event)" />
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="fecharSelecaoFornecedorMovimentacao()">Voltar à movimentação</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Histórico -->
 <div class="modal fade" id="modalHistoricoMovimentacoes" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered historico-modal-dialog">
@@ -1288,6 +1318,7 @@ data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-pr
       </div>
 
       <div class="modal-body historico-modal-body">
+        @if(modoPaginado){<div class="historico-filtros"><input class="form-control" aria-label="Buscar no histórico de movimentações" placeholder="Responsável, documento, motivo ou origem..." [(ngModel)]="buscaMovimentacoes" (keyup.enter)="carregarPaginaMovimentacoes(true)" /><button type="button" class="btn btn-outline-primary" [disabled]="carregandoMovimentacoes" (click)="carregarPaginaMovimentacoes(true)">Consultar</button><button type="button" class="btn btn-outline-primary" [disabled]="carregandoMovimentacoes" (click)="carregarPaginaMovimentacoes()">Atualizar</button></div>@if(erroMovimentacoes){<div role="alert" class="alert alert-danger">{{erroMovimentacoes}}</div>}@if(carregandoMovimentacoes){<div role="status">Consultando movimentações...</div>}}
         @if (estoqueSelecionado) {
           <div class="historico-resumo-card">
             <div>
@@ -1327,7 +1358,7 @@ data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-pr
                     </td>
                     <td>
                       <span class="badge movimento-badge" [ngClass]="movimentoBadgeClass(mov.tipoMovimento)">
-                        {{ formatarTipoMovimento(mov.tipoMovimento) }}
+                        {{ mov.origem === 'INVENTARIO_INICIAL' ? 'Saldo inicial' : formatarTipoMovimento(mov.tipoMovimento) }}
                       </span>
                     </td>
                     <td class="text-end">
@@ -1384,7 +1415,7 @@ data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-pr
                   </tr>
                 }
 
-                @if (movimentacoes.length === 0) {
+                @if (movimentacoes.length === 0 && !carregandoMovimentacoes && !erroMovimentacoes) {
                   <tr>
                     <td colspan="8" class="text-center text-muted py-4">
                       <i class="bi bi-inbox me-1"></i>
@@ -1397,6 +1428,7 @@ data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-pr
           </div>
         </div>
       </div>
+      @if(modoPaginado){<div class="modal-footer d-block"><app-paginacao [pagina]="paginaMovimentacoes" [tamanho]="tamanhoMovimentacoes" [total]="totalMovimentacoes" [carregando]="carregandoMovimentacoes" (paginaChange)="paginaMovimentacoes=$event;carregarPaginaMovimentacoes()" (tamanhoChange)="tamanhoMovimentacoes=$event;carregarPaginaMovimentacoes(true)" /></div>}
     </div>
   </div>
 </div>
@@ -1413,7 +1445,7 @@ data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-pr
         <app-field-help-panel></app-field-help-panel>
         <div class="alertas-toolbar">
           <label class="form-check mb-0"><input type="checkbox" class="form-check-input" [(ngModel)]="incluirAlertasEncerrados" (ngModelChange)="atualizarListaAlertas()" /> Mostrar também alertas encerrados</label>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="configurarAlertasEstoque()"><i class="bi bi-gear me-1"></i>Configurar alertas</button>
+          @if (!acessoColaborador) { <button type="button" class="btn btn-sm btn-outline-primary" (click)="configurarAlertasEstoque()"><i class="bi bi-gear me-1"></i>Configurar alertas</button> }
         </div>
         <div class="alertas-orientacao small"><i class="bi bi-info-circle me-1"></i>Reconhecer mantém o acompanhamento. O saldo normalizado resolve o alerta. Aceito pela Meta não confirma entrega.</div>
         <div class="alertas-table-shell">
@@ -1469,7 +1501,7 @@ data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-pr
     @if (alertaDetalhado; as alerta) {
       <div class="modal-body">
         <div class="clinicar-card p-3 mb-3"><strong>{{ alerta.nomePeca }}</strong><div>{{ alerta.nomeLocalEstoque || '—' }} · {{ formatarStatus(alerta.nivelAlerta) }}</div><small>{{ statusAcompanhamentoAlerta(alerta) }} · Criado em {{ formatarDataHora(alerta.criadoEm) }}</small></div>
-        <p>{{ alerta.mensagem }}</p>
+        <p>{{ formatarMensagemAlertaEstoque(alerta.mensagem) }}</p>
         <p class="mb-2">Saldo registrado: <strong>{{ formatarQuantidadeSemUnidade(alerta.quantidadeAtual) }}</strong> · Mínimo: {{ formatarQuantidadeSemUnidade(alerta.estoqueMinimo) }} · Crítico: {{ formatarQuantidadeSemUnidade(alerta.estoqueCritico) }}</p>
         <p class="mb-2">WhatsApp: {{ alerta.whatsappEnviado ? 'Aceito pela Meta' : 'Não enviado' }} · {{ alerta.tentativasEnvio || 0 }} tentativa(s)@if (alerta.ultimaTentativaEm) {
           <span> · Última tentativa: {{ formatarDataHora(alerta.ultimaTentativaEm) }}</span>

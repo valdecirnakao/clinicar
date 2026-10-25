@@ -57,7 +57,7 @@
   border-color: #d0e2f2;
 }
 
-.form-control::placeholder { color: #6d879e; opacity: 1; }
+.form-control::placeholder { color: #4c637b; opacity: 1; }
 .input-group-text { background: #eef6ff; }
 
 .form-control:focus,
@@ -125,7 +125,7 @@
 }
 
 .table td { overflow-wrap: anywhere; }
-.table small { font-size: .75rem; color: #6d879e; }
+.table small { font-size: .75rem; color: #4c637b; }
 
 .sort-button {
   border: 0;

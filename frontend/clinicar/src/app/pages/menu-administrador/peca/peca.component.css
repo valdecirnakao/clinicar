@@ -82,7 +82,7 @@
 
 .summary-label {
   font-size: .8rem;
-  color: #5c7fa4;
+  color: #4c637b;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .02rem;
@@ -218,7 +218,7 @@
 
 .table-compact td small {
   font-size: .78rem;
-  color: #5c7fa4;
+  color: #4c637b;
 }
 
 .table-sticky-header thead th {
@@ -404,7 +404,7 @@
 
 .modal-header-clinicar small {
   display: block;
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .82rem;
   margin-top: .15rem;
 }
@@ -544,7 +544,7 @@
 
 .preview-title,
 .review-label {
-  color: #5c7fa4;
+  color: #4c637b;
   font-size: .82rem;
   font-weight: 800;
   text-transform: uppercase;

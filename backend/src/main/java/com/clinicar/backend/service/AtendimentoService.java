@@ -31,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class AtendimentoService {
+    private final AvisosServicoWhatsappService avisosWhatsapp;
 
     public record AtendimentoAutomaticoResultado(
             Atendimento atendimento,
@@ -48,6 +49,7 @@ public class AtendimentoService {
             "AGUARDANDO_APROVACAO",
             "APROVADO",
             "EM_EXECUCAO",
+            "PAUSADO",
             "AGUARDANDO_TERCEIRO",
             "CONCLUIDO",
             "ENTREGUE",
@@ -67,6 +69,7 @@ public class AtendimentoService {
     private final AtendimentoPecaUtilizadaRepository atendimentoPecaUtilizadaRepository;
     private final ReservaEstoqueAgendamentoService reservaEstoqueAgendamentoService;
     private final AtendimentoTotaisService atendimentoTotaisService;
+    private final AtendimentoOrcamentoService atendimentoOrcamentoService;
     private final AtendimentoServicoExecutadoService atendimentoServicoExecutadoService;
     private final PrevisaoManutencaoService previsaoManutencaoService;
 
@@ -82,7 +85,9 @@ public class AtendimentoService {
             AtendimentoServicoExecutadoService atendimentoServicoExecutadoService,
             PrevisaoManutencaoService previsaoManutencaoService,
             AtendimentoTotaisService atendimentoTotaisService,
-            ReservaEstoqueAgendamentoService reservaEstoqueAgendamentoService) {
+            AtendimentoOrcamentoService atendimentoOrcamentoService,
+            ReservaEstoqueAgendamentoService reservaEstoqueAgendamentoService,
+            AvisosServicoWhatsappService avisosWhatsapp) {
         this.atendimentoRepository = atendimentoRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
@@ -93,13 +98,17 @@ public class AtendimentoService {
         this.atendimentoPecaUtilizadaRepository = atendimentoPecaUtilizadaRepository;
         this.reservaEstoqueAgendamentoService = reservaEstoqueAgendamentoService;
         this.atendimentoTotaisService = atendimentoTotaisService;
+        this.atendimentoOrcamentoService = atendimentoOrcamentoService;
         this.atendimentoServicoExecutadoService = atendimentoServicoExecutadoService;
         this.previsaoManutencaoService = previsaoManutencaoService;
+        this.avisosWhatsapp = avisosWhatsapp;
     }
 
     @Transactional
     public Atendimento criar(AtendimentoRequest request) {
         validarRequest(request);
+        if (request.getStatusAtendimento() != null && !"ABERTO".equalsIgnoreCase(request.getStatusAtendimento().strip()))
+            throw new IllegalArgumentException("O atendimento deve começar em Aberto. Avance pelas etapas após o cadastro.");
 
         Long idAgendamento = validarIdObrigatorio(
                 request.getIdAgendamento(),
@@ -163,6 +172,9 @@ public class AtendimentoService {
         Atendimento atendimento = buscarPorId(id);
 
         validarPodeEditar(atendimento);
+        if (request.getStatusAtendimento() != null
+                && !request.getStatusAtendimento().equalsIgnoreCase(atendimento.getStatusAtendimento()))
+            throw new IllegalArgumentException("Altere a etapa da ordem de serviço pelos comandos do fluxo de atendimento.");
 
         preencherDadosEditaveis(atendimento, request);
 
@@ -251,10 +263,35 @@ public class AtendimentoService {
     }
 
     @Transactional
+    public Atendimento abrirDiagnostico(Long id) {
+        Atendimento atendimento = buscarPorId(id);
+        if (!"ABERTO".equals(atendimento.getStatusAtendimento()))
+            throw new IllegalArgumentException("Somente atendimento aberto pode entrar em diagnóstico.");
+        atendimento.setStatusAtendimento("EM_DIAGNOSTICO");
+        return atendimentoRepository.save(atendimento);
+    }
+
+    @Transactional
+    public Atendimento solicitarAprovacao(Long id) {
+        Atendimento atendimento = atendimentoRepository.buscarParaPrevisao(id)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado."));
+        if (!"EM_DIAGNOSTICO".equals(atendimento.getStatusAtendimento()))
+            throw new IllegalArgumentException("Conclua o diagnóstico antes de solicitar aprovação.");
+        if (atendimento.getDiagnosticoTecnico() == null || atendimento.getDiagnosticoTecnico().isBlank())
+            throw new IllegalArgumentException("Registre o diagnóstico técnico antes de solicitar aprovação.");
+        atendimento = atendimentoTotaisService.recalcularTotais(atendimento.getId());
+        atendimentoOrcamentoService.emitir(atendimento);
+        atendimento.setStatusAtendimento("AGUARDANDO_APROVACAO");
+        return atendimentoRepository.save(atendimento);
+    }
+
+    @Transactional
     public Atendimento iniciar(Long id) {
         Atendimento atendimento = buscarPorId(id);
 
         validarPodeAlterarStatus(atendimento);
+        if (!"APROVADO".equals(atendimento.getStatusAtendimento()))
+            throw new IllegalArgumentException("A execução só pode começar após aprovação do orçamento.");
 
         atendimento.setStatusAtendimento("EM_EXECUCAO");
 
@@ -280,15 +317,15 @@ public class AtendimentoService {
 
     @Transactional
     public Atendimento aprovar(Long id) {
-        Atendimento atendimento = buscarPorId(id);
+        throw new IllegalArgumentException("A aprovação do orçamento deve ser registrada pelo cliente na versão pendente.");
+    }
 
-        validarPodeAlterarStatus(atendimento);
-
-        atendimento.setAprovado(true);
-        atendimento.setAprovadoEm(LocalDateTime.now());
-        atendimento.setStatusAtendimento("APROVADO");
-
-        return atendimentoRepository.save(atendimento);
+    @Transactional
+    public Atendimento revisarOrcamento(Long id) {
+        Atendimento atendimento = atendimentoRepository.buscarParaPrevisao(id)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado."));
+        atendimentoOrcamentoService.abrirRevisao(atendimento);
+        return atendimento;
     }
 
     @Transactional
@@ -296,6 +333,8 @@ public class AtendimentoService {
         Atendimento atendimento = buscarPorId(id);
 
         validarPodeAlterarStatus(atendimento);
+        if (!"EM_EXECUCAO".equals(atendimento.getStatusAtendimento()))
+            throw new IllegalArgumentException("Inicie a execução antes de encaminhar o atendimento ao terceiro.");
 
         if (!"TERCEIRO".equals(atendimento.getTipoExecucao())
                 && !"MISTO".equals(atendimento.getTipoExecucao())) {
@@ -335,6 +374,8 @@ public class AtendimentoService {
         if ("CONCLUIDO".equals(atendimento.getStatusAtendimento())) {
             return atendimento;
         }
+        if (!Set.of("EM_EXECUCAO", "AGUARDANDO_TERCEIRO").contains(atendimento.getStatusAtendimento()))
+            throw new IllegalArgumentException("Inicie a execução após a aprovação antes de concluir o atendimento.");
 
         Integer kmSaida = quilometragemSaida != null ? quilometragemSaida : atendimento.getQuilometragemSaida();
         validarQuilometragens(atendimento.getQuilometragemEntrada(), kmSaida, true);
@@ -362,6 +403,10 @@ public class AtendimentoService {
                     atendimento);
 
             atendimento = recalcularTotaisComSeguranca(atendimento);
+        }
+
+        if (!Set.of("EM_EXECUCAO", "AGUARDANDO_TERCEIRO").contains(atendimento.getStatusAtendimento())) {
+            throw new IllegalArgumentException("O escopo ou valor mudou. Envie uma nova versão do orçamento ao cliente antes de concluir.");
         }
 
         log.info("[ATENDIMENTO] Iniciando baixa de estoque do atendimento ID {}.", atendimento.getId());
@@ -403,6 +448,21 @@ public class AtendimentoService {
         previsaoManutencaoService.gerarPrevisoesDoAtendimento(salvo.getId());
 
         return recalculado;
+    }
+
+    @Transactional
+    public Atendimento marcarProntoRetirada(Long id) {
+        validarIdObrigatorio(id, "Atendimento");
+        Atendimento atendimento = atendimentoRepository.buscarParaEmissaoOs(id)
+                .orElseThrow(() -> new IllegalArgumentException("Atendimento não encontrado."));
+        if (!"CONCLUIDO".equals(atendimento.getStatusAtendimento()))
+            throw new IllegalArgumentException("Conclua o atendimento antes de avisar que o veículo está pronto.");
+        if (atendimento.getProntoRetiradaEm() != null)
+            return atendimento;
+        atendimento.setProntoRetiradaEm(LocalDateTime.now());
+        Atendimento salvo = atendimentoRepository.save(atendimento);
+        avisosWhatsapp.prontoRetirada(salvo);
+        return salvo;
     }
 
     @Transactional
@@ -577,7 +637,9 @@ public class AtendimentoService {
         atendimento.setValorTerceiros(valorTerceiros);
         atendimento.setDesconto(desconto);
 
-        aplicarAprovacao(atendimento, request);
+        if (Boolean.TRUE.equals(request.getAprovado())) {
+            throw new IllegalArgumentException("A aprovação do orçamento deve ser registrada pelo cliente na versão pendente.");
+        }
 
         validarRegraTerceiro(atendimento);
     }
@@ -671,6 +733,13 @@ public class AtendimentoService {
     }
 
     private void validarPodeEditar(Atendimento atendimento) {
+        if ("CONCLUIDO".equals(atendimento.getStatusAtendimento())) {
+            throw new IllegalArgumentException("Não é possível editar atendimento concluído.");
+        }
+        if ("AGUARDANDO_APROVACAO".equals(atendimento.getStatusAtendimento())
+                || "APROVADO".equals(atendimento.getStatusAtendimento())) {
+            throw new IllegalArgumentException("O orçamento já foi enviado. Para alterar, registre uma nova versão após revisão do diagnóstico.");
+        }
         if ("CANCELADO".equals(atendimento.getStatusAtendimento())) {
             throw new IllegalArgumentException("Não é possível editar atendimento cancelado.");
         }
@@ -731,24 +800,6 @@ public class AtendimentoService {
         validarQuilometragem(saida, "Quilometragem de saída");
         if (entrada != null && saida != null && saida < entrada) {
             throw new IllegalArgumentException("A quilometragem de saída não pode ser menor que a quilometragem de entrada.");
-        }
-    }
-
-    private void aplicarAprovacao(
-            Atendimento atendimento,
-            AtendimentoRequest request) {
-        if (request.getAprovado() == null) {
-            return;
-        }
-
-        atendimento.setAprovado(request.getAprovado());
-
-        if (request.getAprovado() && atendimento.getAprovadoEm() == null) {
-            atendimento.setAprovadoEm(LocalDateTime.now());
-        }
-
-        if (!request.getAprovado()) {
-            atendimento.setAprovadoEm(null);
         }
     }
 

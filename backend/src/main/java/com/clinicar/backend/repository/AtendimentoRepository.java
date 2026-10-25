@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface AtendimentoRepository extends JpaRepository<Atendimento, Long> {
 
+    boolean existsByVeiculo_Id(Long veiculoId);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select a from Atendimento a where a.id = :id")
     Optional<Atendimento> buscarParaPrevisao(@org.springframework.data.repository.query.Param("id") Long id);

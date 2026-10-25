@@ -286,19 +286,17 @@
                                 <i class="bi bi-three-dots-vertical"></i>
                               </button>
                               <ul class="dropdown-menu dropdown-menu-end action-dropdown-menu">
+                                <li><a class="dropdown-item" [routerLink]="['/menuAdministrador/atendimento', item.id, 'tecnico']"><i class="bi bi-card-checklist me-2"></i>Registro técnico</a></li>
                                 <li><button class="dropdown-item" type="button" [disabled]="!podeDevolverPeca(item)" (click)="abrirDevolucao(item)"><i class="bi bi-box-arrow-in-down me-2"></i>Devolver peça ao estoque</button></li>
+                                <li><button class="dropdown-item" type="button" [disabled]="item.statusAtendimento !== 'ABERTO'" (click)="diagnosticar(item)"><i class="bi bi-search me-2"></i>Iniciar diagnóstico</button></li>
+                                <li><button class="dropdown-item" type="button" [disabled]="item.statusAtendimento !== 'EM_DIAGNOSTICO'" (click)="solicitarAprovacao(item)"><i class="bi bi-clipboard-check me-2"></i>Solicitar aprovação</button></li>
                                 <li>
                                   <button class="dropdown-item" type="button" [disabled]="!podeIniciar(item)" (click)="iniciar(item)">
                                     <i class="bi bi-play-circle me-2"></i>
                                     Iniciar
                                   </button>
                                 </li>
-                                <li>
-                                  <button class="dropdown-item" type="button" [disabled]="!podeAprovar(item)" (click)="aprovar(item)">
-                                    <i class="bi bi-check-circle me-2"></i>
-                                    Aprovar
-                                  </button>
-                                </li>
+                                <li><button class="dropdown-item" type="button" [disabled]="item.statusAtendimento !== 'AGUARDANDO_APROVACAO' && item.statusAtendimento !== 'APROVADO'" (click)="revisarOrcamento(item)"><i class="bi bi-pencil-square me-2"></i>Revisar orçamento</button></li>
                                 <li>
                                   <button class="dropdown-item" type="button" [disabled]="!podeConcluir(item)" (click)="concluir(item)">
                                     <i class="bi bi-flag me-2"></i>
@@ -311,6 +309,11 @@
                                     Entregar
                                   </button>
                                 </li>
+                                <li><button class="dropdown-item" type="button"
+                                  [disabled]="item.statusAtendimento !== 'CONCLUIDO' || !!item.prontoRetiradaEm"
+                                  (click)="marcarProntoRetirada(item)">
+                                  <i class="bi bi-bell me-2"></i>Veículo pronto para retirada
+                                </button></li>
                                 <li>
                                   <button class="dropdown-item" type="button" [disabled]="!podeReenviarOsEmail(item)" (click)="reenviarOsEmail(item)">
                                     <i class="bi bi-envelope-arrow-up me-2"></i>
@@ -423,7 +426,13 @@
                 <div class="row g-2">
                   <div class="col-md-8">
                     <label for="idAgendamento" class="form-label" style="color:#35689b;">Agendamento *</label>
-                    <select
+                    @if(modoPaginado){<app-seletor-remoto
+                      inputId="idAgendamento"
+
+                      [(ngModel)]="novoAtendimento.idAgendamento"
+                      (change)="selecionarAgendamento()"
+
+                       recurso="agendamento" rotulo="agendamento" [filtros]="{}" (selecionado)="registrarCatalogo('agendamentos', $event)" />}@else{<select
                       id="idAgendamento"
                       class="form-select"
                       [(ngModel)]="novoAtendimento.idAgendamento"
@@ -440,7 +449,7 @@
                           {{ ag.placaVeiculo || ag.veiculo?.placa || 'Veículo' }}
                         </option>
                       }
-                    </select>
+                    </select>}
                   </div>
                   <div class="col-md-2" >
                     <label for="dataEntrada" class="form-label" style="color:#35689b;">Data entrada *</label>
@@ -458,12 +467,10 @@
                       id="statusInicial"
                       class="form-select"
                       [(ngModel)]="novoAtendimento.statusAtendimento"
+                      disabled
                       style="color:#35689b;"
                       >
                       <option value="ABERTO">Aberto</option>
-                      <option value="EM_DIAGNOSTICO">Em diagnóstico</option>
-                      <option value="APROVADO">Aprovado</option>
-                      <option value="EM_EXECUCAO">Em execução</option>
                     </select>
                   </div>
                 </div>
@@ -517,7 +524,12 @@
                   </div>
                   <div class="col-md-4">
                     <label for="responsavelSelect" class="form-label mt-2">Responsável</label>
-                    <select
+                    @if(modoPaginado){<app-seletor-remoto
+                      inputId="responsavelSelect"
+
+                      [(ngModel)]="novoAtendimento.idResponsavel"
+
+                       recurso="usuario" rotulo="responsável" [filtros]="{perfis:'COLABORADOR,ADMINISTRADOR',status:'ATIVO'}" (selecionado)="registrarCatalogo('usuarios', $event)" />}@else{<select
                       id="responsavelSelect"
                       class="form-select form-select-sm"
                       [(ngModel)]="novoAtendimento.idResponsavel"
@@ -531,11 +543,16 @@
                           {{ r.nome || r.nome_social || r.nomeSocial }}
                         </option>
                       }
-                    </select>
+                    </select>}
                   </div>
                   <div class="col-md-4">
                     <label for="fornecedorSelect" class="form-label mt-2">Fornecedor</label>
-                    <select
+                    @if(modoPaginado){<app-seletor-remoto
+                      inputId="fornecedorSelect"
+
+                      [(ngModel)]="novoAtendimento.idFornecedor"
+
+                       recurso="fornecedor" rotulo="fornecedor" [filtros]="{ativo:true}" (selecionado)="registrarCatalogo('fornecedores', $event)" />}@else{<select
                       id="fornecedorSelect"
                       class="form-select form-select-sm"
                       [(ngModel)]="novoAtendimento.idFornecedor"
@@ -549,7 +566,7 @@
                           {{ f.razaoSocial || f.razao_social || f.nomeFantasia || f.nome_fantasia }}
                         </option>
                       }
-                    </select>
+                    </select>}
                   </div>
                 </div>
               </div>
@@ -1486,7 +1503,13 @@
         <div class="row g-2">
           <div class="col-md-6">
             <label class="form-label">Peça *</label>
-            <select
+            @if(modoPaginado){<app-seletor-remoto
+
+              [(ngModel)]="pecaForm.idPeca"
+              (change)="selecionarPecaCatalogo()"
+              [disabled]="modoItensAtendimento === 'existente' && editandoPecaId !== null"
+
+               inputId="atendimento-pecaForm-idPeca" recurso="peca" rotulo="peça" [filtros]="{}" (selecionado)="registrarCatalogo('pecasCatalogo', $event)" [comFornecimento]="true" />}@else{<select
               class="form-select"
               [(ngModel)]="pecaForm.idPeca"
               (change)="selecionarPecaCatalogo()"
@@ -1499,7 +1522,7 @@
                   {{ p.nome || p.descricao }} - {{ p.fabricante || 'Fabricante não informado' }}
                 </option>
               }
-            </select>
+            </select>}
           </div>
 
           <div class="col-md-6">
@@ -1653,7 +1676,12 @@
         <div class="row g-2">
           <div class="col-md-4">
             <label class="form-label">Serviço *</label>
-            <select
+            @if(modoPaginado){<app-seletor-remoto
+
+              [(ngModel)]="servicoForm.idServico"
+              (change)="selecionarServicoCatalogo()"
+
+               inputId="atendimento-servicoForm-idServico" recurso="servico" rotulo="serviço" [filtros]="{ativo:true}" (selecionado)="registrarCatalogo('servicosCatalogo', $event)" />}@else{<select
               class="form-select"
               [(ngModel)]="servicoForm.idServico"
               (change)="selecionarServicoCatalogo()"
@@ -1665,7 +1693,7 @@
                   {{ s.nome || s.descricao }} - {{ s.categoria || 'Sem categoria' }}
                 </option>
               }
-            </select>
+            </select>}
           </div>
 
           <div class="col-md-4">
@@ -1747,7 +1775,12 @@
 
           <div class="col-md-4">
             <label class="form-label">Responsável</label>
-            <select
+            @if(modoPaginado){<app-seletor-remoto
+
+              [(ngModel)]="servicoForm.idResponsavel"
+              [disabled]="modoItensAtendimento === 'existente'"
+
+               inputId="atendimento-servicoForm-idResponsavel" recurso="usuario" rotulo="responsável" [filtros]="{perfis:'COLABORADOR,ADMINISTRADOR',status:'ATIVO'}" (selecionado)="registrarCatalogo('usuarios', $event)" />}@else{<select
               class="form-select"
               [(ngModel)]="servicoForm.idResponsavel"
               [disabled]="modoItensAtendimento === 'existente'"
@@ -1759,7 +1792,7 @@
                   {{ r.nome || r.nome_social || r.nomeSocial }}
                 </option>
               }
-            </select>
+            </select>}
           </div>
 
           <div class="col-md-4">
@@ -1769,7 +1802,12 @@
                 <span>*</span>
               }
             </label>
-            <select
+            @if(modoPaginado){<app-seletor-remoto
+
+              [(ngModel)]="servicoForm.idFornecedor"
+              [disabled]="servicoForm.tipoExecucao === 'INTERNO'"
+
+               inputId="atendimento-servicoForm-idFornecedor" recurso="fornecedor" rotulo="fornecedor" [filtros]="{ativo:true}" (selecionado)="registrarCatalogo('fornecedores', $event)" />}@else{<select
               class="form-select"
               [(ngModel)]="servicoForm.idFornecedor"
               [disabled]="servicoForm.tipoExecucao === 'INTERNO'"
@@ -1781,7 +1819,7 @@
                   {{ f.razaoSocial || f.razao_social || f.nomeFantasia || f.nome_fantasia }}
                 </option>
               }
-            </select>
+            </select>}
           </div>
 
           <div class="col-md-2">
@@ -1900,16 +1938,16 @@
       <div class="row g-3">
         <div class="col-12">
           <label for="saidaDevolucaoAtendimento" class="form-label">Peça / saída original *</label>
-          <select id="saidaDevolucaoAtendimento" class="form-select" [(ngModel)]="saidaDevolucaoId" required
+          @if(modoPaginado){<app-seletor-remoto inputId="saidaDevolucaoAtendimento" [recurso]="recursoDevolucoes()" rotulo="Saída original" [filtros]="{finalidade:'ATENDIMENTO'}" [(ngModel)]="saidaDevolucaoId" (selecionado)="selecionarSaidaDevolucao($event)" required [disabled]="salvandoDevolucao" [class.is-invalid]="!saidaDevolucaoSelecionada" />}@else{<select id="saidaDevolucaoAtendimento" class="form-select" [(ngModel)]="saidaDevolucaoId" required
             [disabled]="carregandoDevolucao || salvandoDevolucao" [class.is-invalid]="!saidaDevolucaoSelecionada"
             data-help-options="Selecione a peça baixada neste atendimento. Cada opção identifica a saída original e a quantidade que ainda pode ser devolvida.">
             <option [ngValue]="null" disabled>{{ carregandoDevolucao ? 'Consultando saídas...' : 'Selecione a saída original' }}</option>
             @for (saida of saidasDevolucaoAtendimento; track saida) {
               <option [ngValue]="saida.id">{{ saida.nomePeca }} · Saída #{{ saida.id }} · Saldo devolvível: {{ saldoDevolucaoAtendimento(saida) }}</option>
             }
-          </select>
+          </select>}
           <div class="invalid-feedback">Selecione uma saída deste atendimento.</div>
-          @if (!carregandoDevolucao && !saidasDevolucaoAtendimento.length) {
+          @if (!modoPaginado && !carregandoDevolucao && !saidasDevolucaoAtendimento.length) {
             <small>Nenhuma saída com saldo disponível para devolução.</small>
           }
         </div>
@@ -1983,8 +2021,8 @@
   tabindex="-1"
   aria-hidden="true"
   >
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="color:#35689b;">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content detalhes-atendimento-modal">
       <div class="modal-header" style="background:#eef6ff;">
         <h5 class="modal-title">
           <i class="bi bi-eye me-1"></i>
@@ -1995,83 +2033,64 @@
 
       @if (atendimentoSelecionado) {
         <div class="modal-body">
-          <div class="row g-2">
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Código</small>
-                <strong>{{ atendimentoSelecionado.codigoAtendimento }}</strong>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Cliente</small>
-                <strong>{{ atendimentoSelecionado.nomeCliente }}</strong>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Veículo</small>
-                <strong>{{ formatarPlaca(atendimentoSelecionado.placaVeiculo) }}</strong>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Status</small>
-                <span class="badge" [ngClass]="statusBadgeClass(atendimentoSelecionado.statusAtendimento)">
-                  {{ formatarStatus(atendimentoSelecionado.statusAtendimento) }}
-                </span>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Total</small>
-                <strong>{{ formatarMoedaBR(atendimentoSelecionado.valorTotal) }}</strong>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Ordem de Serviço</small>
-                <span class="badge" [ngClass]="osBadgeClass(atendimentoSelecionado)">
-                  {{ formatarStatusOs(atendimentoSelecionado) }}
-                </span>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Estoque</small>
-                <span class="badge" [ngClass]="atendimentoSelecionado?.estoqueBaixado ? 'bg-success' : 'bg-secondary'">
-                  {{ atendimentoSelecionado?.estoqueBaixado ? 'Baixado' : 'Não baixado' }}
-                </span>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="detail-box">
-                <small>Estoque Baixado Em</small>
-                <span class="badge" [ngClass]="atendimentoSelecionado?.estoqueBaixadoEm ? 'bg-success' : 'bg-secondary'">
-                  {{ atendimentoSelecionado?.estoqueBaixadoEm ? formatarDataHora(atendimentoSelecionado?.estoqueBaixadoEm) : 'Não baixado' }}
-                </span>
-              </div>
-            </div>
-            <div class="details-line">
-              Estoque:
-              <span
-                class="badge"
-                [ngClass]="atendimentoSelecionado?.estoqueBaixado ? 'bg-success' : 'bg-secondary'"
-                >
-                {{ atendimentoSelecionado?.estoqueBaixado ? 'Baixado' : 'Não baixado' }}
-              </span>
-            </div>
-            @if (atendimentoSelecionado?.estoqueBaixadoEm) {
-              <div class="details-line">
-                Baixado em: {{ formatarDataHora(atendimentoSelecionado?.estoqueBaixadoEm) }}
-              </div>
-            }
-            <div class="col-md-12">
-              <div class="detail-box">
-                <small>Observações</small>
-                <p class="mb-0">{{ atendimentoSelecionado.observacoesInternas || '—' }}</p>
-              </div>
-            </div>
+          <div class="detalhes-atendimento-grid">
+            <section class="detalhes-atendimento-secao" aria-label="Identificação do atendimento">
+              <h6><i class="bi bi-person-vcard me-1"></i> Identificação</h6>
+              <dl class="detalhes-atendimento-lista">
+                <div><dt>Código</dt><dd>{{ atendimentoSelecionado.codigoAtendimento }}</dd></div>
+                <div><dt>Cliente</dt><dd>{{ atendimentoSelecionado.nomeCliente }}</dd></div>
+                <div><dt>Veículo</dt><dd>{{ formatarPlaca(atendimentoSelecionado.placaVeiculo) }}</dd></div>
+                <div><dt>Serviço</dt><dd>{{ atendimentoSelecionado.nomeServico || 'Não informado' }}</dd></div>
+                @if (atendimentoSelecionado.codigoAgendamento) { <div><dt>Agendamento</dt><dd>{{ atendimentoSelecionado.codigoAgendamento }}</dd></div> }
+              </dl>
+            </section>
+            <section class="detalhes-atendimento-secao" aria-label="Execução e situação">
+              <h6><i class="bi bi-tools me-1"></i> Execução e situação</h6>
+              <dl class="detalhes-atendimento-lista">
+                <div><dt>Atendimento</dt><dd><span class="badge" [ngClass]="statusBadgeClass(atendimentoSelecionado.statusAtendimento)">{{ formatarStatus(atendimentoSelecionado.statusAtendimento) }}</span></dd></div>
+                <div><dt>Responsável</dt><dd>{{ atendimentoSelecionado.nomeResponsavel || 'Não informado' }}</dd></div>
+                @if (atendimentoSelecionado.razaoSocialFornecedor) { <div><dt>Fornecedor externo</dt><dd>{{ atendimentoSelecionado.razaoSocialFornecedor }}</dd></div> }
+                <div><dt>Ordem de serviço</dt><dd><span class="badge" [ngClass]="osBadgeClass(atendimentoSelecionado)">{{ formatarStatusOs(atendimentoSelecionado) }}</span></dd></div>
+                <div><dt>Estoque</dt><dd><span class="badge" [ngClass]="atendimentoSelecionado.estoqueBaixado ? 'bg-success' : 'bg-secondary'">{{ atendimentoSelecionado.estoqueBaixado ? 'Baixado' : 'Não baixado' }}</span></dd></div>
+                @if (atendimentoSelecionado.estoqueBaixadoEm) { <div><dt>Baixado em</dt><dd>{{ formatarDataHora(atendimentoSelecionado.estoqueBaixadoEm) }}</dd></div> }
+              </dl>
+            </section>
+            <section class="detalhes-atendimento-secao" aria-label="Peças do atendimento">
+              <h6><i class="bi bi-hexagon me-1"></i> Peças vinculadas</h6>
+              @if (carregandoPecasDetalhes) { <p class="mb-0">Consultando peças…</p> }
+              @else if (pecasDetalhesAtendimento.length) {
+                <ul class="detalhes-atendimento-pecas">
+                  @for (peca of pecasDetalhesAtendimento; track peca.id) {
+                    <li><strong>{{ peca.nomePeca || peca.descricaoPeca || 'Peça' }}</strong><span>{{ peca.quantidade }} {{ peca.unidadeMedida || 'unidade(s)' }} · {{ formatarMoedaBR(peca.valorTotal) }}</span></li>
+                  }
+                </ul>
+              } @else { <p class="mb-0">Nenhuma peça vinculada.</p> }
+            </section>
+            <section class="detalhes-atendimento-secao" aria-label="Valores do atendimento">
+              <h6><i class="bi bi-cash-stack me-1"></i> Valores</h6>
+              <dl class="detalhes-atendimento-lista">
+                <div><dt>Mão de obra</dt><dd>{{ formatarMoedaBR(atendimentoSelecionado.valorMaoObra) }}</dd></div>
+                <div><dt>Peças</dt><dd>{{ formatarMoedaBR(atendimentoSelecionado.valorPecas) }}</dd></div>
+                <div><dt>Terceiros</dt><dd>{{ formatarMoedaBR(atendimentoSelecionado.valorTerceiros) }}</dd></div>
+                <div class="detalhes-atendimento-total"><dt>Total</dt><dd>{{ formatarMoedaBR(atendimentoSelecionado.valorTotal) }}</dd></div>
+              </dl>
+            </section>
+            <section class="detalhes-atendimento-secao" aria-label="Observações do atendimento">
+              <h6><i class="bi bi-card-text me-1"></i> Observações</h6>
+              <p class="detalhes-atendimento-texto mb-0">{{ observacoesDetalhesAtendimento() || 'Nenhuma observação registrada.' }}</p>
+            </section>
+            <section class="detalhes-atendimento-secao" aria-label="Versões do orçamento">
+              <h6><i class="bi bi-file-earmark-text me-1"></i> Versões do orçamento</h6>
+              @for (versao of orcamentosDoAtendimento; track versao.id) {
+                <div class="border-top mt-2 pt-2">
+                  <strong>Versão {{ versao.versao }} · {{ versao.status }}</strong>
+                  <div>Enviada em {{ formatarDataHora(versao.criadoEm) }} · Total {{ formatarMoedaBR(versao.valorTotal) }}</div>
+                  @if (versao.decididoEm) { <div>Decisão em {{ formatarDataHora(versao.decididoEm) }} por {{ versao.decisorNome || 'Cliente' }}</div> }
+                  <div>Diagnóstico: {{ versao.diagnostico || 'Não informado' }}</div>
+                  @if (versao.itens) { <pre class="detalhes-atendimento-texto mb-0 small">{{ versao.itens }}</pre> }
+                </div>
+              } @empty { <p class="mb-0">Nenhuma versão enviada.</p> }
+            </section>
           </div>
         </div>
       }

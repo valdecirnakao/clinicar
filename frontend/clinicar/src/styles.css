@@ -1,6 +1,15 @@
 @import "bootstrap-icons/font/bootstrap-icons.css";
 @import "./styles/responsividade.css";
 
+/* Legibilidade comum a todas as telas em superfícies claras. */
+:root {
+  --bs-body-color: #294a68;
+  --bs-secondary-color: #4c637b;
+  --bs-tertiary-color: #4c637b;
+}
+
+.form-control::placeholder { color: #52677c; opacity: 1; }
+
 /* Filter labels keep the standard control height even in narrow grid columns. */
 .btn.btn-limpar-filtros {
   white-space: nowrap;

@@ -71,7 +71,7 @@ public class WhatsappEstoqueService {
         String telefone = limparTelefone(configuracao.getTelefoneAdministrador());
 
         if (telefone.isBlank()) {
-            throw new IllegalArgumentException("Telefone do administrador não configurado.");
+            throw new IllegalArgumentException("Telefone do destinatário do alerta não configurado.");
         }
 
         EstoquePeca estoque = alerta.getEstoquePeca();
@@ -80,8 +80,9 @@ public class WhatsappEstoqueService {
         String nomeAdministrador = configuracao.getNomeResponsavel() == null ? "Responsável pelo estoque" : configuracao.getNomeResponsavel();
         if (configuracao.getIdResponsavel() != null) {
             var usuario = usuarios.findById(configuracao.getIdResponsavel()).orElseThrow(() -> new IllegalArgumentException("Responsável não encontrado. Atualize a configuração dos alertas de estoque."));
-            if (!"ATIVO".equalsIgnoreCase(usuario.getStatus()) || !java.util.Set.of("ADMINISTRADOR", "COLABORADOR").contains(usuario.getTipo_do_acesso()))
-                throw new IllegalArgumentException("O responsável está inativo ou sem acesso administrativo. Escolha outro responsável na página Alertas.");
+            String perfilEsperado = "ATENCAO".equalsIgnoreCase(alerta.getNivelAlerta()) ? "COLABORADOR" : "ADMINISTRADOR";
+            if (!"ATIVO".equalsIgnoreCase(usuario.getStatus()) || !perfilEsperado.equalsIgnoreCase(usuario.getTipo_do_acesso()))
+                throw new IllegalArgumentException("O destinatário do alerta está inativo ou não possui o perfil exigido para este nível. Atualize a configuração de alertas.");
         }
         String nomePeca = peca != null ? peca.getNome() : "Peça não identificada";
         String nivel = alerta.getNivelAlerta();

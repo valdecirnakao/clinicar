@@ -89,7 +89,7 @@
 
 .summary-label {
   font-size: .78rem;
-  color: #6c7f93;
+  color: #4c637b;
   line-height: 1.1;
 }
 
@@ -510,7 +510,7 @@ h6,
   align-items: center;
   justify-content: center;
   gap: .25rem;
-  color: #6c7f93;
+  color: #4c637b;
 }
 
 .empty-state i {
@@ -681,7 +681,7 @@ h6,
 
 .detalhes-hero p {
   margin: .15rem 0 .35rem;
-  color: #6c7f93;
+  color: #4c637b;
 }
 
 .detalhes-avatar {
@@ -709,7 +709,7 @@ h6,
 }
 
 .detail-box span {
-  color: #6c7f93;
+  color: #4c637b;
   font-size: .78rem;
 }
 
@@ -720,7 +720,7 @@ h6,
 }
 
 .detail-box small {
-  color: #6c7f93;
+  color: #4c637b;
 }
 
 .confirmacao-detalhe {
@@ -823,7 +823,7 @@ h6,
 
   .usuario-mobile-header small {
     display: block;
-    color: #6c7f93;
+    color: #4c637b;
     word-break: break-all;
   }
 
@@ -843,7 +843,7 @@ h6,
   .usuario-mobile-grid span {
     display: block;
     font-size: .72rem;
-    color: #6c7f93;
+    color: #4c637b;
   }
 
   .usuario-mobile-grid strong {
@@ -951,7 +951,7 @@ h6,
 }
 
 .usuario-edit-subtitle {
-  color: #6c7f93;
+  color: #4c637b;
   font-size: .86rem;
   word-break: break-word;
 }
@@ -1060,7 +1060,7 @@ h6,
 }
 
 .section-card-header small {
-  color: #6c7f93;
+  color: #4c637b;
 }
 
 .edit-info-box,
@@ -1077,7 +1077,7 @@ h6,
 
 .edit-info-box span,
 .security-status-card span {
-  color: #6c7f93;
+  color: #4c637b;
   font-size: .78rem;
 }
 
@@ -1089,7 +1089,7 @@ h6,
 
 .edit-info-box small,
 .security-status-card small {
-  color: #6c7f93;
+  color: #4c637b;
   line-height: 1.25;
 }
 
@@ -1098,7 +1098,7 @@ h6,
 }
 
 .usuario-edit-footer-info {
-  color: #6c7f93;
+  color: #4c637b;
   font-size: .84rem;
 }
 
@@ -1214,7 +1214,7 @@ h6,
 }
 
 .cadastro-progress-top small {
-  color: #6c7f93;
+  color: #4c637b;
   display: block;
 }
 
@@ -1319,7 +1319,7 @@ h6,
 .cadastro-info-box small,
 .cadastro-security-note small {
   display: block;
-  color: #6c7f93;
+  color: #4c637b;
   line-height: 1.35;
 }
 
@@ -1352,7 +1352,7 @@ h6,
   display: block;
   font-size: .82rem;
   font-weight: 600;
-  color: #6c7f93;
+  color: #4c637b;
   line-height: 1.3;
 }
 
@@ -1423,7 +1423,7 @@ h6,
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: .35rem .75rem;
-  color: #6c7f93;
+  color: #4c637b;
   font-size: .82rem;
 }
 

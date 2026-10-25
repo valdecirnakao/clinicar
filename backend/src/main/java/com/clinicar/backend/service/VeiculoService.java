@@ -25,6 +25,8 @@ public class VeiculoService {
     private final UsuarioRepository usuarioRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final WhatsAppService whatsAppService;
+    private final com.clinicar.backend.repository.AgendamentoRepository agendamentos;
+    private final com.clinicar.backend.repository.AtendimentoRepository atendimentos;
 
     @Transactional
     public VeiculoExclusaoResponse excluir(Long id, Long administradorId) {
@@ -149,6 +151,28 @@ public class VeiculoService {
         }
 
         return salvo;
+    }
+
+    @Transactional
+    public Veiculo atualizarPorProprietario(Long id, Long proprietarioId, Veiculo alteracao) {
+        Veiculo atual = repo.buscarParaExclusao(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Veículo não encontrado."));
+        if (!java.util.Objects.equals(atual.getIdProprietario(), proprietarioId)) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Este veículo não pertence à sua conta.");
+        }
+        if (possuiHistorico(id) && (!Objects.equals(normalizaPlaca(atual.getPlaca()), normalizaPlaca(alteracao.getPlaca()))
+                || !Objects.equals(atual.getFabricante(), alteracao.getFabricante())
+                || !Objects.equals(atual.getModelo(), alteracao.getModelo())
+                || !Objects.equals(atual.getAnoModeloCombustivel(), alteracao.getAnoModeloCombustivel()))) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                    "Este veículo já possui histórico. Solicite a correção dos dados de identificação para análise da oficina.");
+        }
+        alteracao.setIdProprietario(proprietarioId);
+        return atualizar(id, alteracao);
+    }
+
+    public boolean possuiHistorico(Long veiculoId) {
+        return agendamentos.existsByVeiculo_Id(veiculoId) || atendimentos.existsByVeiculo_Id(veiculoId);
     }
 
     private void enviarNotificacaoCadastroVeiculo(Veiculo veiculo) {

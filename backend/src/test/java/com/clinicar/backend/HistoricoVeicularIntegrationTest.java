@@ -2,6 +2,7 @@ package com.clinicar.backend;
 
 import com.clinicar.backend.model.*;
 import com.clinicar.backend.service.HistoricoVeicularService;
+import com.clinicar.backend.service.AgendamentoService;
 import com.clinicar.backend.service.WhatsAppService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.*;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class HistoricoVeicularIntegrationTest {
     @Autowired EntityManager em;
     @Autowired HistoricoVeicularService service;
+    @Autowired AgendamentoService agendamentos;
     @MockitoBean WhatsAppService whatsapp;
     Usuario cliente; Veiculo veiculo; Servico servico;
     final LocalDate dia = LocalDate.of(2026, 9, 30);
@@ -75,6 +77,30 @@ class HistoricoVeicularIntegrationTest {
         var r = service.consultar(veiculo.getId(), dia, dia, "TODOS");
         assertEquals(2, r.registros().size()); assertEquals(1, r.resumo().atendimentos());
         assertEquals(0, r.resumo().valorFinalizados().compareTo(new BigDecimal("100")));
+    }
+    @Test void agendamentoNaoConfirmadoMostraEstimativaComPecasSemContarComoServicoFinalizado() {
+        Agendamento ag = new Agendamento();
+        ag.setCodigoAgendamento("AG-" + UUID.randomUUID());
+        ag.setCliente(cliente); ag.setVeiculo(veiculo); ag.setServico(servico);
+        ag.setDataHoraInicio(dia.atTime(10, 0)); ag.setDataHoraFim(dia.atTime(11, 0));
+        ag.setDuracaoEstimadaMinutos(60); ag.setStatusAgendamento("AGENDADO");
+        ag.setValorEstimado(new BigDecimal("35.00")); em.persist(ag);
+        Peca peca = new Peca(); peca.setNome("Filtro previsto"); em.persist(peca);
+        AgendamentoPecaPrevista prevista = new AgendamentoPecaPrevista();
+        prevista.setAgendamento(ag); prevista.setPeca(peca);
+        prevista.setQuantidade(BigDecimal.ONE); prevista.setValorUnitario(new BigDecimal("35.00"));
+        prevista.setValorTotal(new BigDecimal("35.00")); em.persist(prevista);
+        em.flush(); em.clear();
+
+        var relatorio = service.consultar(veiculo.getId(), null, null, "TODOS");
+        assertEquals(1, relatorio.resumo().agendamentos());
+        assertEquals(0, relatorio.resumo().finalizados());
+        assertEquals(0, relatorio.resumo().valorFinalizados().signum());
+        assertEquals("AGENDADO", relatorio.registros().getFirst().status());
+        assertEquals(0, relatorio.registros().getFirst().valor().compareTo(new BigDecimal("135.00")));
+        var pecasNaEdicao = agendamentos.listarPecasPrevistas(ag.getId());
+        assertEquals(1, pecasNaEdicao.size());
+        assertEquals(peca.getId(), pecasNaEdicao.getFirst().idPeca());
     }
     @Test void totalIgnoraCanceladosEAbertosENaoDuplicaEstimativasDeAgendamentos() {
         registrar(dia.atTime(9, 0), "ENTREGUE", "100", true);

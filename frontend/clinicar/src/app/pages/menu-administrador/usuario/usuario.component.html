@@ -74,7 +74,7 @@
               </div>
             </div>
 
-            <div class="col-lg-1 col-md-4 status-filter-column">
+            @if (!acessoColaborador) { <div class="col-lg-1 col-md-4 status-filter-column">
               <label class="form-label mb-1" for="filtro-status">Status</label>
 
               <div class="filter-dropdown" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
@@ -133,7 +133,7 @@
                   </div>
                 }
               </div>
-            </div>
+            </div> }
             <div class="col-lg-2 col-md-4 status-filter-column">
               <button class="btn btn-outline-secondary btn-md btn-limpar-filtros" type="button" (click)="limparFiltros()"
                 [disabled]="!possuiFiltrosAplicados"
@@ -144,7 +144,7 @@
             </div>
             <div class="col-lg-4 col-md-4">
               <div class="d-flex gap-2 justify-content-lg-end flex-wrap toolbar-actions">
-                <a class="btn btn-md btn-outline-primary" routerLink="../solicitacoesAcesso"><i class="bi bi-person-lines-fill me-1"></i>Solicitações de acesso</a>
+                @if (!acessoColaborador) { <a class="btn btn-md btn-outline-primary" routerLink="../solicitacoesAcesso"><i class="bi bi-person-lines-fill me-1"></i>Solicitações de acesso</a> }
                 <button class="btn btn-md btn-primary-clinicar" type="button" (click)="abrirModalCadastro()">
                   <i class="bi bi-person-plus me-1"></i>
                   Novo Usuário
@@ -319,10 +319,11 @@
                               <i class="bi bi-eye"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-primary" title="Editar usuário"
+                              [disabled]="acessoColaborador && u.tipo_do_acesso !== 'cliente'"
                               (click)="abrirModalEdicao(u)">
                               <i class="bi bi-pencil-square"></i>
                             </button>
-                            <div class="action-dropdown" (click)="$event.stopPropagation()"
+                            @if (!acessoColaborador || u.podeExcluir || u.status === 'inativo') { <div class="action-dropdown" (click)="$event.stopPropagation()"
                               (keydown)="$event.stopPropagation()">
                               <button type="button" class="btn btn-sm btn-outline-secondary" title="Mais ações"
                                 (click)="alternarMenuAcoes($event, u)">
@@ -330,18 +331,18 @@
                               </button>
                               @if (acoesDropdownAbertoId === u.id) {
                                 <div class="action-menu">
-                                  <button type="button" class="action-menu-item"
+                                  @if (!acessoColaborador) { <button type="button" class="action-menu-item"
                                     [disabled]="!u.mfaAtivo || resetandoMfaId === u.id"
                                     (click)="abrirConfirmacaoResetarMfa(u)">
                                     <i class="bi bi-shield-x text-warning"></i>
                                     Resetar 2FA
-                                  </button>
-                                  <button type="button" class="action-menu-item" (click)="abrirConfirmacaoAlterarStatus(u)"
-                                    [disabled]="u.status === 'ativo' && u.podeInativar === false" [title]="u.motivoBloqueioInativacao || ''">
+                                  </button> }
+                                  @if (!acessoColaborador || u.podeExcluir || u.status === 'inativo') { <button type="button" class="action-menu-item" (click)="abrirConfirmacaoAlterarStatus(u)"
+                                    [disabled]="u.status === 'ativo' && !u.podeExcluir && (acessoColaborador || u.podeInativar === false)" [title]="u.motivoBloqueioInativacao || ''">
                                     <i class="bi"
                                     [ngClass]="iconeAcaoUsuario(u)"></i>
                                     {{ rotuloAcaoUsuario(u) }}
-                                  </button>
+                                  </button> }
                                   @if (u.podeExcluir && u.status === 'inativo') {
                                     <button type="button" class="action-menu-item"
                                       (click)="abrirConfirmacaoAlterarStatus(u, true)">
@@ -350,7 +351,7 @@
                                   }
                                 </div>
                               }
-                            </div>
+                            </div> }
                           </div>
                         </td>
                       </tr>
@@ -406,16 +407,16 @@
                           <i class="bi bi-eye me-1"></i>
                           Detalhes
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="abrirModalEdicao(u)">
+                        <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="acessoColaborador && u.tipo_do_acesso !== 'cliente'" (click)="abrirModalEdicao(u)">
                           <i class="bi bi-pencil-square me-1"></i>
                           Editar
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                        @if (!acessoColaborador || u.podeExcluir || u.status === 'inativo') { <button type="button" class="btn btn-sm btn-outline-secondary"
                           [attr.aria-label]="rotuloAcaoUsuario(u)" [title]="rotuloAcaoUsuario(u)"
-                          [disabled]="u.status === 'ativo' && u.podeInativar === false"
+                          [disabled]="u.status === 'ativo' && !u.podeExcluir && (acessoColaborador || u.podeInativar === false)"
                           (click)="abrirConfirmacaoAlterarStatus(u)">
                           <i class="bi" [ngClass]="iconeAcaoUsuario(u)"></i>
-                        </button>
+                        </button> }
                         @if (u.podeExcluir && u.status === 'inativo') {
                           <button type="button" class="btn btn-sm btn-outline-success"
                             title="Reativar usuário" aria-label="Reativar usuário" (click)="abrirConfirmacaoAlterarStatus(u, true)">
@@ -773,7 +774,7 @@
                   <div class="col-md-3">
                     <label class="form-label" for="edit-status">Status *</label>
                     <select id="edit-status" class="form-select form-select-sm"
-                      [disabled]="!!bloqueioInativacaoEdicao"
+                      [disabled]="acessoColaborador || !!bloqueioInativacaoEdicao"
                       [class.is-invalid]="campoEdicaoInvalido('status')" [(ngModel)]="edit.status" style="color:#35689b;">
                       <option value="ativo">Ativo</option>
                       <option value="inativo">Inativo</option>
@@ -841,7 +842,7 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label" for="edit-tipo-acesso">Tipo de Acesso *</label>
-                    <select id="edit-tipo-acesso" class="form-select form-select-sm"
+                    <select id="edit-tipo-acesso" class="form-select form-select-sm" [disabled]="acessoColaborador"
                       [class.is-invalid]="campoEdicaoInvalido('tipo_do_acesso')" [(ngModel)]="edit.tipo_do_acesso"
                       style="color:#35689b;">
                       <option value="administrador">Administrador</option>
@@ -857,6 +858,17 @@
                   Alterações em e-mail ou tipo de acesso podem impactar login, permissões e comunicações enviadas ao
                   usuário.
                 </div>
+                @if (!acessoColaborador && edit.tipo_do_acesso === 'colaborador' && permissoesEdicao) {
+                  <div class="usuario-form-section-card mt-3">
+                    <div class="section-card-header"><div><h6><i class="bi bi-person-gear me-1"></i>Funções operacionais</h6>
+                      <small>A recepção permanece disponível para todo colaborador. Defina as outras áreas conforme sua função.</small></div></div>
+                    <div class="form-check form-switch mb-2"><input id="permissaoMecanica" class="form-check-input" type="checkbox" [(ngModel)]="permissoesEdicao.podeMecanica">
+                      <label for="permissaoMecanica" class="form-check-label">Execução e registro técnico de atendimentos</label></div>
+                    <div class="form-check form-switch mb-3"><input id="permissaoEstoque" class="form-check-input" type="checkbox" [(ngModel)]="permissoesEdicao.podeEstoque">
+                      <label for="permissaoEstoque" class="form-check-label">Operações de estoque autorizadas ao colaborador</label></div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="salvandoPermissoes" (click)="salvarPermissoesEdicao()">Salvar funções</button>
+                  </div>
+                }
               </div>
             }
 
@@ -969,7 +981,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="alert alert-warning mt-3 mb-3">
+                @if (!acessoColaborador) { <div class="alert alert-warning mt-3 mb-3">
                   <i class="bi bi-shield-exclamation me-1"></i>
                   Resetar o 2FA remove a chave atual do autenticador. No próximo login, o usuário deverá configurar um
                   novo QR Code.
@@ -980,7 +992,7 @@
                     <i class="bi bi-shield-x me-1"></i>
                     Resetar 2FA deste usuário
                   </button>
-                </div>
+                </div> }
               </div>
             }
           </div>
@@ -1243,7 +1255,7 @@
                   </div>
                   <div class="col-md-3">
                     <label for="tipoDoAcesso" class="form-label">Tipo de acesso *</label>
-                    <select id="tipoDoAcesso" class="form-select form-select-sm"
+                    <select id="tipoDoAcesso" class="form-select form-select-sm" [disabled]="acessoColaborador"
                       [class.is-invalid]="campoCadastroInvalido('tipo_do_acesso')"
                       [(ngModel)]="novoUsuario.tipo_do_acesso"
                       (ngModelChange)="limparCampoCadastroInvalido('tipo_do_acesso')" style="color:#35689b;">
@@ -1369,7 +1381,7 @@
                 <div class="row g-3">
                   <div class="col-md-4">
                     <label class="form-label" for="statusCadastro">Status inicial *</label>
-                    <select id="statusCadastro" class="form-select form-select-sm"
+                    <select id="statusCadastro" class="form-select form-select-sm" [disabled]="acessoColaborador"
                       [class.is-invalid]="campoCadastroInvalido('status')" [(ngModel)]="novoUsuario.status"
                       (ngModelChange)="limparCampoCadastroInvalido('status')" style="color:#35689b;">
                       <option value="ativo">Ativo</option>
@@ -1504,14 +1516,49 @@
         <app-field-help-panel></app-field-help-panel>
         <button type="button" class="btn btn-primary w-100" (click)="cadastrarVeiculoDoUsuario()"><i class="bi bi-car-front me-2"></i>Cadastrar veículo</button>
       </div>
-      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Concluir por enquanto</button></div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" (click)="concluirContinuacaoUsuario()">Concluir por enquanto</button></div>
     </div>
   </div>
 </div>
 @if (cadastrandoVeiculo && usuarioContinuacao) {
   <app-veiculo [cadastroIntegrado]="true" [proprietarioIntegrado]="usuarioContinuacao"
-  (registroCriado)="veiculoDoUsuarioCriado($event)" (cadastroCancelado)="abrirContinuacaoUsuario()"></app-veiculo>
+  (registroCriado)="veiculoDoUsuarioCriado($event)" (cadastroCancelado)="aoCancelarVeiculoDoUsuario()"></app-veiculo>
 }
+<div class="modal fade" id="modalMaisVeiculosUsuario" tabindex="-1" aria-labelledby="tituloMaisVeiculosUsuario">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="color:#35689b">
+      <div class="modal-header modal-header-clinicar">
+        <h5 class="modal-title" id="tituloMaisVeiculosUsuario"><i class="bi bi-car-front me-2"></i>Veículos de {{ usuarioContinuacao?.nome }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        @if (veiculosCadastradosNaSequencia.length) {
+          <div class="alert alert-success mb-3">Veículo cadastrado e associado ao usuário. Deseja cadastrar outro veículo antes de configurar os alertas?</div>
+        } @else {
+          <div class="alert alert-info mb-3">Continue o cadastro de veículos do usuário ou avance para os alertas.</div>
+        }
+        @if (veiculosCadastradosNaSequencia.length) {
+          <div class="p-3 rounded border" style="background:#f7fbff">
+            <strong>Veículos cadastrados nesta sequência</strong>
+            <ul class="mb-0 mt-2">
+              @for (veiculo of veiculosCadastradosNaSequencia; track veiculo.id ?? veiculo.placa) {
+                <li>{{ veiculo.placa }} · {{ veiculo.fabricante }} {{ veiculo.modelo }}</li>
+              }
+            </ul>
+          </div>
+        }
+        <p class="mb-0 mt-3">Os alertas de manutenção serão configurados para o cliente e abrangerão seus veículos. Você também pode completar os cadastros mais tarde.</p>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-outline-secondary" (click)="concluirContinuacaoUsuario()">Concluir por enquanto</button>
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="btn btn-outline-primary" (click)="cadastrarOutroVeiculoDoUsuario()"><i class="bi bi-plus-circle me-1"></i>Cadastrar outro veículo</button>
+          <button type="button" class="btn btn-primary-clinicar" (click)="continuarParaAlertasDoUsuario()"><i class="bi bi-bell me-1"></i>Continuar para alertas</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal fade" id="modalAlertasNovoUsuario" tabindex="-1" aria-labelledby="tituloAlertasNovoUsuario">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content" style="color:#35689b">
@@ -1520,7 +1567,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" [disabled]="!!alertasDoNovoUsuario?.salvando" aria-label="Fechar"></button>
       </div>
       <div class="modal-body">
-        <div class="alert alert-info">O veículo já está associado ao usuário. Configure os alertas de manutenção preventiva para seus veículos. Você também pode concluir por enquanto, preservando os cadastros já salvos.</div>
+        <div class="alert alert-info">Configure os alertas de manutenção preventiva do cliente para seus veículos. Você também pode concluir por enquanto, preservando os cadastros já salvos.</div>
         @if (configurandoAlertas && usuarioContinuacao?.id) {
           <app-configuracao-alertas #alertasDoNovoUsuario [usuarioSelecionado]="usuarioContinuacao!.id!" (configuracaoSalva)="concluirAlertasNovoUsuario()"></app-configuracao-alertas>
         }
