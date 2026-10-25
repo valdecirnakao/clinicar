@@ -4,6 +4,8 @@ Sistema web desenvolvido como Trabalho de Conclusão de Curso para apoiar a gest
 
 Esta versão incorpora a migração para Angular 21 LTS e melhorias de funcionalidade, segurança, desempenho e responsividade. As melhorias implementadas e as etapas ainda em andamento estão em [Modernização do projeto](documentacao/modernizacao-profissional.md).
 
+A área de trabalho do colaborador e sua matriz de permissões estão descritas em [Acesso do colaborador](documentacao/acesso-colaborador.md).
+
 ## Funcionalidades
 
 | Módulo | Recursos principais |
@@ -101,11 +103,13 @@ Nos próximos acessos, use a senha e o código do aplicativo já configurado. O 
 
 ## Notificações e alertas
 
+Orçamentos de atendimento enviados para aprovação são versionados. O cliente aceita ou recusa a versão pendente em **Meus atendimentos**; mudanças de escopo ou valor exigem revisão e novo aceite. Operação, cópias externas, monitoramento e roteiro de validação estão em [Orçamentos, operação e validação](documentacao/orcamentos-operacao-validacao.md).
+
 E-mails e mensagens de WhatsApp são enfileirados para processamento em segundo plano. Acompanhe estados e falhas pelo Painel operacional. A aceitação do envio pelo provedor é diferente da confirmação de entrega ou leitura.
 
 Para WhatsApp, configure `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_ACCESS_TOKEN`, habilite `CLINICAR_WHATSAPP_ENABLED` e utilize templates aprovados na Meta. Template e idioma são configurações técnicas do servidor.
 
-Os alertas de estoque exigem um responsável ativo, com telefone cadastrado, definido em **Alertas → Colaboradores**. Os alertas de manutenção dependem das regras, das configurações do destinatário e das opções de habilitação do agendador e do envio no `.env`.
+Em **Alertas → Colaboradores**, o administrador seleciona um colaborador ativo para receber alertas de estoque em nível de atenção e um administrador ativo para os níveis crítico e zerado. Ambos precisam ter telefone cadastrado. Os alertas de manutenção dependem das regras, das configurações do destinatário e das opções de habilitação do agendador e do envio no `.env`.
 
 Para receber confirmações da Meta, configure o webhook em uma URL pública acessível ao provedor e defina `WHATSAPP_WEBHOOK_APP_SECRET` e `WHATSAPP_WEBHOOK_VERIFY_TOKEN`. O backend valida a assinatura dos retornos.
 
@@ -149,7 +153,12 @@ O workflow de qualidade executa testes, compilação, validação de migrações
 
 ## Documentação
 
+- [Orientações permanentes para o Codex](AGENTS.md).
+- [Ponto de retomada do desenvolvimento](documentacao/retomada-modernizacao.md).
+- [Fluxo de trabalho com Codex e organização das etapas](documentacao/fluxo-trabalho-codex.md).
 - [Modernização e pendências do projeto](documentacao/modernizacao-profissional.md).
+- [Validação dos seletores e medições de desempenho](documentacao/validacao-seletores-20261012.md).
+- [Histórico de movimentações paginado e preservação de saldos](documentacao/historico-movimentacoes-paginado.md).
 - [Responsividade visual](documentacao/responsividade-visual.md).
 - [Auditoria](documentacao/auditoria.md).
 - [Validação de duplicidades](documentacao/validacao-duplicidade-cadastros.md).
