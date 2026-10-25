@@ -173,6 +173,21 @@ class OrigemMovimentacaoEstoqueTest {
         verify(estoque, never()).save(any());
     }
 
+    @Test void saldoInicialDeveSerCorrigidoPorAjusteDeInventarioEmVezDeAlterarSeuLancamento() {
+        prepararEstoque();
+        var original = new MovimentacaoEstoquePeca();
+        original.setId(8L);
+        original.setTipoMovimento("ENTRADA");
+        original.setOrigem("INVENTARIO_INICIAL");
+        original.setQuantidade(new BigDecimal("10"));
+        original.setEstoquePeca(estoque.buscarComLockPorId(1L).orElseThrow());
+        when(movimentos.findById(8L)).thenReturn(Optional.of(original));
+        var pedido = request("CORRECAO_LANCAMENTO");
+        pedido.setIdMovimentacaoOrigem(8L);
+        assertThrows(IllegalArgumentException.class, () -> service.registrarAjuste(1L, pedido));
+        verify(movimentos, never()).save(any());
+    }
+
     @Test void correcaoConsideraHistoricoPreservaOriginalEPermiteAumentarQuantidadeRegistrada() {
         prepararEstoque(); var original = new MovimentacaoEstoquePeca(); original.setId(8L); original.setTipoMovimento("ENTRADA");
         original.setQuantidade(new BigDecimal("5")); original.setEstoquePeca(estoque.buscarComLockPorId(1L).orElseThrow());

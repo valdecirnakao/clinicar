@@ -23,8 +23,21 @@ class AlertaEstoqueEnvioTest {
         when(whatsapp.enviarAlertaEstoque(any(), any())).thenReturn("wamid.teste");
     }
     ConfiguracaoAlertaEstoque configurar() {
-        var c = new ConfiguracaoAlertaEstoque(); c.setTelefoneAdministrador("5511999999999");
+        var c = new ConfiguracaoAlertaEstoque(); c.setIdResponsavel(2L); c.setNomeResponsavel("Colaborador"); c.setTelefoneAdministrador("5511999999999");
+        c.setIdAdministradorCritico(3L); c.setNomeAdministradorCritico("Administrador"); c.setTelefoneAdministradorCritico("5511888888888");
         when(configs.findFirstByAtivoTrueOrderByIdAsc()).thenReturn(Optional.of(c)); return c;
+    }
+    @Test void direcionaAtencaoAoColaboradorECriticoAoAdministrador() {
+        configurar();
+        service.verificarEGerarAlertaSeNecessario(estoque);
+        estoque.setQuantidadeAtual(new BigDecimal("2"));
+        service.verificarEGerarAlertaSeNecessario(estoque);
+        var destinatarios = org.mockito.ArgumentCaptor.forClass(ConfiguracaoAlertaEstoque.class);
+        verify(whatsapp, times(2)).enviarAlertaEstoque(any(), destinatarios.capture());
+        assertEquals(2L, destinatarios.getAllValues().get(0).getIdResponsavel());
+        assertEquals("5511999999999", destinatarios.getAllValues().get(0).getTelefoneAdministrador());
+        assertEquals(3L, destinatarios.getAllValues().get(1).getIdResponsavel());
+        assertEquals("5511888888888", destinatarios.getAllValues().get(1).getTelefoneAdministrador());
     }
     AlertaEstoquePeca existente(boolean enviado, LocalDateTime ultima) {
         var a = new AlertaEstoquePeca(); a.setId(7L); a.setEstoquePeca(estoque); a.setNivelAlerta("ATENCAO");

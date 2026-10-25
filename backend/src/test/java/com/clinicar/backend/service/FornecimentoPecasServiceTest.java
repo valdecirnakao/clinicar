@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import com.clinicar.backend.dto.FornecimentoPecasRequest;
@@ -46,6 +47,7 @@ class FornecimentoPecasServiceTest {
     void criarMontaRelacionamentosEConverteValores() {
         Fornecedor fornecedor = new Fornecedor();
         fornecedor.setId(1L);
+        fornecedor.setItemFornecido("Peças automotivas");
         Peca peca = new Peca();
         peca.setId(2L);
 
@@ -61,6 +63,12 @@ class FornecimentoPecasServiceTest {
         when(fornecedorRepository.findById(1L)).thenReturn(Optional.of(fornecedor));
         when(pecaRepository.findById(2L)).thenReturn(Optional.of(peca));
         when(repo.save(any(FornecimentoPecas.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        fornecedor.setItemFornecido("Serviços automotivos");
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> service.criar(req))
+                .getMessage().contains("fornecedor cadastrado para peças"));
+        verify(repo, never()).save(any(FornecimentoPecas.class));
+        fornecedor.setItemFornecido("Peças automotivas");
 
         FornecimentoPecas salvo = service.criar(req);
 
@@ -95,7 +103,8 @@ class FornecimentoPecasServiceTest {
         req.setIdFornecedor(1L);
         req.setIdPeca(2L);
 
-        when(fornecedorRepository.findById(1L)).thenReturn(Optional.of(new Fornecedor()));
+        Fornecedor fornecedor = new Fornecedor(); fornecedor.setItemFornecido("Peças automotivas");
+        when(fornecedorRepository.findById(1L)).thenReturn(Optional.of(fornecedor));
         when(pecaRepository.findById(2L)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () -> service.criar(req));
@@ -108,6 +117,7 @@ class FornecimentoPecasServiceTest {
 
         Fornecedor fornecedor = new Fornecedor();
         fornecedor.setId(1L);
+        fornecedor.setItemFornecido("Peças automotivas");
         Peca peca = new Peca();
         peca.setId(2L);
 

@@ -28,6 +28,8 @@ public class Usuario {
     private String cpf;
     private LocalDate nascimento;
     private String telefone;
+    @Column(name = "avisos_servico_whatsapp", nullable = false)
+    private Boolean avisosServicoWhatsapp = false;
     private String cep;
     private String numero_endereco;
     private String complemento_endereco;

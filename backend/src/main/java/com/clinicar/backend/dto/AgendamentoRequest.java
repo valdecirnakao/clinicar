@@ -13,6 +13,7 @@ public class AgendamentoRequest {
 
     private Long idFornecedor;
     private Long idResponsavel;
+    private String tipoExecucao;
 
     private String dataHoraInicio;
     private String dataHoraFim;
@@ -28,6 +29,8 @@ public class AgendamentoRequest {
     private Integer quilometragemAtual;
 
     private String queixaCliente;
+    private String sugestaoMateriaisCliente;
+    private String preferenciaExecucaoCliente;
     private String diagnosticoPrevio;
     private String observacoes;
 

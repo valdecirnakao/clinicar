@@ -31,6 +31,7 @@ public class UsuarioExclusaoService {
         UNION SELECT usuario_id FROM password_reset_token
         UNION SELECT id_proprietario FROM veiculo
         UNION SELECT id_responsavel FROM configuracao_alerta_estoque
+        UNION SELECT id_administrador_critico FROM configuracao_alerta_estoque
         UNION SELECT id_usuario FROM movimentacao_estoque_peca
         UNION SELECT id_cliente FROM agendamento
         UNION SELECT id_responsavel FROM agendamento
@@ -79,17 +80,21 @@ public class UsuarioExclusaoService {
         if (motivo.length() < 10 || motivo.length() > 1000) {
             throw new IllegalArgumentException("Informe uma justificativa de 10 a 1000 caracteres para excluir o usuário.");
         }
-        protecaoAdministrativa.bloquearEValidarAdministrador(administradorId);
         Usuario administrador = entityManager.find(Usuario.class, administradorId, LockModeType.PESSIMISTIC_WRITE);
+        boolean colaborador = administrador != null && "COLABORADOR".equalsIgnoreCase(administrador.getTipo_do_acesso());
         if (administrador == null || !"ATIVO".equalsIgnoreCase(administrador.getStatus())
-                || !"ADMINISTRADOR".equalsIgnoreCase(administrador.getTipo_do_acesso())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente administradores ativos podem excluir usuários.");
+                || !colaborador && !"ADMINISTRADOR".equalsIgnoreCase(administrador.getTipo_do_acesso())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente administradores e colaboradores ativos podem excluir usuários sem vínculos.");
         }
+        if (!colaborador) protecaoAdministrativa.bloquearEValidarAdministrador(administradorId);
         if (administradorId.equals(id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Você não pode excluir seu próprio usuário.");
         }
         Usuario usuario = entityManager.find(Usuario.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (usuario == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado.");
+        if (colaborador && !"CLIENTE".equalsIgnoreCase(usuario.getTipo_do_acesso())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "O colaborador só pode excluir usuários clientes sem vínculos.");
+        }
         boolean temVinculos = !entityManager.createNativeQuery(
                 "SELECT usuario_id FROM (" + VINCULOS + ") vinculos WHERE usuario_id = :id")
                 .setParameter("id", id).getResultList().isEmpty();

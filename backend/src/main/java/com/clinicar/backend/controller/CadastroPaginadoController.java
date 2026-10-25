@@ -2,9 +2,11 @@ package com.clinicar.backend.controller;
 
 import com.clinicar.backend.dto.UsuarioResponse;
 import com.clinicar.backend.model.*;
+import com.clinicar.backend.service.CategoriasFornecedor;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.*;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class CadastroPaginadoController {
     private record Cadastro(Class<?> entidade,List<String> busca,List<String> filtros){}
     private static final Map<String,Cadastro> CADASTROS=Map.ofEntries(
+        Map.entry("local-estoque",new Cadastro(LocalEstoque.class,List.of("nome","descricao"),List.of("ativo"))),
         Map.entry("peca",new Cadastro(Peca.class,List.of("nome","tipo","fabricante","modelo","especificacao","unidade","viscosidadeSae","classificacaoApi","classificacaoAcea","normaOem"),List.of("tipo","unidade","fabricante"))),
         Map.entry("servico",new Cadastro(Servico.class,List.of("nome","descricao","categoria","tipoDoPrestador"),List.of("categoria","ativo","fornecedor.id"))),
         Map.entry("fornecedor",new Cadastro(Fornecedor.class,List.of("cnpj","razaoSocial","nomeFantasia","itemFornecido","email","cidade"),List.of("estado","itemFornecido","ativo"))),
@@ -32,48 +35,68 @@ public class CadastroPaginadoController {
     @Transactional(readOnly=true)
     public List<Long> responsaveisOcupados(@RequestParam java.time.LocalDateTime inicio,@RequestParam java.time.LocalDateTime fim,@RequestParam(defaultValue="0") Long ignorar) {
         if(!fim.isAfter(inicio)||java.time.Duration.between(inicio,fim).toDays()>31)throw new IllegalArgumentException("Informe um período válido, com duração máxima de 31 dias.");
-        return em.createQuery("SELECT DISTINCT a.responsavel.id FROM Agendamento a WHERE a.id<>:ignorar AND a.responsavel IS NOT NULL AND a.statusAgendamento IN ('AGENDADO','CONFIRMADO','EM_ATENDIMENTO','REAGENDADO') AND a.dataHoraInicio<:fim AND a.dataHoraFim>:inicio",Long.class).setParameter("ignorar",ignorar).setParameter("inicio",inicio).setParameter("fim",fim).getResultList();
+        return em.createQuery("SELECT DISTINCT a.responsavel.id FROM Agendamento a WHERE a.id<>:ignorar AND a.responsavel IS NOT NULL AND a.statusAgendamento IN ('CONFIRMADO','EM_ATENDIMENTO') AND a.dataHoraInicio<:fim AND a.dataHoraFim>:inicio",Long.class).setParameter("ignorar",ignorar).setParameter("inicio",inicio).setParameter("fim",fim).getResultList();
     }
-    @GetMapping({"/api/peca/pagina","/api/servico/pagina","/api/fornecedor/pagina","/api/veiculo/pagina","/api/usuario/pagina","/api/estoque-pecas/pagina","/api/fornecimento-pecas/pagina","/api/fornecimento-servicos/pagina","/api/agendamento/pagina","/api/atendimento/pagina","/api/regra-manutencao-preventiva/pagina"})
+    @GetMapping({"/api/local-estoque/pagina","/api/peca/pagina","/api/servico/pagina","/api/fornecedor/pagina","/api/veiculo/pagina","/api/usuario/pagina","/api/estoque-pecas/pagina","/api/fornecimento-pecas/pagina","/api/fornecimento-servicos/pagina","/api/agendamento/pagina","/api/atendimento/pagina","/api/regra-manutencao-preventiva/pagina"})
     @Transactional(readOnly=true)
-    public Map<String,Object> listar(HttpServletRequest request,@RequestParam(defaultValue="0") int pagina,
+    public Map<String,Object> listar(HttpServletRequest request,HttpServletResponse response,@RequestParam(defaultValue="0") int pagina,
         @RequestParam(defaultValue="10") int tamanho,@RequestParam(defaultValue="") String busca,
         @RequestParam(defaultValue="id") String ordenar,@RequestParam(defaultValue="false") boolean decrescente,
         @RequestParam Map<String,String> parametros) {
-        if(!(request.getAttribute("usuarioLogado") instanceof UsuarioResponse user) || !"ADMINISTRADOR".equals(user.getTipo_do_acesso())) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,"Consulta exclusiva de administradores.");
+        if(!(request.getAttribute("usuarioLogado") instanceof UsuarioResponse user)) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED,"Sessão inválida.");
+        boolean selecao="true".equals(parametros.get("selecao"));
+        boolean colaborador="COLABORADOR".equalsIgnoreCase(user.getTipo_do_acesso());
+        String recurso=request.getRequestURI().split("/")[2];
+        var filtros=new HashMap<>(parametros);
+        if(colaborador && recurso.equals("usuario") && !selecao) {
+            filtros.remove("perfis");
+            filtros.put("tipo_do_acesso","CLIENTE");
+        }
+        boolean consultaColaborador=colaborador && (Set.of("usuario","veiculo","estoque-pecas","agendamento","atendimento","local-estoque").contains(recurso)
+                || selecao && Set.of("servico","peca","fornecedor","fornecimento-pecas").contains(recurso));
+        if(!"ADMINISTRADOR".equalsIgnoreCase(user.getTipo_do_acesso()) && !consultaColaborador)
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,"Consulta exclusiva de administradores.");
         if(pagina<0 || pagina>100000 || tamanho<1 || tamanho>100 || busca.length()>120)throw new IllegalArgumentException("Verifique os parâmetros da consulta.");
-        String recurso=request.getRequestURI().split("/")[2];Cadastro cadastro=CADASTROS.get(recurso);
+        response.setHeader("Cache-Control","no-store, max-age=0");
+        Cadastro cadastro=CADASTROS.get(recurso);
         var allowed=new HashSet<>(cadastro.busca());allowed.addAll(cadastro.filtros());allowed.add("id");
         var seguros=Set.of("criadoEm","atualizadoEm","dataCadastro","dataHoraInicio","dataEntrada","codigoAgendamento","codigoAtendimento","valorEstimado","valorTotal","valorCusto","prazoEntregaDias","quantidadeMinima","valorBase","duracaoEstimada","garantiaDias","necessitaPecas","mfaAtivo","nascimento","fundacao","anoModeloCombustivel","quantidadeAtual","quantidadeReservada","estoqueMinimo","estoqueCritico","custoMedio","prioridade");
         em.getMetamodel().entity(cadastro.entidade()).getAttributes().stream().map(a->a.getName()).filter(seguros::contains).forEach(allowed::add);
         if(!allowed.contains(ordenar))ordenar="id";
         var cb=em.getCriteriaBuilder();var query=cb.createQuery(Object.class);var root=query.from(cadastro.entidade());
         em.getMetamodel().entity(cadastro.entidade()).getAttributes().stream().filter(a->!a.isCollection()&&a.isAssociation()).forEach(a->root.fetch(a.getName(),JoinType.LEFT));
-        query.select(root).where(predicados(cb,root,cadastro,busca,parametros,query));
+        query.select(root).where(predicados(cb,root,cadastro,busca,filtros,query));
         var order=campo(root,ordenar);query.orderBy(decrescente?cb.desc(order):cb.asc(order),cb.asc(root.get("id")));
         List<?> rows=em.createQuery(query).setFirstResult(pagina*tamanho).setMaxResults(tamanho).getResultList();
         List<?> exibicao;
-        if(recurso.equals("usuario")) {
+        if(recurso.equals("usuario") && !"true".equals(parametros.get("selecao"))) {
             var exclusao=beans.getBean(com.clinicar.backend.service.UsuarioExclusaoService.class);
             var vinculados=exclusao.usuariosComVinculos(rows.stream().map(row->((Usuario)row).getId()).toList());
-            var administradores=em.createQuery("SELECT u FROM Usuario u WHERE u.tipo_do_acesso='ADMINISTRADOR'",Usuario.class).getResultList();
+            var administradores=colaborador?List.<Usuario>of():em.createQuery("SELECT u FROM Usuario u WHERE u.tipo_do_acesso='ADMINISTRADOR'",Usuario.class).getResultList();
             var mapper=beans.getBean(com.clinicar.backend.mapper.UsuarioMapper.class);
             exibicao=rows.stream().map(row->{
                 var usuario=(Usuario)row;var dto=mapper.toResponse(usuario);
-                dto.setPodeExcluir(exclusao.podeExcluir(usuario,user.getId(),vinculados));
-                String motivo=com.clinicar.backend.service.ProtecaoAdministrativaService.motivoBloqueio(usuario,user.getId(),administradores);
-                dto.setPodeInativar(motivo==null);dto.setMotivoBloqueioInativacao(motivo);return dto;
+                dto.setPodeExcluir((!colaborador || "CLIENTE".equalsIgnoreCase(usuario.getTipo_do_acesso())) && exclusao.podeExcluir(usuario,user.getId(),vinculados));
+                String motivo=colaborador?"Ação exclusiva do administrador.":com.clinicar.backend.service.ProtecaoAdministrativaService.motivoBloqueio(usuario,user.getId(),administradores);
+                dto.setPodeInativar(!colaborador && motivo==null);dto.setMotivoBloqueioInativacao(motivo);return dto;
             }).toList();
         } else if(recurso.equals("veiculo")) {
             var json=beans.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);var mapper=beans.getBean(com.clinicar.backend.mapper.UsuarioMapper.class);
             exibicao=rows.stream().map(row->{var veiculo=(Veiculo)row;com.fasterxml.jackson.databind.node.ObjectNode result=json.valueToTree(veiculo);var dono=veiculo.getUsuarioProprietario();if(dono!=null)result.set("proprietario",json.valueToTree(mapper.toResponse(dono)));return result;}).toList();
         } else exibicao=rows.stream().map(row->mapear(cadastro,row)).toList();
-        var count=cb.createQuery(Long.class);var countRoot=count.from(cadastro.entidade());count.select(cb.count(countRoot)).where(predicados(cb,countRoot,cadastro,busca,parametros,count));
+        var count=cb.createQuery(Long.class);var countRoot=count.from(cadastro.entidade());count.select(cb.count(countRoot)).where(predicados(cb,countRoot,cadastro,busca,filtros,count));
         long total=em.createQuery(count).getSingleResult();
+        if ("true".equals(parametros.get("selecao"))) return Map.of("content", exibicao, "totalElements", total, "totalPages", (int)Math.ceil((double)total/tamanho), "number", pagina, "resumo", Map.of(), "opcoes", Map.of());
         var resumo=new HashMap<String,Object>();resumo.put("total",contar(cadastro,null,null));
         if(recurso.equals("usuario")) {
             resumo.put("ativos",contar(cadastro,"status","ATIVO"));resumo.put("inativos",contar(cadastro,"status","INATIVO"));
             resumo.put("mfaAtivo",contar(cadastro,"mfaAtivo",true));resumo.put("whatsapp",contatos("usuario"));
+            if(colaborador) {
+                var totais=(Object[])em.createNativeQuery("SELECT COUNT(*), COALESCE(SUM(status='ATIVO'),0), COALESCE(SUM(status='INATIVO'),0), COALESCE(SUM(mfa_ativo=1),0), COALESCE(SUM(LENGTH(REGEXP_REPLACE(COALESCE(telefone,''),'[^0-9]','')) IN (12,13) OR (REGEXP_REPLACE(COALESCE(telefone,''),'[^0-9]','') NOT LIKE '55%' AND LENGTH(REGEXP_REPLACE(COALESCE(telefone,''),'[^0-9]','')) IN (8,9,10,11))),0) FROM usuario WHERE tipo_do_acesso='CLIENTE'").getSingleResult();
+                resumo.put("total",((Number)totais[0]).longValue());resumo.put("ativos",((Number)totais[1]).longValue());
+                resumo.put("inativos",((Number)totais[2]).longValue());resumo.put("mfaAtivo",((Number)totais[3]).longValue());
+                resumo.put("whatsapp",((Number)totais[4]).longValue());
+            }
         }
         if(recurso.equals("fornecedor")) {
             resumo.put("estados",distintos(cadastro,"estado"));resumo.put("cidades",distintos(cadastro,"cidade"));resumo.put("whatsapp",contatos("fornecedor"));
@@ -134,6 +157,31 @@ public class CadastroPaginadoController {
     }
     private Predicate[] predicados(CriteriaBuilder cb,Root<?> root,Cadastro cadastro,String busca,Map<String,String> params,AbstractQuery<?> query){
         var result=new ArrayList<Predicate>();
+        if(cadastro.entidade()==Fornecedor.class && params.containsKey("tipoFornecimento")) {
+            String tipo=params.get("tipoFornecimento");
+            if(!Set.of("PECAS","SERVICOS").contains(tipo))throw new IllegalArgumentException("Tipo de fornecimento inválido.");
+            result.add(cb.lower(cb.trim(root.get("itemFornecido"))).in(tipo.equals("PECAS")?CategoriasFornecedor.PECAS:CategoriasFornecedor.SERVICOS));
+        }
+        if(cadastro.entidade()==Usuario.class && params.get("inicioDisponivel")!=null && !params.get("inicioDisponivel").isBlank()) {
+            var inicio=java.time.LocalDateTime.parse(params.get("inicioDisponivel"));var fim=java.time.LocalDateTime.parse(params.getOrDefault("fimDisponivel",""));
+            if(!fim.isAfter(inicio)||java.time.Duration.between(inicio,fim).toDays()>31)throw new IllegalArgumentException("Informe um período válido, com duração máxima de 31 dias.");
+            var ocupacao=query.subquery(Long.class);var agendamento=ocupacao.from(Agendamento.class);
+            ocupacao.select(agendamento.get("id")).where(cb.equal(agendamento.get("responsavel").get("id"),root.get("id")),
+                cb.notEqual(agendamento.get("id"),Long.valueOf(params.getOrDefault("ignorarAgendamento","0"))),
+                agendamento.get("statusAgendamento").in("CONFIRMADO","EM_ATENDIMENTO"),
+                cb.lessThan(agendamento.get("dataHoraInicio"),fim),cb.greaterThan(agendamento.get("dataHoraFim"),inicio));
+            result.add(cb.not(cb.exists(ocupacao)));
+        }
+        if (cadastro.entidade()==Usuario.class && params.containsKey("perfis")) {
+            var perfis=Arrays.asList(params.get("perfis").split(","));
+            if(perfis.isEmpty()||!Set.of("CLIENTE","COLABORADOR","ADMINISTRADOR").containsAll(perfis))throw new IllegalArgumentException("Perfil inválido.");
+            result.add(root.get("tipo_do_acesso").in(perfis));
+        }
+        if(cadastro.entidade()==Usuario.class && params.containsKey("excluirIds") && !params.get("excluirIds").isBlank()) {
+            var ids=Arrays.stream(params.get("excluirIds").split(",")).map(Long::valueOf).toList();
+            if(ids.size()>100)throw new IllegalArgumentException("Limite de exclusões excedido.");
+            result.add(cb.not(root.get("id").in(ids)));
+        }
         if(!busca.isBlank()){String pattern="%"+busca.toLowerCase(Locale.ROOT).replace("\\","\\\\").replace("%","\\%").replace("_","\\_")+"%";result.add(cb.or(cadastro.busca().stream().map(field->cb.like(cb.lower(campo(root,field).as(String.class)),pattern,'\\')).toArray(Predicate[]::new)));}
         for(String field:cadastro.filtros()){String value=params.get(field);if(value==null||value.isBlank())continue;var path=campo(root,field);Object typed=value;
             if(path.getJavaType()==Boolean.class||path.getJavaType()==boolean.class){if(!Set.of("true","false").contains(value))throw new IllegalArgumentException("Filtro inválido.");typed=Boolean.valueOf(value);}

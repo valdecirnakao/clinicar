@@ -39,6 +39,8 @@ public class MovimentacaoEstoquePecaResponse {
     private String tratamentoCobranca;
     private BigDecimal valorRestituicao;
     private BigDecimal quantidadeDevolvida;
+    private BigDecimal quantidadeDisponivelOriginal;
+    private BigDecimal quantidadeDisponivelRecebimento;
     private BigDecimal custoMedioAtual;
 
     private LocalDateTime criadoEm;

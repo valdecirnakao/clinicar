@@ -47,6 +47,9 @@ public class Servico {
     @Column(name = "necessita_pecas", nullable = false)
     private Boolean necessitaPecas = false;
 
+    @Column(name = "materiais_referencia", length = 1000)
+    private String materiaisReferencia;
+
     @Column(nullable = false)
     private Boolean ativo = true;
 

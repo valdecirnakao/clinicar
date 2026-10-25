@@ -82,6 +82,7 @@ public class AtendimentoMapper {
         response.setFimReal(atendimento.getFimReal());
         response.setPrazoEstimadoEntrega(atendimento.getPrazoEstimadoEntrega());
         response.setDataEntrega(atendimento.getDataEntrega());
+        response.setProntoRetiradaEm(atendimento.getProntoRetiradaEm());
 
         response.setQuilometragemEntrada(atendimento.getQuilometragemEntrada());
         response.setQuilometragemSaida(atendimento.getQuilometragemSaida());

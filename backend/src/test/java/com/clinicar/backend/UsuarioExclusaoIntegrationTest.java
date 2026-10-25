@@ -42,7 +42,7 @@ class UsuarioExclusaoIntegrationTest {
     @AfterEach void limpar() {
         reset(auditoria);
         transacao(() -> {
-            em.createNativeQuery("DELETE FROM configuracao_alerta_estoque WHERE id_responsavel = :id").setParameter("id", alvo.getId()).executeUpdate();
+            em.createNativeQuery("DELETE FROM configuracao_alerta_estoque WHERE id_responsavel = :id OR id_administrador_critico = :id").setParameter("id", alvo.getId()).executeUpdate();
             for (String tabela : new String[]{"veiculo", "auth_session", "password_reset_token", "auditoria_reset_mfa"}) {
                 String coluna = tabela.equals("veiculo") ? "id_proprietario" : "usuario_id";
                 em.createNativeQuery("DELETE FROM " + tabela + " WHERE " + coluna + " = :id")
@@ -71,6 +71,23 @@ class UsuarioExclusaoIntegrationTest {
         assertEquals(404, assertThrows(ResponseStatusException.class,
                 () -> service.excluir(alvo.getId(), admin.getId(), motivo)).getStatusCode().value());
         assertEquals(1, auditoria.findAll().stream().filter(a -> a.getUsuarioId().equals(alvo.getId())).count());
+    }
+    @Test void colaboradorPodeExcluirSomenteClienteSemVinculos() {
+        var colaborador = usuario("Recepcionista", "COLABORADOR");
+        try {
+            assertEquals(403, assertThrows(ResponseStatusException.class,
+                    () -> service.excluir(admin.getId(), colaborador.getId(), motivo)).getStatusCode().value());
+            service.excluir(alvo.getId(), colaborador.getId(), motivo);
+            assertFalse(usuarios.existsById(alvo.getId()));
+            assertTrue(auditoria.findAll().stream().anyMatch(a -> a.getUsuarioId().equals(alvo.getId())
+                    && a.getAdministradorId().equals(colaborador.getId())));
+        } finally {
+            transacao(() -> {
+                em.createNativeQuery("DELETE FROM auditoria_exclusao_usuario WHERE administrador_id = :id")
+                        .setParameter("id", colaborador.getId()).executeUpdate();
+                usuarios.deleteById(colaborador.getId());
+            });
+        }
     }
     @Test void revalidaVeiculoCriadoDepoisDaConsultaEPreservaCadastro() {
         assertTrue(service.podeExcluir(alvo, admin.getId(), service.usuariosComVinculos()));

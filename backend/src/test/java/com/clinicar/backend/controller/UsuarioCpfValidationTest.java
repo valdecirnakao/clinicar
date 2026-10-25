@@ -13,6 +13,31 @@ import static org.mockito.Mockito.*;
 
 class UsuarioCpfValidationTest {
     @Test
+    void consultaIndividualReidrataSelecaoSalvaComControleDeAcesso() {
+        var repository = mock(UsuarioRepository.class);
+        var mapper = mock(UsuarioMapper.class);
+        var controller = new UsuarioController(repository, mock(UsuarioService.class),
+                mock(MfaService.class), mapper, mock(SessionService.class), mock(UsuarioExclusaoService.class));
+        var administrador = new UsuarioResponse();
+        administrador.setId(1L); administrador.setStatus("ATIVO"); administrador.setTipo_do_acesso("ADMINISTRADOR");
+        var colaborador = new com.clinicar.backend.model.Usuario();
+        colaborador.setId(5L); colaborador.setNome("Responsável pelo estoque"); colaborador.setStatus("ATIVO");
+        var respostaUsuario = new UsuarioResponse();
+        respostaUsuario.setId(5L); respostaUsuario.setNome("Responsável pelo estoque");
+        when(repository.findById(5L)).thenReturn(java.util.Optional.of(colaborador));
+        when(mapper.toResponse(colaborador)).thenReturn(respostaUsuario);
+
+        var resposta = controller.buscarPorId(5L, administrador);
+        assertEquals("Responsável pelo estoque", resposta.getBody().getNome());
+        assertEquals("no-store", resposta.getHeaders().getCacheControl());
+        assertEquals(401, controller.buscarPorId(5L, null).getStatusCode().value());
+
+        var cliente = new UsuarioResponse();
+        cliente.setId(9L); cliente.setStatus("ATIVO"); cliente.setTipo_do_acesso("CLIENTE");
+        assertEquals(403, controller.buscarPorId(5L, cliente).getStatusCode().value());
+        verify(repository, times(2)).findById(5L);
+    }
+    @Test
     void atualizacaoAdministrativaUsaResponsavelDaSessao() {
         var service = mock(UsuarioService.class);
         var controller = new UsuarioController(mock(UsuarioRepository.class), service,
@@ -22,6 +47,18 @@ class UsuarioCpfValidationTest {
         var pedido = new com.clinicar.backend.dto.UsuarioRequest(); pedido.setStatus("INATIVO");
         controller.atualizarUsuario(42L, pedido, solicitante);
         verify(service).atualizarPorAdministrador(42L, pedido, 7L);
+    }
+    @Test
+    void colaboradorAtualizaClienteSemReceberOperacoesAdministrativas() {
+        var service = mock(UsuarioService.class);
+        var controller = new UsuarioController(mock(UsuarioRepository.class), service,
+                mock(MfaService.class), mock(UsuarioMapper.class), mock(SessionService.class), mock(UsuarioExclusaoService.class));
+        var solicitante = new UsuarioResponse();
+        solicitante.setId(7L); solicitante.setStatus("ATIVO"); solicitante.setTipo_do_acesso("COLABORADOR");
+        var pedido = new com.clinicar.backend.dto.UsuarioRequest();
+        controller.atualizarUsuario(42L, pedido, solicitante);
+        verify(service).atualizarClientePorColaborador(42L, pedido);
+        verify(service, never()).atualizarPorAdministrador(anyLong(), any(), anyLong());
     }
     @Test
     void listagemRecebeElegibilidadeDoBackendSemConsultasPorUsuario() {
@@ -58,6 +95,9 @@ class UsuarioCpfValidationTest {
         solicitante.setTipo_do_acesso("ADMINISTRADOR");
         assertEquals(204, controller.removerUsuario(42L, pedido, solicitante).getStatusCode().value());
         verify(exclusao).excluir(42L, 7L, pedido.justificativa());
+        solicitante.setTipo_do_acesso("COLABORADOR");
+        assertEquals(403, controller.removerUsuario(43L, pedido, solicitante).getStatusCode().value());
+        verify(exclusao, never()).excluir(43L, 7L, pedido.justificativa());
     }
     @Test
     void resetUsaAdministradorDaSessaoERecusaPerfilNaoAdministrativo() {

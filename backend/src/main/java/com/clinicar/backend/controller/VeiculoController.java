@@ -33,7 +33,9 @@ public class VeiculoController {
 
     @PostMapping
     public ResponseEntity<Veiculo> criar(
-            @RequestBody VeiculoRequest request) {
+            @RequestBody VeiculoRequest request,
+            @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
+        if (!recepcaoOuAdministrador(solicitante)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         log.info(
                 "Controller recebeu cadastro de veículo. fabricante={}, modelo={}, placa={}, anoModeloCombustivel={}, idProprietario={}",
                 request.getFabricante(),
@@ -51,9 +53,17 @@ public class VeiculoController {
 
     @GetMapping("/verificar-placa")
     public ResponseEntity<java.util.Map<String, Boolean>> verificarPlaca(@RequestParam String placa,
-            @RequestParam(required = false) Long ignorarId) {
+            @RequestParam(required = false) Long ignorarId,
+            @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
+        if (!recepcaoOuAdministrador(solicitante)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
                 .body(java.util.Map.of("cadastrada", veiculoService.verificarPlacaCadastrada(placa, ignorarId)));
+    }
+
+    private boolean recepcaoOuAdministrador(UsuarioResponse usuario) {
+        return usuario != null && "ATIVO".equalsIgnoreCase(usuario.getStatus())
+                && usuario.getTipo_do_acesso() != null
+                && java.util.Set.of("ADMINISTRADOR", "COLABORADOR").contains(usuario.getTipo_do_acesso().toUpperCase(java.util.Locale.ROOT));
     }
 
     @GetMapping("/placa/{placa}")
@@ -71,6 +81,15 @@ public class VeiculoController {
         List<Veiculo> veiculos = veiculoRepository.findAll();
 
         return ResponseEntity.ok(veiculos);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Veiculo> buscarPorId(@PathVariable Long id,
+            @RequestAttribute(name = "usuarioLogado", required = false) UsuarioResponse solicitante) {
+        if (!recepcaoOuAdministrador(solicitante)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return veiculoRepository.findById(id)
+                .map(veiculo -> ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(veiculo))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")

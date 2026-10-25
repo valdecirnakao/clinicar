@@ -50,6 +50,7 @@ public class AgendamentoMapper {
         }
 
         Fornecedor fornecedor = agendamento.getFornecedor();
+        response.setTipoExecucao(agendamento.getTipoExecucao());
 
         if (fornecedor != null) {
             response.setIdFornecedor(fornecedor.getId());
@@ -76,6 +77,8 @@ public class AgendamentoMapper {
         response.setQuilometragemAtual(agendamento.getQuilometragemAtual());
 
         response.setQueixaCliente(agendamento.getQueixaCliente());
+        response.setSugestaoMateriaisCliente(agendamento.getSugestaoMateriaisCliente());
+        response.setPreferenciaExecucaoCliente(agendamento.getPreferenciaExecucaoCliente());
         response.setDiagnosticoPrevio(agendamento.getDiagnosticoPrevio());
         response.setObservacoes(agendamento.getObservacoes());
 

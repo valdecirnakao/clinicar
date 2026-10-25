@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface VeiculoRepository extends JpaRepository<Veiculo, Long> {
+    java.util.List<Veiculo> findByIdProprietarioOrderByIdDesc(Long idProprietario);
+    boolean existsByIdAndIdProprietario(Long id, Long idProprietario);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select v from Veiculo v where v.id = :id")
     Optional<Veiculo> buscarParaExclusao(@org.springframework.data.repository.query.Param("id") Long id);

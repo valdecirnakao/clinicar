@@ -31,6 +31,32 @@ class ModernizacaoMySqlIT {
     @Autowired PlatformTransactionManager manager; @Autowired MockMvc mvc;
     @Autowired UsuarioRepository users; @Autowired SessionService sessions; @Autowired ObjectMapper json;
     @Test @org.springframework.transaction.annotation.Transactional
+    void historicoPaginadoPreservaSaldoDeRecebimentoComDevolucaoCorrigida() throws Exception {
+        var user=new Usuario();user.setNome("Administrador histórico teste");user.setEmail(UUID.randomUUID()+"@example.test");user.setSenha("hash-teste");user.setStatus("ATIVO");user.setTipo_do_acesso("ADMINISTRADOR");user.setMfaAtivo(true);user.setMfaTipo("TOTP");user.setMfaSecret("teste");user=users.saveAndFlush(user);
+        var cookie=sessions.criarSessaoCookie(user.getId());var auth=new Cookie(cookie.getName(),cookie.getValue());
+        String nome="Peça histórico "+UUID.randomUUID(),local="Local histórico "+UUID.randomUUID();
+        jdbc.update("INSERT INTO peca (nome,fabricante,tipo,unidade,criado_em) VALUES (?,'Teste','Peça Automotiva','Unidade',CURRENT_TIMESTAMP)",nome);
+        long peca=jdbc.queryForObject("SELECT id FROM peca WHERE nome=?",Long.class,nome);
+        jdbc.update("INSERT INTO local_estoque (nome,ativo,criado_em) VALUES (?,TRUE,CURRENT_TIMESTAMP)",local);long localId=jdbc.queryForObject("SELECT id FROM local_estoque WHERE nome=?",Long.class,local);
+        jdbc.update("INSERT INTO estoque_peca (id_peca,id_local_estoque,quantidade_atual,custo_medio) VALUES (?,?,100,30)",peca,localId);long estoque=jdbc.queryForObject("SELECT id FROM estoque_peca WHERE id_peca=?",Long.class,peca);
+        long recebimento=movimentoHistorico(estoque,peca,"ENTRADA","COMPRA",10,null);
+        long devolucao=movimentoHistorico(estoque,peca,"SAIDA","DEVOLUCAO_FORNECEDOR",4,recebimento);
+        movimentoHistorico(estoque,peca,"AJUSTE_ENTRADA","CORRECAO_LANCAMENTO",1,devolucao);
+        movimentoHistorico(estoque,peca,"AJUSTE_ENTRADA","CORRECAO_LANCAMENTO",2,recebimento);
+        for(int i=0;i<21;i++)movimentoHistorico(estoque,peca,"ENTRADA","BONIFICACAO",1,null);
+        String base="/api/estoque-pecas/"+estoque+"/movimentacoes";
+        mvc.perform(get(base+"/pagina").cookie(auth).param("tamanho","5")).andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(25)).andExpect(jsonPath("$.content.length()").value(5));
+        var resposta=mvc.perform(get(base+"/"+recebimento).cookie(auth)).andExpect(status().isOk()).andReturn().getResponse();
+        assertEquals(0,new java.math.BigDecimal("9").compareTo(json.readTree(resposta.getContentAsString()).path("quantidadeDisponivelOriginal").decimalValue()));
+        var retorno=mvc.perform(get(base+"/"+devolucao).cookie(auth)).andExpect(status().isOk()).andReturn().getResponse();
+        assertEquals(0,new java.math.BigDecimal("9").compareTo(json.readTree(retorno.getContentAsString()).path("quantidadeDisponivelRecebimento").decimalValue()));
+        assertEquals(0,new java.math.BigDecimal("100").compareTo(jdbc.queryForObject("SELECT quantidade_atual FROM estoque_peca WHERE id=?",java.math.BigDecimal.class,estoque)));
+    }
+    private long movimentoHistorico(long estoque,long peca,String tipo,String origem,int quantidade,Long original){
+        jdbc.update("INSERT INTO movimentacao_estoque_peca (id_estoque_peca,id_peca,tipo_movimento,origem,quantidade,saldo_anterior,saldo_posterior,valor_unitario,id_movimentacao_origem,criado_em) VALUES (?,?,?,?,?,100,90,30,?,CURRENT_TIMESTAMP)",estoque,peca,tipo,origem,quantidade,original);
+        return jdbc.queryForObject("SELECT MAX(id) FROM movimentacao_estoque_peca WHERE id_estoque_peca=?",Long.class,estoque);
+    }
+    @Test @org.springframework.transaction.annotation.Transactional
     void confirmacoesAssinadasNaoRegridemEntregaOuLeitura() throws Exception {
         String chave=UUID.randomUUID().toString(),provider="mensagem-teste-"+chave;
         String fila=outbox.enfileirar(chave,"5511999999999","teste","pt_BR",Map.of("teste",true),null,null);
@@ -88,7 +114,9 @@ class ModernizacaoMySqlIT {
     @Test void paginacaoLimitaRegistrosEContagemIndependeDaPagina() throws Exception {
         Usuario user=new Usuario();user.setNome("Administrador paginação");user.setCpf(Long.toString(java.util.concurrent.ThreadLocalRandom.current().nextLong(10000000000L,99999999999L)));user.setEmail(UUID.randomUUID()+"@example.test");user.setSenha("hash-teste");user.setStatus("ATIVO");user.setTipo_do_acesso("ADMINISTRADOR");user.setMfaAtivo(true);user.setMfaTipo("TOTP");user.setMfaSecret("segredo-teste");user=users.saveAndFlush(user);
         var session=sessions.criarSessaoCookie(user.getId());var auth=new Cookie(session.getName(),session.getValue());
-        for(String recurso:java.util.List.of("usuario","fornecedor","peca","servico","veiculo","estoque-pecas","fornecimento-pecas","fornecimento-servicos","agendamento","atendimento","regra-manutencao-preventiva")) {
+        for(String recurso:java.util.List.of("local-estoque","usuario","fornecedor","peca","servico","veiculo","estoque-pecas","fornecimento-pecas","fornecimento-servicos","agendamento","atendimento","regra-manutencao-preventiva")) {
+            var seletor=mvc.perform(get("/api/"+recurso+"/pagina").cookie(auth).param("tamanho","5").param("selecao","true")).andExpect(status().isOk()).andReturn().getResponse();
+            var limitado=json.readTree(seletor.getContentAsString());assertTrue(limitado.path("content").size()<=5,recurso);assertEquals(0,limitado.path("resumo").size(),recurso);assertEquals(0,limitado.path("opcoes").size(),recurso);
             var resposta=mvc.perform(get("/api/"+recurso+"/pagina").cookie(auth).param("tamanho","2").param("ordenar","id")).andExpect(status().isOk()).andReturn().getResponse();
             var pagina=json.readTree(resposta.getContentAsString());assertTrue(pagina.path("content").isArray(),recurso);assertTrue(pagina.path("content").size()<=2,recurso);
             assertTrue(pagina.path("totalElements").longValue()>=pagina.path("content").size(),recurso);
@@ -102,6 +130,7 @@ class ModernizacaoMySqlIT {
     @Test void migracoesCriamEstruturaEOutboxParticipaDoRollback() {
         assertTrue(jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version='21' AND success=TRUE",Long.class)>0);
         assertEquals(3,jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version IN ('21','22','23') AND success=TRUE",Integer.class));
+        assertEquals(3,jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='atendimento' AND index_name='idx_atendimento_cliente_criado_id'",Integer.class));
         String key=UUID.randomUUID().toString();
         new TransactionTemplate(manager).execute(status->{outbox.enfileirar(key,"5511999999999","teste","pt_BR",Map.of("teste",true),null,null);status.setRollbackOnly();return null;});
         assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM notificacao_outbox WHERE chave_evento=?",Integer.class,key));

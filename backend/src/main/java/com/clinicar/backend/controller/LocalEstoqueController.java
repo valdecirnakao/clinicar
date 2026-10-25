@@ -46,6 +46,11 @@ public class LocalEstoqueController {
         return ResponseEntity.ok(mapper.toResponseList(service.listarAtivos()));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<LocalEstoqueResponse> buscar(@PathVariable Long id) {
+        return ResponseEntity.ok(mapper.toResponse(service.buscarPorId(id)));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<LocalEstoqueResponse> atualizar(
             @PathVariable Long id,

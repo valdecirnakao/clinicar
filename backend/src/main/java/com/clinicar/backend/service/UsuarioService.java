@@ -94,6 +94,33 @@ public class UsuarioService {
     }
 
     @Transactional
+    public UsuarioResponse atualizarClientePorColaborador(Long id, UsuarioRequest request) {
+        Usuario usuario = repo.buscarParaAtualizacao(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        boolean reativar = "INATIVO".equalsIgnoreCase(usuario.getStatus())
+                && "ATIVO".equalsIgnoreCase(request.getStatus());
+        if (!"CLIENTE".equalsIgnoreCase(usuario.getTipo_do_acesso())
+                || request.getTipo_do_acesso() != null && !"CLIENTE".equalsIgnoreCase(request.getTipo_do_acesso())
+                || request.getStatus() != null && !usuario.getStatus().equalsIgnoreCase(request.getStatus()) && !reativar
+                || request.getSenha() != null && !request.getSenha().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
+                    "O colaborador só pode atualizar clientes ou reativá-los, sem inativar ou alterar acesso e senha.");
+        }
+        String assinaturaAntes = assinaturaDadosUsuario(usuario);
+        String emailNormalizado = normalizarEmail(request.getEmail());
+        validarEmailUnico(emailNormalizado, id);
+        validarCpfUnico(request.getCpf(), id);
+        preencherDadosUsuario(usuario, request, emailNormalizado);
+        if (reativar) usuario.setStatus("ATIVO");
+        Usuario salvo = repo.saveAndFlush(usuario);
+        if (reativar) eventPublisher.publishEvent(new UsuarioAtivadoEvent(salvo.getId(), nomePreferencial(salvo), salvo.getTelefone()));
+        if (!java.util.Objects.equals(assinaturaAntes, assinaturaDadosUsuario(salvo))) {
+            eventPublisher.publishEvent(new UsuarioAtualizadoEvent(salvo.getId(), nomePreferencial(salvo), salvo.getTelefone()));
+        }
+        return toResponse(salvo);
+    }
+
+    @Transactional
     public void inativarPorAdministrador(Long id, Long administradorId) {
         var administradores = protecaoAdministrativa.bloquearEValidarAdministrador(administradorId);
         var usuario = repo.buscarParaAtualizacao(id).orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
@@ -125,11 +152,14 @@ public class UsuarioService {
         Usuario usuario = (administrador ? repo.buscarParaAtualizacao(id) : repo.findById(id))
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
-        String emailNormalizado = administrador
+        String emailNormalizado = administrador || request.getEmail() != null
                 ? normalizarEmail(request.getEmail()) : usuario.getEmail();
 
         validarEmailUnico(emailNormalizado, id);
-        if (administrador) validarCpfUnico(request.getCpf(), id);
+        if (request.getCpf() != null && !administrador && soDigitos(request.getCpf()).length() != 11) {
+            throw new IllegalArgumentException("Informe um CPF com 11 dígitos.");
+        }
+        if (administrador || request.getCpf() != null) validarCpfUnico(request.getCpf(), id);
 
         String assinaturaAntes = assinaturaDadosUsuario(usuario);
         boolean estavaInativo = statusInativo(usuario.getStatus());
@@ -154,6 +184,7 @@ public class UsuarioService {
             usuario.setStatus(status);
         } else {
             preencherPerfilProprio(usuario, request);
+            if (request.getEmail() != null) usuario.setEmail(emailNormalizado);
         }
 
         /*
@@ -285,7 +316,8 @@ public class UsuarioService {
     }
 
     private void preencherPerfilProprio(Usuario usuario, UsuarioRequest request) {
-        // Campos omitidos são preservados. Identificadores, senha, perfil, status e MFA não são copiados.
+        // Campos omitidos são preservados. Senha, perfil, status e MFA não são copiados.
+        if (request.getCpf() != null) usuario.setCpf(soDigitos(request.getCpf()));
         if (request.getNome() != null) usuario.setNome(limparTexto(request.getNome()));
         if (request.getNome_social() != null) usuario.setNome_social(limparTexto(request.getNome_social()));
         if (request.getTelefone() != null) usuario.setTelefone(soDigitos(request.getTelefone()));

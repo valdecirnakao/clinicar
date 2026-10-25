@@ -26,6 +26,7 @@ class AtendimentoHistoricoTest {
     @Mock AtendimentoTotaisService totais;
     @Mock AtendimentoServicoExecutadoService servicos;
     @Mock PrevisaoManutencaoService previsoes;
+    @Mock AvisosServicoWhatsappService avisosWhatsapp;
     @InjectMocks AtendimentoService service;
 
     @Test

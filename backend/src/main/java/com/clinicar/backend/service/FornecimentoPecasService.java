@@ -36,6 +36,8 @@ public class FornecimentoPecasService {
                     new NoSuchElementException("Fornecedor não encontrado"));
 
         if (!fornecedor.isAtivo()) throw new IllegalArgumentException("Selecione um fornecedor ativo para cadastrar o fornecimento.");
+        if (!CategoriasFornecedor.aceita(fornecedor.getItemFornecido(), "PECAS"))
+            throw new IllegalArgumentException("Selecione um fornecedor cadastrado para peças ou insumos.");
 
         Peca peca = pecaRepository
                 .findById(req.getIdPeca())
@@ -87,6 +89,10 @@ public FornecimentoPecas atualizar(
     if (!fornecedor.isAtivo() && (!fornecedor.getId().equals(existente.getFornecedor().getId())
             || !req.getIdPeca().equals(existente.getPeca().getId())))
         throw new IllegalArgumentException("Selecione um fornecedor ativo para alterar o vínculo do fornecimento.");
+    if (!CategoriasFornecedor.aceita(fornecedor.getItemFornecido(), "PECAS")
+            && (!fornecedor.getId().equals(existente.getFornecedor().getId())
+            || !req.getIdPeca().equals(existente.getPeca().getId())))
+        throw new IllegalArgumentException("Selecione um fornecedor cadastrado para peças ou insumos.");
     validarDuplicidade(req, id);
     preencherDados(existente, req, fornecedor, peca);
 

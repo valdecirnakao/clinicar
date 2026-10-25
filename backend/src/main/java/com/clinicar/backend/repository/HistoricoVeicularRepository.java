@@ -16,6 +16,7 @@ public interface HistoricoVeicularRepository extends Repository<Veiculo, Long> {
         String getPlaca(); String getFabricante(); String getModelo(); String getCor(); String getAno();
         Boolean getPreservado(); Integer getKmEntrada(); Integer getKmSaida();
         String getQueixa(); String getDiagnostico(); String getExecucao(); String getRecomendacoes(); BigDecimal getValor();
+        BigDecimal getValorServicoBase();
     }
     interface ItemLinha {
         Long getAtendimentoId(); String getDescricao(); BigDecimal getQuantidade(); String getUnidade(); BigDecimal getValorTotal();
@@ -51,14 +52,27 @@ public interface HistoricoVeicularRepository extends Repository<Veiculo, Long> {
           case when a.veiculoPreservadoEm is not null then a.veiculoAnoModeloCombustivelHistorico else v.anoModeloCombustivel end as ano,
           case when a.veiculoPreservadoEm is not null then true else false end as preservado,
           a.quilometragemAtual as kmEntrada, a.queixaCliente as queixa,
-          a.diagnosticoPrevio as diagnostico, a.valorEstimado as valor
-        from Agendamento a join a.veiculo v
+          a.diagnosticoPrevio as diagnostico, a.valorEstimado as valor,
+          s.valorBase as valorServicoBase
+        from Agendamento a join a.veiculo v join a.servico s
         where v.id = :veiculoId and (:inicio is null or a.dataHoraInicio >= :inicio)
           and (:fim is null or a.dataHoraInicio < :fim)
         order by a.dataHoraInicio desc, a.id desc
         """)
     List<Linha> agendamentos(@Param("veiculoId") Long veiculoId, @Param("inicio") LocalDateTime inicio,
                             @Param("fim") LocalDateTime fim, Pageable limite);
+
+    interface TotalPecasAgendamento {
+        Long getAgendamentoId(); BigDecimal getTotal();
+    }
+
+    @Query("""
+        select p.agendamento.id as agendamentoId, sum(p.valorTotal) as total
+        from AgendamentoPecaPrevista p
+        where p.agendamento.id in :ids
+        group by p.agendamento.id
+        """)
+    List<TotalPecasAgendamento> totaisPecasAgendamento(@Param("ids") List<Long> ids);
 
     @Query("""
         select i.atendimento.id as atendimentoId, s.nome as descricao, i.quantidade as quantidade,

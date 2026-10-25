@@ -25,6 +25,7 @@ public class NotificacaoWorker {
     @Value("${whatsapp.api-url:https://graph.facebook.com/v25.0}") private String api;
     @Value("${whatsapp.phone-number-id:}") private String phone;
     @Value("${whatsapp.access-token:}") private String token;
+    @Value("${clinicar.whatsapp.avisos-servico-habilitados:false}") private boolean avisosServicoHabilitados;
     public NotificacaoWorker(JdbcTemplate jdbc, ObjectMapper json) {
         this.jdbc=jdbc; this.json=json;
         var factory=new org.springframework.http.client.SimpleClientHttpRequestFactory();
@@ -44,13 +45,19 @@ public class NotificacaoWorker {
         if(!whatsappConfigurado) {
             jdbc.update("UPDATE notificacao_outbox SET ultimo_erro='Aguardando configuração de acesso à API do WhatsApp.',atualizado_em=? WHERE canal='WHATSAPP' AND estado IN ('PENDENTE','TENTAR_NOVAMENTE') AND (ultimo_erro IS NULL OR ultimo_erro<>'Aguardando configuração de acesso à API do WhatsApp.')",now);
         }
-        var ids=jdbc.queryForList("SELECT id FROM notificacao_outbox WHERE estado IN ('PENDENTE','TENTAR_NOVAMENTE') AND proxima_tentativa_em<=? AND (canal='EMAIL' OR ?) ORDER BY id LIMIT 10",Long.class,now,whatsappConfigurado);
+        var ids=jdbc.queryForList("SELECT id FROM notificacao_outbox WHERE estado IN ('PENDENTE','TENTAR_NOVAMENTE') AND proxima_tentativa_em<=? AND (canal='EMAIL' OR ?) "
+                + "AND (origem NOT IN ('AGENDAMENTO','ORCAMENTO','ATENDIMENTO') OR origem IS NULL OR ?) ORDER BY id LIMIT 10",
+                Long.class,now,whatsappConfigurado,avisosServicoHabilitados);
         for (Long id:ids) {
             int claimed=jdbc.update("UPDATE notificacao_outbox SET estado='PROCESSANDO',reservado_ate=?,tentativas=tentativas+1,atualizado_em=? WHERE id=? AND estado IN ('PENDENTE','TENTAR_NOVAMENTE') AND proxima_tentativa_em<=?",
                 Timestamp.from(Instant.now().plusSeconds(60)),now,id,now);
             if(claimed!=1) continue;
             var row=jdbc.queryForMap("SELECT canal,destinatario,template,parametros,tentativas,origem,registro_origem_id FROM notificacao_outbox WHERE id=?",id);
             try {
+                if (!avisoServicoAtual(row)) {
+                    finalizar(id,"CANCELADA",null,null);
+                    continue;
+                }
                 if("EMAIL".equals(row.get("canal"))) {
                     var payload=json.readTree(crypto.descriptografar((String)row.get("parametros")));
                     var message=mail.createMimeMessage();
@@ -72,7 +79,7 @@ public class NotificacaoWorker {
             } catch(HttpStatusCodeException error) {
                 int attempts=((Number)row.get("tentativas")).intValue();
                 boolean retry=error.getStatusCode().value()==429 && attempts<6;
-                String message="Provedor recusou o envio (HTTP "+error.getStatusCode().value()+").";
+                String message=detalharRecusa(error);
                 finalizar(id,retry?"TENTAR_NOVAMENTE":"ERRO",message,null);
                 if(retry) jdbc.update("UPDATE notificacao_outbox SET proxima_tentativa_em=? WHERE id=?",Timestamp.from(Instant.now().plusSeconds(Math.min(3600,60L*(1L<<attempts)))),id);
                 atualizarAlerta(row,null,message);
@@ -84,6 +91,56 @@ public class NotificacaoWorker {
             } catch(Exception error) {
                 finalizar(id,"ERRO","Não foi possível processar a notificação. Consulte o responsável pelo sistema.",null);
             }
+        }
+    }
+    private boolean avisoServicoAtual(Map<String,Object> row) {
+        String origem=(String)row.get("origem");
+        if (origem == null || !java.util.Set.of("AGENDAMENTO","ORCAMENTO","ATENDIMENTO").contains(origem)) return true;
+        Object registro=row.get("registro_origem_id");
+        if (registro==null) return false;
+        String template=(String)row.get("template");
+        String sql;
+        if ("AGENDAMENTO".equals(origem)) {
+            String estado="clinicar_agendamento_reagendado".equals(template)
+                    ? "a.status_agendamento IN ('AGENDADO','REAGENDADO','CONFIRMADO')"
+                    : "a.status_agendamento='CONFIRMADO'";
+            String prazo="clinicar_lembrete_agendamento".equals(template)
+                    ? " AND a.data_hora_inicio>CURRENT_TIMESTAMP(6)" : "";
+            sql="SELECT u.telefone FROM agendamento a JOIN usuario u ON u.id=a.id_cliente WHERE a.id=? AND "
+                    +estado+prazo+" AND u.avisos_servico_whatsapp=TRUE AND u.status='ATIVO'";
+        } else if ("ORCAMENTO".equals(origem)) {
+            sql="SELECT u.telefone FROM atendimento_orcamento o JOIN atendimento a ON a.id=o.id_atendimento JOIN usuario u ON u.id=a.id_cliente "
+                    +"WHERE o.id=? AND o.status='PENDENTE' AND a.status_atendimento='AGUARDANDO_APROVACAO' "
+                    +"AND u.avisos_servico_whatsapp=TRUE AND u.status='ATIVO'";
+        } else {
+            sql="SELECT u.telefone FROM atendimento a JOIN usuario u ON u.id=a.id_cliente WHERE a.id=? "
+                    +"AND a.status_atendimento='CONCLUIDO' AND a.pronto_retirada_em IS NOT NULL "
+                    +"AND u.avisos_servico_whatsapp=TRUE AND u.status='ATIVO'";
+        }
+        return jdbc.queryForList(sql,String.class,registro).stream()
+                .anyMatch(telefone -> {
+                    if (telefone == null) return false;
+                    String numero = telefone.replaceAll("\\D", "");
+                    if (numero.length()==10 || numero.length()==11) numero="55"+numero;
+                    return numero.equals(row.get("destinatario"));
+                });
+    }
+    String detalharRecusa(HttpStatusCodeException error) {
+        String prefixo="Provedor recusou o envio (HTTP "+error.getStatusCode().value()+")";
+        try {
+            var detalhe=json.readTree(error.getResponseBodyAsString()).path("error");
+            String codigo=detalhe.path("code").asText("");
+            String subcodigo=detalhe.path("error_subcode").asText("");
+            String motivo=detalhe.path("message").asText("");
+            String referencia=codigo.isBlank()?"":" código "+codigo+(subcodigo.isBlank()?"":"/"+subcodigo);
+            if (motivo.isBlank()) return prefixo+referencia+".";
+            // A resposta externa pode conter o telefone do destinatário; não o grave no painel.
+            String motivoSeguro=motivo.replaceAll("\\d{8,}", "[número]")
+                .replaceAll("[\\r\\n\\t]", " ");
+            if (motivoSeguro.length()>240) motivoSeguro=motivoSeguro.substring(0,240)+"…";
+            return prefixo+referencia+": "+motivoSeguro;
+        } catch(Exception ignorada) {
+            return prefixo+".";
         }
     }
     private void finalizar(Long id,String estado,String erro,String provider) {

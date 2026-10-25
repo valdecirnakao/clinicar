@@ -20,15 +20,18 @@ public class AtendimentoTotaisService {
     private final AtendimentoRepository atendimentoRepository;
     private final AtendimentoPecaUtilizadaRepository atendimentoPecaRepository;
     private final AtendimentoServicoExecutadoRepository atendimentoServicoRepository;
+    private final AtendimentoOrcamentoService orcamentos;
 
     public AtendimentoTotaisService(
             AtendimentoRepository atendimentoRepository,
             AtendimentoPecaUtilizadaRepository atendimentoPecaRepository,
-            AtendimentoServicoExecutadoRepository atendimentoServicoRepository
+            AtendimentoServicoExecutadoRepository atendimentoServicoRepository,
+            AtendimentoOrcamentoService orcamentos
     ) {
         this.atendimentoRepository = atendimentoRepository;
         this.atendimentoPecaRepository = atendimentoPecaRepository;
         this.atendimentoServicoRepository = atendimentoServicoRepository;
+        this.orcamentos = orcamentos;
     }
 
     @Transactional
@@ -78,6 +81,7 @@ public class AtendimentoTotaisService {
         atendimento.setValorTerceiros(valorTerceiros);
         atendimento.setDesconto(desconto);
         atendimento.setValorTotal(total);
+        orcamentos.invalidarSeAlterado(atendimento);
 
         log.info(
                 "[ATENDIMENTO_TOTAIS] Atendimento ID {} recalculado. M.O.={}, peças={}, terceiros={}, desconto={}, total={}",

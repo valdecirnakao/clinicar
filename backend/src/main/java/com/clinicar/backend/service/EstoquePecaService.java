@@ -52,6 +52,7 @@ public class EstoquePecaService {
         this.alertaEstoqueService = alertaEstoqueService;
     }
 
+    @Transactional
     public EstoquePeca criar(EstoquePecaRequest request) {
         validarRequest(request);
 
@@ -80,7 +81,19 @@ public class EstoquePecaService {
         preencherDadosConfiguracaoEstoque(estoque, request);
         recalcularStatusEstoque(estoque);
 
+        BigDecimal saldoInicial = estoque.getQuantidadeAtual();
+        if (saldoInicial.signum() > 0 && estoque.getCustoMedio() == null) {
+            throw new IllegalArgumentException("Informe o custo médio quando a quantidade inicial for maior que zero.");
+        }
+
         EstoquePeca salvo = estoqueRepository.save(estoque);
+        if (saldoInicial.signum() > 0) {
+            MovimentacaoEstoquePecaRequest lancamentoInicial = new MovimentacaoEstoquePecaRequest();
+            lancamentoInicial.setOrigem("INVENTARIO_INICIAL");
+            lancamentoInicial.setMotivo("Saldo inicial informado no cadastro do controle de estoque.");
+            registrarMovimentacao(salvo, "ENTRADA", saldoInicial, BigDecimal.ZERO,
+                    saldoInicial, salvo.getCustoMedio(), lancamentoInicial, null);
+        }
 
         alertaEstoqueService.verificarEGerarAlertaSeNecessario(salvo);
 
@@ -89,11 +102,22 @@ public class EstoquePecaService {
 
     @Transactional
     public EstoquePeca atualizar(Long id, EstoquePecaRequest request) {
+        return atualizar(id, request, false);
+    }
+
+    @Transactional
+    public EstoquePeca atualizar(Long id, EstoquePecaRequest request, boolean permitirAlterarSaldo) {
         validarRequest(request);
 
         if(versaoEstoque!=null)versaoEstoque.registrarAlteracao(id);
         EstoquePeca estoque = estoqueRepository.buscarComLockPorId(id)
                 .orElseThrow(()->new IllegalArgumentException("Controle de estoque não encontrado."));
+
+        if (!permitirAlterarSaldo && (parseQuantidadeComDefault(request.getQuantidadeAtual(), estoque.getQuantidadeAtual()).compareTo(estoque.getQuantidadeAtual()) != 0
+                || parseQuantidadeComDefault(request.getQuantidadeReservada(), estoque.getQuantidadeReservada()).compareTo(estoque.getQuantidadeReservada()) != 0)) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
+                    "O saldo do estoque só pode ser alterado por movimentação autorizada.");
+        }
 
         preencherDadosConfiguracaoEstoque(estoque, request);
         recalcularStatusEstoque(estoque);
@@ -365,7 +389,8 @@ public class EstoquePecaService {
                 .orElseThrow(() -> new IllegalArgumentException("Movimentação original não encontrada."));
         if (original.getEstoquePeca() == null || !estoque.getId().equals(original.getEstoquePeca().getId())
                 || !("ENTRADA".equals(original.getTipoMovimento()) || "SAIDA".equals(original.getTipoMovimento()))
-                || (original.getIdMovimentacaoOrigem() != null && !"DEVOLUCAO_FORNECEDOR".equals(original.getOrigem())) || original.getIdAtendimento() != null || "ATENDIMENTO".equals(original.getOrigem())) {
+                || (original.getIdMovimentacaoOrigem() != null && !"DEVOLUCAO_FORNECEDOR".equals(original.getOrigem())) || original.getIdAtendimento() != null || "ATENDIMENTO".equals(original.getOrigem())
+                || "INVENTARIO_INICIAL".equals(original.getOrigem())) {
             throw new IllegalArgumentException("Selecione uma entrada ou saída manual original deste estoque. Baixas de atendimento devem ser tratadas pelo fluxo do atendimento.");
         }
         request.setIdFornecedor(original.getIdFornecedor());
