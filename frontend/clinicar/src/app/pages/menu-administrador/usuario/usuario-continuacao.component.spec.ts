@@ -53,6 +53,8 @@ describe('Continuação do usuário com veículo e alertas', () => {
     component.usuarioContinuacao = { ...usuario, tipo_do_acesso: perfil }; component.veiculoDoUsuarioCriado(veiculo);
     http.expectOne(r=>r.url==='/api/usuario/pagina').flush({content:[usuario],totalElements:[usuario].length,totalPages:1,number:0,resumo:{},opcoes:{}});
     flushMicrotasks(); fixture.detectChanges();
+    component.continuarParaAlertasDoUsuario();
+    flushMicrotasks(); fixture.detectChanges();
     const req = http.expectOne(r => r.url === '/api/configuracao-alerta-manutencao');
     expect(req.request.params.get('usuarioId')).toBe('77');
     const config = { id: 77, ativo: false, versao: null, antecedenciaDias: 15, intervaloDias: 7, maximoEnvios: 3, diasAposVencimento: 30, horaInicio: 9, horaFim: 18, fusoHorario: 'America/Sao_Paulo' };
